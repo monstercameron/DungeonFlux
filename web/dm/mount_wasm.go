@@ -7,7 +7,9 @@ import (
 	"errors"
 	"net/url"
 	"strings"
+	"sync"
 	"syscall/js"
+	"time"
 
 	dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"github.com/monstercameron/DungeonFlux/web/shell/audio"
@@ -67,31 +69,68 @@ func (c *screenClient) watch(ctx context.Context, token string) <-chan *dungeonf
 		if c == nil || c.api == nil {
 			return
 		}
-		stream, err := c.api.Watch(ctx, &dungeonfluxv1.WatchRequest{SeatToken: token})
-		if err != nil {
-			return
-		}
-		for {
-			message, recvErr := stream.Recv()
-			if recvErr != nil {
-				return
-			}
-			if state := message.GetState(); state != nil {
-				select {
-				case states <- state:
-				case <-ctx.Done():
-					return
+		backoff := time.Second
+		for ctx.Err() == nil {
+			stream, err := c.api.Watch(ctx, &dungeonfluxv1.WatchRequest{SeatToken: token})
+			if err == nil {
+				backoff = time.Second
+				for {
+					message, recvErr := stream.Recv()
+					if recvErr != nil {
+						err = recvErr
+						break
+					}
+					if state := message.GetState(); state != nil {
+						select {
+						case states <- state:
+						case <-ctx.Done():
+							return
+						}
+					}
 				}
 			}
+			if ctx.Err() != nil {
+				return
+			}
+			js.Global().Get("console").Call("warn", "dm watch reconnecting: "+err.Error())
+			select {
+			case <-time.After(backoff):
+			case <-ctx.Done():
+				return
+			}
+			backoff = min(backoff*2, 5*time.Second)
 		}
 	}()
 	return states
 }
 
+// sharedScreenClients keeps one gRPC connection per endpoint for the page's
+// lifetime. The router re-renders the route whenever art finishes loading, so
+// creating the client inside the route function reconnected (and dropped the
+// Watch stream) dozens of times during start-up.
+var sharedScreenClients = struct {
+	sync.Mutex
+	byEndpoint map[string]*screenClient
+}{byEndpoint: map[string]*screenClient{}}
+
+func sharedScreenClient(endpoint string) (*screenClient, error) {
+	sharedScreenClients.Lock()
+	defer sharedScreenClients.Unlock()
+	if client, ok := sharedScreenClients.byEndpoint[endpoint]; ok {
+		return client, nil
+	}
+	client, err := newScreenClient(endpoint)
+	if err != nil {
+		return nil, err
+	}
+	sharedScreenClients.byEndpoint[endpoint] = client
+	return client, nil
+}
+
 // Mount returns the stateful DM screen for the shared shell router.
 func Mount(endpoint string) router.Component {
 	return func(_ router.Attrs) *router.Element {
-		client, err := newScreenClient(endpoint)
+		client, err := sharedScreenClient(endpoint)
 		if err != nil {
 			return ui.CreateElement(screenError, err.Error())
 		}
@@ -140,7 +179,6 @@ func screenView(props screenProps) ui.Node {
 				player.Cancel("")
 				player.Close()
 			}
-			_ = props.client.close()
 		}
 	}, props.client, token)
 	snapshot := state.Get()
