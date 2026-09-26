@@ -2,7 +2,7 @@
 
 Rules for every coding agent in this repo. Read it in full before your first edit. Owner: the orchestrator (ORCH).
 
-**Who does what:** Claude **Opus 5.5** (Claude Code) is ORCH: coordinator and reviewer. It writes the shared contracts, briefs the lanes, reviews and gates every hand-in, merges, commits, keeps the dev server up, and writes the devlog. **Luna in Codex** (the worker model: `gpt-6-luna` when the Codex account offers it; today the ChatGPT-login Codex account lists `gpt-5.6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.5`, so lanes run `gpt-5.6-luna`) runs every worker lane: it writes the first draft of all lane code and its tests. ORCH does not write lane code; a lane is never the last set of eyes on its own work.
+**Who does what:** Claude **Opus 5.5** (Claude Code) is ORCH: coordinator and reviewer. It writes the shared contracts, briefs the lanes, reviews and gates every hand-in, merges, commits, keeps the dev server up, and writes the devlog. **GPT-5.6 Luna in Codex** (`gpt-5.6-luna`, chosen by the developer 2026-09-26; the ChatGPT-login Codex account does not offer `gpt-6-luna`) runs every worker lane: it writes the first draft of all lane code and its tests. ORCH does not write lane code; a lane is never the last set of eyes on its own work.
 
 ## TL;DR
 1. `plan.md` section 0 is the binding spec. Sections 1–7 are post-demo and non-binding; section 0 wins every conflict.
@@ -126,7 +126,7 @@ Full coding rules: plan §0.18.8 (24 rules) and §0.18.7 (errors, context, loggi
 20. Network calls in unit tests; paid API calls anywhere outside a developer-run `live` test.
 
 **Secrets**
-21. Keys come only from env vars (`DF_OPENAI_API_KEY`, `DF_GEMINI_API_KEY`, `DF_ANTHROPIC_API_KEY`, `DF_ELEVENLABS_API_KEY`, `DF_SEGMIND_API_KEY`, `DF_EVOLINK_API_KEY`, `DF_FAL_KEY`). Never log, print, commit, or put them in a URL or fixture. `.env*` files are gitignored.
+21. Keys come only from env vars (`DF_OPENAI_API_KEY`, `DF_GEMINI_API_KEY`, `DF_ANTHROPIC_API_KEY`, `DF_ELEVENLABS_API_KEY`, `DF_SEGMIND_API_KEY`, `DF_EVOLINK_API_KEY`, `DF_FAL_KEY`, `DF_CEREBRAS_API_KEY`, `DF_TYPESAFE_API_KEY`, `DF_WORLDLABS_API_KEY`; lego's DNS challenge reads its own `DO_AUTH_TOKEN`). Never log, print, commit, or put them in a URL or fixture. `.env*` files are gitignored.
 
 **Windows and line endings**
 22. LF line endings, UTF-8 without BOM. This machine has `core.autocrlf=true`, so do not rely on git to normalize. Python edits use `open(p, 'rb'/'wb')` or `newline=''`. In Windows PowerShell 5.1, write text with `[IO.File]::WriteAllText(path, text, [Text.UTF8Encoding]::new($false))`, not `Set-Content` or `Out-File`.
@@ -173,7 +173,7 @@ $p = Start-Process go -ArgumentList 'run','./cmd/server','-config','config/fake.
 Stop-Process -Id $p.Id
 
 # Race gate (ORCH, WSL2; no race detector on windows/arm64)
-wsl -- bash -lc "cd /mnt/c/Users/mreca/Desktop/DungeonFlux && go test -race ./internal/runtime/... ./internal/api/... ./internal/voice/..."
+wsl -d Ubuntu-24.04 -- bash -lc "cd /mnt/c/Users/mreca/Desktop/DungeonFlux && go test -race ./internal/runtime/... ./internal/api/... ./internal/voice/..."
 ```
 `cmd/server` flags (plan §0.18.5): `-config <file>`, `-port <lane port>`, `-data-dir artifacts/runtime/<LANE>`, and `-seed <hex>` (stage and rehearsal only). Always pass your own port and data dir; never run on 8443 or under `artifacts/runtime/human/` or `show/`. Note that `go run` starts a child process, so stop it by the PID tree you launched, never by image name.
 
@@ -238,7 +238,7 @@ Get-Content artifacts\lanes\L-ENG\brief.md -Raw |
   codex exec -m gpt-5.6-luna --sandbox workspace-write --skip-git-repo-check -C "C:\Users\mreca\Desktop\DungeonFlux" `
     -o artifacts\lanes\L-ENG\hand-in.md - *> artifacts\lanes\L-ENG\codex.log
 ```
-PowerShell has no `<` input redirection, so the brief is piped in. Run each lane as a background process and keep its PID. **Always pass `-m`:** the global `~/.codex/config.toml` default (`model = "gpt-6-sol"` on this machine) is not available to the ChatGPT-login account and makes every `codex exec` fail with a 400 `model is not supported` error. At hour 0, `codex exec -m gpt-6-luna` is tried once; if it is accepted, lanes switch to it. Confirm the model and flags with `codex exec --help` in hour 0; if the Codex app (desktop) is used instead of the CLI, the same brief file is the task text and the same rules apply.
+PowerShell has no `<` input redirection, so the brief is piped in. Run each lane as a background process and keep its PID. **Always pass `-m`:** the global `~/.codex/config.toml` default (`model = "gpt-6-sol"` on this machine) is not available to the ChatGPT-login account and makes every `codex exec` fail with a 400 `model is not supported` error. Confirm the model and flags with `codex exec --help` in hour 0; if the Codex app (desktop) is used instead of the CLI, the same brief file is the task text and the same rules apply.
 
 **Worker rules (in every brief):** sections 3–5 and 13 of this file; one todo per brief; git only through the section 13 commit recipe; no edits outside the todo's paths; set `GOCACHE`, `GOTMPDIR`, `TMP`, and `TEMP` under `artifacts/` (`artifacts/cache/go`, `artifacts/tmp/<LANE>`); run the lane gate before handing in; report honestly (a test not run is "not run", never "passed").
 

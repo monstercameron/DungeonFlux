@@ -87,6 +87,18 @@
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
 
+      <li class="entry" data-kind="discovery" id="e-20260926-codex-imagegen">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Discovery</span><span class="who">ORCH, test agent</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-codex-imagegen">Codex can generate build-time art with no API key</a></h2>
+        <p>A test agent checked whether Codex's built-in image tool works on this machine. It does: one prompt asking Codex to use <code>$imagegen</code> produced a 1536&times;1024 painterly dungeon scene in under a minute, billed to the ChatGPT login's quota rather than an OpenAI API key. Codex saves the image under its own generated-images folder first and then copies it to the path the prompt names. Two traps came up. PowerShell expands <code>$imagegen</code> inside double quotes, so the prompt is written to a file and piped in. And the global Codex config named a model this account does not offer, which made every <code>codex exec</code> fail until <code>-m</code> was passed explicitly. The result: the ops lane uses Codex for build-time opaque art (backgrounds, the battlefield still, NPC and fallback portraits), which takes that spend off the API budget. The running game still calls the Images API, and portraits that need a transparent background still go through it, because this path does not guarantee alpha. The recipe is in AGENTS.md section 10.</p>
+      </li>
+
+      <li class="entry" data-kind="decision" id="e-20260926-luna-worker-model">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Decision</span><span class="who">ORCH, developer</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-luna-worker-model">Worker lanes run gpt-5.6-luna in Codex</a></h2>
+        <p>The plan called for GPT-6 Luna in Codex to run every worker lane. The same image test showed the ChatGPT-login Codex account does not offer <code>gpt-6-luna</code>; it lists <code>gpt-5.6-luna</code>, <code>gpt-5.6-sol</code>, <code>gpt-5.6-terra</code>, and <code>gpt-5.5</code>. The developer chose <code>gpt-5.6-luna</code> for the worker subagents. Every lane now launches with <code>codex exec -m gpt-5.6-luna</code>, always passing the model explicitly so a stale default in the global config cannot fail a lane at launch, and worker commits carry a Luna (Codex) co-author line. This is separate from the game itself: the running game still calls <code>gpt-6-luna</code> through the OpenAI API for its live dialogue and interpretation calls, which is a different product from the Codex CLI the lanes run in. Claude Opus 5.5 stays the orchestrator and reviewer.</p>
+      </li>
+
       <li class="entry" data-kind="process" id="e-20260926-roles-and-lanes">
         <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Process</span><span class="who">ORCH</span></div>
         <h2 class="entry-title"><a href="#e-20260926-roles-and-lanes">Roles for the build: one orchestrator, many worker lanes</a></h2>

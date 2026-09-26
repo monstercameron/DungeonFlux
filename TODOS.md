@@ -23,13 +23,16 @@ Build todos (hours 0–24) are generated from plan §0.18.9 (lane table and bloc
 - [x] PLAN-011 · AGENTS.md: 70% unit-test coverage per touched package in every lane gate, fast-test rules, exclusions
   lane: ORCH · paths: AGENTS.md, TODOS.md
   status: done d187597
+- [x] PLAN-014 · Devlog: Codex imagegen + gpt-5.6-luna workers; AGENTS.md worker model fixed to gpt-5.6-luna, new DF_* keys, race gate on Ubuntu-24.04
+  lane: ORCH · paths: AGENTS.md, TODOS.md, docs/devlog.html
+  status: done (this commit)
 - [x] PLAN-013 · Codex image-generation test; AGENTS.md worker model is gpt-5.6-luna (account has no gpt-6-luna), always pass -m, build-time art recipe via Codex
   lane: ORCH · paths: AGENTS.md, TODOS.md
   status: done (this commit)
-- [ ] PLAN-004 · SchemaFlux as the game's LLM client layer; "Dependencies and external APIs" section with pinned versions
+- [x] PLAN-004 · SchemaFlux as the game's LLM client layer; "Dependencies and external APIs" section with pinned versions
   lane: ORCH (research agent, sole plan.md writer while running) · paths: plan.md
   done when: §0.15, §0.18.2, §0.18.3, role table, and the new dependency section agree; report reviewed
-  status: claimed schemaflux-deps-agent 2026-09-26
+  status: done (commit PLAN-004)
 - [ ] PLAN-005 · Apply the 19 round-9 critic fixes (gates vs later blocks, battlefield View, nav into the engine, Reset keeps seats/splat_ready/seed, SLAIN on a dead thrall, Codex lanes and test server in §0.18.9)
   lane: ORCH (editor agent) · paths: plan.md · depends: PLAN-004
   status: open · runs after PLAN-004 finishes (single writer on plan.md)
