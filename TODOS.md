@@ -1287,6 +1287,12 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
   status: claimed luna
 
+- [ ] WEB-014 · phone reconnects to its saved seat after reload
+  why: Live test: reloading /p drops the phone back to the join form although it says the seat is saved on this device.
+  lane: L-WEB-SHELL · block: 8–11 · paths: `web/shell/join*.go`, `web/shell/seat_store*.go` · depends: WEB-013, API-015
+  done when: the seat token is saved in localStorage per room; on load the phone reattaches (Join with the token) and resumes the current screen without the form; a stale token falls back to the form with a message; verified by reloading in Edge.
+  status: open (launch after WEB-013 lands)
+
 ## 19. Phone
 
 The player's controller: character creation, sheet, legal moves, push-to-talk, combat taps.
@@ -1493,6 +1499,12 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
   status: claimed luna
 
+- [ ] DM-017 · DM creation layer: players building characters live
+  why: Live test: after host Start the TV shows only the audio button because no DM layer exists for the creation phase.
+  lane: L-WEB-DM · block: 8–11 · paths: `web/dm/creation*.go`, `web/dm/screen*.go` · depends: DM-016, ENG-017
+  done when: in creation the TV shows each seat's name, species/gender picks as they arrive, rolled build card and ready state, plus a prompt to use phones; preview fixture and live path verified with Edge screenshots.
+  status: open (launch after DM-016 lands; screen*.go is DM-016's)
+
 ## 21. Host
 
 The operator page: Start, Pause, Skip, Reset, Force d20, and debug panel.
@@ -1514,6 +1526,12 @@ The operator page: Start, Pause, Skip, Reset, Force d20, and debug panel.
   lane: L-WEB-HOST · block: 8–11 · paths: `web/host/**` · depends: HOST-002, WEB-011, WEB-012
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
   status: claimed luna
+
+- [ ] HOST-004 · host tester links use the right tokens; run status updates live
+  why: Live test: the host page's DM and phone links reuse the host token (DM needs the DM token, phones need ?room=CODE), and Run status stays at No snapshot yet.
+  lane: L-WEB-HOST · block: 8–11 · paths: `web/host/**` · depends: HOST-003, BASE-019
+  done when: links come from the server (tester URLs via HostView or a host RPC), phone link carries the room code and LAN host; run status shows phase, seats, and timers from the host Watch; verified live in Edge.
+  status: open (launch after HOST-003 lands)
 
 ## 22. Splat battlefield
 
@@ -1581,7 +1599,7 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
 
 - [ ] SPLAT-011 · adversarial scene review and usable battle composition
   why: The developer requests wider grid coverage, more flattering camera angles, and an adversarial review of both downloaded battle scenes.
-  lane: L-WEB-SPLAT · paths: `web/splat/js/viewer*.mjs`, `web/splat/js/viewer.html`, `web/splat/js/battle_scene.mjs`, `web/splat/js/df-splat.mjs`, `web/splat/js/grid_overlay.mjs`, `web/splat/js/debug_pick.mjs`, `web/splat/scenes/*.json` · depends: SPLAT-009, SPLAT-010
+  lane: L-WEB-SPLAT · paths: `web/splat/js/viewer*.mjs`, `web/splat/js/viewer.html`, `web/splat/js/camera_controls.mjs`, `web/splat/js/battle_scene.mjs`, `web/splat/js/df-splat.mjs`, `web/splat/js/grid_overlay.mjs`, `web/splat/js/debug_pick.mjs`, `web/splat/scenes/*.json` · depends: SPLAT-009, SPLAT-010
   done when: review findings are resolved, expanded obstacle-aware grids and camera framing are visually inspected in both scenes, relevant regressions and lane gate pass.
   status: claimed Codex 2026-09-26
 
