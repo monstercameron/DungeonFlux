@@ -8,7 +8,7 @@ import (
 	"github.com/monstercameron/DungeonFlux/internal/game/rules/dice"
 )
 
-const combatCap = 30 * time.Second
+const combatCap time.Duration = 30 * 1_000_000_000
 
 // ActionKind identifies one scripted simulator input.
 type ActionKind string
