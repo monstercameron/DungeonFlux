@@ -87,6 +87,42 @@
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
 
+      <li class="entry" data-kind="process" id="e-20260926-roles-and-lanes">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Process</span><span class="who">ORCH</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-roles-and-lanes">Roles for the build: one orchestrator, many worker lanes</a></h2>
+        <p>Claude Opus 5.5 in Claude Code is the orchestrator and reviewer: it writes the shared contracts, briefs each lane, reviews and gates every hand-in, keeps the human test server up, and writes the devlog. GPT-6 Luna in Codex runs every worker lane and writes the first draft of all lane code and tests; a lane is never the last reviewer of its own work. Codex lanes run in parallel, bounded by file ownership, disk, and quota rather than a fixed cap, replacing an earlier seven-agent limit. One lesson carried over from earlier Codex use: an exhausted quota exits the process with code 0 and no hand-in report, which looks like success but is not. The fallback is a Claude Sonnet subagent given the same brief and the same ownership rules, so a quota outage does not stall a lane.</p>
+      </li>
+
+      <li class="entry" data-kind="decision" id="e-20260926-human-test-server">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Decision</span><span class="who">ORCH</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-human-test-server">An always-up human test server on port 8443</a></h2>
+        <p>The human test server on port 8443 stays up throughout the build so the developer can test by hand at any time. It runs as a Windows scheduled task, not a process started from an agent's shell, because a shell-started process dies with that shell. It serves the last build of main that passed the full gate and never swaps in a broken one: if a new build or gate fails, it keeps running the last good binary and logs the failure instead. It restarts within 5 seconds if the process exits. Before any code exists, it serves a placeholder page showing the current build phase and the latest devlog entries, so the URL never returns a 404. Lanes never start, stop, or bind this port, and never write under its runtime data directory; only the orchestrator touches it.</p>
+      </li>
+
+      <li class="entry" data-kind="process" id="e-20260926-todos-atomic-commits">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Process</span><span class="who">ORCH</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-todos-atomic-commits">Working from TODOS.md: atomic commits without clobbering</a></h2>
+        <p>All work in the build comes from TODOS.md, and each todo ends as exactly one atomic commit. A worker stages only its todo's own files, by name, never with git add -A, commit -a, or similar broad commands. The orchestrator is the single writer of TODOS.md: it marks a todo claimed when a lane starts it and done after review. This exists because many agents share one working tree that always holds other agents' uncommitted, in-progress changes. Sweeping git commands, stashing, checking out, resetting, or cleaning can silently wipe or absorb another agent's unfinished work, so they are forbidden outside a worker's own todo commit. If git's index is locked, a worker waits two seconds and retries, up to 30 times, and never deletes the lock; a stray lock usually just means another commit is mid-flight.</p>
+      </li>
+
+      <li class="entry" data-kind="decision" id="e-20260926-coverage-floor">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Decision</span><span class="who">ORCH</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-coverage-floor">A 70% coverage floor, measured only on touched packages</a></h2>
+        <p>Every lane gate enforces a 70% statement-coverage floor, but only on the Go packages a todo actually touches, so the check stays fast instead of re-measuring the whole module every time. Tests must assert an outcome, a returned value, an emitted effect, a state change, or an error, not just execute lines to inflate the number. Some paths are excluded from the floor because they cannot be meaningfully unit-tested: generated protobuf code, composition roots such as cmd/server and internal/wire, test fakes, adapter files that only make a live vendor call, browser-only syscall/js glue, the one JavaScript file under web/splat, and build scripts. Each excluded path still has to be tested some other way: through API tests, end-to-end tests, httptest fixtures, or checkpoint runs, so exclusion from the floor is not exclusion from testing.</p>
+      </li>
+
+      <li class="entry" data-kind="discovery" id="e-20260926-critic-round-9">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Discovery</span><span class="who">Critic, round 9</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-critic-round-9">Critic round 9 found gates that depended on later work</a></h2>
+        <p>Critic round 9 scored the plan 7.1, up from 7.0 in round 8. It found several build gates that depended on work scheduled in later blocks: conversation dispatch and the combat turn timer were not due until hour 8, a combat view and a way to start combat directly were not due until hour 11, and a host Start button was expected at every gate before the host UI existed at all. It also found the battlefield and navigation data had no path into the pure engine, that pressing Reset dropped joined seats, the splat-ready flag, and the rehearsed seed, and that a thrall already at 0 HP could be reported as fled instead of down. The fixes for these are queued behind the plan's dependency research so that only one agent edits plan.md at a time, per the single-writer rule in AGENTS.md section 13.</p>
+      </li>
+
+      <li class="entry" data-kind="process" id="e-20260926-parallel-plan-lock">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Process</span><span class="who">ORCH</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-parallel-plan-lock">Parallel subagents on separate files, serial on the plan</a></h2>
+        <p>When asked to run one subagent per todo, only the todos that do not touch plan.md ran at the same time: the devlog update, a build-todo draft, and an hour-0 readiness check. The todos that edit the plan ran one after another instead, because plan.md has a single writer (AGENTS.md section 13), and two agents editing it at once would silently overwrite each other's changes rather than merge. This is the same rule that governs TODOS.md and docs/devlog.html: a shared file gets one writer at a time, even when the workload would otherwise parallelize cleanly.</p>
+      </li>
+
       <li class="entry" data-kind="process" id="e-20260926-devlog-timeline">
         <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Process</span><span class="who">ORCH</span></div>
         <h2 class="entry-title"><a href="#e-20260926-devlog-timeline">The devlog becomes a timeline that agents append to</a></h2>
@@ -186,7 +222,7 @@
       <li class="entry" data-kind="process" id="e-20260926-critic-loop">
         <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Process</span><span class="who">Critic agents</span></div>
         <h2 class="entry-title"><a href="#e-20260926-critic-loop">An adversarial critic scores the plan after every round</a></h2>
-        <p>A critic agent reads the whole plan, scores it on a fixed rubric (consistency, contracts, feasibility, latency, reliability, state machines, media, clarity), and is told to verify each claimed fix instead of trusting it. Scores so far: 3.5, 6.0, 6.2, 6.4, 7.0, 7.3, 6.6, 7.0. The two drops came right after large additions, and each pointed at exactly where the new material did not fit. The loop runs until the plan scores at least 8.</p>
+        <p>A critic agent reads the whole plan, scores it on a fixed rubric (consistency, contracts, feasibility, latency, reliability, state machines, media, clarity), and is told to verify each claimed fix instead of trusting it. Scores so far: 3.5, 6.0, 6.2, 6.4, 7.0, 7.3, 6.6, 7.0, 7.1. The two drops came right after large additions, and each pointed at exactly where the new material did not fit. The loop runs until the plan scores at least 8. (Updated after round 9.)</p>
       </li>
 
       <li class="entry" data-kind="process" id="e-20260926-research-swarm">

@@ -20,25 +20,28 @@ Build todos (hours 0–24) are generated from plan §0.18.9 (lane table and bloc
 - [x] PLAN-010 · AGENTS.md: work from TODOS.md, each todo one atomic commit made by its worker with named paths, anti-clobber rules for agents with active changes
   lane: ORCH · paths: AGENTS.md, TODOS.md
   status: done 8ee51e8
-- [ ] PLAN-011 · AGENTS.md: 70% unit-test coverage per touched package in every lane gate, fast-test rules, exclusions
+- [x] PLAN-011 · AGENTS.md: 70% unit-test coverage per touched package in every lane gate, fast-test rules, exclusions
   lane: ORCH · paths: AGENTS.md, TODOS.md
-  status: in-review
+  status: done d187597
 - [ ] PLAN-004 · SchemaFlux as the game's LLM client layer; "Dependencies and external APIs" section with pinned versions
   lane: ORCH (research agent, sole plan.md writer while running) · paths: plan.md
   done when: §0.15, §0.18.2, §0.18.3, role table, and the new dependency section agree; report reviewed
   status: claimed schemaflux-deps-agent 2026-09-26
 - [ ] PLAN-005 · Apply the 19 round-9 critic fixes (gates vs later blocks, battlefield View, nav into the engine, Reset keeps seats/splat_ready/seed, SLAIN on a dead thrall, Codex lanes and test server in §0.18.9)
   lane: ORCH (editor agent) · paths: plan.md · depends: PLAN-004
-  status: open
+  status: open · runs after PLAN-004 finishes (single writer on plan.md)
 - [ ] PLAN-006 · Critic round 10; iterate until the plan scores ≥ 8
   lane: ORCH (critic agent, read-only) · paths: none · depends: PLAN-005
-  status: open
-- [ ] PLAN-007 · Devlog entries for rounds 9–10, SchemaFlux decision, Codex/test-server roles
+  status: open · runs after PLAN-005
+- [x] PLAN-007 · Devlog entries for rounds 9–10, SchemaFlux decision, Codex/test-server roles
   lane: ORCH · paths: docs/devlog.html · depends: PLAN-004, PLAN-006
+  status: done (this commit)
+- [ ] PLAN-012 · Devlog entries for the SchemaFlux decision, round-9 fixes applied, critic round 10, and the Codex image-generation test
+  lane: ORCH · paths: docs/devlog.html · depends: PLAN-004, PLAN-005, PLAN-006
   status: open
 - [ ] PLAN-008 · Generate the build todos (hours 0–24) from plan §0.18.9 and §0.12, with paths, dependencies, and done-when gates, checked for path overlaps
   lane: ORCH · paths: TODOS.md · depends: PLAN-006
-  status: open
+  status: claimed build-todos-agent 2026-09-26 (draft in artifacts/todos/build-todos-draft.md; ORCH merges into TODOS.md after PLAN-006)
 - [ ] PLAN-009 · Hour-0 readiness: vendor accounts and tiers, API keys in env, domain and certificate, hotspot and tether test, Codex CLI flags confirmed, disk space
   lane: developer + ORCH · paths: none (checklist in plan §0.13 and §0.22) · depends: PLAN-004
-  status: open
+  status: claimed readiness-agent 2026-09-26 (checklist in artifacts/readiness/hour0-checklist.md)
