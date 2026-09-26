@@ -29,16 +29,19 @@ func TestNew_InitialState(t *testing.T) {
 
 func TestStateStep_JoinRetainsSeatAcrossPhases(t *testing.T) {
 	s := New(domain.OneShot{}, []byte{1})
-	out := s.Step(domain.Envelope{Event: domain.Join{Seat: 1, JoinKind: "phone", Locale: "es"}})
+	out := s.Step(domain.Envelope{Event: domain.Join{Seat: 1, JoinKind: "phone", Locale: "es", Name: "Lyra"}})
 	if out.Ack != nil {
 		t.Fatalf("join without reply should not allocate an ack: %#v", out.Ack)
 	}
 	joined := s.View().Seats[0]
-	if !joined.Connected || joined.Locale != "es" {
+	if !joined.Connected || joined.Locale != "es" || joined.PlayerName != "Lyra" {
 		t.Fatalf("joined seat = %#v", joined)
 	}
+	if got := s.Lobby().Seats[0].Name; got != "Lyra" {
+		t.Fatalf("lobby player name = %q, want Lyra", got)
+	}
 	s.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostStart}})
-	if got := s.View().Seats[0]; !got.Connected || got.Locale != "es" {
+	if got := s.View().Seats[0]; !got.Connected || got.Locale != "es" || got.PlayerName != "Lyra" {
 		t.Fatalf("seat metadata was lost after phase transition: %#v", got)
 	}
 }
@@ -53,13 +56,23 @@ func TestStateStep_JoinEmptyNameUsesCharacterFallback(t *testing.T) {
 	}
 }
 
-func TestView_JoinedNameOverridesGeneratedCharacterName(t *testing.T) {
+func TestView_HeroNameWinsAfterCreation(t *testing.T) {
 	s := New(domain.OneShot{}, []byte("name"))
+	s.Step(domain.Envelope{Event: domain.Join{Seat: 1, Name: "Aria"}})
 	startCreation(t, s, 1)
-	s.names[0] = "Aria"
-	character := s.View().Seats[0].Character
-	if character == nil || character.Name != "Aria" || s.View().Seats[0].Build.Name != "Aria" {
-		t.Fatalf("named character = %#v, build = %#v", character, s.View().Seats[0].Build)
+	seat := s.View().Seats[0]
+	if seat.PlayerName != "Aria" || seat.Character == nil || seat.Character.Name != "Hero 1" || seat.Build.Name != "Hero 1" {
+		t.Fatalf("seat identity = %#v, want player Aria and hero Hero 1", seat)
+	}
+}
+
+func TestStateStep_RejoinRenamesPlayer(t *testing.T) {
+	s := New(domain.OneShot{}, nil)
+	s.Step(domain.Envelope{Event: domain.Join{Seat: 2, Name: "Lyra"}})
+	s.Step(domain.Envelope{Event: domain.Join{Seat: 2, Name: "Brom"}})
+	seat := s.View().Seats[1]
+	if seat.PlayerName != "Brom" || s.Lobby().Seats[1].Name != "Brom" {
+		t.Fatalf("renamed seat = %#v, lobby = %#v", seat, s.Lobby().Seats[1])
 	}
 }
 

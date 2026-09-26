@@ -159,6 +159,9 @@ func SeatSubtitle(seat Seat) string {
 	if seat.Class != "" {
 		return seat.Class
 	}
+	if seat.Joined {
+		return "Joined"
+	}
 	return "Adventurer"
 }
 

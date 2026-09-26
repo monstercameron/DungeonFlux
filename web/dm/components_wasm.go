@@ -136,9 +136,20 @@ func featureTile(name, label string) ui.Node {
 
 // PortraitCard renders a party seat, including a dim empty-seat state.
 func PortraitCard(model PortraitCardModel) ui.Node {
-	name := model.Name
-	if name == "" {
+	name := strings.TrimSpace(model.Name)
+	if name == "" && !model.Joined {
 		name = "Waiting for a player…"
+	}
+	if name == "" {
+		name = "Player"
+	}
+	subtitle := strings.TrimSpace(model.Subtitle)
+	if subtitle == "" {
+		if model.Joined {
+			subtitle = "Joined"
+		} else {
+			subtitle = "Adventurer"
+		}
 	}
 	portrait := model.PortraitURL
 	if portrait == "" {
@@ -150,7 +161,7 @@ func PortraitCard(model PortraitCardModel) ui.Node {
 	)
 	children := []ui.Node{portraitNode, html.Div(html.Props{Class: "df-portrait-card-copy"},
 		html.Strong(html.Props{Class: "df-portrait-card-name"}, ui.Text(name)),
-		html.Span(html.Props{Class: "df-portrait-card-subtitle"}, ui.Text(model.Subtitle)),
+		html.Span(html.Props{Class: "df-portrait-card-subtitle"}, ui.Text(subtitle)),
 	)}
 	if model.Flavor != "" {
 		children = append(children, html.P(html.Props{Class: "df-portrait-card-flavor"}, ui.Text("“"+model.Flavor+"”")))

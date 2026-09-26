@@ -5,6 +5,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"strings"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
@@ -139,12 +140,14 @@ func attachedLobby(view domain.View) (LobbyProjection, bool) {
 func projectLobbySeats(seats []domain.SeatView) []*df.LobbySeat {
 	out := make([]*df.LobbySeat, 0, len(seats))
 	for _, seat := range seats {
-		name := ""
+		name := strings.TrimSpace(seat.PlayerName)
 		if seat.Build != nil {
-			name = seat.Build.Name
+			if heroName := strings.TrimSpace(seat.Build.Name); heroName != "" {
+				name = heroName
+			}
 		}
 		if name == "" && seat.Character != nil {
-			name = seat.Character.Name
+			name = strings.TrimSpace(seat.Character.Name)
 		}
 		out = append(out, &df.LobbySeat{
 			SeatId:       strconv.Itoa(int(seat.Seat)),

@@ -56,6 +56,7 @@ type LocalizedMessage struct {
 type SeatView struct {
 	Seat         SeatID
 	PlayerNumber int
+	PlayerName   string
 	Connected    bool
 	Locale       string
 	Character    *Character

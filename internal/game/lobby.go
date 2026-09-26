@@ -42,7 +42,7 @@ func (s *State) Lobby() Lobby {
 func (s *State) lobbySeats() []LobbySeat {
 	seats := make([]LobbySeat, len(s.seats))
 	for index, seat := range s.seats {
-		seats[index] = LobbySeat{Seat: seat.Seat, PlayerNumber: seat.PlayerNumber, Joined: seat.Connected, Locale: seat.Locale}
+		seats[index] = LobbySeat{Seat: seat.Seat, PlayerNumber: seat.PlayerNumber, Joined: seat.Connected, Name: seat.PlayerName, Locale: seat.Locale}
 	}
 	return seats
 }

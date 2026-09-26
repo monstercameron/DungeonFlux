@@ -109,6 +109,9 @@ func TestSeatSubtitle_UsesSpeciesAndClassFallbacks(t *testing.T) {
 	if got := SeatSubtitle(Seat{}); got != "Adventurer" {
 		t.Fatalf("fallback subtitle = %q", got)
 	}
+	if got := SeatSubtitle(Seat{Joined: true}); got != "Joined" {
+		t.Fatalf("joined subtitle = %q", got)
+	}
 }
 
 func TestListenAudio_SchedulesFrameAndCancels(t *testing.T) {

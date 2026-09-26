@@ -40,14 +40,26 @@ func TestProject_AllViewFieldsReachClientViews(t *testing.T) {
 }
 
 func TestProjectDMWithLobby_ProjectsRoomMetadata(t *testing.T) {
-	got := ProjectDMWithLobby(domain.View{Seats: []domain.SeatView{{Seat: 2, PlayerNumber: 2, Connected: true, Locale: "es"}}}, LobbyProjection{
+	got := ProjectDMWithLobby(domain.View{Seats: []domain.SeatView{{Seat: 2, PlayerNumber: 2, PlayerName: "Lyra", Connected: true, Locale: "es"}}}, LobbyProjection{
 		RoomCode: "DF-ROOM", JoinURL: "https://dm.test/p?room=DF-ROOM", QRURL: "/assets/qr.png",
 	})
 	if got.Lobby == nil || got.Lobby.RoomCode != "DF-ROOM" || got.Lobby.JoinUrl == "" || got.Lobby.QrUrl != "/assets/qr.png" {
 		t.Fatalf("lobby metadata = %#v", got.Lobby)
 	}
-	if len(got.Seats) != 1 || got.Seats[0].SeatId != "2" || got.Seats[0].PlayerNumber != 2 || !got.Seats[0].Joined || got.Seats[0].Locale != "es" || got.Seats[0].Ready {
+	if len(got.Seats) != 1 || got.Seats[0].SeatId != "2" || got.Seats[0].PlayerNumber != 2 || got.Seats[0].Name != "Lyra" || !got.Seats[0].Joined || got.Seats[0].Locale != "es" || got.Seats[0].Ready {
 		t.Fatalf("lobby seat = %#v", got.Seats)
+	}
+}
+
+func TestProjectDM_LobbySeatUsesHeroNameAfterBuild(t *testing.T) {
+	view := domain.View{Seats: []domain.SeatView{{
+		Seat: 1, PlayerNumber: 1, PlayerName: "Lyra", Connected: true,
+		Build:     &domain.BuildCard{Name: "Astra Vale", Class: "Rogue", PlayerNumber: 1},
+		Character: &domain.Character{Name: "Astra Vale", Class: "Rogue"},
+	}}}
+	got := ProjectDM(view).GetSeats()
+	if len(got) != 1 || got[0].GetName() != "Astra Vale" || !got[0].GetReady() {
+		t.Fatalf("built lobby seat = %#v", got)
 	}
 }
 

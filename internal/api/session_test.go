@@ -41,7 +41,7 @@ func TestSessionServer_JoinPhoneAllocatesAndRestoresSeat(t *testing.T) {
 	server.mu.Unlock()
 	for i, call := range inbox.Calls {
 		event, ok := call.Envelope.Event.(domain.Join)
-		if !ok || event.Seat != 1 || event.JoinKind != "phone" || event.Locale != "en" {
+		if !ok || event.Seat != 1 || event.JoinKind != "phone" || event.Locale != "en" || event.Name != "Aria Vale" {
 			t.Fatalf("join event %d = %#v", i, call.Envelope.Event)
 		}
 	}

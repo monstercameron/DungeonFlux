@@ -12,6 +12,7 @@ type Join struct {
 	Seat     SeatID `json:"seat"`
 	JoinKind string `json:"kind"`
 	Locale   string `json:"locale,omitempty"`
+	Name     string `json:"name,omitempty"`
 }
 type Act struct {
 	Seat   SeatID       `json:"seat"`
