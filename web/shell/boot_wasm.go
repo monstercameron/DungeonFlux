@@ -20,6 +20,7 @@ func main() {
 		registerRoutes(parseRouter, client)
 	}
 	parseRouter.Mount("#app")
+	installBrowserAssets(context.Background(), client)
 	removeBootStatus()
 	select {}
 }
