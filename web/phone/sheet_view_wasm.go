@@ -3,8 +3,11 @@
 package phone
 
 import (
+	"strconv"
+
 	"github.com/monstercameron/GoWebComponents/v6/html"
 	"github.com/monstercameron/GoWebComponents/v6/router"
+	"github.com/monstercameron/GoWebComponents/v6/ui"
 )
 
 // SheetScreen renders the compact player sheet for a portrait phone display.
@@ -15,14 +18,105 @@ func SheetScreen(model *SheetModel) router.Component {
 		if locale == "" {
 			locale = "en"
 		}
-		portrait := html.Div(html.Props{Class: "df-phone-portrait", Role: "img", Aria: map[string]string{"label": state.Name}}, html.Text(state.Name))
-		hp := html.P(html.Props{}, html.Text(SheetHP(locale, state.HP, state.HPMax)))
-		conditions := html.P(html.Props{}, html.Text(SheetConditions(locale, state.Conditions)))
-		return html.Main(html.Props{Class: "df-phone df-phone-sheet"},
-			html.H1(html.Props{}, html.Text(SheetName(locale, state.Name, state.Class))), portrait, hp, conditions,
-			html.P(html.Props{Role: "status"}, html.Text(state.StatusText)),
-		)
+		return sheetPage(locale, state)
 	}
+}
+
+func sheetPage(locale string, state SheetSnapshot) ui.Node {
+	portrait := sheetPortrait(state)
+	hpPercent := SheetHPPercent(state.HP, state.HPMax)
+	hpText := SheetHP(locale, state.HP, state.HPMax)
+	hp := html.Section(html.Props{Class: "df-phone-sheet-card df-phone-sheet-hp", Aria: map[string]string{"label": hpText}},
+		html.Div(html.Props{Class: "df-phone-sheet-card-head"}, html.Span(html.Props{Class: "df-phone-sheet-label"}, html.Text(sheetHPLabel(locale))), html.Strong(html.Props{Class: "df-phone-sheet-value"}, html.Text(hpText))),
+		html.Progress(html.Props{Class: "df-phone-hp-meter " + SheetHPClass(state.HP, state.HPMax), Value: strconv.Itoa(int(hpPercent)), Max: "100", Raw: map[string]any{"aria-label": hpText}}),
+	)
+	stats := html.Section(html.Props{Class: "df-phone-sheet-card df-phone-sheet-stats", Aria: map[string]string{"label": sheetStatsLabel(locale)}},
+		html.Div(html.Props{Class: "df-phone-sheet-card-head"}, html.Span(html.Props{Class: "df-phone-sheet-label"}, html.Text(sheetStatsLabel(locale))), html.Strong(html.Props{Class: "df-phone-sheet-stat"}, html.Text(sheetModifier(state.PersuasionModifier)))),
+		html.P(html.Props{Class: "df-phone-sheet-stat-caption"}, html.Text(sheetPersuasionLabel(locale))),
+	)
+	conditions := sheetConditions(locale, state.Conditions)
+	hook := sheetHook(locale, state.Hook)
+	status := state.StatusText
+	if status == "" {
+		status = sheetReadyLabel(locale)
+	}
+	return html.Main(html.Props{Class: "df-phone df-phone-sheet", Style: sheetPageStyle()},
+		html.Header(html.Props{Class: "df-phone-sheet-header"}, portrait, html.Div(html.Props{Class: "df-phone-sheet-title"}, html.H1(html.Props{}, html.Text(SheetName(locale, state.Name, state.Class))), html.P(html.Props{Class: "df-phone-sheet-kicker"}, html.Text(sheetKicker(locale))))),
+		html.Div(html.Props{Class: "df-phone-sheet-grid"}, hp, stats),
+		conditions,
+		hook,
+		html.P(html.Props{Class: "df-phone-sheet-status", Role: "status"}, html.Text(status)),
+	)
+}
+
+func sheetPortrait(state SheetSnapshot) ui.Node {
+	if state.PortraitURL == "" {
+		return html.Div(html.Props{Class: "df-phone-portrait df-phone-portrait-fallback", Role: "img", Aria: map[string]string{"label": state.Name}}, html.Text(sheetInitials(state.Name)))
+	}
+	return html.Img(html.Props{Class: "df-phone-portrait", Src: state.PortraitURL, Alt: state.Name})
+}
+
+func sheetConditions(locale string, values []string) ui.Node {
+	items := make([]ui.Node, 0, len(values))
+	for _, value := range values {
+		if value != "" {
+			items = append(items, html.Li(html.Props{Class: "df-phone-condition"}, html.Text(value)))
+		}
+	}
+	if len(items) == 0 {
+		items = append(items, html.Li(html.Props{Class: "df-phone-condition df-phone-condition-clear"}, html.Text(sheetNoConditionsLabel(locale))))
+	}
+	return html.Section(html.Props{Class: "df-phone-sheet-card df-phone-sheet-conditions", Aria: map[string]string{"label": sheetConditionsLabel(locale)}},
+		html.Div(html.Props{Class: "df-phone-sheet-card-head"}, html.Span(html.Props{Class: "df-phone-sheet-label"}, html.Text(sheetConditionsLabel(locale)))), html.Ul(html.Props{Class: "df-phone-condition-list"}, items...),
+	)
+}
+
+func sheetHook(locale, hook string) ui.Node {
+	if hook == "" {
+		return nil
+	}
+	return html.Section(html.Props{Class: "df-phone-sheet-hook", Aria: map[string]string{"label": sheetHookLabel(locale)}}, html.P(html.Props{Class: "df-phone-sheet-hook-text"}, html.Text("["+hook+"]")))
+}
+
+func sheetPageStyle() map[string]string {
+	return map[string]string{"background": "#10131b", "color": "#efe6d2", "min-height": "100vh", "box-sizing": "border-box", "padding": "clamp(16px, 4vw, 28px)", "font-family": "system-ui, -apple-system, sans-serif"}
+}
+
+func sheetInitials(name string) string {
+	for _, runeValue := range name {
+		return string(runeValue)
+	}
+	return "?"
+}
+
+func sheetModifier(value int32) string {
+	if value >= 0 {
+		return "+" + strconv.Itoa(int(value))
+	}
+	return strconv.Itoa(int(value))
+}
+
+func sheetHPLabel(locale string) string    { return localizedSheet(locale, "HP", "PV") }
+func sheetStatsLabel(locale string) string { return localizedSheet(locale, "YOUR EDGE", "TU VENTAJA") }
+func sheetPersuasionLabel(locale string) string {
+	return localizedSheet(locale, "Persuasion", "Persuasion")
+}
+func sheetConditionsLabel(locale string) string {
+	return localizedSheet(locale, "CONDITIONS", "CONDICIONES")
+}
+func sheetNoConditionsLabel(locale string) string { return localizedSheet(locale, "None", "Ninguna") }
+func sheetHookLabel(locale string) string         { return localizedSheet(locale, "YOUR STORY", "TU HISTORIA") }
+func sheetKicker(locale string) string {
+	return localizedSheet(locale, "PLAYER SHEET", "FICHA DEL JUGADOR")
+}
+func sheetReadyLabel(locale string) string {
+	return localizedSheet(locale, "Ready for the next move.", "Listo para el siguiente movimiento.")
+}
+func localizedSheet(locale, english, spanish string) string {
+	if locale == "es" {
+		return spanish
+	}
+	return english
 }
 
 func number(value int32) string {

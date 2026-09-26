@@ -49,3 +49,40 @@ func TestSheetModel_NilModelIsSafe(t *testing.T) {
 		t.Fatalf("nil model = %+v", got)
 	}
 }
+
+func TestSheetHPPercent_ClampsMissingAndOutOfRangeValues(t *testing.T) {
+	tests := []struct {
+		name string
+		hp   int32
+		max  int32
+		want int32
+	}{
+		{name: "missing", hp: 4, max: 0, want: 0},
+		{name: "down", hp: -1, max: 10, want: 0},
+		{name: "half", hp: 5, max: 10, want: 50},
+		{name: "full", hp: 15, max: 10, want: 100},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := SheetHPPercent(tt.hp, tt.max); got != tt.want {
+				t.Fatalf("SheetHPPercent(%d, %d) = %d, want %d", tt.hp, tt.max, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSheetHPClass_ReflectsSeverity(t *testing.T) {
+	for _, tt := range []struct {
+		hp, max int32
+		want    string
+	}{
+		{0, 0, "df-phone-hp-unknown"},
+		{0, 10, "df-phone-hp-down"},
+		{2, 10, "df-phone-hp-critical"},
+		{8, 10, "df-phone-hp-ready"},
+	} {
+		if got := SheetHPClass(tt.hp, tt.max); got != tt.want {
+			t.Fatalf("SheetHPClass(%d, %d) = %q, want %q", tt.hp, tt.max, got, tt.want)
+		}
+	}
+}

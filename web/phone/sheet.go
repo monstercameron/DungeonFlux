@@ -20,6 +20,34 @@ type SheetSnapshot struct {
 	Locale             string
 }
 
+// SheetHPPercent returns a clamped percentage for the hit-point meter.
+func SheetHPPercent(hp, max int32) int32 {
+	if max <= 0 {
+		return 0
+	}
+	if hp <= 0 {
+		return 0
+	}
+	if hp >= max {
+		return 100
+	}
+	return hp * 100 / max
+}
+
+// SheetHPClass returns the visual severity class for a hit-point meter.
+func SheetHPClass(hp, max int32) string {
+	if max <= 0 {
+		return "df-phone-hp-unknown"
+	}
+	if hp <= 0 {
+		return "df-phone-hp-down"
+	}
+	if hp*2 <= max {
+		return "df-phone-hp-critical"
+	}
+	return "df-phone-hp-ready"
+}
+
 // SheetModel stores the latest server-authoritative player sheet.
 type SheetModel struct {
 	state SheetSnapshot
