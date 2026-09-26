@@ -9,7 +9,18 @@ import (
 	"log/slog"
 	"strings"
 
+	imageopenai "github.com/monstercameron/DungeonFlux/internal/adapters/image/openai"
+	llmanthropic "github.com/monstercameron/DungeonFlux/internal/adapters/llm/anthropic"
+	llmgemini "github.com/monstercameron/DungeonFlux/internal/adapters/llm/gemini"
+	llmschema "github.com/monstercameron/DungeonFlux/internal/adapters/llm/schemaflux"
+	stteleven "github.com/monstercameron/DungeonFlux/internal/adapters/stt/elevenlabs"
+	ttseleven "github.com/monstercameron/DungeonFlux/internal/adapters/tts/elevenlabs"
+	ttsopenai "github.com/monstercameron/DungeonFlux/internal/adapters/tts/openai"
+	videoevolink "github.com/monstercameron/DungeonFlux/internal/adapters/video/evolink"
+	videofal "github.com/monstercameron/DungeonFlux/internal/adapters/video/fal"
+	videosegmind "github.com/monstercameron/DungeonFlux/internal/adapters/video/segmind"
 	"github.com/monstercameron/DungeonFlux/internal/config"
+	"github.com/monstercameron/DungeonFlux/internal/httpx"
 	"github.com/monstercameron/DungeonFlux/internal/modelchain"
 	"github.com/monstercameron/DungeonFlux/internal/ports"
 )
@@ -27,14 +38,37 @@ func buildAdapters(cfg config.Config, logger *slog.Logger) (adapterSet, error) {
 		return adapterSet{}, err
 	}
 	set := adapterSet{llm: nullLLM{}, image: nullImage{}, video: nullVideo{}, stt: nullSTT{}, tts: nullTTS{}}
+	var err error
 	if isLive(cfg, "llm") {
-		llm, err := liveLLM(cfg)
+		set.llm, err = liveLLM(cfg, logger)
 		if err != nil {
 			return adapterSet{}, err
 		}
-		set.llm = llm
 	}
-	_ = logger
+	if isLive(cfg, "image") {
+		set.image, err = liveImage(cfg, logger)
+		if err != nil {
+			return adapterSet{}, err
+		}
+	}
+	if isLive(cfg, "video") {
+		set.video, err = liveVideo(cfg, logger)
+		if err != nil {
+			return adapterSet{}, err
+		}
+	}
+	if isLive(cfg, "stt") {
+		set.stt, err = liveSTT(cfg, logger)
+		if err != nil {
+			return adapterSet{}, err
+		}
+	}
+	if isLive(cfg, "tts") {
+		set.tts, err = liveTTS(cfg, logger)
+		if err != nil {
+			return adapterSet{}, err
+		}
+	}
 	return set, nil
 }
 
@@ -58,7 +92,7 @@ func envForVendor(vendor string) string {
 
 func isLive(cfg config.Config, name string) bool { return cfg.Adapters[name].Mode == "live" }
 
-func liveLLM(cfg config.Config) (ports.LLM, error) {
+func liveLLM(cfg config.Config, logger *slog.Logger) (ports.LLM, error) {
 	links := cfg.Models.Chains["npc_reply"]
 	if len(links) == 0 {
 		links = []string{"openai:gpt-6-luna"}
@@ -72,9 +106,86 @@ func liveLLM(cfg config.Config) (ports.LLM, error) {
 		if provider == "" {
 			return nil, errors.New("wire: empty LLM provider")
 		}
-		llms = append(llms, nullLLM{})
+		adapter, err := llmLink(cfg, provider, logger)
+		if err != nil {
+			return nil, err
+		}
+		llms = append(llms, adapter)
 	}
 	return modelchain.New(llms, modelchain.Config{FirstTokenDeadline: cfg.Timeouts.SpokenFirstToken, Deadline: cfg.Timeouts.Interpret}), nil
+}
+
+func llmLink(cfg config.Config, provider string, logger *slog.Logger) (ports.LLM, error) {
+	key, endpoint := vendorConfig(cfg, provider)
+	switch strings.ToLower(provider) {
+	case "openai", "luna", "cerebras", "qwen", "local", "llama":
+		model := "gpt-6-luna"
+		if strings.EqualFold(provider, "cerebras") || strings.EqualFold(provider, "qwen") {
+			model = "qwen-3-32b"
+		}
+		if strings.EqualFold(provider, "local") || strings.EqualFold(provider, "llama") {
+			model = "llama"
+		}
+		return llmschema.New(llmschema.Config{Provider: provider, APIKey: key, BaseURL: endpoint, Model: model, ReasoningEffort: "none", Timeout: cfg.Timeouts.Interpret})
+	case "gemini":
+		return llmgemini.New(key, endpoint, cfg.Timeouts.Interpret), nil
+	case "anthropic", "haiku":
+		return llmanthropic.New(key, endpoint, cfg.Timeouts.Interpret, logger), nil
+	default:
+		return nil, fmt.Errorf("wire: unsupported live LLM provider %q", provider)
+	}
+}
+
+func liveImage(cfg config.Config, logger *slog.Logger) (ports.ImageGen, error) {
+	adapter := cfg.Adapters["image"]
+	if adapter.Vendor != "openai" {
+		return nil, fmt.Errorf("wire: unsupported live image vendor %q", adapter.Vendor)
+	}
+	return imageopenai.New(adapter.APIKey, adapter.BaseURL, cfg.Timeouts.Portrait, logger), nil
+}
+
+func liveVideo(cfg config.Config, logger *slog.Logger) (ports.VideoGen, error) {
+	adapter := cfg.Adapters["video"]
+	client := httpx.NewVendorClient(adapter.Vendor, cfg.Timeouts.Portrait, logger)
+	switch strings.ToLower(adapter.Vendor) {
+	case "segmind":
+		return videosegmind.New(adapter.APIKey, adapter.BaseURL, client), nil
+	case "evolink":
+		return videoevolink.New(adapter.APIKey, adapter.BaseURL, client), nil
+	case "fal":
+		return videofal.New(adapter.APIKey, "", adapter.BaseURL, client), nil
+	default:
+		return nil, fmt.Errorf("wire: unsupported live video vendor %q", adapter.Vendor)
+	}
+}
+
+func liveSTT(cfg config.Config, logger *slog.Logger) (ports.STT, error) {
+	adapter := cfg.Adapters["stt"]
+	if adapter.Vendor != "elevenlabs" {
+		return nil, fmt.Errorf("wire: unsupported live STT vendor %q", adapter.Vendor)
+	}
+	return stteleven.New(adapter.APIKey, adapter.BaseURL, cfg.Timeouts.TTS, logger), nil
+}
+
+func liveTTS(cfg config.Config, logger *slog.Logger) (ports.TTS, error) {
+	adapter := cfg.Adapters["tts"]
+	switch strings.ToLower(adapter.Vendor) {
+	case "elevenlabs":
+		return ttseleven.New(adapter.APIKey, adapter.BaseURL, logger), nil
+	case "openai":
+		return ttsopenai.New(adapter.APIKey, adapter.BaseURL, cfg.Timeouts.TTS, logger), nil
+	default:
+		return nil, fmt.Errorf("wire: unsupported live TTS vendor %q", adapter.Vendor)
+	}
+}
+
+func vendorConfig(cfg config.Config, vendor string) (string, string) {
+	for _, adapter := range cfg.Adapters {
+		if strings.EqualFold(adapter.Vendor, vendor) {
+			return adapter.APIKey, adapter.BaseURL
+		}
+	}
+	return "", ""
 }
 
 type nullLLM struct{}
