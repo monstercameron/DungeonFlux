@@ -7,20 +7,20 @@ import (
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 )
 
-func TestListenHub_FansOutCopiedFrames(t *testing.T) {
+func TestListenHub_NewestSubscriptionReplacesOlder(t *testing.T) {
 	hub := NewListenHub()
 	first := hub.Subscribe(context.Background())
 	second := hub.Subscribe(context.Background())
 	frame := domain.AudioFrame{UtteranceID: "u1", SampleRate: 16000, PCMS16LE: []byte{1, 2}}
 	hub.Frame(frame)
-	frame.PCMS16LE[0] = 9
-	for _, sub := range []*ListenSubscription{first, second} {
-		got := <-sub.Frames()
-		if got.PCMS16LE[0] != 1 {
-			t.Fatalf("frame bytes = %v, want copy", got.PCMS16LE)
-		}
-		sub.Close()
+	if _, ok := <-first.Frames(); ok {
+		t.Fatal("older subscription remained open")
 	}
+	got := <-second.Frames()
+	if got.PCMS16LE[0] != 1 {
+		t.Fatalf("frame bytes = %v, want copied frame", got.PCMS16LE)
+	}
+	second.Close()
 }
 
 func TestListenHub_DropsSubscriberPastTwoSeconds(t *testing.T) {

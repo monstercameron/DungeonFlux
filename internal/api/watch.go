@@ -11,9 +11,10 @@ import (
 // WatchHub distributes complete projected snapshots to connected clients.
 // Each subscriber has one sender goroutine and a one-item latest-value queue.
 type WatchHub struct {
-	mu   sync.Mutex
-	next uint64
-	subs map[uint64]*watchSubscriber
+	mu    sync.Mutex
+	next  uint64
+	subs  map[uint64]*watchSubscriber
+	kinds map[domain.SeatID]df.ClientKind
 }
 
 type watchSubscriber struct {
@@ -28,7 +29,20 @@ type watchSubscriber struct {
 }
 
 // NewWatchHub creates an empty snapshot hub.
-func NewWatchHub() *WatchHub { return &WatchHub{subs: make(map[uint64]*watchSubscriber)} }
+func NewWatchHub() *WatchHub {
+	return &WatchHub{subs: make(map[uint64]*watchSubscriber), kinds: make(map[domain.SeatID]df.ClientKind)}
+}
+
+// RememberKind records the authenticated kind associated with a seat. A
+// reconnect may omit the kind; Subscribe then reuses this remembered value.
+func (h *WatchHub) RememberKind(seat domain.SeatID, kind df.ClientKind) {
+	if kind == df.ClientKind_CLIENT_KIND_UNSPECIFIED {
+		return
+	}
+	h.mu.Lock()
+	h.kinds[seat] = kind
+	h.mu.Unlock()
+}
 
 // Subscribe registers a client and starts its owned snapshot sender.
 func (h *WatchHub) Subscribe(ctx context.Context, kind df.ClientKind, seat domain.SeatID) *WatchSubscription {
@@ -36,6 +50,9 @@ func (h *WatchHub) Subscribe(ctx context.Context, kind df.ClientKind, seat domai
 		ctx = context.Background()
 	}
 	h.mu.Lock()
+	if kind == df.ClientKind_CLIENT_KIND_UNSPECIFIED {
+		kind = h.kinds[seat]
+	}
 	h.next++
 	sub := &watchSubscriber{hub: h, id: h.next, kind: kind, seat: seat, queue: make(chan domain.View, 1), output: make(chan *df.WatchMessage, 1), done: make(chan struct{})}
 	h.subs[sub.id] = sub

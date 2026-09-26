@@ -15,6 +15,7 @@ type ListenHub struct {
 	mu          sync.Mutex
 	nextID      uint64
 	subscribers map[uint64]*ListenSubscription
+	latest      *ListenSubscription
 }
 
 // ListenSubscription is one bounded listener queue owned by a client.
@@ -43,8 +44,13 @@ func (h *ListenHub) Subscribe(ctx context.Context) *ListenSubscription {
 	id := h.nextID
 	sub := &ListenSubscription{frames: make(chan domain.AudioFrame, 64), done: make(chan struct{})}
 	sub.remove = func() { h.remove(id, sub) }
+	previous := h.latest
+	h.latest = sub
 	h.subscribers[id] = sub
 	h.mu.Unlock()
+	if previous != nil {
+		previous.remove()
+	}
 	if ctx.Err() != nil {
 		sub.Close()
 	}
@@ -81,6 +87,9 @@ func (h *ListenHub) remove(id uint64, sub *ListenSubscription) {
 	h.mu.Lock()
 	if current, ok := h.subscribers[id]; ok && current == sub {
 		delete(h.subscribers, id)
+		if h.latest == sub {
+			h.latest = nil
+		}
 	}
 	h.mu.Unlock()
 	sub.finish()

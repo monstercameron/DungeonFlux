@@ -24,6 +24,18 @@ func TestWatchHub_LatestSnapshotWins(t *testing.T) {
 	}
 }
 
+func TestWatchHub_ReattachUsesRememberedKind(t *testing.T) {
+	hub := NewWatchHub()
+	hub.RememberKind(1, df.ClientKind_CLIENT_KIND_PHONE)
+	sub := hub.Subscribe(context.Background(), df.ClientKind_CLIENT_KIND_UNSPECIFIED, 1)
+	hub.Publish(domain.View{Version: 1, Path: vocab.StateLobby})
+	message := receiveWatch(t, sub.Messages())
+	if message.GetState().GetPhone() == nil {
+		t.Fatalf("reattached view kind = %T, want phone", message.GetState().GetView())
+	}
+	sub.Close()
+}
+
 func TestWatchHub_CancelClosesSubscription(t *testing.T) {
 	hub := NewWatchHub()
 	ctx, cancel := context.WithCancel(context.Background())
