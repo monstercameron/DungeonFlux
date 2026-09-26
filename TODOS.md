@@ -1922,11 +1922,11 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   done when: discovers the public scene manifest, mirrors every referenced file without escaping the destination, records provenance and hashes, and passes offline fixture tests plus a complete download of cb2fddd6.
   status: done 8e30c98
 
-- [x] OPS-022 · local SuperSplat voxel collider generation
+- [x] OPS-SPLAT-001 · local SuperSplat voxel collider generation
   why: The supplied scenes need reproducible voxel collision data when public collision assets are unavailable.
   lane: L-OPS · paths: `scripts/generate-supersplat-colliders.ps1` · depends: OPS-019
   done when: a PowerShell script uses the official pinned SplatTransform tool to generate scene-aligned voxel colliders locally, records generation provenance, supports both scene profiles, and the lane gate passes.
-  status: done b9af9fc (renumbered from OPS-020; scoped gate failures 0)
+  status: done b9af9fc (renumbered from OPS-020/OPS-022 to avoid concurrent ID collisions; scoped gate failures 0)
 ## 25. Test server, gates, and checkpoints
 
 Keeping the build honest: per-commit checks, the 30-minute full gate, checkpoints, and e2e tests.
