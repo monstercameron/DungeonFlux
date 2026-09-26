@@ -48,7 +48,7 @@ func newDebugState(oneShot domain.OneShot, seed []byte, debug bool, debugStart s
 		dispatcher, _ = phase.New()
 	}
 	if debug && debugStart != "" {
-		_ = dispatcher.Goto(vocab.StateID(debugStart))
+		_, _ = dispatcher.DebugGoto(vocab.StateID(debugStart))
 		path = dispatcher.State()
 	}
 	state := &State{

@@ -73,7 +73,7 @@ func (s *State) accepts(event domain.Event) bool {
 	if _, ok := event.(domain.HostCmd); ok {
 		return true
 	}
-	if event.Kind() == vocab.EventDebugReset {
+	if isDebugEvent(event) {
 		return s.debug
 	}
 	return true
@@ -85,6 +85,12 @@ func (s *State) apply(env domain.Envelope) domain.StepOut {
 		return s.applyHost(event, env)
 	case domain.DebugReset:
 		return s.applyDebugReset(event, env)
+	case domain.DebugGoto:
+		return s.applyDebugGoto(event, env)
+	case domain.DebugPatch:
+		return s.applyDebugPatch(event, env)
+	case domain.DebugTimer:
+		return s.applyDebugTimer(event, env)
 	default:
 		return s.applyPhase(env)
 	}
@@ -239,11 +245,13 @@ func (s *State) phaseCueEffects(previous vocab.StateID) []domain.Effect {
 
 func (s *State) resetPhase() {
 	defaultTimers := s.phase.DefaultTurnTimersEnabled()
+	moveUI := s.phase.CombatMoveUI()
 	dispatcher, err := phase.NewWithSeed(s.oneShot, s.seed)
 	if err == nil {
+		dispatcher.ConfigureCombatMoveUI(moveUI)
 		dispatcher.ConfigureTurnTimers(defaultTimers)
 		if s.debugStart != "" {
-			_ = dispatcher.Goto(s.debugStart)
+			_, _ = dispatcher.DebugGoto(s.debugStart)
 		}
 		s.phase = dispatcher
 	}
