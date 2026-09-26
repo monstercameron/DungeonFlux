@@ -1013,6 +1013,12 @@ SchemaFlux for OpenAI-dialect links, Gemini and Haiku adapters, model chains, bu
   done when: internal/llmexec >= 70% with behaviour-asserting tests (failure events, fallbacks, schema rejection).
   status: committed ff2cfb3
 
+- [ ] LLM-014 · make modelchain stream fallback test deterministic
+  why: TestChain_StreamTextFallbackWinsAndClosesPrimary passes 10/10 alone but failed in the full gate under load (1.00 s), so it depends on real time rather than synctest or clock.Fake.
+  lane: L-LLM · block: 8–11 · paths: `internal/modelchain/*_test.go` · depends: LLM-005
+  done when: the test uses testing/synctest or clock.Fake with no wall-clock waits; go test -count=50 ./internal/modelchain passes while another heavy package test runs in parallel.
+  status: claimed luna
+
 - [ ] LLM-013 · live smoke tests for every vendor adapter
   why: The hour-11 gate needs one cheap real call per adapter to prove keys, endpoints, and parsing before the voice loop is tested.
   lane: L-LLM (delegated) · block: 8–11 · paths: `internal/adapters/**/live_test.go` · depends: LLM-001, LLM-002, LLM-003, VIN-001, VOUT-001, VOUT-007, MEDIA-002, MEDIA-003
