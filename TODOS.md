@@ -1609,6 +1609,11 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: review findings are resolved, expanded obstacle-aware grids and camera framing are visually inspected in both scenes, relevant regressions and lane gate pass.
   status: claimed Codex 2026-09-26
 
+- [ ] SPLAT-012 · voxel collider terrain exclusion for battle grids
+  why: The developer requests actual voxel occupancy to exclude terrain from the playable battle grid.
+  lane: L-WEB-SPLAT · paths: `web/splat/js/voxel*.mjs`, `web/splat/js/battle_scene.mjs`, `web/splat/js/viewer.mjs`, `web/splat/js/df-splat.mjs`, `web/splat/scenes/*.json` · depends: SPLAT-011
+  done when: voxel data is sourced or generated from each scene, coordinate transforms and floor versus obstacle clearance are tested, occupied cells are excluded in the viewer and runtime, both scenes are visually inspected, and the lane gate passes.
+  status: claimed Codex 2026-09-26
 ## 23. dfctl debug CLI
 
 Command-line reads and demo writes for agents and the developer.
