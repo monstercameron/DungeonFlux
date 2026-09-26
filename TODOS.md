@@ -629,12 +629,18 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: Developer decision: class becomes a player choice (move class, arg = lowercase SRD class name) alongside species and gender; roll_hero requires all three.
   lane: L-ENG · block: 8–11 · paths: `internal/vocab/vocab.go`, `internal/game/phase/creation/**`, `internal/game/legal*.go` · depends: RULES-006, ENG-016
   done when: vocab.MoveClass = "class" (ORCH names this lane the writer of that one constant); creation accepts class with validation against the 12 SRD classes; both seats may pick the same class; legal moves before roll are species, gender, class, and roll_hero only once all three are set; timeout fallback still draws; Step and walk tests updated.
-  status: claimed luna
+  status: committed 3b742a7
 
 - [ ] ENG-020 · legal moves for both seats, readable labels, and combat move
   why: Live probe: seat 2 never has legal moves in any phase, moves arrive with raw ids as labels (talk_vell, end_turn), and combat offers attack and end_turn but never move.
   lane: L-ENG · block: 8–11 · paths: `internal/game/legal*.go`, `internal/game/phase/*.go` · depends: ENG-015, CONT-008, ENG-019
   done when: each phase lists the correct moves for the spotlight seat and the other seat (with disabled reasons where the other seat must wait); labels and reasons come from internal/content moves (i18n keys when present); combat on your turn lists move (with reachable cells), attack (with targets), and end_turn; table tests per phase and seat.
+  status: committed b699621
+
+- [ ] ENG-021 · root engine tests follow the class-choice creation contract
+  why: ENG-020 reports internal/game root tests still drive creation without the class move introduced by ENG-019, so they fail or skip.
+  lane: L-ENG · block: 8–11 · paths: `internal/game/*_test.go`, `internal/sim/**` · depends: ENG-019, ENG-020
+  done when: go test ./internal/game/... ./internal/sim/... ./internal/wire passes with species, gender, and class picks before roll_hero; no skipped creation tests.
   status: claimed luna
 
 - [ ] INT-001 · lobby seats and join data reach the TV end to end
@@ -1287,7 +1293,7 @@ Portraits, stills, clips, and their worker pool with per-vendor concurrency.
   why: New scenes, improvised moments, and missing assets need sounds generated when the game asks for them, not only at build time.
   lane: L-MEDIA · block: 8–11 · paths: `internal/adapters/sound/elevenlabs/**`, `internal/media/sound*.go`, `internal/content/sound_cues*.go` · depends: MEDIA-001, LLM-007, CON-006
   done when: an ElevenLabs sound adapter (sound-generation and music endpoints, fixture-tested) and a media executor resolve a sound request by logical name from the manifest first, then by prompt hash from the asset-store cache, and otherwise generate, normalise, store, and post asset_ready (with a timeout fallback to silence); per-vendor semaphore and budget caps apply; content provides a cue catalogue mapping phases and events to sound requests; tests with fakes and httptest.
-  status: claimed luna
+  status: committed 64c80a2
 
 ## 18. Web shell (shared WASM client)
 
@@ -1511,13 +1517,13 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   why: Players choose a class on the phone after species and gender.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/create*.go`, `web/phone/class*.go` · depends: PHONE-011, ENG-019, CONT-009
   done when: a Class section with the 12 SRD classes (crest icon when available, name, one-line role) sits after Gender; Roll sends species, gender, class, then roll_hero; the build card shows the chosen class; preview fixture and live check.
-  status: claimed luna
+  status: committed b5dc1e8
 
 - [ ] PHONE-021 · phone screens with the generated art
   why: The phone should feel like the concept phone UI: journal background, medallion move icons, species portraits and class crests in creation, and painted button plates.
   lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/theme*.go`, `web/phone/art*.go`, `web/phone/moves*.go`, `web/phone/sheet*.go`, `web/phone/dice*.go`, `web/phone/combat*.go` · depends: PHONE-020, WEB-015, OPS-021
   done when: phone uses ui/phone_bg, ui/icon_* for moves, ui/species_* and ui/class_* in creation and the sheet, ui/button_* plates, ui/d20* for the roll, ui/status_* on the sheet; all via the gRPC asset loader; Edge screenshots at 390x844.
-  status: open (launch after WEB-015 and PHONE-020)
+  status: claimed luna
 
 - [ ] PHONE-022 · phone one-off audio effects over gRPC
   why: Developer request (2026-09-26): the server streams short one-off effects to individual player phones (your dice rattle when you roll, a chime when it is your turn, a heartbeat when you are down, a whispered hint only you hear).
@@ -1653,7 +1659,7 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   why: Scene stills, the d20 art, callout banners, status icons, and the cliffhanger/end backdrops make each phase read on the TV.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/dice*.go`, `web/dm/callout*.go`, `web/dm/combat*.go`, `web/dm/end*.go` · depends: DM-018, WEB-015, OPS-021
   done when: scene layers use the manifest stills (tavern_interior, tavern_doorway, bell_tower, ui/check_backdrop, ui/cliffhanger, ui/end_bg), dice uses ui/d20, ui/d20_success, ui/d20_fail, callouts use ui/banner_callout, seats show ui/class_* crests and ui/status_* icons; all via the gRPC asset loader; Edge screenshots per phase fixture.
-  status: claimed luna
+  status: committed 3364669
 
 - [ ] DM-022 · TV creation screen matches the character-creation concept 1:1
   why: Developer request: the DM UI should match the concept art one to one; assets/concept/ui-tv-character-creation-phone-picker.jpg shows the creation layout.
@@ -1938,13 +1944,13 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   why: The presentation needs title, lobby, panels, buttons, move and class icons, species portraits, dice, banners, scene stills, phone background, and status icons in the concept-art style; 14 parallel Codex image jobs produce them at no API cost.
   lane: L-OPS · block: 8–11 · paths: `scripts/buildtime/ui*.go` · depends: OPS-002, OPS-020
   done when: every image listed in the art job list exists under artifacts/runtime/buildtime/ui, is converted to WebP (quality 82, max 1920 px; theme-plate icons trimmed), and is registered in the manifest as ui/<name>; a checker lists missing items.
-  status: claimed luna (generation done: 42 of 45 images, species_c regenerating)
+  status: committed 6b10116
 
 - [ ] OPS-022 · live ElevenLabs pre-generation: canned lines and nudges
   why: Developer go-ahead (2026-09-26) with the ElevenLabs key in .env: canned lines (§0.7) and the two turn-timer nudges must exist as real audio so the opening and fallbacks play.
   lane: L-OPS · block: 8–11 · paths: `scripts/buildtime/canned*.go`, `scripts/buildtime/nudges*.go`, `scripts/buildtime/lock*.go` · depends: OPS-010, OPS-014, REPO-017
   done when: the canned and nudge jobs run live (en; es if the I18N-010 job supports it) with at most 4 concurrent TTS requests, every file lands under artifacts/runtime/buildtime/audio/, is loudness-normalised, and is registered in the manifest under a file lock (artifacts/runtime/buildtime/manifest.lock); a cost line per request is logged; a summary lists files, durations, and character counts.
-  status: claimed luna
+  status: committed b9602cf
 
 - [ ] OPS-023 · live ElevenLabs pre-generation: sound-effect library
   why: Dice, success, failure, door, sting, cliffhanger hit, and combat sounds make the table feel alive.
