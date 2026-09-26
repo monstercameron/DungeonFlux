@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
+	"github.com/monstercameron/GoWebComponents/v6/html"
 	"github.com/monstercameron/GoWebComponents/v6/ui"
 )
 
@@ -20,7 +21,7 @@ func TestCompose_RendersSelectedComponentFactories(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderToString() error = %v", err)
 	}
-	for _, class := range []string{"df-dm-screen", "df-dm-stage", "df-dm-layer-combat", "df-dm-combat", "df-dm-dice", "df-dm-timer", "aspect-ratio"} {
+	for _, class := range []string{"df-dm-screen", "df-dm-stage", "df-dm-layer-combat", "df-dm-combat", "df-dm-combat-stage", "df-dm-dice", "df-dm-timer", "aspect-ratio", "background-size:cover"} {
 		if !strings.Contains(markup, class) {
 			t.Fatalf("markup missing %q: %s", class, markup)
 		}
@@ -32,7 +33,7 @@ func TestCompose_RendersPhaseLayerStack(t *testing.T) {
 		phase   string
 		classes []string
 	}{
-		{"opening", []string{"df-dm-layer-scene", "df-dm-layer-clip"}},
+		{"opening", []string{"df-dm-layer-scene", "df-dm-scene-stage", "df-dm-layer-clip"}},
 		{"hook_event", []string{"df-dm-layer-scene", "df-dm-layer-clip", "df-dm-layer-callout"}},
 		{"cliffhanger", []string{"df-dm-layer-scene", "df-dm-layer-clip"}},
 		{"end", []string{"df-dm-layer-end"}},
@@ -52,6 +53,18 @@ func TestCompose_RendersPhaseLayerStack(t *testing.T) {
 				t.Fatalf("scene should be emitted before clip: %s", markup)
 			}
 		})
+	}
+}
+
+func TestCombatTokens_RenderAsResponsivePercentages(t *testing.T) {
+	markup, err := ui.RenderToString(html.Div(html.Props{}, combatTokens([]CombatToken{{X: 960, Y: 540, Portrait: "hero.png"}})...))
+	if err != nil {
+		t.Fatalf("RenderToString() error = %v", err)
+	}
+	for _, want := range []string{"left:50%", "top:50%", "width:10%"} {
+		if !strings.Contains(markup, want) {
+			t.Fatalf("token markup missing %q: %s", want, markup)
+		}
 	}
 }
 
