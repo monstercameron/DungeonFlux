@@ -277,7 +277,7 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   why: The server binary must start from hour 1 with fakes, flags (-config, -port, -data-dir, -seed), and graceful shutdown.
   lane: ORCH · block: 1–5 · paths: `internal/wire/**`, `cmd/server/**` · depends: BASE-002, BASE-005
   done when: `go run ./cmd/server -config config/fake.json -port 18101` serves /healthz; SIGINT shuts down in under 5 s.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 45c0bd5
 
 - [ ] BASE-008 · wire reads the build-time manifest into OneShot
   why: Asset URLs, contact_ms, clip durations, and canned asset IDs live in the gitignored manifest, and the pure engine can only receive them through wire.
@@ -413,7 +413,7 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: The run moves Lobby → Creation → Opening → Conversation → Check → Resolution → HookEvent → Combat → Cliffhanger → End, and the top table only routes to phase subpackages.
   lane: L-ENG · block: 1–5 · paths: `internal/game/phase/*.go` · depends: ENG-001
   done when: All phases registered as stubs; Skip and Pause work at top level; tests.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 2e6977b
 
 - [ ] ENG-003 · game Inspect (read-only)
   why: dfctl and the hour-5 gate need to read machine states, seed, dice counter, and timers without changing anything.
@@ -425,7 +425,7 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: Every client renders only what the engine projects, starting with lobby and seat cards.
   lane: L-ENG · block: 1–5 · paths: `internal/game/view*.go` · depends: ENG-001
   done when: View for DM, each seat, and host; tests on projected fields.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 6801a11
 
 - [ ] ENG-005 · game LegalMoves
   why: The phone shows only legal moves, with greyed-out options and reasons computed by the engine.
@@ -473,13 +473,13 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: Music changes and camera shots follow the state machine, so the engine emits cue effects at bar-aligned points.
   lane: L-ENG · block: 11–14 · paths: `internal/game/cues*.go` · depends: ENG-002, CONT-007
   done when: Every demo state emits its music and shot cue; tests.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: committed 46ab2df
 
 - [ ] ENG-013 · Unregistered-effect failure rule support
   why: Effects with no executor yet must fail fast into their failure event so gates can run with missing lanes.
   lane: L-ENG · block: 5–8 · paths: `internal/game/failure*.go` · depends: ENG-001
   done when: Every work effect has a defined failure event; tests.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 0d2c885
 
 ## 8. Engine phases (one package each)
 
@@ -489,7 +489,7 @@ Each phase is a separate subpackage with its own table, registered into the top 
   why: Players create characters on their phones by picking species and gender, and the engine rolls the rest.
   lane: L-ENG · block: 1–5 · paths: `internal/game/phase/creation/**` · depends: ENG-002, RULES-003
   done when: pc_locked from both seats advances; build is deterministic per seat; tests.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: committed 799cca4
 
 - [ ] PH-CRE-002 · phase/creation: portrait and flavor slots
   why: Each character gets a generated portrait and flavor text used later in scenes and video.
@@ -501,7 +501,7 @@ Each phase is a separate subpackage with its own table, registered into the top 
   why: The hour-5 gate needs audio on the DM tab, so the Opening stub plays the canned opening line.
   lane: L-ENG · block: 1–5 · paths: `internal/game/phase/opening/**` · depends: ENG-002
   done when: Opening emits PlayCanned{canned_opening}; tests.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: committed 4b9518b
 
 - [ ] PH-OPEN-002 · phase/opening full: establishing clip, narration, battlefield entry
   why: Opening plays the establishing clip and the live opening narration and makes View.Battlefield non-nil.
@@ -513,7 +513,7 @@ Each phase is a separate subpackage with its own table, registered into the top 
   why: Player speech becomes utterance_final and is dispatched to the NPC turn machine or the keyword check path.
   lane: L-ENG · block: 5–8 · paths: `internal/game/phase/conversation/**` · depends: ENG-007, ENG-006
   done when: transcribed → interpret effect → dialogue or act event; tests.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: committed e28c158
 
 - [ ] PH-CONV-002 · phase/conversation: idle nudge and steering
   why: Silence must not stall the demo, so idle time triggers nudges and the steering ladder.
@@ -525,7 +525,7 @@ Each phase is a separate subpackage with its own table, registered into the top 
   why: The demo's persuasion check is offered as a dice view and resolved by the engine.
   lane: L-ENG · block: 5–8 · paths: `internal/game/phase/check/**` · depends: RULES-002
   done when: dice{OFFERED} from Conversation entry; roll with force support; success/failure events; tests.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: committed 68cb800
 
 - [ ] PH-RES-001 · phase/resolution: outcome narration
   why: The check result is narrated by the NPC with a live line and a canned fallback.
@@ -577,7 +577,7 @@ The drowned-thrall fight: fixed turn order, R-D1–R-D7 rules, bell flee, 30 s c
   why: Combat turns are timed and the host can skip or pause.
   lane: L-COMBAT · block: 5–8 · paths: `internal/game/combat/timer*.go` · depends: COMBAT-001, FSM-004
   done when: Timer fires auto-action; Skip/Pause semantics tested.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed c6223ec
 
 - [ ] COMBAT-006 · combat View projection
   why: DM screen and phones render the grid, tokens, HP, and whose turn it is from CombatView.
@@ -589,7 +589,7 @@ The drowned-thrall fight: fixed turn order, R-D1–R-D7 rules, bell flee, 30 s c
   why: Combat walk paths must pass at hour 8 before phase wiring exists, so a harness drives the combat instance directly.
   lane: L-COMBAT · block: 5–8 · paths: `internal/game/combat/combatsim/**` · depends: COMBAT-004
   done when: Paths 26–34 and 37 pass in combatsim.; gate green (≥ 70% coverage where applicable)
-  status: claimed L-COMBAT luna
+  status: committed b6a94d3
 
 - [ ] COMBAT-008 · Combat wired into phases (HookEvent → Combat → Cliffhanger)
   why: The full run must reach combat from the hook and continue to the cliffhanger.
@@ -601,6 +601,12 @@ The drowned-thrall fight: fixed turn order, R-D1–R-D7 rules, bell flee, 30 s c
   why: The engine decides SPLAT or FLAT from the room-level splat_ready report and projects View.Battlefield from Opening entry.
   lane: L-ENG · block: 8–11 · paths: `internal/game/battlefield*.go` · depends: CON-005
   done when: Mode rule tested for ready, failed, and missing reports.; gate green (≥ 70% coverage where applicable)
+  status: committed 3ede2ed
+
+- [ ] COMBAT-010 · combatsim purity: time only for time.Duration
+  why: The full gate's archtest fails because internal/game/combat/combatsim/sim.go uses the time package beyond time.Duration, which breaks the purity rule for sim code.
+  lane: L-COMBAT · block: 5–8 · paths: `internal/game/combat/combatsim/**` · depends: COMBAT-007
+  done when: internal/archtest passes on the tree; combatsim tests still pass at >= 70%.
   status: claimed luna
 
 ## 10. Simulation and walk tests
@@ -611,13 +617,13 @@ Deterministic virtual-time simulation of whole runs.
   why: Walk tests need to run Step against scripted effect outcomes (success after N ms, error, silence) with no goroutines or clock.
   lane: L-ENG · block: 1–5 · paths: `internal/sim/*.go` · depends: ENG-001
   done when: Sim runs a stubbed path to End in virtual time.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 4324657
 
 - [ ] SIM-002 · replay.Check against event logs
   why: Rehearsal logs must replay to identical effects to prove determinism.
   lane: L-ENG · block: 5–8 · paths: `internal/sim/replay*.go` · depends: SIM-001
   done when: Replay of a recorded log produces no diff.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: committed 988b4c3
 
 - [ ] SIM-003 · walk/basic paths 1–8
   why: Basic paths (join, create, open, skip, pause) prove the phase table works end to end.
@@ -675,7 +681,7 @@ SQLite persistence: one writer goroutine, WAL, event log, runs, assets, cache, r
   why: Generated assets, cached model outputs, and recordings need rows for lookup and replay.
   lane: L-STORE · block: 5–8 · paths: `internal/store/sqlite/assets*.go`, `internal/store/sqlite/cache*.go` · depends: STORE-002
   done when: CRUD tests; read pool separate from the writer.; gate green (≥ 70% coverage where applicable)
-  status: claimed L-STORE luna
+  status: committed b20ccfa
 
 - [ ] STORE-005 · wire swap from fakes to SQLite at hour 8
   why: From hour 8 lane servers and the test server persist to SQLite.
@@ -727,13 +733,13 @@ The room loop, runner, scope tree, inbox, timers, and executors registry that ru
   why: Seats and splat reports live at room level and survive Reset; every -seed run uses SHA-256(seed‖0).
   lane: L-RT · block: 5–8 · paths: `internal/runtime/rooms*.go` · depends: RT-004
   done when: Reset re-posts joins; seed stable across Resets; tests.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 832aeda
 
 - [ ] RT-008 · runtime graceful shutdown
   why: Shutdown must stop streams, cancel scopes, drain hubs, flush the store, and close vendors within 5 s.
   lane: L-RT · block: 5–8 · paths: `internal/runtime/shutdown*.go` · depends: RT-004
   done when: Ordered shutdown test under synctest.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 0d2706e
 
 ## 13. API and streams
 
@@ -755,13 +761,13 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: Menu taps and typed text become engine events, which is also the typed fallback when STT fails.
   lane: L-API · block: 1–5 · paths: `internal/api/act*.go` · depends: API-002
   done when: Act and Say post envelopes; illegal moves return the engine's reason.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed c5d0656
 
 - [ ] API-004 · Watch hub with latest-snapshot-wins
   why: Every client receives View updates, and a slow client only ever gets the newest snapshot.
   lane: L-API · block: 1–5 · paths: `internal/api/watch*.go` · depends: API-002
   done when: One sender goroutine per subscriber; bounded channel drops older snapshots; tests.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 4fd6e58
 
 - [ ] API-005 · Listen hub for PCM audio
   why: The DM tab plays streamed TTS audio, and a subscriber more than 2 s behind is dropped and reconnects.
@@ -779,7 +785,7 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: The host page sends Start, Pause, Skip, Reset, and Force d20.
   lane: L-API · block: 1–5 · paths: `internal/api/host*.go` · depends: API-002
   done when: Host token checked; commands become engine events.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed e0e4c81
 
 - [ ] API-008 · View projection to protobuf
   why: domain.View must be converted to the protobuf messages each client receives, including build cards and previews.
@@ -791,7 +797,7 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: Phones stream recorded audio chunks to the server for STT.
   lane: L-API · block: 8–11 · paths: `internal/api/talk*.go` · depends: API-001
   done when: Chunks reach voice/in; stream closes cleanly on cancel.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed bf2cb28
 
 - [ ] API-010 · /tts MP3 fallback route (conditional)
   why: If the hour-2 spike shows WebSocket PCM playback fails on a phone, an HTTP MP3 route is the fallback.
@@ -825,7 +831,7 @@ SchemaFlux for OpenAI-dialect links, Gemini and Haiku adapters, model chains, bu
   why: Luna and Qwen go through SchemaFlux's provider layer only, with per-link reasoning effort added to the request body.
   lane: L-LLM · block: 1–5 · paths: `internal/adapters/llm/schemaflux/**` · depends: CON-006, BASE-004
   done when: Strict-schema JSON and streamed text against httptest fixtures; no global SchemaFlux state.; gate green (≥ 70% coverage where applicable)
-  status: claimed L-LLM luna
+  status: committed caa40d8 (landed inside the LLM-002 commit through the shared index)
 
 - [ ] LLM-002 · adapters/llm/gemini (genai)
   why: Pre-renders use gemini-3.8-flash at LOW thinking through the genai SDK.
@@ -849,13 +855,13 @@ SchemaFlux for OpenAI-dialect links, Gemini and Haiku adapters, model chains, bu
   why: Live calls race and hedge across links with first-token deadlines and cancel the losers.
   lane: L-LLM · block: 5–8 · paths: `internal/modelchain/**` · depends: LLM-001
   done when: Loser cancellation and deadline fallback tested with fakes.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed fd5a64d
 
 - [ ] LLM-006 · modelchain record, replay, and cache
   why: Rehearsals and tests replay recorded model outputs, and cached pre-renders avoid repeat spend.
   lane: L-LLM · block: 5–8 · paths: `internal/modelchain/cache*.go` · depends: LLM-005
   done when: Record then replay returns identical output.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 12a7e60
 
 - [ ] LLM-007 · internal/budget spend ledger and caps
   why: Every vendor call has a cost estimate and per-vendor caps stop runaway spend.
@@ -941,7 +947,7 @@ Spoken lines from text to PCM on the DM tab.
   why: Pre-rendered text sets become stored audio assets and post prerender_done.
   lane: L-VOUT · block: 8–11 · paths: `internal/voice/out/render*.go` · depends: VOUT-001
   done when: Tests with fakes.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 2b84b2f
 
 - [ ] VOUT-006 · voice/out MP3 path (conditional)
   why: Only if the hour-2 spike fails: request ElevenLabs mp3_44100_128 for the HTTP fallback.
@@ -987,19 +993,19 @@ Portraits, stills, clips, and their worker pool with per-vendor concurrency.
   why: Each created character gets a portrait for scenes and video, with template fallbacks.
   lane: L-MEDIA · block: 5–8 · paths: `internal/media/portrait*.go` · depends: MEDIA-001, MEDIA-002
   done when: asset_ready or failure with fallback; tests.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed ecf6932
 
 - [ ] MEDIA-006 · media ComposeStill executor
   why: Character cut-outs are composited into scene stills that seed the video clips.
   lane: L-MEDIA · block: 8–11 · paths: `internal/media/compose*.go` · depends: MEDIA-005
   done when: image/draw composite tests.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 8468114
 
 - [ ] MEDIA-007 · media GenerateClip executor
   why: Clips are requested early and must land before their beat or fall back to stills.
   lane: L-MEDIA · block: 8–11 · paths: `internal/media/clip*.go` · depends: MEDIA-003, MEDIA-006
   done when: Deadline fallback tested.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 4a0d2c7
 
 - [ ] MEDIA-008 · media shot prompts from the library
   why: Every generated shot uses the curated prompt library for consistent quality.
@@ -1039,7 +1045,7 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   why: The DM tab plays streamed PCM with a 150 ms jitter lead and honours AudioCancel.
   lane: L-WEB-SHELL · block: 1–5 · paths: `web/shell/audio/**` · depends: WEB-002, API-005
   done when: Plays a canned line end to end; cancel stops within one frame.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 66368c7
 
 - [ ] WEB-005 · web/shell /about route and SRD attribution
   why: The SRD CC-BY-4.0 attribution must be visible in the app.
@@ -1199,7 +1205,7 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   why: At Opening entry the hidden splat renders ~3 s to measure p5 fps and pick 500k or 100k before combat.
   lane: L-WEB-SPLAT · block: 14–17 · paths: `web/splat/probe*.go` · depends: SPLAT-002, API-006
   done when: Reports SPLAT_READY or SPLAT_FAILED.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 84da990
 
 - [ ] SPLAT-007 · splat client-side mode switching
   why: The client follows View.Battlefield mode and switches to FLAT on failure.
@@ -1261,13 +1267,13 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   why: The opening establishing clip and the stranger arrival clip are pre-rendered.
   lane: L-OPS · block: 1–5 · paths: `scripts/buildtime/clips*.go` · depends: OPS-002
   done when: Clips saved with duration in the manifest.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed b7312db
 
 - [ ] OPS-005 · Generic cliffhanger clip and tall tower still
   why: The cliffhanger needs a generic clip and still as fallbacks for the live clip.
   lane: L-OPS · block: 1–5 · paths: `scripts/buildtime/cliff*.go` · depends: OPS-002
   done when: Assets in manifest.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 091ad65
 
 - [ ] OPS-006 · World Labs Marble splat and SOG conversion
   why: The tavern battlefield splat is generated and converted to SOG for PlayCanvas.
@@ -1285,13 +1291,13 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   why: The thrall needs a still, cut-out, and four billboard loops with measured contact_ms.
   lane: L-OPS · block: 1–5 · paths: `scripts/buildtime/thrall*.go` · depends: OPS-003
   done when: Loops in manifest with contact_ms.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 07e03d8
 
 - [ ] OPS-009 · PC billboard loops and status poses
   why: Each PC template needs idle, attack, hit, and down loops at 1.2 s.
   lane: L-OPS · block: 5–8 · paths: `scripts/buildtime/pcloops*.go` · depends: OPS-003
   done when: Loops in manifest.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 3590ef2
 
 - [ ] OPS-010 · Canned lines rendered with TTS
   why: Every canned line from §0.7 is rendered to audio before hour 5, starting with canned_opening.
@@ -1327,7 +1333,7 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   why: Billboard chroma keying needs measured samples to tune thresholds.
   lane: L-OPS · block: 1–5 · paths: `scripts/buildtime/chroma*.go` · depends: OPS-008
   done when: Samples saved.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed e07f57a
 
 - [ ] OPS-016 · TLS certificate via lego DNS challenge
   why: The stage server needs a valid certificate for dm.{domain}, issued early because DNS is slow.
