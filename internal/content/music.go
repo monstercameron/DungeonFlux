@@ -36,13 +36,32 @@ type MusicCatalogue struct {
 	Tracks         []MusicTrack
 }
 
+// Track returns the authored track with id, if the catalogue contains it.
+func (c MusicCatalogue) Track(id string) (MusicTrack, bool) {
+	for _, track := range c.Tracks {
+		if track.ID == id {
+			return track, true
+		}
+	}
+	return MusicTrack{}, false
+}
+
+// LobbyTracks returns the accepted lobby bed and title stinger assets.
+// OPENING_SWELL is the build-time title stinger; the manifest has no separate
+// title-stinger asset.
+func (c MusicCatalogue) LobbyTracks() (MusicTrack, MusicTrack, bool) {
+	bed, bedOK := c.Track("THEME_MAIN")
+	stinger, stingerOK := c.Track("OPENING_SWELL")
+	return bed, stinger, bedOK && stingerOK
+}
+
 // DefaultMusicCatalogue returns the twelve §0.19 demo tracks.
 func DefaultMusicCatalogue() MusicCatalogue {
 	version := "demo-v1"
 	tracks := []MusicTrack{
-		{ID: "THEME_MAIN", Asset: "music_theme_main", Kind: "loop", LengthMS: 96000, BPM: 80, BarMS: 3000, LoopEndMS: 96000, Key: "D dorian", Level: 0.6, Duck: 0.6, Fallback: "royalty_free_fantasy_track", Cue: "lobby", Transition: "bar", CrossfadeBars: 1, Seeded: true},
+		{ID: "THEME_MAIN", Asset: "THEME_MAIN", Kind: "loop", LengthMS: 96000, BPM: 80, BarMS: 3000, LoopEndMS: 96000, Key: "D dorian", Level: 0.6, Duck: 0.6, Fallback: "royalty_free_fantasy_track", Cue: "lobby", Transition: "bar", CrossfadeBars: 1, Seeded: true},
 		{ID: "CREATION_BED_LOOP", Asset: "music_creation_bed_loop", Kind: "loop", LengthMS: 96000, BPM: 80, BarMS: 3000, LoopEndMS: 96000, Key: "D dorian", Level: 0.35, Duck: 0.3, Fallback: "THEME_MAIN", Cue: "creation", Transition: "bar", CrossfadeBars: 1, Seeded: true, Conditioned: true},
-		{ID: "OPENING_SWELL", Asset: "music_opening_swell", Kind: "one_shot", LengthMS: 12000, BPM: 80, BarMS: 3000, Key: "D dorian", Level: 1, Duck: 0.3, Fallback: "TAVERN_WARM_LOOP", Cue: "opening", Transition: "crossfade_at_6000ms", CrossfadeBars: 0, Seeded: true, Conditioned: true},
+		{ID: "OPENING_SWELL", Asset: "OPENING_SWELL", Kind: "one_shot", LengthMS: 12000, BPM: 80, BarMS: 3000, Key: "D dorian", Level: 1, Duck: 0.3, Fallback: "TAVERN_WARM_LOOP", Cue: "opening", Transition: "crossfade_at_6000ms", CrossfadeBars: 0, Seeded: true, Conditioned: true},
 		{ID: "TAVERN_WARM_LOOP", Asset: "music_tavern_warm_loop", Kind: "loop", LengthMS: 96000, BPM: 80, BarMS: 3000, LoopEndMS: 96000, Key: "D dorian / F major", Level: 0.3, Duck: 0.3, Fallback: "THEME_MAIN", Cue: "tavern", Transition: "bar", CrossfadeBars: 1, Seeded: true, Conditioned: true},
 		{ID: "STING_STRANGER", Asset: "music_sting_stranger", Kind: "stinger", LengthMS: 6000, BPM: 0, Key: "D phrygian", Level: 1, Duck: 0.15, Fallback: "sfx_stranger_sting", Cue: "stranger", Transition: "after_line", CrossfadeBars: 0, Seeded: true, Conditioned: true},
 		{ID: "STING_COMBAT_START", Asset: "music_sting_combat_start", Kind: "stinger", LengthMS: 4000, BPM: 160, BarMS: 1500, Key: "D minor", Level: 1, Duck: 0.2, Fallback: "sfx_door_burst", Cue: "combat_start", Transition: "after_line", CrossfadeBars: 0, Seeded: true, Conditioned: true},

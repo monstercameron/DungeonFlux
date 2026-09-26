@@ -15,6 +15,13 @@ func TestDefaultMusicCatalogue_ValidatesAndContainsDemoTracks(t *testing.T) {
 	}
 }
 
+func TestMusicCatalogue_LobbyTracksUseAcceptedAssets(t *testing.T) {
+	bed, stinger, ok := DefaultMusicCatalogue().LobbyTracks()
+	if !ok || bed.ID != "THEME_MAIN" || bed.Asset != "THEME_MAIN" || stinger.ID != "OPENING_SWELL" || stinger.Asset != "OPENING_SWELL" {
+		t.Fatalf("lobby tracks = %#v, %#v, ok=%v", bed, stinger, ok)
+	}
+}
+
 func TestMusicCatalogue_ValidateRejectsMalformedMetadata(t *testing.T) {
 	tests := []struct {
 		name string

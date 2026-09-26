@@ -155,7 +155,6 @@ func screenError(message string) ui.Node {
 
 func screenView(props screenProps) ui.Node {
 	state := ui.UseState((*dungeonfluxv1.ScreenState)(nil))
-	musicPlayer := ui.UseState((*MusicPlayer)(nil))
 	voicePlayer := ui.UseState((*audio.Player)(nil))
 	token := dmToken()
 	ui.UseEffect(func() func() {
@@ -174,10 +173,9 @@ func screenView(props screenProps) ui.Node {
 				voicePlayer.Set(player)
 			}
 			go func() {
-				adapter := NewListenAudio(player)
 				for result := range listen {
 					if result.Message != nil {
-						_ = adapter.Handle(result.Message)
+						_ = player.Handle(result.Message)
 					}
 				}
 			}()
@@ -191,31 +189,16 @@ func screenView(props screenProps) ui.Node {
 		}
 	}, props.client, token)
 	snapshot := state.Get()
-	music := MusicModelFromView(snapshot.GetDm())
 	ui.UseEffect(func() func() {
-		player := musicPlayer.Get()
-		if player == nil {
-			player = NewMusicPlayer()
-			musicPlayer.Set(player)
-		}
-		if player != nil {
-			_ = player.Apply(music, 0)
+		if player := voicePlayer.Get(); player != nil {
+			_ = PlayLobbyAudio(player, strings.ToLower(strings.TrimSpace(snapshot.GetPhase())))
 		}
 		return nil
-	}, music)
-	ui.UseEffect(func() func() {
-		return func() {
-			if player := musicPlayer.Get(); player != nil {
-				player.Close()
-			}
-		}
-	}, props.client)
+	}, voicePlayer.Get(), snapshot.GetPhase())
 	unlock := ui.UseEvent(func() {
 		if player := voicePlayer.Get(); player != nil {
-			_ = player.Resume()
-		}
-		if player := musicPlayer.Get(); player != nil {
-			_ = player.Resume()
+			_ = ResumeAudio(player)
+			_ = PlayLobbyAudio(player, strings.ToLower(strings.TrimSpace(snapshot.GetPhase())))
 		}
 	})
 	return compose(snapshot, dmRoomCode(), unlock)

@@ -43,7 +43,11 @@ func (p *Player) Handle(message *dungeonfluxv1.AudioMessage) error {
 		return p.applyMix(mix, channelFor(message.GetChannel()))
 	}
 	if chunk := message.GetChunk(); chunk != nil {
-		return p.decodeEncoded(fmt.Sprintf("chunk-%d", chunk.GetSeq()), channelFor(message.GetChannel()), chunk.GetData(), false, 1)
+		channel := channelFor(message.GetChannel())
+		p.pending[channel] = append(p.pending[channel], encodedChunk{data: append([]byte(nil), chunk.GetData()...)})
+		if chunk.GetFinal() {
+			return p.flushPending(channel)
+		}
 	}
 	return nil
 }
@@ -68,12 +72,19 @@ func (p *Player) applyMix(command *dungeonfluxv1.AudioMixCommand, channel Channe
 	id := command.GetTrackId()
 	switch command.GetKind() {
 	case dungeonfluxv1.AudioMixCommandKind_AUDIO_MIX_COMMAND_KIND_STOP:
-		p.stopTrack(id)
+		p.StopTrack(id, int(command.GetDurationMs()))
 	case dungeonfluxv1.AudioMixCommandKind_AUDIO_MIX_COMMAND_KIND_PLAY,
 		dungeonfluxv1.AudioMixCommandKind_AUDIO_MIX_COMMAND_KIND_CROSSFADE:
-		for _, source := range p.tracks[id] {
-			source.Set("loop", command.GetLoop())
+		if p.HasTrack(id) {
+			p.discardPending(channel)
+			return nil
 		}
+		p.reserved[id] = true
+		if len(p.pending[channel]) == 0 {
+			p.pendingCommands[channel] = pendingMix{command: command}
+			return nil
+		}
+		return p.startPending(channel, command)
 	case dungeonfluxv1.AudioMixCommandKind_AUDIO_MIX_COMMAND_KIND_DUCK:
 		duck := float64(command.GetDuck())
 		if duck <= 0 {
@@ -83,27 +94,37 @@ func (p *Player) applyMix(command *dungeonfluxv1.AudioMixCommand, channel Channe
 	default:
 		return fmt.Errorf("audio: unsupported mix command")
 	}
-	if channel == MusicChannel || channel == AmbienceChannel {
-		p.setBusGain(channel, float64(command.GetGain()))
-	}
 	return nil
 }
 
-func (p *Player) setBusGain(channel Channel, gain float64) {
-	if gain <= 0 {
-		gain = 1
+func (p *Player) flushPending(channel Channel) error {
+	command, ok := p.pendingCommands[channel]
+	if !ok {
+		return nil
 	}
-	p.bus(channel).Get("gain").Call("setTargetAtTime", gain, p.context.Get("currentTime"), .08)
+	delete(p.pendingCommands, channel)
+	return p.startPending(channel, command.command)
 }
 
-func (p *Player) stopTrack(id string) {
-	for _, source := range p.tracks[id] {
-		source.Call("stop")
+func (p *Player) startPending(channel Channel, command *dungeonfluxv1.AudioMixCommand) error {
+	var size int
+	for _, chunk := range p.pending[channel] {
+		size += len(chunk.data)
 	}
-	delete(p.tracks, id)
+	data := make([]byte, 0, size)
+	for _, chunk := range p.pending[channel] {
+		data = append(data, chunk.data...)
+	}
+	delete(p.pending, channel)
+	return p.decodeEncoded(command.GetTrackId(), channel, data, command.GetLoop(), float64(command.GetGain()), command.GetStartAtMs(), int(command.GetDurationMs()))
 }
 
-func (p *Player) decodeEncoded(id string, channel Channel, data []byte, loop bool, gain float64) error {
+func (p *Player) discardPending(channel Channel) {
+	delete(p.pending, channel)
+	delete(p.pendingCommands, channel)
+}
+
+func (p *Player) decodeEncoded(id string, channel Channel, data []byte, loop bool, gain float64, delayMS int64, fadeInMS int) error {
 	if len(data) == 0 {
 		return fmt.Errorf("audio: encoded chunk is empty")
 	}
@@ -115,20 +136,52 @@ func (p *Player) decodeEncoded(id string, channel Channel, data []byte, loop boo
 			return nil
 		}
 		buffer := args[0]
-		source := p.context.Call("createBufferSource")
-		source.Set("buffer", buffer)
-		source.Set("loop", loop)
-		source.Call("connect", p.bus(channel))
-		p.setBusGain(channel, gain)
-		p.tracks[id] = append(p.tracks[id], source)
-		source.Call("start", p.context.Get("currentTime"))
+		p.startDecoded(id, channel, buffer, loop, gain, delayMS, fadeInMS)
 		return nil
 	})
-	rejected := js.FuncOf(func(_ js.Value, _ []js.Value) any { return nil })
+	rejected := js.FuncOf(func(_ js.Value, _ []js.Value) any {
+		delete(p.reserved, id)
+		return nil
+	})
 	promise.Call("then", callback).Call("catch", rejected)
 	callback.Release()
 	rejected.Release()
 	return nil
+}
+
+func (p *Player) startDecoded(id string, channel Channel, buffer js.Value, loop bool, gain float64, delayMS int64, fadeInMS int) {
+	source := p.context.Call("createBufferSource")
+	source.Set("buffer", buffer)
+	source.Set("loop", loop)
+	trackGain := p.context.Call("createGain")
+	trackGain.Call("connect", p.bus(channel))
+	source.Call("connect", trackGain)
+	when := p.context.Get("currentTime").Float() + float64(max64(delayMS, 0))/1000
+	trackGain.Get("gain").Call("setValueAtTime", 0, when)
+	trackGain.Get("gain").Call("linearRampToValueAtTime", gain, when+float64(max(fadeInMS, 0))/1000)
+	p.tracks[id] = append(p.tracks[id], source)
+	p.trackGains[id] = append(p.trackGains[id], trackGain)
+	source.Call("start", when)
+	if !loop {
+		p.played[id] = true
+		var goDelete js.Func
+		goDelete = js.FuncOf(func(_ js.Value, _ []js.Value) any {
+			delete(p.tracks, id)
+			delete(p.trackGains, id)
+			delete(p.reserved, id)
+			goDelete.Release()
+			return nil
+		})
+		durationMS := int(buffer.Get("duration").Float() * 1000)
+		js.Global().Get("setTimeout").Invoke(goDelete, durationMS+100)
+	}
+}
+
+func max64(left, right int64) int64 {
+	if left > right {
+		return left
+	}
+	return right
 }
 
 // DuckVoice lowers music and ambience before narration and restores them after it.

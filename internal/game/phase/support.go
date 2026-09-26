@@ -204,6 +204,10 @@ func (m *Machine) unhandled(event domain.Event) (Result, error) {
 }
 func (m *Machine) passive(event domain.Event) (Result, error) {
 	if isPassive(event) {
+		if m.State() == vocab.StateLobby && !m.lobbyAudioSent {
+			m.lobbyAudioSent = true
+			return Result{Effects: lobbyAudioEffects(true)}, nil
+		}
 		return Result{}, nil
 	}
 	return m.unhandled(event)

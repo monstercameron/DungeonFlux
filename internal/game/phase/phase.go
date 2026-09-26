@@ -54,6 +54,7 @@ var phaseDefinitions = []Definition{
 type Machine struct {
 	table                                    fsm.Machine
 	paused, conversationDone, strictCreation bool
+	lobbyAudioSent                           bool
 	oneShot                                  domain.OneShot
 	seats                                    []domain.SeatView
 	spotlight                                domain.SeatID

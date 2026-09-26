@@ -21,6 +21,23 @@ func TestMusicModelFromView_CopiesMusicFields(t *testing.T) {
 	}
 }
 
+func TestLobbyAudioPlan_SelectsAcceptedBedAndOneShot(t *testing.T) {
+	got := LobbyAudioPlan("lobby", false)
+	if got.BedAsset != "THEME_MAIN" || got.StingerAsset != "OPENING_SWELL" || !got.PlayStinger || !got.LoopBed || got.FadeInMS == 0 {
+		t.Fatalf("lobby cue = %#v", got)
+	}
+}
+
+func TestLobbyAudioPlan_DoesNotReplayStinger(t *testing.T) {
+	got := LobbyAudioPlan("lobby", true)
+	if got.PlayStinger || got.BedAsset != "THEME_MAIN" || !got.LoopBed {
+		t.Fatalf("reconnect cue = %#v", got)
+	}
+	if got := LobbyAudioPlan("creation", false); got.BedAsset != "" || got.FadeOutMS == 0 {
+		t.Fatalf("phase exit cue = %#v", got)
+	}
+}
+
 func TestMusicModelFromView_NilMusicIsEmpty(t *testing.T) {
 	if got := MusicModelFromView(nil); got != (MusicModel{}) {
 		t.Fatalf("nil view = %#v", got)

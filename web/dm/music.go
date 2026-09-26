@@ -6,6 +6,34 @@ import (
 	dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 )
 
+const lobbyPhase = "lobby"
+
+const (
+	lobbyMusicAsset   = "THEME_MAIN"
+	lobbyStingerAsset = "OPENING_SWELL"
+)
+
+// LobbyAudioCue names the accepted build-time assets used by the DM lobby.
+type LobbyAudioCue struct {
+	BedAsset     string
+	StingerAsset string
+	BedGain      float32
+	FadeInMS     int
+	FadeOutMS    int
+	PlayStinger  bool
+	LoopBed      bool
+}
+
+// LobbyAudioPlan returns the lobby bed and one-shot title cue. The caller
+// supplies whether this client has already played the stinger, so reconnects
+// can reattach to the bed without replaying the title cue.
+func LobbyAudioPlan(phase string, stingerPlayed bool) LobbyAudioCue {
+	if phase != lobbyPhase {
+		return LobbyAudioCue{FadeOutMS: 300}
+	}
+	return LobbyAudioCue{BedAsset: lobbyMusicAsset, StingerAsset: lobbyStingerAsset, BedGain: 0.6, FadeInMS: 400, FadeOutMS: 300, PlayStinger: !stingerPlayed, LoopBed: true}
+}
+
 // MusicModel is the browser-owned projection of a DM music view.
 type MusicModel struct {
 	TrackID     string
