@@ -180,7 +180,7 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 	go func() { roomDone <- room.Run(roomCtx) }()
 
 	grpcServer := grpc.NewServer()
-	assetServer, err := api.NewAssetServer(assetCatalog)
+	assetServer, err := api.NewAssetServer(assetCatalog, filepath.Join(cfg.Server.DataDir, "assets"))
 	if err != nil {
 		cancel()
 		_ = store.Close()

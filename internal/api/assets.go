@@ -2,16 +2,24 @@ package api
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"io"
+	"mime"
+	"os"
+	"path/filepath"
 	"sort"
+	"strings"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-const assetChunkSize = 64 * 1024
+const (
+	assetChunkSize = 64 * 1024
+	sha256Size     = 32
+)
 
 // AssetInfo describes one immutable asset available to a client.
 type AssetInfo struct {
@@ -30,15 +38,26 @@ type AssetSource interface {
 // AssetServer implements the gRPC asset transfer and preload manifest APIs.
 type AssetServer struct {
 	df.UnimplementedAssetServiceServer
-	source AssetSource
+	source          AssetSource
+	runtimeAssetDir string
 }
 
-// NewAssetServer creates an AssetService backed by source.
-func NewAssetServer(source AssetSource) (*AssetServer, error) {
+// NewAssetServer creates an AssetService backed by source. If runtimeAssetDir
+// is supplied, SHA-256 selectors also search that directory for files named
+// <sha256>.<extension>; runtime files are intentionally excluded from the
+// logical-name manifest.
+func NewAssetServer(source AssetSource, runtimeAssetDir ...string) (*AssetServer, error) {
 	if source == nil {
 		return nil, errors.New("api: asset source is required")
 	}
-	return &AssetServer{source: source}, nil
+	if len(runtimeAssetDir) > 1 {
+		return nil, errors.New("api: at most one runtime asset directory is supported")
+	}
+	server := &AssetServer{source: source}
+	if len(runtimeAssetDir) == 1 {
+		server.runtimeAssetDir = filepath.Clean(runtimeAssetDir[0])
+	}
+	return server, nil
 }
 
 // Manifest returns the complete logical-name manifest in stable order.
@@ -70,12 +89,67 @@ func (s *AssetServer) Get(req *df.AssetRequest, stream df.AssetService_GetServer
 	if selector == "" {
 		selector = req.GetSha256()
 	}
+	if req.GetName() == "" && !validSHA256(selector) {
+		return status.Error(codes.InvalidArgument, "sha256 selector must be 64 hexadecimal characters")
+	}
 	info, reader, err := s.source.Open(stream.Context(), selector)
+	if err != nil && req.GetName() == "" {
+		info, reader, err = s.openRuntime(stream.Context(), selector)
+	}
 	if err != nil {
 		return status.Errorf(codes.NotFound, "open asset %q: %v", selector, err)
 	}
 	defer func() { _ = reader.Close() }()
 	return sendAsset(stream, info, reader)
+}
+
+func (s *AssetServer) openRuntime(ctx context.Context, sha string) (AssetInfo, io.ReadCloser, error) {
+	if s.runtimeAssetDir == "" {
+		return AssetInfo{}, nil, os.ErrNotExist
+	}
+	if err := ctx.Err(); err != nil {
+		return AssetInfo{}, nil, err
+	}
+	entries, err := os.ReadDir(s.runtimeAssetDir)
+	if err != nil {
+		return AssetInfo{}, nil, err
+	}
+	prefix := sha + "."
+	for _, entry := range entries {
+		if entry.IsDir() || entry.Type()&os.ModeSymlink != 0 || !strings.HasPrefix(entry.Name(), prefix) {
+			continue
+		}
+		path := filepath.Join(s.runtimeAssetDir, entry.Name())
+		info, err := entry.Info()
+		if err != nil || !info.Mode().IsRegular() {
+			continue
+		}
+		reader, err := os.Open(path)
+		if err != nil {
+			return AssetInfo{}, nil, err
+		}
+		return AssetInfo{Name: sha, SHA256: sha, ContentType: runtimeContentType(path), Size: info.Size()}, reader, nil
+	}
+	return AssetInfo{}, nil, os.ErrNotExist
+}
+
+func runtimeContentType(path string) string {
+	if contentType := mime.TypeByExtension(strings.ToLower(filepath.Ext(path))); contentType != "" {
+		return contentType
+	}
+	return "application/octet-stream"
+}
+
+func validSHA256(value string) bool {
+	if len(value) != hex.EncodedLen(sha256Size) {
+		return false
+	}
+	for _, char := range value {
+		if !((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f') || (char >= 'A' && char <= 'F')) {
+			return false
+		}
+	}
+	return true
 }
 
 func sendAsset(stream df.AssetService_GetServer, info AssetInfo, reader io.Reader) error {

@@ -3,22 +3,30 @@ package api
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"io"
 	"net"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 )
 
 func TestAssetService_BufconnManifestAndChunkedGet(t *testing.T) {
 	data := []byte(strings.Repeat("title-bg", 8193))
+	digest := sha256.Sum256(data)
+	sha := hex.EncodeToString(digest[:])
 	source := &memoryAssetSource{assets: map[string]memoryAsset{
-		"ui/title_bg": {info: AssetInfo{Name: "ui/title_bg", SHA256: "abc123", ContentType: "image/webp", Size: int64(len(data))}, data: data},
+		"ui/title_bg": {info: AssetInfo{Name: "ui/title_bg", SHA256: sha, ContentType: "image/webp", Size: int64(len(data))}, data: data},
 	}}
 	server, err := NewAssetServer(source)
 	if err != nil {
@@ -44,7 +52,7 @@ func TestAssetService_BufconnManifestAndChunkedGet(t *testing.T) {
 	if manifest.GetAssets()[0].GetName() != "ui/title_bg" || manifest.GetAssets()[0].GetSize() != uint64(len(data)) {
 		t.Fatalf("manifest entry = %v", manifest.GetAssets()[0])
 	}
-	stream, err := client.Get(context.Background(), &df.AssetRequest{Sha256: "abc123"})
+	stream, err := client.Get(context.Background(), &df.AssetRequest{Sha256: sha})
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
@@ -70,6 +78,53 @@ func TestAssetService_BufconnManifestAndChunkedGet(t *testing.T) {
 	}
 	if chunks < 2 || !final || !bytes.Equal(got, data) {
 		t.Fatalf("stream chunks=%d final=%v bytes=%d want=%d", chunks, final, len(got), len(data))
+	}
+}
+
+func TestAssetService_RuntimeSHAStreamsWithExtensionContentType(t *testing.T) {
+	assetDir := t.TempDir()
+	data := []byte("runtime lobby qr")
+	digest := sha256.Sum256(data)
+	sha := hex.EncodeToString(digest[:])
+	if err := os.WriteFile(filepath.Join(assetDir, sha+".png"), data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	server, err := NewAssetServer(&memoryAssetSource{}, assetDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stream := &recordingAssetStream{}
+	if err := server.Get(&df.AssetRequest{Sha256: sha}, stream); err != nil {
+		t.Fatalf("Get(runtime) error = %v", err)
+	}
+	if len(stream.chunks) < 1 || !bytes.Equal(streamData(stream.chunks), data) {
+		t.Fatalf("runtime chunks = %#v", stream.chunks)
+	}
+	chunk := stream.chunks[0]
+	if chunk.GetSha256() != sha || chunk.GetName() != sha || chunk.GetContentType() != "image/png" || !stream.chunks[len(stream.chunks)-1].GetFinal() {
+		t.Fatalf("runtime metadata = %v", chunk)
+	}
+}
+
+func streamData(chunks []*df.AssetChunk) []byte {
+	var data []byte
+	for _, chunk := range chunks {
+		data = append(data, chunk.GetData()...)
+	}
+	return data
+}
+
+func TestAssetService_RuntimeSHAReportsMissAndRejectsBadSelector(t *testing.T) {
+	server, err := NewAssetServer(&memoryAssetSource{}, t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	missing := strings.Repeat("b", 64)
+	if err := server.Get(&df.AssetRequest{Sha256: missing}, &recordingAssetStream{}); status.Code(err) != codes.NotFound {
+		t.Fatalf("missing runtime asset code = %v, want %v", status.Code(err), codes.NotFound)
+	}
+	if err := server.Get(&df.AssetRequest{Sha256: "../" + missing}, &recordingAssetStream{}); status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("bad runtime selector code = %v, want %v", status.Code(err), codes.InvalidArgument)
 	}
 }
 
@@ -110,7 +165,7 @@ func (s *memoryAssetSource) Open(_ context.Context, selector string) (AssetInfo,
 	return AssetInfo{}, nil, io.ErrUnexpectedEOF
 }
 
-type recordingAssetStream struct{}
+type recordingAssetStream struct{ chunks []*df.AssetChunk }
 
 func (*recordingAssetStream) SetHeader(metadata.MD) error  { return nil }
 func (*recordingAssetStream) SendHeader(metadata.MD) error { return nil }
@@ -118,4 +173,7 @@ func (*recordingAssetStream) SetTrailer(metadata.MD)       {}
 func (*recordingAssetStream) Context() context.Context     { return context.Background() }
 func (*recordingAssetStream) SendMsg(any) error            { return nil }
 func (*recordingAssetStream) RecvMsg(any) error            { return io.EOF }
-func (*recordingAssetStream) Send(*df.AssetChunk) error    { return nil }
+func (s *recordingAssetStream) Send(chunk *df.AssetChunk) error {
+	s.chunks = append(s.chunks, chunk)
+	return nil
+}

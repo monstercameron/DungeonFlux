@@ -2,10 +2,16 @@ package wire
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"net"
 	"net/http/httptest"
+	"net/url"
+	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -134,6 +140,67 @@ func TestE2E_DfctlRunThroughLobby(t *testing.T) {
 	sendDebug(t, debugClient, debugCtx, "host_skip")
 	assertPhase(t, debugClient, debugCtx, "DF-E2E", "end", phaseTrace)
 	t.Logf("phase trace: %v", phaseTrace)
+}
+
+func TestE2E_DMLobbyQRFetchesBySHAOverGRPC(t *testing.T) {
+	app, cfg := buildPathApp(t)
+	defer func() { _ = app.Close() }()
+	server := newPathHTTPServer(t, app)
+	defer server.Close()
+	conn := dialPathGRPC(t, server.URL)
+	defer conn.Close()
+
+	session := df.NewSessionServiceClient(conn)
+	if _, err := session.Join(context.Background(), &df.JoinRequest{
+		RoomCode: cfg.Server.RoomCode, Kind: df.ClientKind_CLIENT_KIND_DM, DmToken: cfg.Server.DMToken,
+	}); err != nil {
+		t.Fatalf("join DM: %v", err)
+	}
+	watchCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	watch, err := session.Watch(watchCtx, &df.WatchRequest{SeatToken: cfg.Server.DMToken})
+	if err != nil {
+		t.Fatalf("watch DM: %v", err)
+	}
+	message, err := watch.Recv()
+	if err != nil {
+		t.Fatalf("receive DM view: %v", err)
+	}
+	qrURL := message.GetState().GetDm().GetLobby().GetQrUrl()
+	parsed, err := url.Parse(qrURL)
+	if err != nil || parsed.Path == "" {
+		t.Fatalf("DM qr_url = %q, parse error = %v", qrURL, err)
+	}
+	filename := path.Base(parsed.Path)
+	sha := strings.TrimSuffix(filename, path.Ext(filename))
+	if len(sha) != 64 {
+		t.Fatalf("DM qr_url = %q, want a content-addressed SHA", qrURL)
+	}
+
+	assets := df.NewAssetServiceClient(conn)
+	assetStream, err := assets.Get(context.Background(), &df.AssetRequest{Sha256: sha})
+	if err != nil {
+		t.Fatalf("fetch lobby QR by SHA: %v", err)
+	}
+	var data []byte
+	var contentType string
+	var final bool
+	for {
+		chunk, recvErr := assetStream.Recv()
+		if recvErr == io.EOF {
+			break
+		}
+		if recvErr != nil {
+			t.Fatalf("receive lobby QR: %v", recvErr)
+		}
+		data = append(data, chunk.GetData()...)
+		contentType = chunk.GetContentType()
+		final = final || chunk.GetFinal()
+	}
+	digest := sha256.Sum256(data)
+	if len(data) == 0 || !final || contentType != "image/png" || hex.EncodeToString(digest[:]) != sha {
+		t.Fatalf("lobby QR = bytes=%d final=%v content_type=%q sha=%s want %s", len(data), final, contentType, hex.EncodeToString(digest[:]), sha)
+	}
 }
 
 func sendDebug(t *testing.T, client df.DebugServiceClient, ctx context.Context, event string) {
