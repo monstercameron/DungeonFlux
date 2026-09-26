@@ -2016,6 +2016,12 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: redundant frame updates and proxy construction allocations are reduced where measurements support the change, image quality settings and visual/occlusion/movement semantics remain intact, baseline-versus-optimized measurements and visual checks are recorded, regressions and scoped gate pass, and devlog plus per-todo commit are complete.
   status: done Codex; idle work removed, exact proxy geometry retained, full-quality image/effect checks and regressions pass; gate-20260926-171128 failures 0; measured FPS limits recorded
 
+- [x] SPLAT-025 - curate battle camera angles for both scanned maps
+  why: The developer requests flattering angles for epic D&D battles on Wooded Path and Dittrich's Tomb.
+  lane: L-WEB-SPLAT - paths: `web/splat/scenes/64bb46d5.json`, `web/splat/scenes/cb2fddd6.json`, `docs/devlog.html` - depends: SPLAT-023, SPLAT-024
+  done when: both maps have visually reviewed establishing/tactical/action camera presets with readable legal stand-ins, preserved grid registration and image quality, screenshots, camera regression checks, scoped gate, devlog and one atomic commit.
+  status: DONE Codex; reviewed both maps at establishing/tactical/action angles with legal stand-ins; tactical pitches 35.99/35.63 degrees; camera-only regression and gate-20260926-180522 pass; screenshots and devlog retained
+
 ## 23. dfctl debug CLI
 
 Command-line reads and demo writes for agents and the developer.
