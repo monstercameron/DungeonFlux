@@ -5,6 +5,7 @@ package dm
 import (
 	"github.com/monstercameron/GoWebComponents/v6/html"
 	"github.com/monstercameron/GoWebComponents/v6/ui"
+	"syscall/js"
 )
 
 const dmThemeCSS = `
@@ -133,8 +134,8 @@ const dmLobbyFinishCSS = `
 .df-lobby-title-plate{left:236px!important;top:-34px!important;width:740px!important;height:auto!important;pointer-events:none}
 .df-lobby-title-plate .df-title-plate{filter:none;text-shadow:none}
 .df-lobby-title-plate .df-wordmark-art{width:740px;height:493px}
-.df-lobby-title-plate .df-title-plate-subtitle{position:relative;margin:-128px 0 0!important;color:#eadcbc;font-family:Cinzel,'Cormorant Garamond',Georgia,serif;font-size:19px!important;font-weight:600;letter-spacing:.16em!important;text-shadow:0 2px 6px #000,0 0 14px rgba(0,0,0,.9)}
-.df-lobby-title-plate .df-title-plate-subtitle:before,.df-lobby-title-plate .df-title-plate-subtitle:after{display:inline-block;width:46px;height:1px;margin:0 16px;vertical-align:middle;background:linear-gradient(90deg,transparent,rgba(231,194,122,.85));content:""}
+.df-lobby-title-plate .df-title-plate-subtitle{position:relative;margin:-128px -40px 0!important;white-space:nowrap;color:#eadcbc;font-family:Cinzel,'Cormorant Garamond',Georgia,serif;font-size:17px!important;font-weight:600;letter-spacing:.14em!important;text-shadow:0 2px 6px #000,0 0 14px rgba(0,0,0,.9)}
+.df-lobby-title-plate .df-title-plate-subtitle:before,.df-lobby-title-plate .df-title-plate-subtitle:after{display:inline-block;width:36px;height:1px;margin:0 12px;vertical-align:middle;background:linear-gradient(90deg,transparent,rgba(231,194,122,.85));content:""}
 .df-lobby-title-plate .df-title-plate-subtitle:after{background:linear-gradient(90deg,rgba(231,194,122,.85),transparent)}
 .df-lobby-panel{isolation:isolate}
 .df-panel-frame{position:absolute;inset:-8px;z-index:0;pointer-events:none;box-sizing:border-box;border:52px solid transparent;border-image-slice:170 fill;border-image-width:52px;border-image-repeat:stretch;opacity:.94;filter:drop-shadow(0 22px 34px rgba(0,0,0,.7))}
@@ -158,5 +159,29 @@ const dmLobbyFinishCSS = `
 
 func themeStyles() ui.Node {
 	installCanvasScale()
-	return html.Tag("style", html.Props{ID: "df-dm-theme"}, html.Text(dmThemeCSS+dmRichnessCSS+dmLobbyFinishCSS))
+	injectStyleSheet("df-dm-theme", dmThemeCSS+dmRichnessCSS+dmLobbyFinishCSS)
+	return html.Span(html.Props{Class: "df-dm-theme-anchor", Hidden: true})
+}
+
+var injectedDMCSS string
+
+// injectStyleSheet writes the sheet into <head> once. A <style> child rendered
+// through html.Text is HTML-escaped (quotes, '>', '&'), which silently drops
+// quoted fonts, content:"" pseudo-elements and child combinators.
+func injectStyleSheet(id, css string) {
+	if injectedDMCSS == css {
+		return
+	}
+	doc := js.Global().Get("document")
+	if !doc.Truthy() {
+		return
+	}
+	el := doc.Call("getElementById", id)
+	if !el.Truthy() {
+		el = doc.Call("createElement", "style")
+		el.Set("id", id)
+		doc.Get("head").Call("appendChild", el)
+	}
+	el.Set("textContent", css)
+	injectedDMCSS = css
 }
