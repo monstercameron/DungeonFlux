@@ -12,7 +12,7 @@ const GRID = Object.freeze({
   walkable: Array.from({ length: 48 }, (_, index) => index),
 });
 const WORLD_LAYER = pc.LAYERID_WORLD;
-const PRESET_LABELS = Object.freeze({ COMBAT_EST: "Battle", TACTICAL: "Overview", TURN_FOCUS: "Focus", IMPACT: "Impact", KO: "KO", VICTORY: "Victory", SOURCE: "Scan" });
+const PRESET_LABELS = Object.freeze({ COMBAT_EST: "Battle", TACTICAL: "Overview", TURN_FOCUS: "Focus", IMPACT: "Impact", KO: "KO", VICTORY: "Victory", SOURCE: "Scan", SURVEY: "Wide" });
 const canvas = document.querySelector("#df-splat-viewer");
 const statusNode = document.querySelector("#status");
 const presetsNode = document.querySelector("#presets");
@@ -221,7 +221,7 @@ async function attachViewer(profile, source, bundle) {
     addLODOptions(profile, levels);
     const defaultLOD = profile?.lod === undefined ? 0 : Math.max(0, Math.min(levels - 1, Number(profile.lod)));
     const scene = createSplatEntity(pc, app, bundle, { layers: [WORLD_LAYER], lodRangeMin: defaultLOD, lodRangeMax: defaultLOD, name: "df-viewer-splat" });
-    const battleGrid = createBattleGrid(pc, app, activeGrid, { name: "df-viewer-grid", lineWidth: 0.035, opacity: 0.72, collider: bundle.collider });
+    const battleGrid = createBattleGrid(pc, app, activeGrid, { name: "df-viewer-grid", lineWidth: 0.06, opacity: 0.95, collider: bundle.collider });
     gridEntity = battleGrid.entity;
     gridEntity.lodLevels = Number(bundle.asset.resource?.octree?.lodLevels ?? 0);
     if (profile?.transform) {

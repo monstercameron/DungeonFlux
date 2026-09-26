@@ -209,7 +209,7 @@ function attachScene(state, message, bundle) {
   const activeGrid = bundle.grid ?? message.grid;
   if (activeGrid) {
     grid = createBattleGrid(pc, app, activeGrid, {
-      name: "df-battle-grid", lineWidth: 0.035, opacity: 0.72, collider: bundle.collider,
+      name: "df-battle-grid", lineWidth: 0.06, opacity: 0.95, collider: bundle.collider,
     });
     if (grid.layer?.id !== undefined && !camera.camera.layers.includes(grid.layer.id)) {
       camera.camera.layers = [...camera.camera.layers, grid.layer.id];

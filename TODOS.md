@@ -1944,11 +1944,11 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   lane: L-WEB-SPLAT · paths: `web/splat/protocol*.go`, `web/splat/js/voxel*.mjs`, `web/splat/js/grid_overlay.mjs`, `web/splat/js/debug_pick.mjs`, `web/splat/js/battle_scene.mjs`, `web/splat/js/viewer.mjs`, `web/splat/js/df-splat.mjs`, `web/splat/scenes/*.json` · depends: SPLAT-012
   done when: cells remain 5 feet (1.524 metres), voxel floor support and agent clearance determine every candidate cell in the battle area, grid lines follow supported floor heights, antialiasing is enabled, scale and coverage regressions pass, and both scenes are visually inspected with a green lane gate.
   status: done a17301a (scoped gate failures 0; coverage 85.3%; both scenes visually verified with MSAA 4)
-- [ ] SPLAT-014 · concept-art glow shader and distant battle grid
+- [x] SPLAT-014 · concept-art glow shader and distant battle grid
   why: The developer requests softly glowing grid lines matching the project battlemap concepts and coverage much farther into both scanned scenes.
   lane: L-WEB-SPLAT · paths: `web/splat/js/grid*.mjs`, `web/splat/js/viewer.mjs`, `web/splat/js/df-splat.mjs`, `web/splat/js/voxel*.mjs`, `web/splat/js/battle_scene.mjs`, `web/splat/scenes/*.json` · depends: SPLAT-013
   done when: a genuine antialiased line glow shader matches the concept palette and halo, 5-foot cells and voxel exclusion remain valid over substantially larger supported areas, both scenes are visually inspected with usable performance, and the scoped gate passes.
-  status: claimed Codex 2026-09-26
+  status: completed Codex; scoped gate and visual QA green 2026-09-26
 
 ## 23. dfctl debug CLI
 

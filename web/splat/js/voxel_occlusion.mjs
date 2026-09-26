@@ -77,9 +77,52 @@ export function extractColliderBoxes(source, options = {}) {
     ? boxes.filter((box) => !isFloorVolume(box, grid, settings))
     : boxes;
   if (filtered.length <= settings.maxBoxes) return filtered;
-  options.onLimit?.({ available: filtered.length, retained: settings.maxBoxes });
-  const step = filtered.length / settings.maxBoxes;
-  return Array.from({ length: settings.maxBoxes }, (_value, index) => filtered[Math.floor((index + 0.5) * step)]);
+  const coalesced = coalesceBoxes(filtered, settings.maxBoxes);
+  options.onLimit?.({ available: filtered.length, retained: coalesced.length, coalesced: true, discarded: 0 });
+  return coalesced;
+}
+
+function unionBoxes(left, right) {
+  return {
+    min: left.min.map((value, axis) => Math.min(value, right.min[axis])),
+    max: left.max.map((value, axis) => Math.max(value, right.max[axis])),
+  };
+}
+
+function coalesceBoxes(boxes, maxBoxes) {
+  const mins = [0, 1, 2].map((axis) => bound(boxes, axis, "min"));
+  const maxs = [0, 1, 2].map((axis) => bound(boxes, axis, "max"));
+  let binsY = maxBoxes < 8 ? 1 : maxBoxes < 64 ? 2 : 32;
+  let binsXZ = maxBoxes < 8 ? maxBoxes : Math.max(1, Math.floor(Math.sqrt(maxBoxes / binsY)));
+  let buckets = bucketBoxes(boxes, mins, maxs, binsXZ, binsY);
+  while (buckets.size > maxBoxes && (binsXZ > 1 || binsY > 1)) {
+    if (binsXZ > 1) binsXZ = Math.max(1, Math.floor(binsXZ / 2));
+    else binsY = Math.max(1, Math.floor(binsY / 2));
+    buckets = bucketBoxes(boxes, mins, maxs, binsXZ, binsY);
+  }
+  return [...buckets.values()].map((group) => group.reduce(unionBoxes));
+}
+
+function bucketBoxes(boxes, mins, maxs, binsXZ, binsY) {
+  const buckets = new Map();
+  for (const box of boxes) {
+    const center = box.min.map((value, axis) => (value + box.max[axis]) / 2);
+    const key = center.map((value, axis) => {
+      const extent = Math.max(maxs[axis] - mins[axis], Number.EPSILON);
+      const bins = axis === 1 ? binsY : binsXZ;
+      return Math.max(0, Math.min(bins - 1, Math.floor(((value - mins[axis]) / extent) * bins)));
+    }).join(":");
+    const bucket = buckets.get(key) ?? [];
+    bucket.push(box);
+    buckets.set(key, bucket);
+  }
+  return buckets;
+}
+
+function bound(boxes, axis, side) {
+  let result = side === "min" ? Infinity : -Infinity;
+  for (const box of boxes) result = side === "min" ? Math.min(result, box.min[axis]) : Math.max(result, box.max[axis]);
+  return result;
 }
 
 function addFace(positions, indices, corners) {
