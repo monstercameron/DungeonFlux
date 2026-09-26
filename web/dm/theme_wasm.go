@@ -129,6 +129,13 @@ const dmRichnessCSS = `
 .df-dm-hud-actions .df-action-button-icon{font-size:34px!important;text-shadow:0 0 10px rgba(231,194,122,.45)}
 `
 
+// dmCombatStageCSS holds the battle canvas's starting opacity. The battle
+// stage handle sets element.style.opacity to fade it in; keeping the start
+// value out of the component's style props stops re-renders resetting it.
+const dmCombatStageCSS = `
+.df-dm-combat-splat{opacity:0}
+`
+
 const dmLobbyFinishCSS = `
 .df-wordmark-art{display:block;background-size:cover;background-position:center;background-repeat:no-repeat;-webkit-mask-size:cover;mask-size:cover;-webkit-mask-position:center;mask-position:center;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;filter:brightness(1.3) contrast(1.18) saturate(1.1)}
 .df-lobby-title-plate{left:236px!important;top:-34px!important;width:740px!important;height:auto!important;pointer-events:none}
@@ -174,7 +181,7 @@ const dmLobbyFinishCSS = `
 
 func themeStyles() ui.Node {
 	installCanvasScale()
-	injectStyleSheet("df-dm-theme", dmThemeCSS+dmRichnessCSS+dmLobbyFinishCSS+dmTransitionCSS)
+	injectStyleSheet("df-dm-theme", dmThemeCSS+dmRichnessCSS+dmLobbyFinishCSS+dmTransitionCSS+dmCombatStageCSS)
 	return html.Span(html.Props{Class: "df-dm-theme-anchor", Hidden: true})
 }
 

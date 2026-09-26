@@ -13,8 +13,12 @@ type Bridge struct {
 	mu       sync.Mutex
 	module   js.Value
 	callback js.Func
-	events   chan Event
-	closed   bool
+	// unsubscribe removes callback from dfSplat's listeners; without it a
+	// closed bridge's released callback stayed registered and every later
+	// event threw "call to released function".
+	unsubscribe js.Value
+	events      chan Event
+	closed      bool
 }
 
 // New creates a browser bridge with a bounded event channel.
@@ -27,11 +31,18 @@ func New(buffer int) *Bridge {
 		if len(args) == 0 {
 			return nil
 		}
-		b.push(args[0].String())
+		// dfSplat emits event objects; String() on an object is
+		// "[object Object]", which failed to decode, so "ready" never
+		// reached Go and the battle canvas stayed hidden.
+		raw := args[0]
+		if raw.Type() == js.TypeObject {
+			raw = js.Global().Get("JSON").Call("stringify", raw)
+		}
+		b.push(raw.String())
 		return nil
 	})
 	if b.module.Truthy() {
-		b.module.Call("onEvent", b.callback)
+		b.unsubscribe = b.module.Call("onEvent", b.callback)
 	}
 	return b
 }
@@ -106,6 +117,9 @@ func (b *Bridge) Close() {
 		return
 	}
 	b.closed = true
+	if b.unsubscribe.Type() == js.TypeFunction {
+		b.unsubscribe.Invoke()
+	}
 	b.callback.Release()
 	close(b.events)
 	b.mu.Unlock()

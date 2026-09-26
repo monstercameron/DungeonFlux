@@ -27,11 +27,10 @@ func CombatComponent(view *dungeonfluxv1.DMView, sequence ...uint64) router.Comp
 			if !stage.Enabled {
 				return nil
 			}
-			handle := newBattleStageHandle()
+			handle := claimBattleStage(stage)
 			handleRef.Set(handle)
-			handle.mount(stage)
 			return func() {
-				handle.dispose()
+				releaseBattleStage(handle)
 				handleRef.Set(nil)
 			}
 		}, stage.Init.SceneURL)
@@ -43,12 +42,17 @@ func CombatComponent(view *dungeonfluxv1.DMView, sequence ...uint64) router.Comp
 		}, stage.Scene.Seq, stage.Scene.Visible, stage.Scene.Camera.FocusTokenID, stageSnapshotKey(stage))
 		children := make([]ui.Node, 0, 4)
 		if stage.Enabled {
-			children = append(children, html.Canvas(html.Props{ID: stage.Init.CanvasID, Class: "df-dm-combat-splat", Width: "1920", Height: "1080", Style: map[string]string{"position": "absolute", "inset": "0", "width": "100%", "height": "100%", "opacity": "0", "transition": "opacity 1s ease", "z-index": "0", "pointer-events": "none"}}))
+			// No width/height attributes and no opacity here: PlayCanvas sizes the
+			// canvas and the battle stage handle fades it in. When these were
+			// props, every re-render reset them (clearing the drawing buffer
+			// and hiding the canvas), so the splat kept fading away. The
+			// starting opacity lives in dmCombatStageCSS.
+			children = append(children, html.Canvas(html.Props{ID: stage.Init.CanvasID, Class: "df-dm-combat-splat", Style: map[string]string{"position": "absolute", "inset": "0", "width": "100%", "height": "100%", "transition": "opacity 1s ease", "z-index": "0", "pointer-events": "none"}}))
 		}
 		fallback := []ui.Node{combatGrid(model.Segments), combatHighlights(model.Highlights)}
 		fallback = append(fallback, combatTokens(model.Tokens)...)
 		if stage.Enabled {
-			children = append(children, html.Div(html.Props{ID: "df-combat-flat-fallback", Style: map[string]string{"position": "absolute", "inset": "0", "z-index": "1", "opacity": "1", "transition": "opacity 180ms ease", "pointer-events": "none"}}, fallback...))
+			children = append(children, html.Div(html.Props{ID: "df-combat-flat-fallback", Style: map[string]string{"position": "absolute", "inset": "0", "z-index": "1", "transition": "opacity 180ms ease", "pointer-events": "none"}}, fallback...))
 		} else if !model.UseSplat {
 			children = append(children, fallback...)
 		}

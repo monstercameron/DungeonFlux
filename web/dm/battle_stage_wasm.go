@@ -17,6 +17,7 @@ type battleStageHandle struct {
 	fallback js.Value
 	done     chan struct{}
 	timer    *time.Timer
+	release  *time.Timer
 	then     js.Func
 	catch    js.Func
 	alive    bool
@@ -27,6 +28,57 @@ type battleStageHandle struct {
 
 func newBattleStageHandle() *battleStageHandle {
 	return &battleStageHandle{done: make(chan struct{})}
+}
+
+// liveStage outlives CombatComponent mounts. The TV re-mounts the combat
+// component on every snapshot, and each mount/unmount disposed and reloaded
+// the PlayCanvas runtime, so the splat flickered on and off. A new mount for
+// the same scene now claims the live stage; an unmount only schedules its
+// disposal, which the next claim cancels.
+var liveStage *battleStageHandle
+
+const stageReleaseGrace = 1500 * time.Millisecond
+
+func claimBattleStage(stage BattleStageModel) *battleStageHandle {
+	if h := liveStage; h != nil && h.alive && h.current.Init.SceneURL == stage.Init.SceneURL {
+		if h.release != nil {
+			h.release.Stop()
+			h.release = nil
+		}
+		document := js.Global().Get("document")
+		canvas := document.Call("getElementById", stage.Init.CanvasID)
+		if canvas.Truthy() && canvas.Equal(h.canvas) {
+			h.fallback = document.Call("getElementById", "df-combat-flat-fallback")
+			h.apply(stage)
+			if h.ready {
+				h.setOpacity("1")
+				h.setFallbackOpacity("0")
+			}
+			return h
+		}
+	}
+	if liveStage != nil {
+		liveStage.dispose()
+	}
+	h := newBattleStageHandle()
+	h.mount(stage)
+	liveStage = h
+	return h
+}
+
+func releaseBattleStage(h *battleStageHandle) {
+	if h == nil || !h.alive {
+		return
+	}
+	if h.release != nil {
+		h.release.Stop()
+	}
+	h.release = time.AfterFunc(stageReleaseGrace, func() {
+		if liveStage == h {
+			liveStage = nil
+		}
+		h.dispose()
+	})
 }
 
 func (h *battleStageHandle) mount(stage BattleStageModel) {
@@ -80,6 +132,12 @@ func (h *battleStageHandle) watchEvents(events <-chan splat.Event) {
 			if !h.alive {
 				return
 			}
+			// A stats event with a frame rate means the scene is rendering, so it
+			// counts as ready too: a "ready" that arrives before this handle
+			// subscribed must not leave the canvas hidden by the 6 s fallback.
+			if event.Type == "stats" && event.FPSP5 > 0 && !h.ready {
+				event.Type = "ready"
+			}
 			switch event.Type {
 			case "ready":
 				h.ready = true
@@ -89,6 +147,12 @@ func (h *battleStageHandle) watchEvents(events <-chan splat.Event) {
 				h.setOpacity("1")
 				h.setFallbackOpacity("0")
 			case "error":
+				// LOW_FPS is a warning (the runtime downgrades to the lite
+				// scene on its own); hiding the canvas on it made the splat
+				// fade away a few seconds after it appeared.
+				if event.Code == "LOW_FPS" {
+					break
+				}
 				h.setOpacity("0")
 				h.setFallbackOpacity("1")
 			}

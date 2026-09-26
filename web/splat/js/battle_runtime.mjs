@@ -48,9 +48,9 @@ async function readProfile(source, signal, base) {
   if (!response.ok) throw new Error(`battle profile HTTP ${response.status}`);
   return resolveProfile(await response.json(), response.url || url);
 }
-function createApplication(canvas) {
+function createApplication(canvas, maxPixelRatio = 2) {
   const app = new pc.Application(canvas, { graphicsDeviceOptions: { deviceTypes: ["webgl2"], antialias: true, alpha: true } });
-  if (app.graphicsDevice) app.graphicsDevice.maxPixelRatio = Math.min(2, globalThis.devicePixelRatio || 1);
+  if (app.graphicsDevice) app.graphicsDevice.maxPixelRatio = Math.min(maxPixelRatio, globalThis.devicePixelRatio || 1);
   app.setCanvasResolution?.(pc.RESOLUTION_AUTO);
   app.scene.gsplat.renderer = pc.GSPLAT_RENDERER_RASTER_CPU_SORT;
   app.scene.gsplat.lodMode = pc.GSPLAT_LODMODE_DISTANCE;
@@ -72,13 +72,13 @@ function transform(entity, value = {}) {
 }
 
 /** createBattleRuntime mounts an independent renderer without replacing the caller's canvas. */
-export function createBattleRuntime({ canvas, layout = "embedded", cameraControls = false, reducedMotion, baseURL } = {}) {
+export function createBattleRuntime({ canvas, layout = "embedded", cameraControls = false, reducedMotion, baseURL, maxPixelRatio } = {}) {
   if (!canvas || typeof canvas.getContext !== "function" || typeof canvas.addEventListener !== "function") throw new TypeError("an HTML canvas is required");
   if (OWNED_CANVASES.has(canvas)) throw new Error("canvas already has a battle runtime");
   const base = baseURL ?? canvas.ownerDocument?.baseURI ?? globalThis.document?.baseURI ?? globalThis.location?.href;
   const surface = createCanvasSurface({ canvas, layout });
   let app;
-  try { app = createApplication(canvas); } catch (error) { surface.dispose(); throw error; }
+  try { app = createApplication(canvas, maxPixelRatio ?? (layout === "fullscreen" ? 1 : 2)); } catch (error) { surface.dispose(); throw error; }
   OWNED_CANVASES.set(canvas, app);
   const listeners = new Set();
   const state = { app, canvas, cameras: {}, camera: null, cameraPreset: "TACTICAL", sceneSequence: 0, cameraSequence: 0,

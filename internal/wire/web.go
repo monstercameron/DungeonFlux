@@ -36,6 +36,15 @@ func mountWeb(mux *http.ServeMux, cfg config.Config) error {
 	mux.Handle("/splat/js/", staticHandler(filepath.Join(root, "splat", "js")))
 	mux.Handle("/splat/vendor/", staticHandler(filepath.Join(root, "splat", "vendor")))
 	mux.Handle("/splat/scenes/", staticHandler(filepath.Join(root, "splat", "scenes")))
+	// Scene profiles in web/splat/scenes reference their LOD chunks and voxel
+	// colliders as ../../../artifacts/media/supersplat/..., which resolves to
+	// this path. These are the large streamed splat files: the stated HTTP
+	// exception to the gRPC-only transport (SPLAT-023).
+	supersplat, err := filepath.Abs(filepath.Join("artifacts", "media", "supersplat"))
+	if err != nil {
+		return fmt.Errorf("resolve splat media root: %w", err)
+	}
+	mux.Handle("/artifacts/media/supersplat/", http.StripPrefix("/artifacts/media/supersplat/", http.FileServer(http.Dir(supersplat))))
 	mux.HandleFunc("/assets/", assetHandler(filepath.Join(cfg.Server.DataDir, "assets")))
 	return nil
 }
@@ -173,6 +182,9 @@ func staticHandler(root string) http.Handler {
 		if strings.HasSuffix(r.URL.Path, ".mjs") {
 			w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
 		}
+		// Revalidate on every load: without this, browsers kept running a stale
+		// battle module after a fix was deployed.
+		w.Header().Set("Cache-Control", "no-cache")
 		http.StripPrefix(filepath.ToSlash("/splat/"), http.FileServer(http.Dir(filepath.Dir(root)))).ServeHTTP(w, r)
 	})
 }
