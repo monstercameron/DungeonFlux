@@ -1267,11 +1267,11 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   done when: dice{OFFERED} → roll tap → result.; gate green (≥ 70% coverage where applicable)
   status: committed f16954b
 
-- [ ] PHONE-008 · fix PTT queue test failure
+- [x] PHONE-008 · fix PTT queue test failure
   why: ORCH review: TestPTTModel_QueueDoesNotBlockAndReportsFull fails in web/phone after PHONE-004, breaking the web/phone package gate.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/ptt*.go` · depends: PHONE-004
   done when: go test ./web/phone passes; the queue never blocks the MediaRecorder callback and reports full as the test expects.
-  status: committed cb377ee
+  status: done 723e253
 
 - [ ] PHONE-009 · compose the phone screen flow from SeatView
   why: The phone screens (create, sheet, moves, PTT, typed, dice, combat) landed as separate views; nothing switches between them by phase and seat state.
