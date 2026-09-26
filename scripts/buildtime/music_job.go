@@ -145,7 +145,19 @@ func renderMusicTake(ctx context.Context, client *http.Client, endpoint, outputD
 	measurement := beatMeasurement{}
 	finalPath := musicOutputPath(outputDir, track.ID, take)
 	if options.ProcessAudio {
-		measurement, err = runBeatcheck(ctx, options.BeatcheckPath, rawPath, track.BPM)
+		// Only loops need the measured tempo to match: their loop points are
+		// bar-aligned. Stingers and one-shot beds (sparse, free-time) failed
+		// the check even when the audio was fine, so they skip tempo folding.
+		expectedBPM := track.BPM
+		if !track.Loop {
+			expectedBPM = 0
+		}
+		measurement, err = runBeatcheck(ctx, options.BeatcheckPath, rawPath, expectedBPM)
+		if err != nil && !track.Loop {
+			// A single hit and a held note has no regular onsets; a
+			// non-loop track is then trimmed from its start.
+			measurement, err = beatMeasurement{BPM: float64(track.BPM)}, nil
+		}
 		if err != nil {
 			return "", err
 		}

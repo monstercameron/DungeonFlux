@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -16,6 +17,9 @@ func TestLiveMusicJob(t *testing.T) {
 		t.Skip("DF_LIVE=1 is required")
 	}
 	options := DefaultMusicOptions()
+	if raw := os.Getenv("DF_MUSIC_ONLY"); raw != "" {
+		options.TrackIDs = strings.Split(raw, ",")
+	}
 	if err := PrintMusicPlan(os.Stdout, options); err != nil {
 		t.Fatal(err)
 	}
