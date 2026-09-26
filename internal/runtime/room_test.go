@@ -22,6 +22,29 @@ type roomEngine struct {
 	effects []domain.Effect
 }
 
+type rollTimerEngine struct {
+	path   vocab.StateID
+	events []domain.Event
+}
+
+func (e *rollTimerEngine) Step(env domain.Envelope) domain.StepOut {
+	e.events = append(e.events, env.Event)
+	switch event := env.Event.(type) {
+	case domain.Act:
+		if e.path == vocab.StateConversation && event.Move == vocab.MovePersuade {
+			e.path = vocab.StateCheck
+		}
+	case domain.TimerFired:
+		if e.path == vocab.StateCheck && event.Name == "roll_resolved" {
+			e.path = vocab.StateResolution
+		}
+	}
+	return domain.StepOut{Ack: &domain.Ack{Accepted: true}}
+}
+func (e *rollTimerEngine) LegalMoves(domain.SeatID) []vocab.MoveID { return nil }
+func (e *rollTimerEngine) View() domain.View                       { return domain.View{Path: e.path} }
+func (e *rollTimerEngine) Inspect() domain.Inspect                 { return domain.Inspect{} }
+
 func (e *roomEngine) Step(env domain.Envelope) domain.StepOut {
 	e.seen = append(e.seen, env.Seq)
 	e.views = append(e.views, vocab.StateID(env.Event.Kind()))
@@ -103,6 +126,38 @@ func TestRoom_StartTimerPostsFiredEventBackThroughStep(t *testing.T) {
 	<-published
 	if engine.views[1] != vocab.StateID(vocab.EventTimerFired) {
 		t.Fatalf("second event = %v", engine.views[1])
+	}
+	cancel()
+	if err := <-done; !errors.Is(err, context.Canceled) {
+		t.Fatalf("Run error = %v", err)
+	}
+}
+
+func TestRoom_PersuadeRollTimerResolvesCheckWithoutHostSkip(t *testing.T) {
+	clk := clock.NewFake(time.Unix(0, 0))
+	engine := &rollTimerEngine{path: vocab.StateConversation}
+	published := make(chan struct{}, 4)
+	room := NewRoom(engine, clk, nil, nil, func(domain.View) { published <- struct{}{} })
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- room.Run(ctx) }()
+	<-published
+	if !room.Post(ctx, domain.Envelope{Event: domain.Act{Move: vocab.MovePersuade}}) {
+		t.Fatal("persuade was rejected")
+	}
+	<-published
+	if engine.path != vocab.StateCheck {
+		t.Fatalf("after persuade path = %q, want check", engine.path)
+	}
+	clk.Advance(rollResolvedAfter)
+	<-published
+	if engine.path != vocab.StateResolution {
+		t.Fatalf("after fake clock path = %q, want resolution", engine.path)
+	}
+	for _, event := range engine.events {
+		if cmd, ok := event.(domain.HostCmd); ok && cmd.Cmd == vocab.HostSkip {
+			t.Fatal("check resolution used host skip")
+		}
 	}
 	cancel()
 	if err := <-done; !errors.Is(err, context.Canceled) {

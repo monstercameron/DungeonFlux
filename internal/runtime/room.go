@@ -15,6 +15,8 @@ import (
 
 const roomInboxCapacity = 256
 
+const rollResolvedAfter = 3 * time.Second
+
 // Room serializes events for one game engine.
 type Room struct {
 	eng     ports.Engine
@@ -180,6 +182,7 @@ func (r *Room) process(ctx context.Context, env domain.Envelope) {
 	from := r.eng.View().Path
 	out := r.eng.Step(env)
 	to := r.eng.View().Path
+	out.Effects = append(out.Effects, rollTimerWiring(env.Event, from, to, out)...)
 	if r.log != nil {
 		record := domain.LogRecord{Seq: env.Seq, At: env.At, Kind: env.Event.Kind(), Event: env.Event, Note: newRunNote(out.Effects)}
 		if err := r.log.Append(ctx, []domain.LogRecord{record}); err != nil {
@@ -192,6 +195,23 @@ func (r *Room) process(ctx context.Context, env domain.Envelope) {
 	r.applyEffects(ctx, out.Effects, env.Scope)
 	r.logger.Debug("room step", "seq", env.Seq, "from", from, "to", to)
 	r.pub(r.eng.View())
+}
+
+func rollTimerWiring(event domain.Event, from, to vocab.StateID, out domain.StepOut) []domain.Effect {
+	if out.Ack != nil && !out.Ack.Accepted {
+		return nil
+	}
+	act, ok := event.(domain.Act)
+	if ok && act.Move == vocab.MovePersuade && from == vocab.StateConversation && to == vocab.StateCheck {
+		return []domain.Effect{domain.StartTimer{
+			Name: "roll_resolved", After: rollResolvedAfter, Pausable: true,
+			Scope: domain.Scope{Machine: vocab.MachineCheck},
+		}}
+	}
+	if from == vocab.StateCheck && to != vocab.StateCheck {
+		return []domain.Effect{domain.CancelTimer{Name: "roll_resolved"}}
+	}
+	return nil
 }
 
 func (r *Room) applyEffects(ctx context.Context, effects []domain.Effect, scope domain.Scope) {

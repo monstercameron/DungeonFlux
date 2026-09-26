@@ -92,7 +92,20 @@ func TestE2E_DfctlRunThroughLobby(t *testing.T) {
 	if response, err := debugClient.DiceForce(debugCtx, &df.DiceForceRequest{Room: "DF-E2E", D20: 17}); err != nil || !response.GetAccepted() {
 		t.Fatalf("dfctl dice force: response=%v error=%v", response, err)
 	}
-	for _, phase := range []string{"exploration", "conversation", "check", "resolution", "exploration", "hook_event"} {
+	for _, phase := range []string{"exploration", "conversation"} {
+		sendDebug(t, debugClient, debugCtx, "host_skip")
+		assertPhase(t, debugClient, debugCtx, "DF-E2E", phase, phaseTrace)
+		phaseTrace = append(phaseTrace, phase)
+	}
+	sendAct(t, debugClient, debugCtx, "1", "persuade", "")
+	assertPhase(t, debugClient, debugCtx, "DF-E2E", "check", phaseTrace)
+	phaseTrace = append(phaseTrace, "check")
+	state = waitPhaseLeaves(t, debugClient, debugCtx, "DF-E2E", "check")
+	if state.GetPhase() != "resolution" {
+		t.Fatalf("check timer did not resolve: got %q", state.GetPhase())
+	}
+	phaseTrace = append(phaseTrace, "resolution")
+	for _, phase := range []string{"exploration", "hook_event"} {
 		sendDebug(t, debugClient, debugCtx, "host_skip")
 		assertPhase(t, debugClient, debugCtx, "DF-E2E", phase, phaseTrace)
 		phaseTrace = append(phaseTrace, phase)
@@ -222,7 +235,7 @@ func contains(values []string, want string) bool {
 // deadline passes; executors on fakes post their results asynchronously.
 func waitPhaseLeaves(t *testing.T, client df.DebugServiceClient, ctx context.Context, room, phase string) *df.DebugState {
 	t.Helper()
-	deadline := time.Now().Add(3 * time.Second)
+	deadline := time.Now().Add(6 * time.Second)
 	for {
 		state := readDebugState(t, client, ctx, room)
 		if state.GetPhase() != phase || time.Now().After(deadline) {
