@@ -22,6 +22,8 @@ Rules for every coding agent in this repo. Read it in full before your first edi
 15. The backend is concurrent: work runs in goroutines that each have an owner and a context, every channel is bounded, and results return to the room loop as events. Only the engine (`Step`) stays single-threaded and pure (section 15).
 16. Log with `log/slog` only, through the logger you were handed, narrowed with `With`; never the stdlib `log` package or `fmt.Print*` outside `cmd/` and tests (section 16).
 17. To inspect or drive a running server or client, use `dfctl` (section 17), not ad-hoc scripts, database edits, or browser automation. Every change it makes goes through the engine as an event.
+18. New feature, no todo? Backfill `TODOS.md` first. Any feature, package, endpoint, screen, asset job, or behaviour not already covered by a todo gets one (or several atomic ones) in the right system group before or alongside the work. Workers propose them in the hand-in under "Backfill todos"; ORCH adds them. Nothing ships that `TODOS.md` does not describe.
+19. Clean up stale build artifacts. Delete what your todo built that is no longer current (old binaries in `artifacts/build/<LANE>/`, dead WASM bundles, superseded test outputs and coverage profiles, `artifacts/tmp/<LANE>/` scratch) before you hand in, and never leave build output outside `artifacts/` (section 4a).
 
 ## 1. What this repo is
 Planning stage. DungeonFlux is an AI dungeon-master demo: a Go server, one GoWebComponents WASM client (`/dm`, `/p`, `/host`), and gRPC over WebSocket through GoGRPCBridge. It is built in 24 hours by parallel GPT-5.6 Luna worker lanes in Codex, coordinated and reviewed by one Claude Opus 5.5 orchestrator. Codex runs every lane whose inputs are ready, bounded only by the lane map, disk, and quota (section 10).
@@ -98,6 +100,12 @@ Everything not meant to be committed goes here. Create the subfolder you need. N
 **Runtime store decision.** The SQLite file and the sha256 asset store live under `artifacts/runtime/<instance>/`, where `<instance>` is `show` for ORCH runs and the stage, and your lane ID (for example `L-API`) for a lane's dev server, so parallel servers never share a database. The HTTP route stays `/assets/{sha256}.{ext}`; only the disk location changes. `assets/` at the root holds committed art only. plan §0.4, §0.18.5, and §0.18.9 match these paths.
 
 **Tests** write only to `t.TempDir()` or `t.ArtifactDir()`. Adapter fixtures are committed under the package's `testdata/`.
+
+### 4a. Cleaning stale artifacts
+Stale output hides bugs (an old binary or WASM bundle that still "works") and fills the disk.
+- **Workers:** before hand-in, delete your own stale output: superseded binaries in `artifacts/build/<LANE>/`, old `.wasm` bundles, coverage profiles and test transcripts from earlier runs of the same todo, and everything in `artifacts/tmp/<LANE>/`. Keep only what the hand-in cites.
+- **ORCH:** at each checkpoint, prune `artifacts/build/` except `human/` (current and last-good), prune `artifacts/test/` and `artifacts/coverage/` older than the previous checkpoint, clear `artifacts/tmp/`, and run `go clean -cache` on `artifacts/cache/go/` if free disk falls below 20 GB and no lane is running. `artifacts/runtime/human/`, `artifacts/runtime/show/`, and `artifacts/runtime/buildtime/` (generated media) are never pruned automatically.
+- Build output never lands outside `artifacts/` (no binaries in the repo root, `cmd/`, or `web/`); `.gitignore` is a backstop, not the rule.
 
 ## 5. Rules (numbered, enforceable)
 Full coding rules: plan §0.18.8 (24 rules) and §0.18.7 (errors, context, logging). This is the short form plus repo rules.
@@ -196,6 +204,8 @@ Files changed: <every path, one per line; must equal the commit's file list>
 Gate: <last ~15 lines of scripts/gate.ps1 -Lane <LANE> output>
 Walk-test paths now covered: <numbers from plan §0.12, or "none">
 Coverage: <each touched package and its statement coverage, e.g. internal/game/nested 78.4%>
+Backfill todos: <todos for any feature you added that TODOS.md did not cover, or "none">
+Cleaned: <stale artifacts you removed, or "none">
 Contract requests: <exact Go signature or proto diff + reason, or "none">
 Lane-local stand-ins: <unexported names standing in for pending contracts, or "none">
 Known gaps: <what is missing or fragile, and why>
@@ -313,7 +323,8 @@ The developer tests the game by hand throughout the build, so a working server i
 - A todo is sized to be one coherent commit: one package, one adapter, one screen, one fix. If it grows, stop and report; ORCH splits it.
 
 ### Who writes TODOS.md
-ORCH only. ORCH marks a todo `claimed` when it launches the worker, `committed <hash>` when the hand-in arrives, and `done <hash>` after review. Workers never edit `TODOS.md`; they report their commit hash in the hand-in. A single writer means no two agents ever race on the list.
+ORCH only. `TODOS.md` is grouped by system, from the simplest foundations to the most integrated systems, and every todo carries a one-sentence `why:` saying what is needed. When anyone adds a feature the list does not cover, it is backfilled first (rule 18): the worker lists the missing todos in the hand-in under "Backfill todos" (title, why, paths, depends, done when) and ORCH writes them into the matching group.
+ ORCH marks a todo `claimed` when it launches the worker, `committed <hash>` when the hand-in arrives, and `done <hash>` after review. Workers never edit `TODOS.md`; they report their commit hash in the hand-in. A single writer means no two agents ever race on the list.
 
 ### The lifecycle of one todo (worker)
 1. **Read** your todo, its `depends`, and the plan sections it cites. If a dependency is not committed yet, stop and report `blocked`.
