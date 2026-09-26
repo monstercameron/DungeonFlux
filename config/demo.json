@@ -1,0 +1,51 @@
+{
+  "server": {
+    "port": 8444,
+    "debug": false,
+    "log_level": "info",
+    "data_dir": "artifacts/runtime/show",
+    "allowed_origins": ["https://dm.example.invalid", "https://dm.example.invalid:8444"]
+  },
+  "adapters": {
+    "llm_openai": {"vendor": "openai", "mode": "live"},
+    "llm_gemini": {"vendor": "gemini", "mode": "live"},
+    "llm_anthropic": {"vendor": "anthropic", "mode": "live"},
+    "image": {"vendor": "openai", "mode": "live"},
+    "video": {"vendor": "segmind", "mode": "live"},
+    "stt": {"vendor": "elevenlabs", "mode": "live"},
+    "tts": {"vendor": "elevenlabs", "mode": "live"},
+    "sound": {"vendor": "elevenlabs", "mode": "live"}
+  },
+  "models": {
+    "chains": {
+      "opening": ["openai:gpt-6-luna/none", "anthropic:claude-haiku-4-5", "recording:opening"],
+      "npc_reply": ["openai:gpt-6-luna/none", "anthropic:claude-haiku-4-5", "recording:npc_reply"],
+      "interpret": ["openai:gpt-6-luna/none"],
+      "character_flavor": ["openai:gpt-6-luna/low", "recording:character_flavor"],
+      "stranger_lines": ["gemini:gemini-3.8-flash/low", "openai:gpt-6-luna/low", "recording:stranger_lines"],
+      "cliffhanger": ["gemini:gemini-3.8-flash/low", "openai:gpt-6-luna/low", "recording:cliffhanger"],
+      "combat_outcomes": ["gemini:gemini-3.8-flash/low", "recording:combat_outcomes"]
+    }
+  },
+  "timeouts": {
+    "character_flavor": "10s",
+    "interpret": "2.5s",
+    "spoken_first_token": "3s",
+    "prerender": "20s",
+    "portrait": "22s",
+    "tts": "5s"
+  },
+  "features": {
+    "combat_move_ui": true,
+    "turn_timers": true,
+    "live_pc_loops": true,
+    "live_video": true,
+    "sequence_mode": false,
+    "splat": true,
+    "music": true,
+    "budget_enforce": false
+  },
+  "battlefield": {"nav_path": "internal/content/battlefield_tavern.json"},
+  "budget": {"per_run_usd": 0.62, "hard_usd": 8},
+  "debug_start": ""
+}
