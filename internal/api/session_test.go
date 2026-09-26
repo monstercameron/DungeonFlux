@@ -89,6 +89,55 @@ func TestSessionServer_JoinAllowsDMAndHostTokens(t *testing.T) {
 	}
 }
 
+func TestSessionServer_TokenOnlyJoinReattachesPhoneAndKeepsLocale(t *testing.T) {
+	inbox := &fakes.FakeInbox{PostResult: true}
+	server, err := NewSessionServer(inbox, "ROOM", "HOST", "DM")
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, err := server.Join(context.Background(), &df.JoinRequest{
+		RoomCode: "ROOM", Kind: df.ClientKind_CLIENT_KIND_PHONE, Locale: "es-MX",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reconnected, err := server.Join(context.Background(), &df.JoinRequest{
+		RoomCode: "ROOM", SeatToken: first.GetSeatToken(),
+	})
+	if err != nil {
+		t.Fatalf("token-only reattach: %v", err)
+	}
+	if reconnected.GetSeatId() != first.GetSeatId() || reconnected.GetPlayerNumber() != first.GetPlayerNumber() {
+		t.Fatalf("reattached seat = %+v, initial = %+v", reconnected, first)
+	}
+	if reconnected.GetLocale() != "es" {
+		t.Fatalf("reattached locale = %q, want es", reconnected.GetLocale())
+	}
+	if len(inbox.Calls) != 1 {
+		t.Fatalf("reattach posted %d join events, want one", len(inbox.Calls))
+	}
+}
+
+func TestSessionServer_TokenOnlyJoinRecognizesDMAndHost(t *testing.T) {
+	server, err := NewSessionServer(&fakes.FakeInbox{PostResult: true}, "ROOM", "HOST", "DM")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, token := range []string{"DM", "HOST"} {
+		t.Run(token, func(t *testing.T) {
+			request := &df.JoinRequest{RoomCode: "ROOM", SeatToken: token}
+			if token == "DM" {
+				request.DmToken = token
+			} else {
+				request.HostToken = token
+			}
+			if _, err := server.Join(context.Background(), request); err != nil {
+				t.Fatalf("token-only %s join: %v", token, err)
+			}
+		})
+	}
+}
+
 func statusCode(err error) int {
 	if err == nil {
 		return 0
