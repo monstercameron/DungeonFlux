@@ -13,3 +13,14 @@ func TestCallErrorWrapsVendorError(t *testing.T) {
 		t.Fatalf("unexpected call error: %v", e)
 	}
 }
+
+func TestCallErrorWithoutCauseAndNilReceiver(t *testing.T) {
+	e := &CallError{Vendor: vocab.VendorGemini, Kind: vocab.ErrUnavailable}
+	if e.Error() != "gemini: unavailable" || e.Unwrap() != nil {
+		t.Fatalf("unexpected cause-free error: %v", e)
+	}
+	var nilError *CallError
+	if nilError.Error() != "<nil>" || nilError.Unwrap() != nil {
+		t.Fatal("nil CallError should be safe")
+	}
+}
