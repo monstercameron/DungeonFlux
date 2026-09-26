@@ -11,14 +11,14 @@ Rules for every coding agent in this repo. Read it in full before your first edi
 4. Your packages compile after every edit. Your lane's tests run against `internal/fakes`, never a sibling lane's code.
 5. Done means `scripts/gate.ps1 -Lane <LANE>` is green, run from PowerShell, and the hand-in report is written. Not green means not done.
 6. Every generated file goes under `artifacts/` (gitignored). Nothing is written to the repo root or to package directories.
-7. No git writes: no commit, push, stash, worktree, branch, or `checkout --`. Work is tracked in `TODOS.md`; **each todo is exactly one commit**, made by ORCH after review (section 13).
+7. **Work comes from `TODOS.md`, and each todo is one atomic commit.** You commit your own todo when its gate is green, staging only your todo's paths by name. No push, stash, reset, checkout, rebase, pull, amend, or branch operation (section 13).
 8. No paid or live API calls in any lane test or lane gate. Live tests sit behind `//go:build live` plus `DF_LIVE=1`. The block gates at hours 2, 5, 8, 11, and 14 (plan §0.18.9) are live checkpoints run by the developer and ORCH on the human test server; lanes never run them.
 9. Kill only the PIDs you started. Use only your lane's port. Stop your server before you hand in.
 10. Go first. JavaScript exists only in `web/splat` (plus the stock `wasm_exec.js`).
 11. Hit something hard, surprising, or instructive? Write a devlog entry (section 9) in your hand-in.
 12. Codex runs as many worker lanes at once as the lane map allows (section 10); idle lanes are wasted hours.
 13. The human test server on `:8443` is always up (section 11). Never stop it, never bind its port, never break the build it runs.
-14. Many agents work at once. Never clobber: touch only your todo's paths, never revert or reformat someone else's change, and re-read a file right before you edit it (section 13).
+14. Many agents work in the same tree at once, with uncommitted changes of their own. Never clobber them: touch only your todo's paths, never stage or commit anything else, never revert or reformat someone else's change, and re-read a file right before you edit it (section 13).
 
 ## 1. What this repo is
 Planning stage. DungeonFlux is an AI dungeon-master demo: a Go server, one GoWebComponents WASM client (`/dm`, `/p`, `/host`), and gRPC over WebSocket through GoGRPCBridge. It is built in 24 hours by parallel GPT-6 Luna worker lanes in Codex, coordinated and reviewed by one Claude Opus 5.5 orchestrator. This file overrides the plan's seven-agent limit (§0.18.9): Codex runs every lane whose inputs are ready, bounded only by the lane map, disk, and quota (section 10).
@@ -119,7 +119,7 @@ Full coding rules: plan §0.18.8 (24 rules) and §0.18.7 (errors, context, loggi
 
 **Forbidden**
 16. Killing processes you did not start: no `taskkill /IM`, no `Stop-Process -Name`, no killing by image name. Stop only PIDs you launched.
-17. `git commit`, `push`, `stash`, `worktree`, `checkout -- <path>`, `reset --hard`, `clean`, or any branch operation. Read-only git (`status`, `diff`, `log`) is fine.
+17. Any git operation that touches files or history beyond your own todo commit: `push`, `pull`, `fetch --prune`, `stash`, `worktree`, `checkout`, `restore`, `reset`, `revert`, `rebase`, `merge`, `cherry-pick`, `commit --amend`, `commit -a`, `add -A`, `add .`, `add -u`, `clean`, or any branch operation. Allowed: read-only git (`status`, `diff`, `log`, `show`) and the todo commit recipe in section 13.
 18. Probe, scratch, or debug files in the repo (use `artifacts/tmp/`).
 19. Editing another lane's files or a shared contract.
 20. Network calls in unit tests; paid API calls anywhere outside a developer-run `live` test.
@@ -177,11 +177,12 @@ wsl -- bash -lc "cd /mnt/c/Users/mreca/Desktop/DungeonFlux && go test -race ./in
 `cmd/server` flags (plan §0.18.5): `-config <file>`, `-port <lane port>`, `-data-dir artifacts/runtime/<LANE>`, and `-seed <hex>` (stage and rehearsal only). Always pass your own port and data dir; never run on 8443 or under `artifacts/runtime/human/` or `show/`. Note that `go run` starts a child process, so stop it by the PID tree you launched, never by image name.
 
 ## 8. Definition of done and hand-in
-Done = your lane gate is green from PowerShell, your server is stopped, nothing outside your owned paths and `artifacts/` changed (`git status` shows only your paths), and this report is written as your final message:
+Done = your todo's gate is green from PowerShell, your todo is committed as one atomic commit using the section 13 recipe, your server is stopped, and this report is written as your final message:
 
 ```
 ## Hand-in: <LANE> — <block, e.g. hours 5–8>
-Files changed: <every path, one per line>
+Todo: <TODO-ID> · Commit: <hash>
+Files changed: <every path, one per line; must equal the commit's file list>
 Gate: <last ~15 lines of scripts/gate.ps1 -Lane <LANE> output>
 Walk-test paths now covered: <numbers from plan §0.12, or "none">
 Contract requests: <exact Go signature or proto diff + reason, or "none">
@@ -190,7 +191,7 @@ Known gaps: <what is missing or fragile, and why>
 Artifacts: <paths under artifacts/ worth looking at>
 Devlog entries: <zero or more entries in the section 9 template, or "none">
 ```
-ORCH runs your lane gate and the full gate, then commits the todo as one commit with explicit paths (`git add <paths>; git commit -m "<TODO-ID>: <what>"`). A failing lane is sent back, not fixed by ORCH. A hand-in covers exactly one todo; a lane working several todos hands in each one separately.
+ORCH then reviews your commit: it re-runs your gate and the full gate, reads the diff against the plan, and marks the todo `done <hash>` in `TODOS.md`. Problems become a follow-up todo sent back to your lane; ORCH does not rewrite your code, and nobody rewrites your commit. A hand-in covers exactly one todo; a lane working several todos commits and hands in each one separately.
 
 ## 9. Devlog: record hard issues and discoveries
 The devlog is a public timeline at `docs/devlog.html` (live at https://monstercameron.github.io/DungeonFlux/devlog.html). It is how this project shows its agentic process, so write entries generously for anything a future agent or a reader would learn from.
@@ -229,7 +230,7 @@ Skip routine work (a clean gate, a rename, a formatting pass).
 ## 10. Running worker lanes in Codex (GPT-6 Luna)
 **Maximise parallelism.** At every point in the build, ORCH launches a Codex worker for every lane whose contract inputs exist (plan §0.18.9 lane table and §0.12 staging). There is no fixed cap: the limits are file ownership (two lanes never own the same path), disk, CPU, and Codex quota. When a lane's work splits cleanly by package or file (for example one adapter per vendor, or one web screen per view), ORCH splits it into sub-lanes with disjoint owned paths and runs them at the same time. A lane that finishes early gets the next item from its own backlog immediately.
 
-**How ORCH launches a lane.** Each lane gets a brief file under `artifacts/lanes/<LANE>/brief.md`: this file's TL;DR and sections 3–5, the lane's owned paths, the binding plan sections from the spec index, the exact deliverables and gate, and the hand-in template. Then, from PowerShell:
+**How ORCH launches a lane.** ORCH picks the next unblocked todos from `TODOS.md`, confirms their paths do not overlap, marks them claimed, and launches one worker per todo. Each worker gets a brief file under `artifacts/lanes/<LANE>/brief.md`: this file's TL;DR and sections 3–5, the lane's owned paths, the binding plan sections from the spec index, the exact deliverables and gate, and the hand-in template. Then, from PowerShell:
 ```powershell
 Get-Content artifacts\lanes\L-ENG\brief.md -Raw |
   codex exec -m gpt-6-luna --sandbox workspace-write -C "C:\Users\mreca\Desktop\DungeonFlux" `
@@ -237,13 +238,13 @@ Get-Content artifacts\lanes\L-ENG\brief.md -Raw |
 ```
 PowerShell has no `<` input redirection, so the brief is piped in. Run each lane as a background process and keep its PID. Confirm the model and flags with `codex exec --help` in hour 0; if the Codex app (desktop) is used instead of the CLI, the same brief file is the task text and the same rules apply.
 
-**Worker rules (in every brief):** sections 3–5 of this file; no git; no edits outside owned paths; set `GOCACHE`, `GOTMPDIR`, `TMP`, and `TEMP` under `artifacts/` (`artifacts/cache/go`, `artifacts/tmp/<LANE>`); run the lane gate before handing in; report honestly (a test not run is "not run", never "passed").
+**Worker rules (in every brief):** sections 3–5 and 13 of this file; one todo per brief; git only through the section 13 commit recipe; no edits outside the todo's paths; set `GOCACHE`, `GOTMPDIR`, `TMP`, and `TEMP` under `artifacts/` (`artifacts/cache/go`, `artifacts/tmp/<LANE>`); run the lane gate before handing in; report honestly (a test not run is "not run", never "passed").
 
 **ORCH review loop (Opus 5.5), per hand-in:**
 1. Read the hand-in and the diff (`git diff --stat` on the lane's paths only). Anything outside owned paths: reject.
 2. Run the lane gate and the full gate yourself; never trust a reported green.
 3. Review against the binding plan sections and the contracts. Send findings back to the same lane as a follow-up brief; the lane fixes, ORCH re-reviews.
-4. Merge in the plan's merge order, commit with explicit paths, append the lane's devlog entries, and let the human test server pick up the new build (section 11).
+4. Accept the commit (mark `done <hash>` in `TODOS.md`), push `main` at checkpoints, append the lane's devlog entries, and let the human test server pick up the new build (section 11). A bad commit is fixed forward by a new todo, never by rewriting history.
 5. Launch the lane's next item at once.
 
 **Failure signatures to recognise:**
@@ -276,28 +277,54 @@ The developer tests the game by hand throughout the build, so a working server i
   - Qwen on Cerebras defaults to `high` reasoning; send `reasoning_effort: "none"`.
 - **Game LLM calls go through SchemaFlux** (plan §0.15 and §0.18.3, once the dependency section lands); do not call vendor SDKs directly from game code.
 
-## 13. TODOS.md and working side by side
-**`TODOS.md` is the single list of work.** Every piece of work, from a contract file to a bug fix to a devlog entry batch, is a todo there before anyone starts it.
+## 13. Working from TODOS.md: atomic commits without clobbering
+`TODOS.md` is the single list of work. Nothing is built that is not a todo there first, and every todo ends as exactly one commit.
 
-**One todo = one commit.** A todo is sized so its change is one coherent commit: one package, one adapter, one screen, one fix. If it grows past that, ORCH splits it into new todos before work continues. The commit message starts with the todo ID (`ENG-012: Check machine offered/rolling/resolved`), lists only that todo's paths in `git add`, and the todo records the commit hash when it closes.
-
-**Todo format** (one block per todo, grouped by lane):
+### The todo
 ```
 - [ ] ENG-012 · Check machine: offered → rolling → resolved
   lane: L-ENG · paths: internal/game/nested/check*.go · depends: ORCH-004, ENG-003
   done when: walk paths 1–2 pass in sim; lane gate green
-  status: open | claimed <agent> <time> | in-review | done <commit> | blocked <reason>
+  status: open | claimed <agent> <time> | committed <hash> | done <hash> | blocked <reason>
 ```
-IDs are `<LANE-PREFIX>-<number>` and never reused. `paths` are the only files the todo may change.
+- IDs are `<LANE-PREFIX>-<number>` and never reused.
+- `paths` are the only files the todo may create or change. ORCH guarantees that no two open or claimed todos list the same path.
+- A todo is sized to be one coherent commit: one package, one adapter, one screen, one fix. If it grows, stop and report; ORCH splits it.
 
-**Who writes `TODOS.md`:** ORCH only. Workers never edit it; they get one todo per brief and report status in their hand-in. That keeps a single writer on the shared list, so parallel agents cannot overwrite each other's status lines.
+### Who writes TODOS.md
+ORCH only. ORCH marks a todo `claimed` when it launches the worker, `committed <hash>` when the hand-in arrives, and `done <hash>` after review. Workers never edit `TODOS.md`; they report their commit hash in the hand-in. A single writer means no two agents ever race on the list.
 
-**Not clobbering each other.** Several Codex workers, and sometimes several ORCH-launched agents, run at the same time in the same working tree. The rules:
-1. **Stay inside your todo's `paths`.** If the work needs a file outside them, stop and put it in the hand-in under "Contract requests" or "Needs another todo". Two open todos never list the same path; ORCH checks this before launching.
-2. **Re-read before you write.** Read a file immediately before editing it, never from a copy taken earlier in the run. Make targeted edits, not whole-file rewrites, unless you created the file in this todo.
-3. **Never undo or reformat others' work.** No reverting, no mass `gofmt -w ./...`, no `go fix ./...`, no find-and-replace across the tree. Format and fix only your own paths.
-4. **Shared files have one writer.** `TODOS.md`, `plan.md`, `README.md`, `docs/`, `AGENTS.md`, `go.mod`, `go.sum`, and the ORCH contract packages are written only by ORCH (or one agent ORCH names for that edit), never by two agents at once.
-5. **No git state changes.** No stash, checkout, reset, rebase, clean, or branch switch: they change files other agents are editing. Only ORCH commits, one todo at a time, with explicit paths.
-6. **Expect a moving tree.** Other todos land while you work. If a package outside your paths stops compiling, do not fix it; note it in the hand-in and keep going against `internal/fakes`.
-7. **Your own ports, data dirs, and temp dirs.** Use your lane's port and `artifacts/runtime/<LANE>/`, `artifacts/tmp/<LANE>/`, and never touch another lane's.
-8. **When in doubt, stop and report.** An unexpected diff in your paths, a file that changed under you, or an overlap with another todo goes in the hand-in; ORCH resolves it.
+### The lifecycle of one todo (worker)
+1. **Read** your todo, its `depends`, and the plan sections it cites. If a dependency is not committed yet, stop and report `blocked`.
+2. **Check your paths are clean:** `git status --porcelain -- <your paths>` must show nothing you did not create in this todo. If it shows someone else's changes, stop and report; do not touch them.
+3. **Build** inside your paths only. Re-read each file right before editing it; prefer targeted edits over whole-file rewrites (except files you created in this todo).
+4. **Gate:** `scripts/gate.ps1 -Lane <LANE>` green from PowerShell. Format and fix only your own paths (`gofmt -w <your paths>`), never the whole tree.
+5. **Commit atomically** with the recipe below.
+6. **Hand in** (section 8) with the todo ID and commit hash.
+
+### The commit recipe (the only git writes a worker makes)
+```powershell
+git add -- internal/game/nested/check.go internal/game/nested/check_test.go   # your todo's files, named one by one
+git diff --cached --name-only        # must list exactly your todo's files, nothing else
+git commit -m "ENG-012: Check machine offered, rolling, resolved" -m "Co-Authored-By: GPT-6 Luna (Codex) <noreply@openai.com>"
+git show --stat --oneline HEAD       # confirm the commit holds only your files
+```
+- **If `git diff --cached` lists anything that is not yours** (another agent staged it), do not commit. Run `git restore --staged -- <your files>` to take back only your own entries, report the conflict, and stop. Never unstage or restore other agents' files.
+- **If `.git/index.lock` exists**, another commit is in progress: wait 2 seconds and retry, up to 30 times. Never delete the lock.
+- **If the commit fails a hook**, fix the cause inside your paths and commit again as a new commit. Never use `--no-verify` or `--amend`.
+- Workers never push. ORCH pushes `main` at checkpoints.
+
+### Not clobbering agents with active changes
+The working tree always contains other agents' uncommitted, in-progress edits. Treat every file outside your todo as someone else's live work.
+1. **Stage by name only.** Never `git add -A`, `git add .`, `git add -u`, or `git commit -a`: they sweep up other agents' half-done changes into your commit.
+2. **Never change what is not yours.** No edits, formatting, `go fix`, generated-file refreshes, or find-and-replace outside your paths, even to fix an obvious typo. Put it in the hand-in under "Needs another todo".
+3. **Never discard anything.** No `checkout`, `restore` (except `--staged` on your own files), `reset`, `stash`, or `clean`: each of these can wipe another agent's uncommitted work.
+4. **Shared files have one writer.** `TODOS.md`, `plan.md`, `README.md`, `docs/`, `AGENTS.md`, `go.mod`, `go.sum`, `proto/`, `gen/`, and the ORCH contract packages are written only by ORCH, or by one agent ORCH names for that edit, never by two at once. Need a change there? "Contract requests" in your hand-in.
+5. **Expect a moving tree.** Commits land while you work. If code outside your paths stops compiling, do not fix it; build and test against `internal/fakes`, and report it.
+6. **Separate runtime state.** Your own port, `artifacts/runtime/<LANE>/`, `artifacts/tmp/<LANE>/`, `artifacts/test/<LANE>/`. Never another lane's, and never the human test server's.
+7. **When unsure, stop and report.** An unexpected diff in your paths, a file that changed under you, a path overlap, or a staged file that is not yours goes in the hand-in; ORCH resolves it.
+
+### ORCH's side
+- Before launching a wave, ORCH checks that the claimed todos' `paths` do not overlap and that each todo's `depends` are committed.
+- ORCH reviews each todo commit on its own (`git show <hash>`), never batches several todos into one commit, and never rewrites a pushed commit.
+- ORCH's own todos (contracts, `TODOS.md` status, devlog, plan) follow the same recipe: one todo, named paths, one commit.

@@ -1,8 +1,8 @@
 # TODOS.md — DungeonFlux
 
-The single list of work. Rules: `AGENTS.md` section 13. ORCH (Claude Opus 5.5) is the only writer of this file. Each todo is exactly one commit, made by ORCH after review; the commit message starts with the todo ID, and the todo records the hash when it closes. Workers (GPT-6 Luna in Codex) get one todo per brief and report status in their hand-in.
+The single list of work. Rules: `AGENTS.md` section 13. ORCH (Claude Opus 5.5) is the only writer of this file. Each todo is exactly one atomic commit, made by the worker that did it (GPT-6 Luna in Codex) with its paths staged by name; the commit message starts with the todo ID. ORCH reviews the commit and records `done <hash>` here.
 
-Status values: `open` · `claimed <agent> <time>` · `in-review` · `done <commit>` · `blocked <reason>`.
+Status values: `open` · `claimed <agent> <time>` · `committed <hash>` · `done <hash>` · `blocked <reason>`. Workers commit their own todo with the AGENTS.md section 13 recipe; ORCH reviews and marks it done.
 
 Build todos (hours 0–24) are generated from plan §0.18.9 (lane table and block schedule) and §0.12 (walk-test staging) when the plan passes the critic loop, before hour 0. Prefixes: `ORCH`, `SPIKE`, `OPS`, `ENG`, `COMBAT`, `RT`, `STORE`, `API`, `VIN`, `VOUT`, `LLM`, `CONTENT`, `MEDIA`, `WEB-SHELL`, `WEB-PHONE`, `WEB-DM`, `WEB-HOST`, `WEB-SPLAT`.
 
@@ -14,9 +14,11 @@ Build todos (hours 0–24) are generated from plan §0.18.9 (lane table and bloc
 - [x] PLAN-002 · Devlog timeline, README call to action, combat merged into the plan
   lane: ORCH · paths: docs/, README.md, AGENTS.md, plan.md
   status: done 4ee8511
-- [ ] PLAN-003 · AGENTS.md: Opus/Codex roles, parallel Codex lanes, always-up human test server, round-9 rule fixes, TODOS.md and anti-clobber rules; add TODOS.md
+- [x] PLAN-003 · AGENTS.md: Opus/Codex roles, parallel Codex lanes, always-up human test server, round-9 rule fixes, TODOS.md and anti-clobber rules; add TODOS.md
   lane: ORCH · paths: AGENTS.md, TODOS.md
-  done when: sections 10–13 present; TL;DR rules 7, 8, 12–14 updated; committed
+  status: done 07f5d23
+- [ ] PLAN-010 · AGENTS.md: work from TODOS.md, each todo one atomic commit made by its worker with named paths, anti-clobber rules for agents with active changes
+  lane: ORCH · paths: AGENTS.md, TODOS.md
   status: in-review
 - [ ] PLAN-004 · SchemaFlux as the game's LLM client layer; "Dependencies and external APIs" section with pinned versions
   lane: ORCH (research agent, sole plan.md writer while running) · paths: plan.md
