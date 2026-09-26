@@ -37,7 +37,7 @@ func DefaultWorldBible() WorldBible {
 		Premise:   "Two travellers question the one-eyed barkeep about the missing lamplighter, receive a letter that names one of them, fight the drowned thing that followed the courier, and learn that whoever rings the old bell tower already knows their names.",
 		StyleLock: "Painterly dark-fantasy illustration, lamplight and river fog, non-photorealistic.",
 		Mood:      "Rain-hammered, conspiratorial, tender underneath: a barkeep who protects her regulars, a town holding its breath at midnight.",
-		Keyterms:  []string{"Mother Vell", "the Drowned Lantern", "the bell tower"},
+		Keyterms:  []string{"Mother Vell", "the Drowned Lantern", "the bell tower", "the lamplighter"},
 		Secrets: []Secret{
 			{
 				ID:          "bell_tower_clue",

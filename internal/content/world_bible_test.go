@@ -15,6 +15,23 @@ func TestDefaultWorldBible_Validates(t *testing.T) {
 	}
 }
 
+func TestDefaultWorldBible_KeytermsCoverPremiseNouns(t *testing.T) {
+	bible := DefaultWorldBible()
+	want := []string{"Mother Vell", "the Drowned Lantern", "the bell tower", "the lamplighter"}
+	for _, term := range want {
+		found := false
+		for _, have := range bible.Keyterms {
+			if have == term {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("STT keyterms miss premise noun %q: %#v", term, bible.Keyterms)
+		}
+	}
+}
+
 func TestWorldBible_SecretFor(t *testing.T) {
 	bible := DefaultWorldBible()
 	text, ok := bible.SecretFor("bell_tower_clue", CondClueGranted)
