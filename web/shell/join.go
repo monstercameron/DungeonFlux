@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"google.golang.org/grpc/status"
 	"strings"
 
 	dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
@@ -150,13 +151,13 @@ func joinErrorMessage(err error) string {
 	if err == nil {
 		return ""
 	}
-	message := strings.ToLower(err.Error())
+	message := strings.ToLower(status.Convert(err).Message())
 	switch {
 	case strings.Contains(message, "full"), strings.Contains(message, "seat") && strings.Contains(message, "available"):
 		return "That table is full. Ask the DM for another seat."
 	case strings.Contains(message, "room"), strings.Contains(message, "code"), strings.Contains(message, "not found"):
 		return "We couldn't find that room. Check the code on the DM screen."
 	default:
-		return "We couldn't join the table. Check the code and try again."
+		return "We couldn't join the table: " + status.Convert(err).Message()
 	}
 }

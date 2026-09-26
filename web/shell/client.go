@@ -54,7 +54,7 @@ func NewClient(ctx context.Context, endpoint string) (*Client, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	conn, err := grpc.NewClient(bridgeURL, transportDialOptions(bridgeURL)...)
+	conn, err := grpc.NewClient("passthrough:///dungeonflux", transportDialOptions(bridgeURL)...)
 	if err != nil {
 		return nil, err
 	}

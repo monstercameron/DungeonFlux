@@ -46,7 +46,7 @@ func newScreenClient(endpoint string) (*screenClient, error) {
 	if endpoint == "" {
 		return nil, errors.New("dm: endpoint is required")
 	}
-	conn, err := grpc.NewClient(endpoint, dialer.New(endpoint), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient("passthrough:///dungeonflux", dialer.New(endpoint), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}

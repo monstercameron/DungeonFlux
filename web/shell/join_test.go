@@ -50,7 +50,7 @@ func TestJoinModel_RejectsInvalidAndRepeatedRequests(t *testing.T) {
 		t.Fatalf("repeat error = %v", err)
 	}
 	model.ApplyJoin(UnaryResult[*dungeonfluxv1.JoinResponse]{Err: errors.New("denied")})
-	if model.Snapshot().Phase != JoinFailed || model.Snapshot().Error != "We couldn't join the table. Check the code and try again." {
+	if model.Snapshot().Phase != JoinFailed || model.Snapshot().Error != "We couldn't join the table: denied" {
 		t.Fatalf("failure snapshot = %+v", model.Snapshot())
 	}
 	_ = first
@@ -81,7 +81,7 @@ func TestJoinErrorMessage_ClassifiesServerFailures(t *testing.T) {
 	}{
 		{name: "wrong room", err: errors.New("room code is invalid"), want: "We couldn't find that room. Check the code on the DM screen."},
 		{name: "full room", err: errors.New("no seat available"), want: "That table is full. Ask the DM for another seat."},
-		{name: "unknown", err: errors.New("transport unavailable"), want: "We couldn't join the table. Check the code and try again."},
+		{name: "unknown", err: errors.New("transport unavailable"), want: "We couldn't join the table: transport unavailable"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
