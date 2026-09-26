@@ -1031,11 +1031,11 @@ SchemaFlux for OpenAI-dialect links, Gemini and Haiku adapters, model chains, bu
   done when: the test uses testing/synctest or clock.Fake with no wall-clock waits; go test -count=50 ./internal/modelchain passes while another heavy package test runs in parallel.
   status: committed 848fdaa
 
-- [ ] LLM-013 · live smoke tests for every vendor adapter
+- [x] LLM-013 · live smoke tests for every vendor adapter
   why: The hour-11 gate needs one cheap real call per adapter to prove keys, endpoints, and parsing before the voice loop is tested.
   lane: L-LLM (delegated) · block: 8–11 · paths: `internal/adapters/**/live_test.go` · depends: LLM-001, LLM-002, LLM-003, VIN-001, VOUT-001, VOUT-007, MEDIA-002, MEDIA-003
   done when: each adapter has a //go:build live test gated by DF_LIVE=1 that makes one minimal call and asserts parsed output; go vet -tags live passes; nothing runs without the tag.
-  status: committed c092514
+  status: done 728c22c
 
 ## 15. Voice in (STT)
 
