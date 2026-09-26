@@ -79,20 +79,34 @@ func (s *Server) Assets(_ context.Context, request *df.DebugRoom) (*df.AssetList
 	return result, nil
 }
 
-// Events returns no records because event-log streaming is owned by the store.
-func (s *Server) Events(_ *df.EventsRequest, stream df.DebugService_EventsServer) error {
+// Events streams the event-log records exposed by the engine's debug source.
+func (s *Server) Events(request *df.EventsRequest, stream df.DebugService_EventsServer) error {
 	if stream == nil {
 		return errors.New("debug: events stream is required")
 	}
-	return nil
+	if request == nil {
+		return status.Error(codes.InvalidArgument, "events request is required")
+	}
+	source, ok := s.eventSource()
+	if !ok {
+		return status.Error(codes.Unimplemented, "event log is not configured")
+	}
+	return streamEvents(stream.Context(), source, request, stream)
 }
 
-// Logs returns no records because structured-log streaming is owned by logx.
-func (s *Server) Logs(_ *df.LogsRequest, stream df.DebugService_LogsServer) error {
+// Logs streams the warning and error records exposed by the engine's debug source.
+func (s *Server) Logs(request *df.LogsRequest, stream df.DebugService_LogsServer) error {
 	if stream == nil {
 		return errors.New("debug: logs stream is required")
 	}
-	return nil
+	if request == nil {
+		return status.Error(codes.InvalidArgument, "logs request is required")
+	}
+	source, ok := s.logSource()
+	if !ok {
+		return status.Error(codes.Unimplemented, "log ring is not configured")
+	}
+	return streamLogs(stream.Context(), source, request, stream)
 }
 
 // Clients returns an empty client list; client registry wiring is post-demo.
