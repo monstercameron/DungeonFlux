@@ -1,0 +1,145 @@
+{
+  "title": "Wooded Path — battle scene",
+  "scene_url": "../../../artifacts/media/supersplat/64bb46d5/lod-meta.json",
+  "lod": 3,
+  "transform": {
+    "scale": 1,
+    "offset_y": 0,
+    "rot_y_deg": 0,
+    "translate": [
+      0,
+      6.5,
+      0
+    ]
+  },
+  "grid": {
+    "origin": [
+      45.904,
+      -35
+    ],
+    "cell_m": 1.524,
+    "cols": 8,
+    "rows": 6,
+    "walkable": [
+      3,
+      4,
+      5,
+      11,
+      12,
+      13,
+      19,
+      20,
+      21,
+      27,
+      28,
+      29,
+      35,
+      36,
+      37,
+      43,
+      44,
+      45
+    ]
+  },
+  "cameras": {
+    "TACTICAL": {
+      "position": [
+        52,
+        10,
+        -15
+      ],
+      "target": [
+        52,
+        0,
+        -28.428
+      ],
+      "fov": 60
+    },
+    "COMBAT_EST": {
+      "position": [
+        53,
+        14,
+        -9
+      ],
+      "target": [
+        52,
+        0,
+        -29
+      ],
+      "fov": 60
+    },
+    "TURN_FOCUS": {
+      "position": [
+        52,
+        9,
+        -21
+      ],
+      "target": [
+        52,
+        0,
+        -28.428
+      ],
+      "fov": 55
+    },
+    "IMPACT": {
+      "position": [
+        52,
+        9,
+        -21
+      ],
+      "target": [
+        52,
+        0,
+        -28.428
+      ],
+      "fov": 52
+    },
+    "KO": {
+      "position": [
+        52,
+        13,
+        -17
+      ],
+      "target": [
+        52,
+        0,
+        -28.428
+      ],
+      "fov": 55
+    },
+    "VICTORY": {
+      "position": [
+        53,
+        14,
+        -9
+      ],
+      "target": [
+        52,
+        0,
+        -29
+      ],
+      "fov": 60
+    },
+    "SOURCE": {
+      "position": [
+        51.950321,
+        2.321109,
+        -24.961411
+      ],
+      "target": [
+        52.213506,
+        1.88106,
+        -25.81995
+      ],
+      "fov": 85
+    }
+  },
+  "source": {
+    "title": "Wooded Path",
+    "author": "luckysplat",
+    "url": "https://superspl.at/scene/64bb46d5",
+    "manifest": "https://d28zzqy0iyovbz.cloudfront.net/64bb46d5/v1/lod-meta.json",
+    "license": "https://creativecommons.org/licenses/by/4.0/"
+  },
+  "registration_note": "Path preview with the left-side boulder and vegetation excluded from walkable cells. Scan units and level ground approximation are visually authored, not a surveyed navigation mesh."
+}
