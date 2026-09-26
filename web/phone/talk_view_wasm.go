@@ -36,6 +36,11 @@ func TalkScreen(props phoneViewProps, locale string) router.Component {
 			children = append(children, html.P(html.Props{Role: "alert", Style: talkErrorStyle()}, html.Text(moves.Error)))
 		}
 		portrait := ArtURL(talk.PortraitArt)
+		if portrait == "" {
+			// ui/check_backdrop is Mother Vell at the bar and is preloaded with the
+			// ui/* set, so the conversation never opens on an empty portrait.
+			portrait = ArtURL("ui/check_backdrop")
+		}
 		return html.Main(html.Props{Class: "df-phone df-phone-conversation df-phone-talk", Role: "main", Style: talkPageStyle()},
 			PortraitHero(portrait, talk.Speaker, talk.Role, talk.Quote),
 			html.Section(html.Props{Class: "df-phone-talk-choices", Aria: map[string]string{"label": "Conversation choices"}, Style: talkChoicesStyle()}, children...),

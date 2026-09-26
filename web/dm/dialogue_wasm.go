@@ -138,8 +138,8 @@ func dialogueFigure(npcName string) ui.Node {
 	}
 	mask := "radial-gradient(ellipse 50% 52% at 50% 46%, #000 58%, transparent 100%)"
 	return html.Div(html.Props{Class: "df-dm-dialogue-figure", Aria: map[string]string{"hidden": "true"}, Style: map[string]string{
-		"position": "absolute", "right": "150px", "top": "96px", "width": "700px", "height": "700px", "z-index": "7",
-		"background-image": "url('" + url + "')", "background-size": "cover", "background-position": "center 30%",
+		"position": "absolute", "right": "170px", "top": "70px", "width": "660px", "height": "720px", "z-index": "7",
+		"background-image": "url('" + url + "')", "background-size": "cover", "background-position": "center 6%",
 		"-webkit-mask-image": mask, "mask-image": mask, "filter": "saturate(1.05) contrast(1.05)",
 	}})
 }
