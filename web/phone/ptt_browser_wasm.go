@@ -17,7 +17,8 @@ type BrowserRecorder struct {
 	stopRequested chan struct{}
 	done          chan struct{}
 	failed        chan struct{}
-	once          sync.Once
+	stopOnce      sync.Once
+	failOnce      sync.Once
 	errMu         sync.Mutex
 	err           error
 	disposeOnce   sync.Once
@@ -44,7 +45,7 @@ func NewBrowserRecorder(stream js.Value, mimeType string, queue func([]byte) boo
 		return nil
 	})
 	b.stopCallback = js.FuncOf(func(js.Value, []js.Value) interface{} {
-		b.once.Do(func() { close(b.stopRequested) })
+		b.stopOnce.Do(func() { close(b.stopRequested) })
 		return nil
 	})
 	recorder.Call("addEventListener", "dataavailable", b.callback)
@@ -89,7 +90,7 @@ func (b *BrowserRecorder) Dispose() {
 	b.disposeOnce.Do(func() {
 		b.recorder.Call("removeEventListener", "dataavailable", b.callback)
 		b.recorder.Call("removeEventListener", "stop", b.stopCallback)
-		b.once.Do(func() { close(b.stopRequested) })
+		b.stopOnce.Do(func() { close(b.stopRequested) })
 		b.callback.Release()
 		b.stopCallback.Release()
 	})
@@ -121,6 +122,7 @@ func (b *BrowserRecorder) readBlobs(queue func([]byte) bool) {
 func (b *BrowserRecorder) convertBlob(blob js.Value, queue func([]byte) bool) bool {
 	promise := blob.Call("arrayBuffer")
 	converted := make(chan []byte, 1)
+	rejected := make(chan struct{}, 1)
 	then := js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
 		if len(args) == 0 {
 			converted <- nil
@@ -132,9 +134,19 @@ func (b *BrowserRecorder) convertBlob(blob js.Value, queue func([]byte) bool) bo
 		converted <- bytes
 		return nil
 	})
-	promise.Call("then", then)
-	bytes := <-converted
+	catch := js.FuncOf(func(js.Value, []js.Value) interface{} { rejected <- struct{}{}; return nil })
+	promise.Call("then", then).Call("catch", catch)
+	var bytes []byte
+	select {
+	case bytes = <-converted:
+	case <-rejected:
+		then.Release()
+		catch.Release()
+		b.fail(errors.New("media recorder blob conversion failed"))
+		return false
+	}
 	then.Release()
+	catch.Release()
 	if len(bytes) == 0 || !queue(bytes) {
 		b.fail(errors.New("media recorder chunk could not be queued"))
 		return false
@@ -148,5 +160,5 @@ func (b *BrowserRecorder) fail(err error) {
 		b.err = err
 	}
 	b.errMu.Unlock()
-	b.once.Do(func() { close(b.failed) })
+	b.failOnce.Do(func() { close(b.failed); b.stopOnce.Do(func() { close(b.stopRequested) }) })
 }
