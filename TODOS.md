@@ -1459,7 +1459,7 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   why: The developer ruled that only .ply and .sog files matter; OPS-006 requests SPZ from Marble and OPS-017 converts SPZ to PLY, which is surface the demo does not need.
   lane: L-OPS · block: 1–5 · paths: `scripts/buildtime/splat*.go`, `scripts/buildtime/spz/**` · depends: OPS-006
   done when: the Marble job requests and downloads .ply (and .sog when the API offers it) directly; SPZ request flags, SPZ URL fields, and scripts/buildtime/spz are removed; the manifest records only .ply/.sog assets with metric_scale_factor and ground_plane_offset; 100k decimation, if needed, operates on PLY.
-  status: committed 0b2fb50
+  status: committed 0b2fb50 (Marble exports PLY at full and 100k; no SOG export offered)
 
 ## 25. Test server, gates, and checkpoints
 
