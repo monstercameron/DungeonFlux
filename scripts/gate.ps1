@@ -197,6 +197,11 @@ function Invoke-LaneGate {
             $profile = Join-Path $coverageRoot "$safeName.out"
             Invoke-GateCommand "go test coverage $package" "go" @("test", "-count=1", "-coverprofile", $profile, $package) | Out-Null
             if ((Test-Path $profile) -and -not (Test-ExcludedCoverage $package)) {
+                $profileLines = @(Get-Content -LiteralPath $profile | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+                if ($profileLines.Count -eq 1 -and $profileLines[0] -match '^mode: (set|count|atomic)$') {
+                    Write-GateLine "COVERAGE ${package}: N/A (no executable statements)"
+                    continue
+                }
                 $coverText = & go tool cover -func $profile 2>&1
                 $total = $coverText | Where-Object { $_ -match "^total:" } | Select-Object -Last 1
                 if ($total -and $total -match "([0-9]+(?:\.[0-9]+)?)%") {
