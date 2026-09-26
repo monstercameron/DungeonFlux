@@ -17,6 +17,7 @@ type MusicPlayer struct {
 	bus         js.Value
 	current     MusicModel
 	activeLevel float32
+	startedAt   float64
 	source      js.Value
 	gain        js.Value
 	loaded      map[string]js.Value
@@ -45,6 +46,9 @@ func (p *MusicPlayer) Apply(next MusicModel, elapsedMS int64) error {
 		p.current = next
 		p.activeLevel = next.Level
 		return nil
+	}
+	if p.startedAt > 0 {
+		elapsedMS = max64(0, int64(math.Round((p.context.Get("currentTime").Float()-p.startedAt)*1000)))
 	}
 	transition := PlanMusicTransition(p.current, next, elapsedMS)
 	p.current = next
@@ -95,6 +99,19 @@ func (p *MusicPlayer) Stop() {
 	p.source = js.Undefined()
 	p.current = MusicModel{}
 	p.activeLevel = 0
+	p.startedAt = 0
+}
+
+// Close stops playback and releases the browser audio context.
+func (p *MusicPlayer) Close() {
+	if p == nil {
+		return
+	}
+	p.Stop()
+	if p.context.Truthy() {
+		p.context.Call("close")
+	}
+	p.context = js.Undefined()
 }
 
 // Resume unlocks the browser audio context after a user gesture.
@@ -136,6 +153,7 @@ func (p *MusicPlayer) schedule(buffer js.Value, model MusicModel, transition Mus
 	}
 	p.source, p.gain = source, gain
 	p.activeLevel = model.Level
+	p.startedAt = start
 }
 
 func (p *MusicPlayer) setGain(gain js.Value, level float32) {

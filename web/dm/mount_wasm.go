@@ -107,9 +107,10 @@ func screenError(message string) ui.Node {
 func screenView(props screenProps) ui.Node {
 	state := ui.UseState((*dungeonfluxv1.ScreenState)(nil))
 	musicPlayer := ui.UseState((*MusicPlayer)(nil))
+	voicePlayer := ui.UseState((*audio.Player)(nil))
+	token := dmToken()
 	ui.UseEffect(func() func() {
 		ctx, cancel := context.WithCancel(context.Background())
-		token := dmToken()
 		updates := props.client.watch(ctx, token)
 		go func() {
 			for next := range updates {
@@ -118,7 +119,11 @@ func screenView(props screenProps) ui.Node {
 		}()
 		if props.client.audio != nil {
 			listen := audio.NewListenClient(listenServiceAdapter{client: props.client.audio}).Listen(ctx, token)
-			player := audio.NewPlayer()
+			player := voicePlayer.Get()
+			if player == nil {
+				player = audio.NewPlayer()
+				voicePlayer.Set(player)
+			}
 			go func() {
 				adapter := NewListenAudio(player)
 				for result := range listen {
@@ -130,9 +135,13 @@ func screenView(props screenProps) ui.Node {
 		}
 		return func() {
 			cancel()
+			if player := voicePlayer.Get(); player != nil {
+				player.Cancel("")
+				player.Close()
+			}
 			_ = props.client.close()
 		}
-	})
+	}, props.client, token)
 	snapshot := state.Get()
 	music := MusicModelFromView(snapshot.GetDm())
 	ui.UseEffect(func() func() {
@@ -144,13 +153,19 @@ func screenView(props screenProps) ui.Node {
 		if player != nil {
 			_ = player.Apply(music, 0)
 		}
+		return nil
+	}, music)
+	ui.UseEffect(func() func() {
 		return func() {
-			if player != nil {
-				player.Stop()
+			if player := musicPlayer.Get(); player != nil {
+				player.Close()
 			}
 		}
-	}, music)
+	}, props.client)
 	unlock := ui.UseEvent(func() {
+		if player := voicePlayer.Get(); player != nil {
+			_ = player.Resume()
+		}
 		if player := musicPlayer.Get(); player != nil {
 			_ = player.Resume()
 		}

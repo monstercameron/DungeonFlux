@@ -19,6 +19,25 @@ func NewPlayer() *Player {
 	return &Player{context: js.Global().Get("AudioContext").New(), sources: make(map[string][]js.Value)}
 }
 
+// Resume unlocks PCM playback from the table's explicit user gesture.
+func (p *Player) Resume() error {
+	if p == nil || !p.context.Truthy() {
+		return fmt.Errorf("audio: player is unavailable")
+	}
+	p.context.Call("resume")
+	return nil
+}
+
+// Close stops scheduled audio and releases the browser audio context.
+func (p *Player) Close() {
+	if p == nil || !p.context.Truthy() {
+		return
+	}
+	p.Cancel("")
+	p.context.Call("close")
+	p.context = js.Undefined()
+}
+
 // Play schedules one PCM chunk according to its plan.
 func (p *Player) Play(chunk ScheduledChunk) error {
 	if chunk.SampleRate <= 0 || len(chunk.PCM)%bytesPerSample != 0 {
