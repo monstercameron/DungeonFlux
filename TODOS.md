@@ -649,6 +649,12 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   done when: go test ./internal/game/... ./internal/sim/... ./internal/wire passes with species, gender, and class picks before roll_hero; no skipped creation tests.
   status: claimed luna
 
+- [ ] ENG-022 · engine requests a character reference sheet on lock
+  why: Developer request (2026-09-26): once a player locks species, gender, and class, the game generates a multi-angle reference of that hero so every later image and video (portrait, scene stills, clips, combat billboards) keeps the character consistent.
+  lane: L-ENG · block: 11–14 · paths: `internal/vocab/reference*.go`, `internal/domain/reference*.go`, `internal/game/phase/creation/reference*.go`, `internal/game/nested/reference*.go` · depends: ENG-019, ENG-009
+  done when: a new effect GenerateCharacterReference{Seat, Species, Gender, Class, Name, Flavor, Scope} (vocab kind plus domain type in new files, named writer for those files) is emitted on PCLocked; a reference slot tracks pending/ready/failed with the reference asset ids per angle; later portrait/still/clip/billboard effects carry the ready reference ids; creation never waits on it (timeouts fall back); Step tests.
+  status: claimed luna
+
 - [ ] INT-001 · lobby seats and join data reach the TV end to end
   why: Live test: two phones joined (engine View version advanced) but dfctl view --dm shows {"dm":{}} and the TV still shows Waiting to join, room code "/p", and a broken QR, because proto DMView has no seats or lobby fields and the projection never fills them.
   lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/common.proto`, `gen/**`, `internal/api/project*.go`, `web/dm/lobby*.go` · depends: ENG-017, API-019, BASE-021
@@ -1300,6 +1306,18 @@ Portraits, stills, clips, and their worker pool with per-vendor concurrency.
   lane: L-MEDIA · block: 8–11 · paths: `internal/adapters/sound/elevenlabs/**`, `internal/media/sound*.go`, `internal/content/sound_cues*.go` · depends: MEDIA-001, LLM-007, CON-006
   done when: an ElevenLabs sound adapter (sound-generation and music endpoints, fixture-tested) and a media executor resolve a sound request by logical name from the manifest first, then by prompt hash from the asset-store cache, and otherwise generate, normalise, store, and post asset_ready (with a timeout fallback to silence); per-vendor semaphore and budget caps apply; content provides a cue catalogue mapping phases and events to sound requests; tests with fakes and httptest.
   status: committed 64c80a2
+
+- [ ] MEDIA-011 · character reference sheet generation (multi-angle turnaround)
+  why: The reference sheet must look like the concept art style and show the hero from several angles on a neutral background so image and video pipelines can condition on it.
+  lane: L-MEDIA · block: 11–14 · paths: `internal/media/reference*.go`, `internal/adapters/image/openai/reference*.go`, `internal/content/prompts/reference*.go` · depends: ENG-022, MEDIA-002, MEDIA-001
+  done when: an executor generates one turnaround sheet (front, three-quarter, side, back; full body; same outfit and palette; neutral #0f1117-adjacent background; no text) through the Images API adapter with the species/gender/class/flavor prompt and the concept style, crops it into per-angle images with image/draw, stores sheet and crops as assets, posts asset_ready with ids per angle, falls back to species/class template art on failure or timeout, and costs are recorded in the budget ledger; fake mode returns a generated placeholder sheet; fixture and synctest tests; no live calls in tests.
+  status: claimed luna
+
+- [ ] MEDIA-012 · image and video pipelines condition on the character reference
+  why: Portraits, composed stills, clips, and combat billboard loops must reuse the locked hero's reference so the character stays consistent across the demo.
+  lane: L-MEDIA · block: 11–14 · paths: `internal/media/portrait*.go`, `internal/media/compose*.go`, `internal/media/clip*.go`, `internal/media/billboard*.go`, `internal/adapters/image/openai/**`, `internal/adapters/video/**` · depends: MEDIA-011, MEDIA-005, MEDIA-006, MEDIA-007
+  done when: when a reference is ready, portrait and still generation pass the reference crops as input images (Images API edit/reference input), clips use a still composed from the reference as the first frame (image-to-video), and billboard loops use the side and front crops; without a reference they behave as before; tests assert the reference ids flow into the requests.
+  status: claimed luna
 
 ## 18. Web shell (shared WASM client)
 
