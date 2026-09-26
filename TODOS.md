@@ -339,6 +339,12 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   done when: index.html, wasm_exec.js, and the WASM bundle are served with Cache-Control: no-cache and an ETag (304 on match); splat vendor files may cache; link-local addresses are dropped from the URL list; tests.
   status: claimed luna
 
+- [ ] BASE-021 · lobby QR served and lobby data passed to the engine
+  why: The DM lobby shows a broken QR (/assets/join-room.png is 404 because the asset route only accepts content hashes) and the room code renders as "/p".
+  lane: ORCH · block: 8–11 · paths: `internal/wire/qr*.go`, `internal/wire/wire.go`, `internal/wire/lobby*.go` · depends: BASE-012, ENG-017
+  done when: the QR PNG is stored in the asset store under its sha256 name (or served by a dedicated /join-qr.png route) and the View's QR reference resolves with 200; wire passes room code and the preferred LAN join URL to the engine constructor per ENG-017; wire test fetches the QR.
+  status: claimed luna
+
 - [x] BASE-007 · internal/wire skeleton and cmd/server skeleton
   why: The server binary must start from hour 1 with fakes, flags (-config, -port, -data-dir, -seed), and graceful shutdown.
   lane: ORCH · block: 1–5 · paths: `internal/wire/**`, `cmd/server/**` · depends: BASE-002, BASE-005
@@ -588,6 +594,12 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   lane: L-ENG · block: 8–11 · paths: `internal/game/legal*.go`, `internal/game/phase/creation/legal*.go` · depends: ENG-015
   done when: before roll: species, gender, roll_hero once both picked; after roll: ready only; after ready: none; greyed moves carry reasons; table test per seat state.
   status: committed 5ef9de4
+
+- [ ] ENG-017 · engine records joined seats and exposes lobby data in the View
+  why: After a phone joined, dfctl view --dm shows no seats and the DM lobby still says Waiting to join; the View also lacks the room code and join URL the TV lobby needs.
+  lane: L-ENG · block: 8–11 · paths: `internal/game/state*.go`, `internal/game/view*.go`, `internal/game/game.go`, `internal/game/lobby*.go` · depends: ENG-015
+  done when: a domain Join event (seat, name, locale) marks the seat joined with its name in lobby and later phases; View carries seats (joined, name, locale) plus room code, join URL, and QR asset reference supplied at construction; Step tests; dfctl view --dm shows joined seats.
+  status: claimed luna
 
 ## 8. Engine phases (one package each)
 
@@ -971,6 +983,12 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: config/fake.json allows only http://localhost:18101, so the laptop on :8443 and phones on http://192.168.1.27:8443 are refused by the tunnel's origin check; human testing needs any same-origin page to connect.
   lane: L-API · block: 8–11 · paths: `internal/api/server*.go`, `internal/api/origin*.go`, `config/fake.json` · depends: API-001
   done when: a request whose Origin host:port equals the request Host is always allowed; configured extra origins still work; cross-origin requests from other hosts are still refused; tests cover localhost, LAN IP, and a foreign origin.
+  status: claimed luna
+
+- [ ] API-019 · session Join posts the Join event to the room
+  why: SessionServer.Join allocates a seat but never tells the engine, so the game and the DM screen never learn that a player arrived.
+  lane: L-API · block: 8–11 · paths: `internal/api/session*.go` · depends: API-002, ENG-017
+  done when: a phone Join (new or reattach with a new name) posts domain.Join{Seat, Name, Locale} to the room inbox; DM and host joins do not; tests assert the posted event.
   status: claimed luna
 
 ## 14. LLM layer
