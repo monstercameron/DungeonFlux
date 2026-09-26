@@ -23,6 +23,9 @@ Build todos (hours 0–24) are generated from plan §0.18.9 (lane table and bloc
 - [x] PLAN-011 · AGENTS.md: 70% unit-test coverage per touched package in every lane gate, fast-test rules, exclusions
   lane: ORCH · paths: AGENTS.md, TODOS.md
   status: done d187597
+- [x] PLAN-018 · AGENTS.md: dfctl debug CLI for Claude Code/Codex (rule 17, section 17); plan §0.18.12 goes in with PLAN-005
+  lane: ORCH · paths: AGENTS.md, TODOS.md
+  status: done (this commit)
 - [x] PLAN-017 · AGENTS.md: concurrency (goroutines with owners) and structured logging rules, sections 15–16; plan §0.18.10–11 go in with PLAN-005
   lane: ORCH · paths: AGENTS.md, TODOS.md
   status: done (this commit)

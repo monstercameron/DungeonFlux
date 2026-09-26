@@ -21,6 +21,7 @@ Rules for every coding agent in this repo. Read it in full before your first edi
 14. Many agents work in the same tree at once, with uncommitted changes of their own. Never clobber them: touch only your todo's paths, never stage or commit anything else, never revert or reformat someone else's change, and re-read a file right before you edit it (section 13).
 15. The backend is concurrent: work runs in goroutines that each have an owner and a context, every channel is bounded, and results return to the room loop as events. Only the engine (`Step`) stays single-threaded and pure (section 15).
 16. Log with `log/slog` only, through the logger you were handed, narrowed with `With`; never the stdlib `log` package or `fmt.Print*` outside `cmd/` and tests (section 16).
+17. To inspect or drive a running server or client, use `dfctl` (section 17), not ad-hoc scripts, database edits, or browser automation. Every change it makes goes through the engine as an event.
 
 ## 1. What this repo is
 Planning stage. DungeonFlux is an AI dungeon-master demo: a Go server, one GoWebComponents WASM client (`/dm`, `/p`, `/host`), and gRPC over WebSocket through GoGRPCBridge. It is built in 24 hours by parallel GPT-6 Luna worker lanes in Codex, coordinated and reviewed by one Claude Opus 5.5 orchestrator. This file overrides the plan's seven-agent limit (§0.18.9): Codex runs every lane whose inputs are ready, bounded only by the lane map, disk, and quota (section 10).
@@ -396,3 +397,32 @@ The binding spec is plan §0.18.11. In short:
 - Each vendor call emits exactly one `call` record with latency and cost fields; this is the demo's latency and cost telemetry.
 - Never log keys, tokens, raw audio, or full prompts (log a prompt hash). The redacting handler is a backstop, not permission.
 - Read logs with `scripts/logs.ps1 -Instance <name> [-Run <id>] [-Level warn] [-Trace <id>]`. Packages that log assert their key records in tests through a capturing handler.
+
+## 17. dfctl: the debug CLI for agents
+`dfctl` (`cmd/dfctl`, spec in plan §0.18.12) reads and changes the state of a running server and its clients over native gRPC. It exists so Claude Code and Codex can check and steer the game without a browser. It only works against servers started with `server.debug=true` (lane dev servers and the human test server), on localhost, with `DF_DEBUG_TOKEN` set. The demo config does not include it.
+
+Output is one JSON object per line (add `--pretty` for people). Exit codes: 0 ok, 1 the engine rejected the request, 2 connection or auth failure.
+
+```powershell
+$env:DF_DEBUG_TOKEN = "<lane token>"
+go run ./cmd/dfctl --addr localhost:18101 state            # phase, scopes, seats, HP, timers
+go run ./cmd/dfctl --addr localhost:18101 view --seat 1    # exactly what phone 1 receives
+go run ./cmd/dfctl --addr localhost:18101 act --seat 1 persuade
+go run ./cmd/dfctl --addr localhost:18101 dice force d20=17
+go run ./cmd/dfctl --addr localhost:18101 goto combat
+go run ./cmd/dfctl --addr localhost:18101 logs --level warn --follow
+go run ./cmd/dfctl --addr localhost:18101 client dm splat flat
+```
+
+| Group | Verbs |
+|---|---|
+| Read (no side effects) | `state`, `view --seat N\|--dm`, `legal --seat N`, `scopes`, `assets`, `events --since SEQ [--follow]`, `logs`, `clients`, `costs` |
+| Drive the game (engine events) | `send <event>`, `act`, `say`, `dice force`, `goto <phase>`, `seat set`, `timer set\|pause\|expire`, `reset [--seed]`, `snapshot save\|load` |
+| Vendors (no paid calls) | `vendor fake <role> on\|off\|fail\|slow=MS` |
+| Clients (via the Watch stream) | `client <id\|dm\|seat:N> reload\|route\|overlay\|mute\|unmute\|splat flat\|splat on\|screenshot` |
+
+Rules:
+- Write verbs never mutate state directly. They send events through `Step`, so they land in the event log and replay deterministically. Pass `--dry-run` to see the effects without applying them.
+- Use `dfctl` against your own lane's port only; the human test server (`:8443`) is ORCH's.
+- Point `dfctl` at a server, not a vendor: `vendor fake` is how you test fallbacks, never a live call.
+- Put `dfctl` output you cite in a hand-in under `artifacts/test/<LANE>/`.
