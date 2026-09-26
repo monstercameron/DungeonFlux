@@ -5,6 +5,7 @@ package dm
 import (
 	"context"
 	"errors"
+	"google.golang.org/grpc/backoff"
 	"net/url"
 	"strings"
 	"sync"
@@ -49,7 +50,9 @@ func newScreenClient(endpoint string) (*screenClient, error) {
 	if endpoint == "" {
 		return nil, errors.New("dm: endpoint is required")
 	}
-	conn, err := grpc.NewClient("passthrough:///dungeonflux", dialer.New(endpoint), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient("passthrough:///dungeonflux", dialer.New(endpoint), grpc.WithTransportCredentials(insecure.NewCredentials()),
+		// Cap reconnect backoff (gRPC defaults to 120 s) so a dropped socket recovers fast.
+		grpc.WithConnectParams(grpc.ConnectParams{Backoff: backoff.Config{BaseDelay: 250 * time.Millisecond, Multiplier: 1.6, Jitter: 0.2, MaxDelay: 3 * time.Second}, MinConnectTimeout: 5 * time.Second}))
 	if err != nil {
 		return nil, err
 	}

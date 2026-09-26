@@ -3,8 +3,10 @@
 package host
 
 import (
+	"google.golang.org/grpc/backoff"
 	"strings"
 	"syscall/js"
+	"time"
 
 	"github.com/monstercameron/GoGRPCBridge/pkg/wasm/dialer"
 	"google.golang.org/grpc"
@@ -16,7 +18,9 @@ import (
 // transport, so gRPC runs with insecure credentials.
 func transportDialOptions(endpoint string) []grpc.DialOption {
 	url := browserWebSocketURL(endpoint)
-	return []grpc.DialOption{dialer.New(url), grpc.WithTransportCredentials(insecure.NewCredentials())}
+	return []grpc.DialOption{dialer.New(url), grpc.WithTransportCredentials(insecure.NewCredentials()),
+		// Cap reconnect backoff (gRPC defaults to 120 s) so a dropped socket recovers fast.
+		grpc.WithConnectParams(grpc.ConnectParams{Backoff: backoff.Config{BaseDelay: 250 * time.Millisecond, Multiplier: 1.6, Jitter: 0.2, MaxDelay: 3 * time.Second}, MinConnectTimeout: 5 * time.Second})}
 }
 
 func browserWebSocketURL(endpoint string) string {
