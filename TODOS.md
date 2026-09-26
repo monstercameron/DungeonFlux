@@ -1986,6 +1986,12 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: authoritative token snapshots animate valid paths at 250 ms/cell without replay, occupied supported cells light cyan for players and crimson for villains, optional camera follow tracks the moving token while preserving a useful angle, pause/reduced motion/manual camera takeover/removal/disposal work, both scenes pass visual review, and regressions and lane gate pass.
   status: done Codex; six JS regressions and lane gate pass (85.4%); both scenes visually inspected
 
+- [x] SPLAT-019 · stand-in sprites for players, enemies and NPCs
+  why: The developer requests stand-in character sprites instead of primitive battle markers.
+  lane: L-WEB-SPLAT · paths: `web/splat/js/token*.mjs`, `web/splat/js/viewer.mjs` · depends: SPLAT-018
+  done when: distinct transparent player/enemy/NPC stand-ins face the camera, stay anchored to moving terrain cells, preserve follow and occupied-cell colors, clean up GPU resources, appear in both scenes, and regressions and the lane gate pass.
+  status: done Codex; sprite/movement/runtime/viewer regressions and scoped gate pass; both scenes visually verified
+
 ## 23. dfctl debug CLI
 
 Command-line reads and demo writes for agents and the developer.

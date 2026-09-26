@@ -32,7 +32,7 @@ export function acceptScene(state,scene) {
 /** attachTokens installs the authoritative token renderer after the filtered grid is ready. */
 export function attachTokens(pc,state,grid,layer,message) {
   if (!grid) return;
-  state.tokens=createTokenController({pc,app:state.app,grid,layer,effects:state.effects,
+  state.tokens=createTokenController({pc,app:state.app,grid,layer,camera:state.camera,effects:state.effects,
     reducedMotion:state.reducedMotion,
     onState:value=>{state.tokenState=value;}});
   state.tokens.pause(state.paused);

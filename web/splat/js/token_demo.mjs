@@ -11,8 +11,8 @@ export function selectDemoCells(grid, target = [0, 0, 0]) {
 
 /** Builds the initial or next legal demo snapshot. */
 export function createDemoSnapshot(cells, seq = 1) {
-  const [player, villain, spare] = cells;
-  return { seq, tokens: [{ id: "player", name: "Player", kind: "player", cell: player, path: [], anim_seq: seq }, { id: "villain", name: "Villain", kind: "villain", cell: villain ?? player, path: [], anim_seq: seq }], spare };
+  const [player, villain, npc] = cells;
+  return { seq, tokens: [{ id: "player", name: "Player", kind: "player", cell: player, path: [], anim_seq: seq }, { id: "villain", name: "Villain", kind: "villain", cell: villain ?? player, path: [], anim_seq: seq }, { id: "npc", name: "Guide", kind: "npc", cell: npc ?? player, path: [], anim_seq: seq }] };
 }
 
 /** Finds a legal 8-connected route, omitting the starting cell. */

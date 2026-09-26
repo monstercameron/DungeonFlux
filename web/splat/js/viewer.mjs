@@ -231,7 +231,7 @@ function installControls() {
 }
 function moveDemoToken() {
   if (!tokenController || !demoState) return;
-  const id = followNode?.value === "villain" ? "villain" : "player";
+  const id = ["villain", "npc"].includes(followNode?.value) ? followNode.value : "player";
   const entry = tokenController.getState().tokens.find((token) => token.id === id);
   if (!entry || entry.moving) return;
   const target = demoCells[(demoSeq * 7 + (id === "villain" ? 1 : 0)) % demoCells.length];
@@ -323,7 +323,7 @@ async function attachViewer(profile, source, bundle) {
     {
       const target = profile?.cameras?.TACTICAL?.target ?? [0, 0, 0];
       demoCells = selectDemoCells(activeGrid, target);
-      tokenController = createTokenController({ pc, app, grid: activeGrid, layer: battleGrid.layer?.id, effects: cinematic, reducedMotion: Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce")?.matches), onState: (value) => {
+      tokenController = createTokenController({ pc, app, grid: activeGrid, layer: battleGrid.layer?.id, camera, effects: cinematic, reducedMotion: Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce")?.matches), onState: (value) => {
         if (followNode) followNode.value = value.followId ?? "off";
         if (tokenStatusNode) tokenStatusNode.textContent = `${value.count} combatants · ${value.moving ? "moving" : "ready"}${value.followId ? ` · following ${value.followId}` : ""}`;
       } });
@@ -332,7 +332,7 @@ async function attachViewer(profile, source, bundle) {
       const demoEnabled = new URLSearchParams(window.location.search).get("tokens") !== "off";
       tokenController.setEnabled(demoEnabled);
       charactersButton?.setAttribute("aria-pressed", String(demoEnabled));
-      followNode?.replaceChildren(new Option("Off", "off"), new Option("Player", "player"), new Option("Villain", "villain"));
+      followNode?.replaceChildren(new Option("Off", "off"), new Option("Player", "player"), new Option("Villain", "villain"), new Option("NPC", "npc"));
       app.on("update", (dt) => tokenController?.update(dt));
       app.on("destroy", () => tokenController?.destroy());
     }

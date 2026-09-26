@@ -1,24 +1,10 @@
 import { adjacentCells, cellPosition, normalizeTokenPath, positionCell, terrainHeight, tokenCell, validTokenCell } from "./occupied_cells.mjs";
 import { createOccupiedCells } from "./token_cells.mjs";
+import { createTokenSprite, roleForToken } from "./token_sprite.mjs";
 
-const COLORS = { player: [.04,.86,1], villain: [1,.09,.16] };
-function role(token) { return ["villain","enemy","monster","thrall"].includes(String(token.kind).toLowerCase()) ? "villain" : "player"; }
+function role(token) { return roleForToken(token); }
 function same(a,b) { return a.c === b.c && a.r === b.r; }
 function gone(token) { return [token.status,...(Array.isArray(token.statuses) ? token.statuses : [])].some(value => ["removed","fled","defeated"].includes(String(value).toLowerCase())); }
-function marker(pc, app, token, layer) {
-  const entity = new pc.Entity(`df-token-${token.id}`), kind = role(token);
-  const height = Math.max(.6,Math.min(3,Number(token.height_m) || 1.8));
-  entity.addComponent("render", { type: kind === "villain" ? "cone" : "capsule", layers: layer == null ? undefined : [layer] });
-  entity.setLocalScale?.(.65,kind === "player" ? height/2 : height,.65);
-  const material = new pc.StandardMaterial();
-  material.diffuse = new pc.Color(...COLORS[kind]);
-  material.emissive = new pc.Color(...COLORS[kind]);
-  material.useLighting = false;
-  material.update();
-  entity.render.material = material;
-  app.root.addChild(entity);
-  return { entity,material,height };
-}
 function place(entry,position) {
   entry.position = position.slice();
   entry.entity.setPosition(position[0],position[1]+entry.height/2,position[2]);
@@ -33,8 +19,8 @@ function routeFor(grid, entry, token, path) {
   return route.map(cell => cellPosition(grid,cell));
 }
 class TokenController {
-  constructor({pc,app,grid,layer,effects,reducedMotion=false,onState=()=>{}}) {
-    Object.assign(this,{pc,app,grid,layer,effects,reducedMotion,onState});
+  constructor({pc,app,grid,layer,spriteLayer,camera,effects,reducedMotion=false,onState=()=>{}}) {
+    Object.assign(this,{pc,app,grid,layer,spriteLayer: spriteLayer ?? pc?.LAYERID_WORLD,camera,effects,reducedMotion,onState});
     this.entries = new Map(); this.sceneSeq = -1; this.followId = null;
     this.enabled = true; this.gridVisible = true; this.paused = false; this.destroyed = false;
     this.cells = createOccupiedCells({pc,app,grid,layer});
@@ -42,7 +28,7 @@ class TokenController {
   remove(id) {
     const entry = this.entries.get(id);
     if (!entry) return;
-    entry.entity.destroy(); entry.material.destroy(); this.entries.delete(id);
+    entry.sprite.destroy(); this.entries.delete(id);
     if (this.followId === id) this.clearFollow();
   }
   acceptToken(token) {
@@ -59,12 +45,13 @@ class TokenController {
     const route = entry ? routeFor(this.grid,entry,token,path) : [];
     if (route === null) return;
     if (!entry) {
-      entry = {...marker(this.pc,this.app,token,this.layer), token,seq,queue:[],elapsed:0};
+      entry = {sprite:createTokenSprite({pc:this.pc,app:this.app,token,layer:this.spriteLayer}), token,seq,queue:[],elapsed:0};
+      entry.entity=entry.sprite.entity; entry.material=entry.sprite.material; entry.height=entry.sprite.height;
       this.entries.set(token.id,entry);
     }
     entry.token=token; entry.seq=seq; entry.signature=signature;
     entry.queue=route; entry.elapsed=0; entry.start=entry.position?.slice();
-    entry.entity.enabled=this.enabled;
+    entry.entity.enabled=this.enabled; entry.sprite.faceCamera(this.camera);
     if (!route.length || this.reducedMotion) this.snap(entry);
   }
   apply(snapshot={}) {
@@ -97,11 +84,14 @@ class TokenController {
     place(entry,position);
   }
   update(dt) {
-    if (this.destroyed || this.paused) return;
+    if (this.destroyed) return;
+    for (const entry of this.entries.values()) entry.sprite.faceCamera(this.camera);
+    if (this.paused) return;
     const delta=Number.isFinite(dt) ? Math.min(1,Math.max(0,dt)) : 0;
     for (const entry of this.entries.values()) this.advance(entry,delta);
     const followed=this.entries.get(this.followId);
     if (followed && this.enabled) this.effects?.track([followed.position[0],followed.position[1]+followed.height/2,followed.position[2]],delta);
+    for (const entry of this.entries.values()) entry.sprite.faceCamera(this.camera);
     this.refresh();
   }
   getState() {
