@@ -17,26 +17,30 @@ const roomInboxCapacity = 256
 
 // Room serializes events for one game engine.
 type Room struct {
-	eng    ports.Engine
-	inbox  chan domain.Envelope
-	clk    clock.Clock
-	start  time.Time
-	log    ports.EventLog
-	pub    func(domain.View)
-	logger *slog.Logger
-	runner roomRunner
-	timers *Timers
-	scopes *ScopeTree
-	seq    uint64
+	eng     ports.Engine
+	inbox   chan domain.Envelope
+	clk     clock.Clock
+	start   time.Time
+	log     ports.EventLog
+	pub     func(domain.View)
+	logger  *slog.Logger
+	runner  roomRunner
+	timers  *Timers
+	scopes  *ScopeTree
+	state   *RoomState
+	newGame func([]byte) ports.Engine
+	seq     uint64
 }
 
 // RoomOption configures the runtime services owned by a Room.
 type RoomOption func(*roomOptions)
 
 type roomOptions struct {
-	runner *Runner
-	timers *Timers
-	scopes *ScopeTree
+	runner  *Runner
+	timers  *Timers
+	scopes  *ScopeTree
+	state   *RoomState
+	newGame func([]byte) ports.Engine
 }
 
 // WithRunner installs the work-effect runner used by the room.
@@ -52,6 +56,16 @@ func WithTimers(timers *Timers) RoomOption {
 // WithScopes installs the scope tree used for work-effect cancellation.
 func WithScopes(scopes *ScopeTree) RoomOption {
 	return func(options *roomOptions) { options.scopes = scopes }
+}
+
+// WithRoomState installs the room-level state retained across runs.
+func WithRoomState(state *RoomState) RoomOption {
+	return func(options *roomOptions) { options.state = state }
+}
+
+// WithNewGame installs the factory used to construct an engine for each run.
+func WithNewGame(factory func([]byte) ports.Engine) RoomOption {
+	return func(options *roomOptions) { options.newGame = factory }
 }
 
 // WithExecutors installs all runtime effect services in one option.
@@ -95,17 +109,22 @@ func NewRoom(eng ports.Engine, clk clock.Clock, eventLog ports.EventLog, logger 
 	if options.runner == nil {
 		options.runner = NewRunner(inbox, logger)
 	}
+	if options.state == nil {
+		options.state, _ = NewRoomState(nil)
+	}
 	return &Room{
-		eng:    eng,
-		inbox:  inbox.queue,
-		clk:    clk,
-		start:  clk.Now(),
-		log:    eventLog,
-		pub:    pub,
-		logger: logger,
-		runner: options.runner,
-		timers: options.timers,
-		scopes: options.scopes,
+		eng:     eng,
+		inbox:   inbox.queue,
+		clk:     clk,
+		start:   clk.Now(),
+		log:     eventLog,
+		pub:     pub,
+		logger:  logger,
+		runner:  options.runner,
+		timers:  options.timers,
+		scopes:  options.scopes,
+		state:   options.state,
+		newGame: options.newGame,
 	}
 }
 
@@ -159,7 +178,7 @@ func (r *Room) process(ctx context.Context, env domain.Envelope) {
 	out := r.eng.Step(env)
 	to := r.eng.View().Path
 	if r.log != nil {
-		record := domain.LogRecord{Seq: env.Seq, At: env.At, Kind: env.Event.Kind(), Event: env.Event}
+		record := domain.LogRecord{Seq: env.Seq, At: env.At, Kind: env.Event.Kind(), Event: env.Event, Note: newRunNote(out.Effects)}
 		if err := r.log.Append(ctx, []domain.LogRecord{record}); err != nil {
 			r.logger.Error("log append", "err", err, "seq", env.Seq)
 		}
@@ -167,15 +186,15 @@ func (r *Room) process(ctx context.Context, env domain.Envelope) {
 	if env.Reply != nil && out.Ack != nil {
 		env.Reply <- *out.Ack
 	}
-	r.applyEffects(out.Effects, env.Scope)
+	r.applyEffects(ctx, out.Effects, env.Scope)
 	r.logger.Debug("room step", "seq", env.Seq, "from", from, "to", to)
 	r.pub(r.eng.View())
 }
 
-func (r *Room) applyEffects(effects []domain.Effect, scope domain.Scope) {
+func (r *Room) applyEffects(ctx context.Context, effects []domain.Effect, scope domain.Scope) {
 	work := make([]domain.Effect, 0, len(effects))
 	for _, effect := range effects {
-		if r.applyControl(effect) {
+		if r.applyControl(ctx, effect) {
 			continue
 		}
 		work = append(work, effect)
@@ -187,7 +206,7 @@ func (r *Room) applyEffects(effects []domain.Effect, scope domain.Scope) {
 	r.runner.Run(work)
 }
 
-func (r *Room) applyControl(effect domain.Effect) bool {
+func (r *Room) applyControl(ctx context.Context, effect domain.Effect) bool {
 	switch value := effect.(type) {
 	case domain.StartTimer:
 		r.timers.Start(value)
@@ -210,8 +229,18 @@ func (r *Room) applyControl(effect domain.Effect) bool {
 	case domain.NewRun:
 		r.timers.StopAll()
 		r.scopes.Cancel(domain.Scope{Machine: vocab.MachineRun})
+		r.replaceEngine(ctx)
 	default:
 		return false
 	}
 	return true
+}
+
+func newRunNote(effects []domain.Effect) *domain.LogNote {
+	for _, effect := range effects {
+		if value, ok := effect.(domain.NewRun); ok {
+			return &domain.LogNote{Kind: "new_run", Data: map[string]string{"seed": string(value.Seed)}}
+		}
+	}
+	return nil
 }

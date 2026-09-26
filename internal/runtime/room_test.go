@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -136,5 +137,47 @@ func TestRoom_CancelScopeCancelsScopedExecutor(t *testing.T) {
 	cancel()
 	if err := <-done; !errors.Is(err, context.Canceled) {
 		t.Fatalf("Run error = %v", err)
+	}
+}
+
+func TestRoom_NewRun_replacesEngineAndReplaysRoomState(t *testing.T) {
+	clk := clock.NewFake(time.Unix(0, 0))
+	old := &roomEngine{effects: []domain.Effect{domain.NewRun{Seed: []byte("old")}}}
+	state, err := NewRoomState([]byte("seed"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	state.Join(domain.Seat{ID: 1, PlayerNumber: 1})
+	log := &roomLog{}
+	published := make(chan domain.View, 4)
+	var gotSeed []byte
+	var fresh *roomEngine
+	room := NewRoom(old, clk, log, nil, func(view domain.View) { published <- view },
+		WithRoomState(state), WithNewGame(func(seed []byte) ports.Engine {
+			gotSeed = append([]byte(nil), seed...)
+			fresh = &roomEngine{}
+			return fresh
+		}))
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- room.Run(ctx) }()
+	if !room.Post(ctx, domain.Envelope{Event: domain.Join{Seat: 1}}) {
+		t.Fatal("post rejected")
+	}
+	for range 2 {
+		<-published
+	}
+	cancel()
+	if err := <-done; !errors.Is(err, context.Canceled) {
+		t.Fatalf("Run error = %v", err)
+	}
+	if !bytes.Equal(gotSeed, deriveSeed([]byte("seed"))) {
+		t.Fatalf("factory seed = %x", gotSeed)
+	}
+	if room.eng != fresh || len(fresh.views) != 1 || fresh.views[0] != vocab.StateID(vocab.EventJoin) {
+		t.Fatalf("replacement engine = %#v", fresh)
+	}
+	if len(log.records) != 2 || log.records[0].Note == nil || log.records[0].Note.Kind != "new_run" {
+		t.Fatalf("reset log records = %#v", log.records)
 	}
 }
