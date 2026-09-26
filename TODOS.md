@@ -309,11 +309,11 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   done when: a test client joins, acts, and watches over the tunnel; dfctl state works against 127.0.0.1:port+1000 with DF_DEBUG_TOKEN when server.debug=true and the listener is absent otherwise.
   status: done c48fdd2
 
-- [x] BASE-011 · wire registers executors and adapters from config
+- [ ] BASE-011 · wire registers executors and adapters from config
   why: Effects need executors (voice out/in, llmexec, media) bound to fake or live adapters, model chains, and the budget, chosen by config with keys from env vars.
   lane: ORCH · block: 5–8 · paths: `internal/wire/exec*.go`, `internal/wire/adapters*.go`, `internal/wire/wire.go` · depends: BASE-010, VOUT-003, VIN-003, LLM-009, MEDIA-007, LLM-007
   done when: with config/fake.json every effect kind the engine emits has a registered executor (test enumerates vocab effect kinds); live config builds adapters only when keys exist, else fails fast naming the missing env var.
-  status: done 6cb9bea
+  status: blocked: runtime had no way to install the Runner -> RT-009; relaunch after RT-009
 
 - [ ] BASE-012 · lobby QR code and room code at start-up
   why: Phones join by scanning a QR on the DM screen, so start-up writes the join URL QR PNG as an asset and prints the room code.
@@ -637,7 +637,7 @@ The drowned-thrall fight: fixed turn order, R-D1–R-D7 rules, bell flee, 30 s c
   why: The full run must reach combat from the hook and continue to the cliffhanger.
   lane: L-ENG · block: 11–14 · paths: `internal/game/phase/*.go` · depends: COMBAT-007, PH-HOOK-001
   done when: Walk paths through combat pass in sim.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 - [ ] COMBAT-009 · Battlefield mode rule (SPLAT vs FLAT)
   why: The engine decides SPLAT or FLAT from the room-level splat_ready report and projects View.Battlefield from Opening entry.
@@ -783,6 +783,12 @@ The room loop, runner, scope tree, inbox, timers, and executors registry that ru
   done when: Ordered shutdown test under synctest.; gate green (≥ 70% coverage where applicable)
   status: done 0d2706e
 
+- [ ] RT-009 · Room runs effects: Runner, Timers, and ScopeTree integrated
+  why: ORCH review found Room always uses a no-op runner with no way to install the Runner, and Timers and ScopeTree are never driven, so no engine effect (timers, cancels, vendor work) ever executes; BASE-011 was blocked on this.
+  lane: L-RT · block: 5–8 · paths: `internal/runtime/room*.go`, `internal/runtime/effects*.go` · depends: RT-003, RT-004, RT-005, RT-006
+  done when: NewRoom accepts options (WithRunner, WithTimers, WithScopes or one WithExecutors); after each Step the room applies control effects itself (start/cancel/freeze/thaw timers, pause/resume all, cancel scope/key, new run) and hands work effects to the Runner under the scope context from ScopeTree; synctest tests prove a StartTimer fires timer_fired back into Step and a CancelScope cancels a running executor's context.
+  status: claimed luna
+
 ## 13. API and streams
 
 The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug service.
@@ -863,7 +869,7 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: The host debug panel shows the last 50 Warn/Error records.
   lane: L-API · block: 8–11 · paths: `internal/api/logtail*.go` · depends: BASE-003
   done when: Ring buffer handler feeds HostView.log_tail; tests.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed e863809
 
 ## 14. LLM layer
 
@@ -1139,31 +1145,31 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   why: Players see legal moves and greyed-out ones with reasons, so they never ask the DM what they can do.
   lane: L-WEB-PHONE · block: 5–8 · paths: `web/phone/moves*.go` · depends: PHONE-002, ENG-005
   done when: Tap sends Act; greyed moves show reasons.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 7751c67
 
 - [ ] PHONE-004 · web/phone PTT recorder
   why: Hold to talk records with MediaRecorder and streams chunks on Talk; the callback only queues blobs.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/ptt*.go` · depends: PHONE-002, API-009
   done when: Recording uploads from a real phone; no deadlock.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 7b121b4
 
 - [ ] PHONE-005 · web/phone typed input fallback
   why: If STT fails, the player can type the message.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/type*.go` · depends: API-003
   done when: Say RPC from the text box.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed e5ca621
 
 - [ ] PHONE-006 · web/phone combat controls
   why: In combat the phone shows attack, move targets, and the bell on the player's turn with a timer bar.
   lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/combat*.go` · depends: COMBAT-006
   done when: Taps become combat moves.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed c45444c
 
 - [ ] PHONE-007 · web/phone dice roll view
   why: The persuasion check is rolled from the phone.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/dice*.go` · depends: PH-CHK-001
   done when: dice{OFFERED} → roll tap → result.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed f16954b
 
 ## 20. DM screen
 
@@ -1185,25 +1191,25 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   why: Video clips play at key moments and fall back to animated stills when late.
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/clip*.go` · depends: DM-002
   done when: Fallback shown when the clip is missing.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed b392034
 
 - [ ] DM-004 · web/dm dice, callouts, and timer bar
   why: The TV shows dice rolls, check callouts, and the turn timer.
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/dice*.go`, `web/dm/callout*.go` · depends: DM-002
   done when: Renders from DiceView and TimerView.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 08144c1
 
 - [ ] DM-005 · web/dm music player
   why: The DM tab plays the music cues with bar-aligned crossfades.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/music*.go` · depends: MEDIA-009
   done when: Cue switches follow MusicView.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed bdf623d
 
 - [ ] DM-006 · web/dm combat frame (FLAT)
   why: When the splat is off, combat shows the flat still with an SVG grid and tokens.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/combat*.go` · depends: COMBAT-006
   done when: FLAT battlefield renders grid lines projected in Go.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 782ff0e
 
 - [ ] DM-007 · web/dm end card with attribution
   why: The demo ends on an end card with the SRD attribution.
@@ -1225,7 +1231,7 @@ The operator page: Start, Pause, Skip, Reset, Force d20, and debug panel.
   why: The stage operator needs run status, feature flags, cut-order toggles, and the log tail.
   lane: L-WEB-HOST · block: 14–17 · paths: `web/host/**` · depends: HOST-001
   done when: Shows HostView and log_tail; flags toggle.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 4fde439
 
 ## 22. Splat battlefield
 
@@ -1271,7 +1277,7 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   why: The client follows View.Battlefield mode and switches to FLAT on failure.
   lane: L-WEB-SPLAT · block: 14–17 · paths: `web/splat/mode*.go` · depends: SPLAT-006, COMBAT-009
   done when: Switching tested in the browser.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 1703769
 
 ## 23. dfctl debug CLI
 
@@ -1299,7 +1305,7 @@ Command-line reads and demo writes for agents and the developer.
   why: Starting straight in combat is the debug_start: combat config, wrapped for convenience.
   lane: L-OPS · block: 8–11 · paths: `cmd/dfctl/goto*.go` · depends: DFCTL-003, ENG-011
   done when: Restarts a lane server with debug_start: combat.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 4921e25
 
 ## 24. Build-time assets (L-OPS)
 
@@ -1405,6 +1411,12 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   why: npm @playcanvas/splat-transform 3.6.6 fails to load on this X2 because its webgpu dependency ships no win32-arm64 dawn binary; PlayCanvas 2.22.4 also loads .ply, so a stdlib Go converter keeps the Marble splat path alive, with 500k and 100k decimated variants.
   lane: L-OPS · block: 1–5 · paths: `scripts/buildtime/spz/**` · depends: OPS-006
   done when: converts an SPZ (gzip, v2/v3 header, packed positions, scales, rotations, alpha, colors, SH degree 0) to binary little-endian PLY in the 3DGS property layout PlayCanvas reads; decimation by opacity-weighted sampling to 500k and 100k; round-trip tests on synthetic SPZ files.
+  status: superseded by OPS-018 (developer: .ply and .sog only); code 0c0365f removed there
+
+- [ ] OPS-018 · splat pipeline is .ply and .sog only (developer decision)
+  why: The developer ruled that only .ply and .sog files matter; OPS-006 requests SPZ from Marble and OPS-017 converts SPZ to PLY, which is surface the demo does not need.
+  lane: L-OPS · block: 1–5 · paths: `scripts/buildtime/splat*.go`, `scripts/buildtime/spz/**` · depends: OPS-006
+  done when: the Marble job requests and downloads .ply (and .sog when the API offers it) directly; SPZ request flags, SPZ URL fields, and scripts/buildtime/spz are removed; the manifest records only .ply/.sog assets with metric_scale_factor and ground_plane_offset; 100k decimation, if needed, operates on PLY.
   status: claimed luna
 
 ## 25. Test server, gates, and checkpoints
@@ -1491,7 +1503,7 @@ Everything needed to run the 3-minute demo live.
   why: On arrival and 10 minutes before stage, 20 live calls decide live mode or Safe Mode.
   lane: ORCH · block: 17–20 · paths: `scripts/probe.ps1` · depends: LLM-001, VOUT-001, VIN-001
   done when: p90 release→voice and failures reported.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 151976d
 
 - [ ] STAGE-002 · Safe Mode (sequence_mode) recordings
   why: If the uplink is bad, the show runs from recorded sequences.
