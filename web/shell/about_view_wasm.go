@@ -10,10 +10,11 @@ import (
 
 // AboutPage renders the public licensing and attribution notice.
 func AboutPage(router.Attrs) *router.Element {
+	locale := NewLocaleModel(BrowserLocales())
 	return html.Main(html.Props{Class: "df-shell-about"},
-		html.H1(html.Props{}, ui.Text("About DungeonFlux")),
+		html.H1(html.Props{}, ui.Text(locale.T("about.title", nil))),
 		html.Section(html.Props{},
-			html.H2(html.Props{}, ui.Text("Rules and attribution")),
+			html.H2(html.Props{}, ui.Text(locale.T("about.rules", nil))),
 			html.P(html.Props{}, ui.Text(SRDAttribution)),
 			html.P(html.Props{}, ui.Text(DrownedThrallNotice)),
 		),

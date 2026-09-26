@@ -30,6 +30,7 @@ type JoinSnapshot struct {
 	SeatID       string
 	SeatToken    string
 	PlayerNumber int32
+	Locale       string
 }
 
 type joinRPC interface {
@@ -44,7 +45,19 @@ type JoinModel struct {
 
 // NewJoinModel creates a phone join model with an optional room-code hint.
 func NewJoinModel(client joinRPC, roomCode string) *JoinModel {
-	return &JoinModel{client: client, state: JoinSnapshot{RoomCode: normalizeRoomCode(roomCode), Phase: JoinIdle}}
+	return &JoinModel{client: client, state: JoinSnapshot{RoomCode: normalizeRoomCode(roomCode), Phase: JoinIdle, Locale: "en"}}
+}
+
+// SetLocale settles the join locale sent with the next join request.
+func (m *JoinModel) SetLocale(locale string) string {
+	if m == nil {
+		return "en"
+	}
+	if locale == "" {
+		locale = "en"
+	}
+	m.state.Locale = locale
+	return locale
 }
 
 // Snapshot returns the current state without exposing mutable model fields.
@@ -86,7 +99,7 @@ func (m *JoinModel) StartJoin(ctx context.Context, seatToken string) <-chan Unar
 	m.state.RoomCode = roomCode
 	m.state.Phase = JoinPending
 	m.state.Error = ""
-	request := &dungeonfluxv1.JoinRequest{RoomCode: roomCode, Kind: dungeonfluxv1.ClientKind_CLIENT_KIND_PHONE, SeatToken: strings.TrimSpace(seatToken)}
+	request := &dungeonfluxv1.JoinRequest{RoomCode: roomCode, Kind: dungeonfluxv1.ClientKind_CLIENT_KIND_PHONE, SeatToken: strings.TrimSpace(seatToken), Locale: m.state.Locale}
 	return m.client.Join(ctx, request)
 }
 
@@ -110,6 +123,9 @@ func (m *JoinModel) ApplyJoin(result UnaryResult[*dungeonfluxv1.JoinResponse]) J
 	m.state.SeatID = result.Value.GetSeatId()
 	m.state.SeatToken = result.Value.GetSeatToken()
 	m.state.PlayerNumber = result.Value.GetPlayerNumber()
+	if result.Value.GetLocale() != "" {
+		m.state.Locale = result.Value.GetLocale()
+	}
 	return m.state
 }
 

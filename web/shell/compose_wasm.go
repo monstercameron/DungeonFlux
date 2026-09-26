@@ -11,19 +11,21 @@ import (
 )
 
 func registerRoutes(parseRouter *router.Router, client *Client) {
-	parseRouter.GoRegisterRoute(string(RouteDM), dm.Mount("/grpc"))
+	locale := NewLocaleModel(BrowserLocales())
+	parseRouter.Register(string(RouteDM), dm.Mount("/grpc"))
 	if client == nil {
-		parseRouter.GoRegisterRoute(string(RoutePhone), unavailable("Player client unavailable"))
+		parseRouter.Register(string(RoutePhone), unavailable(locale.T("phone.client_unavail", nil)))
 	} else {
-		parseRouter.GoRegisterRoute(string(RoutePhone), JoinScreen(client))
+		parseRouter.Register(string(RoutePhone), JoinScreen(client))
 	}
-	parseRouter.GoRegisterRoute(string(RouteHost), host.Mount("/grpc"))
+	parseRouter.Register(string(RouteHost), host.Mount("/grpc"))
 	RegisterAboutRoute(parseRouter)
-	parseRouter.GoRegisterRoute("/", unavailable("Redirecting to DungeonFlux"), router.Options{Redirect: string(RouteDM)})
+	parseRouter.Register("/", unavailable(locale.T("shell.redirect", nil)), router.Options{Redirect: string(RouteDM)})
 }
 
 func unavailable(message string) router.Component {
+	locale := NewLocaleModel(BrowserLocales())
 	return func(router.Attrs) *router.Element {
-		return html.Main(html.Props{Class: "df-shell-placeholder"}, html.H1(html.Props{}, ui.Text("DungeonFlux")), html.P(html.Props{}, ui.Text(message)))
+		return html.Main(html.Props{Class: "df-shell-placeholder"}, html.H1(html.Props{}, ui.Text(locale.T("shell.brand", nil))), html.P(html.Props{}, ui.Text(message)))
 	}
 }
