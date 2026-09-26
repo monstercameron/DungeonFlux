@@ -2010,6 +2010,12 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: control panels and camera input can be toggled independently, an accessible scoped panel works with any supplied canvas through the instance API, the existing viewer supports the toggles, a documented two-canvas example is visually verified with independent state and resize, devlog records the work, and regressions and lane gate pass.
   status: done Codex; independent controller toggles, two-canvas resize/remount and standalone visual checks pass; devlog/API docs updated; gate-20260926-153529 failures 0
 
+- [x] SPLAT-024 - remove redundant rendering work without reducing image quality
+  why: The developer requests measured performance optimization while retaining image quality.
+  lane: L-WEB-SPLAT - paths: `web/splat/js/token.mjs`, `web/splat/js/voxel_occlusion.mjs`, `docs/devlog.html` - depends: SPLAT-021, SPLAT-022
+  done when: redundant frame updates and proxy construction allocations are reduced where measurements support the change, image quality settings and visual/occlusion/movement semantics remain intact, baseline-versus-optimized measurements and visual checks are recorded, regressions and scoped gate pass, and devlog plus per-todo commit are complete.
+  status: done Codex; idle work removed, exact proxy geometry retained, full-quality image/effect checks and regressions pass; gate-20260926-171128 failures 0; measured FPS limits recorded
+
 ## 23. dfctl debug CLI
 
 Command-line reads and demo writes for agents and the developer.

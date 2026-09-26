@@ -33,9 +33,9 @@ function collectBoxes(value, output, options, seen) {
   if (Array.isArray(children)) for (const child of children) collectBoxes(child, output, options, seen);
 }
 
-function gridFloors(box, grid) {
+function gridFloorMax(box, grid) {
   const floors = grid?.floorYByCell;
-  if (!Array.isArray(floors)) return [];
+  if (!Array.isArray(floors)) return null;
   const origin = Array.isArray(grid.origin) ? grid.origin : [0, 0];
   const cellM = finite(grid.cell_m, 1.524);
   const cols = Math.max(0, Number(grid.cols) || 0);
@@ -44,21 +44,20 @@ function gridFloors(box, grid) {
   const lastColumn = Math.min(cols - 1, Math.ceil((box.max[0] - origin[0]) / cellM) - 1);
   const firstRow = Math.max(0, Math.floor((box.min[2] - origin[1]) / cellM));
   const lastRow = Math.min(rows - 1, Math.ceil((box.max[2] - origin[1]) / cellM) - 1);
-  const result = [];
+  let nearestFloor = null;
   for (let row = firstRow; row <= lastRow; row += 1) {
     for (let column = firstColumn; column <= lastColumn; column += 1) {
       const rawFloor = floors[row * cols + column];
       const floor = rawFloor === null || rawFloor === undefined ? NaN : finite(rawFloor, NaN);
-      if (Number.isFinite(floor)) result.push(floor);
+      if (Number.isFinite(floor)) nearestFloor = nearestFloor === null ? floor : Math.max(nearestFloor, floor);
     }
   }
-  return result;
+  return nearestFloor;
 }
 
 function isFloorVolume(box, grid, options) {
-  const floors = gridFloors(box, grid);
-  if (floors.length === 0) return false;
-  const nearestFloor = Math.max(...floors);
+  const nearestFloor = gridFloorMax(box, grid);
+  if (nearestFloor === null) return false;
   return box.max[1] <= nearestFloor + options.clearance + options.floorStep;
 }
 
@@ -125,9 +124,10 @@ function bound(boxes, axis, side) {
   return result;
 }
 
-function addFace(positions, indices, corners) {
+function addFace(positions, indices,
+  x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3) {
   const base = positions.length / 3;
-  for (const corner of corners) positions.push(...corner);
+  positions.push(x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
   indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
 }
 
@@ -138,20 +138,40 @@ export function occluderGeometry(boxes) {
   for (const box of boxes) {
     const [x0, y0, z0] = box.min;
     const [x1, y1, z1] = box.max;
-    const corners = [[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1],
-      [x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]];
-    addFace(positions, indices, [corners[0], corners[1], corners[5], corners[4]]);
-    addFace(positions, indices, [corners[1], corners[2], corners[6], corners[5]]);
-    addFace(positions, indices, [corners[2], corners[3], corners[7], corners[6]]);
-    addFace(positions, indices, [corners[3], corners[0], corners[4], corners[7]]);
-    addFace(positions, indices, [corners[4], corners[5], corners[6], corners[7]]);
-    addFace(positions, indices, [corners[3], corners[2], corners[1], corners[0]]);
+    addFace(positions, indices, x0, y0, z0, x1, y0, z0, x1, y1, z0, x0, y1, z0);
+    addFace(positions, indices, x1, y0, z0, x1, y0, z1, x1, y1, z1, x1, y1, z0);
+    addFace(positions, indices, x1, y0, z1, x0, y0, z1, x0, y1, z1, x1, y1, z1);
+    addFace(positions, indices, x0, y0, z1, x0, y0, z0, x0, y1, z0, x0, y1, z1);
+    addFace(positions, indices, x0, y1, z0, x1, y1, z0, x1, y1, z1, x0, y1, z1);
+    addFace(positions, indices, x0, y0, z1, x1, y0, z1, x1, y0, z0, x0, y0, z0);
   }
   return { positions, indices };
 }
 
+const DEPTH_VERTEX_GLSL = `
+attribute vec3 aPosition;
+uniform mat4 matrix_model;
+uniform mat4 matrix_viewProjection;
+void main(void) {
+  vec4 worldPosition = matrix_model * vec4(aPosition, 1.0);
+  gl_Position = matrix_viewProjection * worldPosition;
+}`;
+
+const DEPTH_FRAGMENT_GLSL = `
+precision mediump float;
+void main(void) {
+  gl_FragColor = vec4(0.0);
+}`;
+
 function depthMaterial(pc, options) {
-  const material = new pc.StandardMaterial();
+  const material = pc.ShaderMaterial
+    ? new pc.ShaderMaterial({
+      uniqueName: "df-voxel-depth",
+      vertexGLSL: DEPTH_VERTEX_GLSL,
+      fragmentGLSL: DEPTH_FRAGMENT_GLSL,
+      attributes: { aPosition: pc.SEMANTIC_POSITION },
+    })
+    : new pc.StandardMaterial();
   material.depthTest = true;
   material.depthWrite = true;
   material.redWrite = false;

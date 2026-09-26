@@ -87,6 +87,14 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="discovery" id="e-20260926-splat-performance">
+  <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Discovery</span><span class="who">L-WEB-SPLAT, Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260926-splat-performance">Remove idle work before trading away scene quality</a></h2>
+  <p><code>SPLAT-024</code> profiled the two downloaded scans at 1920&times;1080, 4&times; MSAA and their existing LODs. Static tokens previously rewrote their yaw twice and rebuilt presentation state every frame. The controller now reacts to actual movement, camera changes and occupied-cell changes; follow smoothing and continuous movement notifications still run. A 32-token, 12,000-frame comparison eliminates 768,000 idle yaw writes and 12,000 redundant callbacks. Review caught two consequences of skipping idle work: following must sample the camera after tracking, and teleports/reduced-motion snaps must face sprites after placement. Both have regressions.</p>
+  <p>The voxel proxy now emits the exact legacy vertex/index arrays with fewer temporary allocations and uses a color-free depth shader. Exact face deduplication was tried and rejected: these scans save less than 2% of proxy geometry while taking longer to build. Screenshots retain detail, grid coverage and occlusion; matched forest captures differ only by small rounding at a handful of pixels, and tomb captures match exactly. Browser frame pacing remains noisy and the tomb still reports <code>LOW_FPS</code>; this work claims reduced CPU work, not a reliable FPS improvement. Scoped gate and renderer regressions pass. Evidence is retained under <code>artifacts/test/L-WEB-SPLAT/perf-024*</code>.</p>
+</li>
+
+
 <li class="entry" data-kind="decision" id="e-20260926-timeline-and-splat-stage">
   <div class="entry-head"><time datetime="2026-09-26T16:35-04:00">Sep 26, 2026, 4:35 PM</time><span class="kind">Decision</span><span class="who">ORCH, developer</span></div>
   <h2 class="entry-title"><a href="#e-20260926-timeline-and-splat-stage">Re-timing the 3-minute demo, and wiring the splat renderer in as the combat scene</a></h2>
