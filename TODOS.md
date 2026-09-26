@@ -1273,11 +1273,11 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   done when: go test ./web/phone passes; the queue never blocks the MediaRecorder callback and reports full as the test expects.
   status: done 723e253
 
-- [ ] PHONE-009 · compose the phone screen flow from SeatView
+- [x] PHONE-009 · compose the phone screen flow from SeatView
   why: The phone screens (create, sheet, moves, PTT, typed, dice, combat) landed as separate views; nothing switches between them by phase and seat state.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/screen*.go`, `web/phone/mount*.go` · depends: PHONE-001, PHONE-002, PHONE-003, PHONE-005, PHONE-006, PHONE-007, WEB-008
   done when: a pure screen-selection function maps SeatView to the active screen with table tests for every phase; the /p route mounted by the shell renders it; GOOS=js GOARCH=wasm build passes.
-  status: committed ac3df52
+  status: done 2037829
 
 ## 20. DM screen
 
