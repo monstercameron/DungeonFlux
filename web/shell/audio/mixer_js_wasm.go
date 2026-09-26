@@ -139,21 +139,29 @@ func (p *Player) decodeEncoded(id string, channel Channel, data []byte, loop boo
 	bytes := js.Global().Get("Uint8Array").New(len(data))
 	js.CopyBytesToJS(bytes, data)
 	promise := p.context.Call("decodeAudioData", bytes.Get("buffer"))
-	callback := js.FuncOf(func(_ js.Value, args []js.Value) any {
-		if len(args) == 0 {
+	// The callbacks run when decoding settles, so they are released there.
+	// Releasing them right after registering (as before) made the browser
+	// call released functions: every streamed music, ambience, and stinger
+	// track decoded and was never started, and its reservation stuck.
+	var callback, rejected js.Func
+	release := func() {
+		callback.Release()
+		rejected.Release()
+	}
+	callback = js.FuncOf(func(_ js.Value, args []js.Value) any {
+		defer release()
+		if len(args) == 0 || !p.reserved[id] {
 			return nil
 		}
-		buffer := args[0]
-		p.startDecoded(id, channel, buffer, loop, gain, delayMS, fadeInMS)
+		p.startDecoded(id, channel, args[0], loop, gain, delayMS, fadeInMS)
 		return nil
 	})
-	rejected := js.FuncOf(func(_ js.Value, _ []js.Value) any {
+	rejected = js.FuncOf(func(_ js.Value, _ []js.Value) any {
+		defer release()
 		delete(p.reserved, id)
 		return nil
 	})
-	promise.Call("then", callback).Call("catch", rejected)
-	callback.Release()
-	rejected.Release()
+	promise.Call("then", callback, rejected)
 	return nil
 }
 
@@ -164,10 +172,19 @@ func (p *Player) startDecoded(id string, channel Channel, buffer js.Value, loop 
 	trackGain := p.context.Call("createGain")
 	trackGain.Call("connect", p.bus(channel))
 	source.Call("connect", trackGain)
+	if loop && (channel == MusicChannel || channel == AmbienceChannel) {
+		// One bed per channel: a new phase loop crossfades out the old one.
+		if p.replaceBed(id, channel) {
+			fadeInMS = max(fadeInMS, bedCrossfadeMS)
+		}
+	}
 	when := p.context.Get("currentTime").Float() + float64(max64(delayMS, 0))/1000
 	trackGain.Get("gain").Call("setValueAtTime", 0, when)
 	trackGain.Get("gain").Call("linearRampToValueAtTime", gain, when+float64(max(fadeInMS, 0))/1000)
 	if channel == SFXChannel && !loop {
+		// A one-shot is not a held track: clear the reservation so the same
+		// effect can play again (the cue gate already prevents stacking).
+		delete(p.reserved, id)
 		source.Call("start", when)
 		return
 	}
@@ -187,6 +204,24 @@ func (p *Player) startDecoded(id string, channel Channel, buffer js.Value, loop 
 		durationMS := int(buffer.Get("duration").Float() * 1000)
 		js.Global().Get("setTimeout").Invoke(goDelete, durationMS+100)
 	}
+}
+
+// bedCrossfadeMS is the crossfade between two looping beds on one channel.
+const bedCrossfadeMS = 1200
+
+// replaceBed records id as the channel's looping bed and fades out any other
+// bed on that channel. It reports whether a previous bed was replaced.
+func (p *Player) replaceBed(id string, channel Channel) bool {
+	if p.beds == nil {
+		p.beds = make(map[Channel]string)
+	}
+	previous, ok := p.beds[channel]
+	p.beds[channel] = id
+	if !ok || previous == id {
+		return false
+	}
+	p.StopTrack(previous, bedCrossfadeMS)
+	return true
 }
 
 func max64(left, right int64) int64 {

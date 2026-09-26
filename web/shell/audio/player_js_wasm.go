@@ -24,10 +24,19 @@ type Player struct {
 	pendingCommands map[Channel]pendingMix
 	scheduler       Scheduler
 	sfxGate         CueGate
-	// lineBase is the AudioContext time each voice line is anchored to;
-	// chunk offsets from the Scheduler are relative to it.
-	lineBase map[string]float64
+	// lines anchors each voice line's chunks to one AudioContext base time
+	// and tracks when its scheduled audio ends.
+	lines lineClock
+	// lineGains holds one gain node per voice line so an interrupted line
+	// fades out instead of cutting mid-word.
+	lineGains map[string]js.Value
+	// beds names the looping track currently playing on each bed channel
+	// (music, ambience) so a new phase bed crossfades the old one out.
+	beds map[Channel]string
 }
+
+// voiceFadeSeconds is the fade applied when a line is cancelled mid-play.
+const voiceFadeSeconds = 0.06
 
 // PlaySFXURL plays a short manifest-backed effect without treating its asset
 // ID as a permanently playing track. The cue gate prevents accidental stacks
@@ -123,33 +132,46 @@ func (p *Player) Play(chunk ScheduledChunk) error {
 	buffer.Call("copyToChannel", data, 0)
 	source := p.context.Call("createBufferSource")
 	source.Set("buffer", buffer)
-	source.Call("connect", p.bus(VoiceChannel))
-	// Chunk.Start is an offset from the line's first chunk, so anchor it to a
-	// per-line base time. Adding it to currentTime at each chunk's arrival
-	// spaced 100 ms chunks 200 ms apart: choppy audio at half speed, and the
-	// next phase cut off the end of the line.
 	now := p.context.Get("currentTime").Float()
-	if p.lineBase == nil {
-		p.lineBase = make(map[string]float64)
-	}
-	base, ok := p.lineBase[chunk.UtteranceID]
-	if !ok {
-		base = now
-		p.lineBase[chunk.UtteranceID] = base
-	}
-	when := base + chunk.Start.Seconds()
-	if when < now {
-		// A late chunk (network stall): shift the line so it stays contiguous
-		// instead of stacking the backlog on top of itself.
-		p.lineBase[chunk.UtteranceID] = base + (now - when) + JitterLead.Seconds()
-		when = now + JitterLead.Seconds()
-	}
+	p.releaseFinished(now)
+	source.Call("connect", p.lineGain(chunk.UtteranceID))
+	// Chunk.Start is an offset from the line's first chunk; the line clock
+	// anchors it to a per-line base time so chunks play back to back.
+	when := p.lines.place(chunk.UtteranceID, chunk.Start.Seconds(), float64(frames)/float64(chunk.SampleRate), now)
 	source.Call("start", when)
 	p.sources[chunk.UtteranceID] = append(p.sources[chunk.UtteranceID], source)
 	if chunk.Final {
-		delete(p.lineBase, chunk.UtteranceID)
+		p.lines.finish(chunk.UtteranceID)
 	}
 	return nil
+}
+
+// lineGain returns the utterance's gain node, creating it on the voice bus.
+func (p *Player) lineGain(id string) js.Value {
+	if p.lineGains == nil {
+		p.lineGains = make(map[string]js.Value)
+	}
+	if gain, ok := p.lineGains[id]; ok {
+		return gain
+	}
+	gain := p.context.Call("createGain")
+	gain.Get("gain").Set("value", 1)
+	gain.Call("connect", p.bus(VoiceChannel))
+	p.lineGains[id] = gain
+	return gain
+}
+
+// releaseFinished drops the sources and gain nodes of lines that have played
+// out, so a long session does not keep every chunk buffer alive.
+func (p *Player) releaseFinished(now float64) {
+	for _, id := range p.lines.expired(now) {
+		if gain, ok := p.lineGains[id]; ok {
+			gain.Call("disconnect")
+			delete(p.lineGains, id)
+		}
+		delete(p.sources, id)
+		p.lines.drop(id)
+	}
 }
 
 func (p *Player) bus(channel Channel) js.Value {
@@ -219,12 +241,23 @@ func (p *Player) StopTrack(id string, fadeOutMS int) {
 		return
 	}
 	p.cancelPending(id)
+	for channel, bed := range p.beds {
+		if bed == id {
+			delete(p.beds, channel)
+		}
+	}
 	when := p.context.Get("currentTime").Float()
 	end := when + float64(max(0, fadeOutMS))/1000
+	tau := float64(max(fadeOutMS, 240)) / 3000
 	for index, source := range p.tracks[id] {
 		if fadeOutMS > 0 && index < len(p.trackGains[id]) {
 			gain := p.trackGains[id][index].Get("gain")
-			gain.Call("setTargetAtTime", 0, when, .08)
+			if gain.Get("cancelAndHoldAtTime").Truthy() {
+				gain.Call("cancelAndHoldAtTime", when)
+			} else {
+				gain.Call("cancelScheduledValues", when)
+			}
+			gain.Call("setTargetAtTime", 0, when, tau)
 		}
 		if fadeOutMS > 0 {
 			source.Call("stop", end)
@@ -246,20 +279,36 @@ func (p *Player) cancelPending(id string) {
 	}
 }
 
-// Cancel stops every source for utteranceID, or all tracked sources when the
-// ID is empty.
+// Cancel fades out and stops every source for utteranceID, or all tracked
+// sources when the ID is empty. It is only reached for a line the server
+// interrupted (AudioCancel) or when the player closes; a line that finished
+// normally is never cancelled, so its queued tail always plays out.
 func (p *Player) Cancel(utteranceID string) {
 	if utteranceID == "" {
 		for id := range p.sources {
 			p.Cancel(id)
 		}
+		p.scheduler.Cancel("")
 		return
 	}
+	p.scheduler.Cancel(utteranceID)
+	if !p.context.Truthy() {
+		delete(p.sources, utteranceID)
+		delete(p.lineGains, utteranceID)
+		p.lines.drop(utteranceID)
+		return
+	}
+	now := p.context.Get("currentTime").Float()
+	stopAt := now + 2*voiceFadeSeconds
+	if gain, ok := p.lineGains[utteranceID]; ok {
+		gain.Get("gain").Call("setTargetAtTime", 0, now, voiceFadeSeconds/3)
+		delete(p.lineGains, utteranceID)
+	}
 	for _, source := range p.sources[utteranceID] {
-		source.Call("stop")
+		source.Call("stop", stopAt)
 	}
 	delete(p.sources, utteranceID)
-	delete(p.lineBase, utteranceID)
+	p.lines.drop(utteranceID)
 }
 
 func max(left, right int) int {
