@@ -647,7 +647,7 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: ENG-020 reports internal/game root tests still drive creation without the class move introduced by ENG-019, so they fail or skip.
   lane: L-ENG · block: 8–11 · paths: `internal/game/*_test.go`, `internal/sim/**` · depends: ENG-019, ENG-020
   done when: go test ./internal/game/... ./internal/sim/... ./internal/wire passes with species, gender, and class picks before roll_hero; no skipped creation tests.
-  status: claimed luna
+  status: committed aad40cb
 
 - [ ] ENG-022 · engine requests a character reference sheet on lock
   why: Developer request (2026-09-26): once a player locks species, gender, and class, the game generates a multi-angle reference of that hero so every later image and video (portrait, scene stills, clips, combat billboards) keeps the character consistent.
@@ -1677,7 +1677,7 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   why: The first thing on the TV must look like the concept title screen: painted harbor background, the DungeonFlux wordmark, a framed QR, and parchment panels.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/lobby*.go`, `web/dm/title*.go` · depends: DM-018, WEB-015, OPS-021, INT-005
   done when: lobby uses ui/title_bg (ui/title_bg_wide on ultrawide), ui/logo_wordmark, ui/qr_frame around the QR, ui/panel_frame and ui/divider, loaded through the WEB-015 gRPC asset loader; looks right at all DM-018 aspect ratios; Edge screenshots.
-  status: claimed luna
+  status: committed 8ef3db0
 
 - [ ] DM-021 · TV scene, check, combat, and end layers with the generated art
   why: Scene stills, the d20 art, callout banners, status icons, and the cliffhanger/end backdrops make each phase read on the TV.
@@ -1689,7 +1689,7 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   why: Developer request: the DM UI should match the concept art one to one; assets/concept/ui-tv-character-creation-phone-picker.jpg shows the creation layout.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/creation*.go` · depends: DM-019, DM-018
   done when: layout, panels, portrait slots, type, and ornament match the concept (layout from the concept; features from plan §0), using generated art via dm.ArtURL; Edge screenshots side by side with the concept at 1920x1080.
-  status: claimed luna
+  status: committed 4364027
 
 - [ ] DM-023 · TV opening and scene narration match the opening-scene concept 1:1
   why: assets/concept/ui-tv-opening-scene-drowned-lantern-tavern.jpg defines how scenes, captions, and speakers look.
@@ -1701,13 +1701,13 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   why: assets/concept/ui-tv-sunken-halls-exploration-hud.jpg shows the exploration HUD (party portraits, spotlight, objective, legal-action hints).
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/hud*.go` · depends: DM-018, INT-002
   done when: an exploration HUD layer with party portrait cards (HP, class crest, spotlight glow), objective banner, and action hints matches the concept, fed by the View; registered in the DM screen under the integration-hook rule; Edge screenshots side by side.
-  status: claimed luna
+  status: committed 83c0096
 
 - [ ] DM-025 · TV conversation screen matches the barkeep-dialogue concept 1:1
   why: assets/concept/ui-tv-tavern-barkeep-dialogue-choices.jpg shows NPC conversation: NPC portrait, speech panel, and the players' available choices.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/dialogue*.go` · depends: DM-018, DM-011
   done when: in conversation the TV shows the NPC portrait and name plate, the current line, and the spotlight player's options (from legal moves) styled like the concept; registered in the DM screen under the integration-hook rule; Edge screenshots side by side.
-  status: claimed luna
+  status: committed 277459e
 
 - [ ] DM-026 · DM integration pass: register every concept layer, fix sibling breaks, screenshot all phases
   why: Six DM concept lanes worked in parallel in web/dm: their layer hooks in mount_wasm.go are stranded in mixed uncommitted hunks (DM-024 HUD, DM-025 dialogue), and sibling edits broke each other's WASM builds (dividerBackground redeclared, combat_wasm.go syntax), so none could take final screenshots.
@@ -1992,19 +1992,19 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   why: Dice, success, failure, door, sting, cliffhanger hit, and combat sounds make the table feel alive.
   lane: L-OPS · block: 8–11 · paths: `scripts/buildtime/sfx*.go` · depends: OPS-011, REPO-017, OPS-022
   done when: the SFX job runs live, 2–3 takes per effect with the best kept by duration and loudness checks, files under artifacts/runtime/buildtime/sfx/, normalised, registered under the manifest lock, cost logged.
-  status: claimed luna
+  status: committed ac121bb
 
 - [ ] OPS-024 · ambience loop job and live generation
   why: Each scene needs a quiet loopable bed (tavern murmur and rain, harbor night, bell tower wind, combat tension, dawn) under narration.
   lane: L-OPS · block: 8–11 · paths: `scripts/buildtime/ambience*.go` · depends: OPS-001, REPO-017, OPS-022
   done when: a new ambience job (prompts derived from the one-shot scenes in internal/content) generates 30–60 s loops via ElevenLabs sound generation, crossfades the loop point with ffmpeg, normalises to a lower level than dialogue, registers under the manifest lock, runs live; unit tests for prompt and loop math.
-  status: claimed luna
+  status: committed 2aa6378
 
 - [ ] OPS-025 · live ElevenLabs music: the 12 tracks with beat-aligned loops
   why: The §0.19 score (12 tracks) needs real music with loops cut at downbeats for bar-aligned crossfades.
   lane: L-OPS · block: 8–11 · paths: `scripts/buildtime/music*.go` · depends: OPS-012, OPS-013, REPO-017
   done when: the music job runs live with model music_v2_5 and at most 2 concurrent jobs (Creator plan), each track checked with beatcheck and cut at downbeats, files under artifacts/runtime/buildtime/music/, registered with BPM and loop points under the manifest lock, cost logged; failures retried once, then reported.
-  status: claimed luna
+  status: committed 305a077
 
 - [ ] OPS-026 · beatcheck folds double and half tempo; music regenerated
   why: OPS-025's live run produced no accepted track: six ElevenLabs results were rejected at about 169 BPM against a requested 80, which is beatcheck reading double time, and four failed with HTTP 422 seed errors (fixed there); scripts/buildtime coverage is 66.4%, below the floor.
