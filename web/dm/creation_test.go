@@ -37,6 +37,32 @@ func TestCreationModelFromView_ClassChoiceIsVisibleBeforeRoll(t *testing.T) {
 	}
 }
 
+func TestFeaturedCreationSeat_PrefersFirstSeatWithLiveChoice(t *testing.T) {
+	model := CreationModel{Seats: [2]CreationSeat{
+		{Number: 1},
+		{Number: 2, Species: "elf"},
+	}}
+	if got := featuredCreationSeat(model); got.Number != 2 {
+		t.Fatalf("featured seat = %#v, want seat 2", got)
+	}
+}
+
+func TestFeaturedCreationSeat_UsesSeatOneWhenBothAreEmpty(t *testing.T) {
+	model := CreationModel{Seats: [2]CreationSeat{{Number: 1}, {Number: 2}}}
+	if got := featuredCreationSeat(model); got.Number != 1 {
+		t.Fatalf("featured seat = %#v, want seat 1", got)
+	}
+}
+
+func TestCreationDisplayValue_UsesFallbackOnlyForBlankText(t *testing.T) {
+	if got := creationDisplayValue("  ", "Waiting"); got != "Waiting" {
+		t.Fatalf("blank display value = %q, want fallback", got)
+	}
+	if got := creationDisplayValue("  Elf  ", "Waiting"); got != "Elf" {
+		t.Fatalf("trimmed display value = %q, want Elf", got)
+	}
+}
+
 func TestDecodeCreationCallout(t *testing.T) {
 	cases := []struct {
 		name  string

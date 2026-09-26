@@ -26,6 +26,26 @@ type CreationModel struct {
 	Prompt string
 }
 
+// featuredCreationSeat chooses the seat with the most useful live preview.
+// The first seat remains the deterministic fallback while both players are
+// still choosing on their phones.
+func featuredCreationSeat(model CreationModel) CreationSeat {
+	for _, seat := range model.Seats {
+		if seat.Ready || seat.PortraitURL != "" || seat.Species != "" || seat.Gender != "" || seat.Class != "" {
+			return seat
+		}
+	}
+	return model.Seats[0]
+}
+
+func creationDisplayValue(value, fallback string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return fallback
+	}
+	return value
+}
+
 // CreationModelFromView projects the current DM creation view.
 //
 // BuildCard is the wire-level result of a roll. Until the shared wire contract
