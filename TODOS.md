@@ -1866,7 +1866,7 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   why: The presentation needs title, lobby, panels, buttons, move and class icons, species portraits, dice, banners, scene stills, phone background, and status icons in the concept-art style; 14 parallel Codex image jobs produce them at no API cost.
   lane: L-OPS · block: 8–11 · paths: `scripts/buildtime/ui*.go` · depends: OPS-002, OPS-020
   done when: every image listed in the art job list exists under artifacts/runtime/buildtime/ui, is converted to WebP (quality 82, max 1920 px; theme-plate icons trimmed), and is registered in the manifest as ui/<name>; a checker lists missing items.
-  status: claimed ORCH (generation running)
+  status: claimed luna (generation done: 42 of 45 images, species_c regenerating)
 
 - [x] OPS-019 · PowerShell SuperSplat manifest and complete LOD downloader
   why: The developer needs a reproducible local copy of every LOD and texture referenced by the supplied SuperSplat scene.
