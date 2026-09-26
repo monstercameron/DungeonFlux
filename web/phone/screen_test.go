@@ -1,6 +1,9 @@
 package phone
 
-import "testing"
+import (
+	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
+	"testing"
+)
 
 func TestSelectScreen_AllDemoPhases(t *testing.T) {
 	tests := []struct {
@@ -25,5 +28,17 @@ func TestSelectScreen_AllDemoPhases(t *testing.T) {
 				t.Fatalf("SelectScreen(%q) = %q, want %q", test.phase, got, test.want)
 			}
 		})
+	}
+}
+
+func TestSelectScreen_UsesSeatViewState(t *testing.T) {
+	if got := SelectScreen(SeatView{Phone: &df.PhoneView{Moves: []*df.Move{{MoveId: "talk_vell"}}}}); got != ScreenMoves {
+		t.Fatalf("moves screen = %q", got)
+	}
+	if got := SelectScreen(SeatView{Phone: &df.PhoneView{Combat: &df.CombatView{MyTurn: true}}}); got != ScreenCombat {
+		t.Fatalf("combat screen = %q", got)
+	}
+	if got := SelectScreen(SeatView{Phone: &df.PhoneView{Character: &df.Character{}}}); got != ScreenSheet {
+		t.Fatalf("sheet screen = %q", got)
 	}
 }

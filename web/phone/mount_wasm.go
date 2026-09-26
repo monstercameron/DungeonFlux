@@ -4,6 +4,8 @@ package phone
 
 import (
 	"context"
+	"errors"
+	"syscall/js"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"github.com/monstercameron/GoWebComponents/v6/html"
@@ -22,6 +24,7 @@ type PhoneClient interface {
 	Act(context.Context, *df.ActRequest) <-chan ActResult
 	Say(context.Context, *df.SayRequest) <-chan SayResult
 	Watch(context.Context, *df.WatchRequest) <-chan WatchResult
+	TalkOpener
 }
 
 // Mount returns the stateful player phone screen for the shared shell router.
@@ -35,7 +38,7 @@ func Mount(client PhoneClient, seatToken string) router.Component {
 			creation: NewCreationModel(client, seatToken, 0),
 			sheet:    NewSheetModel(), moves: NewMovesModel(client, seatToken),
 			typed: NewTypedInputModel(client, seatToken), dice: NewDiceModel(client, seatToken),
-			combat: NewCombatModel(client, seatToken),
+			combat: NewCombatModel(client, seatToken), ptt: NewPTTModel(client, seatToken, 0),
 		}
 		return ui.CreateElement(phoneView, props)
 	}
@@ -50,6 +53,7 @@ type phoneViewProps struct {
 	typed     *TypedInputModel
 	dice      *DiceModel
 	combat    *CombatModel
+	ptt       *PTTModel
 }
 
 func phoneError(message string) ui.Node {
@@ -75,7 +79,7 @@ func phoneView(props phoneViewProps) ui.Node {
 			}
 		}()
 		return cancel
-	})
+	}, props.seatToken)
 	state := view.Get()
 	return renderPhoneScreen(SelectScreen(state), props)
 }
@@ -101,7 +105,106 @@ func conversationScreen(props phoneViewProps) ui.Node {
 	return html.Main(html.Props{Class: "df-phone df-phone-conversation"},
 		ui.CreateElement(MovesScreen(props.moves)),
 		ui.CreateElement(TypedInputScreen(props.typed)),
+		ui.CreateElement(pttScreen, pttProps{model: props.ptt}),
 	)
+}
+
+type pttProps struct{ model *PTTModel }
+
+func pttScreen(props pttProps) ui.Node {
+	status := ui.UseState("Ready to talk")
+	recorder := ui.UseState((*BrowserRecorder)(nil))
+	stream := ui.UseState(js.Value{})
+	ui.UseEffect(func() func() {
+		return func() {
+			if current := recorder.Get(); current != nil {
+				current.Dispose()
+			}
+			stopTracks(stream.Get())
+		}
+	})
+	start := ui.UseEvent(func() { go startPTT(props.model, status.Set, recorder.Set, stream.Set) })
+	stop := ui.UseEvent(func() {
+		current := recorder.Get()
+		if current == nil {
+			return
+		}
+		status.Set("Finishing recording…")
+		go func() {
+			if err := current.Stop(); err != nil {
+				status.Set(err.Error())
+				return
+			}
+			<-current.Done()
+			if err := <-props.model.Stop(context.Background()); err != nil {
+				status.Set(err.Error())
+				return
+			}
+			status.Set("Ready to talk")
+		}()
+	})
+	return html.Section(html.Props{Class: "df-phone-ptt"},
+		html.Button(html.Props{Type: "button", OnClick: start}, html.Text("Hold to talk")),
+		html.Button(html.Props{Type: "button", OnClick: stop}, html.Text("Release")),
+		html.P(html.Props{Role: "status"}, html.Text(status.Get())),
+	)
+}
+
+func startPTT(model *PTTModel, setStatus func(string), setRecorder func(*BrowserRecorder), setStream func(js.Value)) {
+	if model == nil {
+		setStatus("Push-to-talk unavailable")
+		return
+	}
+	promise := js.Global().Get("navigator").Get("mediaDevices").Call("getUserMedia", map[string]interface{}{"audio": true})
+	resolved := make(chan js.Value, 1)
+	rejected := make(chan error, 1)
+	then := js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
+		if len(args) > 0 {
+			resolved <- args[0]
+		}
+		return nil
+	})
+	catch := js.FuncOf(func(js.Value, []js.Value) interface{} {
+		rejected <- errors.New("microphone permission was denied")
+		return nil
+	})
+	promise.Call("then", then).Call("catch", catch)
+	select {
+	case err := <-rejected:
+		then.Release()
+		catch.Release()
+		setStatus(err.Error())
+	case mediaStream := <-resolved:
+		then.Release()
+		catch.Release()
+		setStream(mediaStream)
+		if err := model.Start(context.Background(), "audio/webm"); err != nil {
+			stopTracks(mediaStream)
+			setStatus(err.Error())
+			return
+		}
+		recorder, err := NewBrowserRecorder(mediaStream, "audio/webm", model.QueueChunk)
+		if err != nil {
+			setStatus(err.Error())
+			return
+		}
+		if err := recorder.Start(); err != nil {
+			setStatus(err.Error())
+			return
+		}
+		setRecorder(recorder)
+		setStatus("Recording…")
+	}
+}
+
+func stopTracks(stream js.Value) {
+	if !stream.Truthy() {
+		return
+	}
+	tracks := stream.Call("getTracks")
+	for index := 0; index < tracks.Length(); index++ {
+		tracks.Index(index).Call("stop")
+	}
 }
 
 func combatScreen(model *CombatModel) ui.Node {

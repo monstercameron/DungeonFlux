@@ -45,6 +45,22 @@ func SelectScreen(view SeatView) ScreenKind {
 	case strings.Contains(phase, "conversation"):
 		return ScreenConversation
 	default:
+		if view.Phone != nil {
+			if view.Phone.GetCombat() != nil {
+				return ScreenCombat
+			}
+			for _, move := range view.Phone.GetMoves() {
+				if move.GetMoveId() == "persuade" {
+					return ScreenDice
+				}
+			}
+			if len(view.Phone.GetMoves()) > 0 {
+				return ScreenMoves
+			}
+			if view.Phone.GetCharacter() == nil {
+				return ScreenCreate
+			}
+		}
 		return ScreenSheet
 	}
 }
