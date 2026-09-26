@@ -77,6 +77,11 @@ func (e *CannedExecutor) PlayCanned(ctx context.Context, effect domain.PlayCanne
 			if len(previous) > 0 {
 				samples += e.assetFrame(ctx, scope, in, effect.UtteranceID, previous, seq, false, &first)
 				seq++
+				// Pace frames in real time: emitting a whole recording at once
+				// overran the Listen hub's bounded buffer and dropped the TV.
+				if !sleepCtx(lineCtx, time.Duration(len(previous))*time.Second/(defaultSampleRate*2)) {
+					return
+				}
 			}
 			previous = append(previous[:0], buf[:n]...)
 		}
@@ -192,4 +197,16 @@ func (e *CannedExecutor) untrack(id domain.UtteranceID, line *lineControl) {
 		delete(e.stop, id)
 	}
 	e.mu.Unlock()
+}
+
+// sleepCtx waits d or until ctx ends; it reports whether the wait completed.
+func sleepCtx(ctx context.Context, d time.Duration) bool {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+		return true
+	case <-ctx.Done():
+		return false
+	}
 }

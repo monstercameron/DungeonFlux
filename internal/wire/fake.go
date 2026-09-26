@@ -190,6 +190,7 @@ type fakePCMStream struct {
 	done   bool
 	wait   bool
 	noTail bool
+	sent   int
 }
 
 func (s *fakePCMStream) Recv() (ports.PCMChunk, error) {
@@ -199,18 +200,8 @@ func (s *fakePCMStream) Recv() (ports.PCMChunk, error) {
 	if s.done {
 		return ports.PCMChunk{}, io.EOF
 	}
-	if s.wait && s.noTail {
-		// Hold the line open for as long as the recording plays (24 kHz s16
-		// mono), so the engine does not move on while the DM is still talking.
-		timer := time.NewTimer(time.Duration(len(s.pcm)) * time.Second / (24000 * 2))
-		defer timer.Stop()
-		select {
-		case <-timer.C:
-		case <-s.ctx.Done():
-			return ports.PCMChunk{}, s.ctx.Err()
-		}
-		s.done = true
-		return ports.PCMChunk{}, io.EOF
+	if s.noTail {
+		return s.nextRecordedChunk()
 	}
 	if s.wait {
 		timer := time.NewTimer(1200 * time.Millisecond)
@@ -225,6 +216,32 @@ func (s *fakePCMStream) Recv() (ports.PCMChunk, error) {
 	}
 	s.wait = true
 	return ports.PCMChunk{SampleRate: 24000, S16LE: append([]byte(nil), s.pcm...)}, nil
+}
+
+// fakeChunkBytes is 100 ms of 24 kHz s16 mono PCM.
+const fakeChunkBytes = 24000 * 2 / 10
+
+// nextRecordedChunk streams a canned recording like a live TTS would: small
+// chunks at real-time pace. One 11 s frame overran the Listen hub's bounded
+// buffer, which drops the DM subscriber, so the TV never played the line.
+func (s *fakePCMStream) nextRecordedChunk() (ports.PCMChunk, error) {
+	if s.sent >= len(s.pcm) {
+		s.done = true
+		return ports.PCMChunk{}, io.EOF
+	}
+	if s.sent > 0 {
+		timer := time.NewTimer(100 * time.Millisecond)
+		defer timer.Stop()
+		select {
+		case <-timer.C:
+		case <-s.ctx.Done():
+			return ports.PCMChunk{}, s.ctx.Err()
+		}
+	}
+	end := min(s.sent+fakeChunkBytes, len(s.pcm))
+	chunk := ports.PCMChunk{SampleRate: 24000, S16LE: append([]byte(nil), s.pcm[s.sent:end]...)}
+	s.sent = end
+	return chunk, nil
 }
 
 func (s *fakePCMStream) Close() error { return nil }
