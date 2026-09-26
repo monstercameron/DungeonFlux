@@ -1,6 +1,9 @@
 package game
 
-import "github.com/monstercameron/DungeonFlux/internal/vocab"
+import (
+	"github.com/monstercameron/DungeonFlux/internal/domain"
+	"github.com/monstercameron/DungeonFlux/internal/vocab"
+)
 
 // CueEffect is the audiovisual instruction emitted when the engine enters a
 // demo state. BarMS tells a client the grid on which a loop transition lands.
@@ -8,9 +11,18 @@ import "github.com/monstercameron/DungeonFlux/internal/vocab"
 type CueEffect struct {
 	State      vocab.StateID `json:"state"`
 	MusicTrack string        `json:"music_track"`
+	Ambience   string        `json:"ambience"`
+	Stinger    string        `json:"stinger,omitempty"`
 	Shot       string        `json:"shot"`
 	BarMS      int           `json:"bar_ms"`
 	Transition string        `json:"transition"`
+}
+
+// Effects converts a state cue into the sound effects consumed by the audio
+// runtime. Every effect targets the DM table stream; transition timing stays
+// on CueEffect for clients that schedule crossfades at the authored bar.
+func (c CueEffect) Effects() []domain.Effect {
+	return soundEffects(c)
 }
 
 // CueForState returns the authored music and shot cue for a demo state.
@@ -28,16 +40,16 @@ func CueForState(state vocab.StateID) CueEffect {
 // DemoCues returns one cue for every state in the binding demo machine.
 func DemoCues() []CueEffect {
 	return []CueEffect{
-		{State: vocab.StateLobby, MusicTrack: "THEME_MAIN", BarMS: 3000, Transition: "bar"},
-		{State: vocab.StateCreation, MusicTrack: "CREATION_BED_LOOP", BarMS: 3000, Transition: "bar"},
-		{State: vocab.StateOpening, MusicTrack: "OPENING_SWELL", Shot: "EST_WIDE_PUSH", BarMS: 3000, Transition: "crossfade_at_6000ms"},
-		{State: vocab.StateExploration, MusicTrack: "TAVERN_WARM_LOOP", Shot: "NPC_MCU_STATIC", BarMS: 3000, Transition: "bar"},
-		{State: vocab.StateConversation, MusicTrack: "TAVERN_WARM_LOOP", Shot: "NPC_MCU_STATIC", BarMS: 3000, Transition: "bar"},
-		{State: vocab.StateCheck, MusicTrack: "TAVERN_WARM_LOOP", Shot: "CHECK_TENSION", BarMS: 3000, Transition: "bar"},
-		{State: vocab.StateResolution, MusicTrack: "TAVERN_WARM_LOOP", Shot: "HERO_LOW_PUSH", BarMS: 3000, Transition: "bar"},
-		{State: vocab.StateHookEvent, MusicTrack: "STING_STRANGER", Shot: "ARRIVAL_DOOR_STATIC", Transition: "after_line"},
-		{State: vocab.StateCombat, MusicTrack: "COMBAT_SKIRMISH_LOOP", Shot: "BB_LOOP", BarMS: 1500, Transition: "bar"},
-		{State: vocab.StateCliffhanger, MusicTrack: "CLIFF_TENSION_BED", Shot: "CLIFF_TWO_PUSH", BarMS: 4000, Transition: "fade_300ms"},
-		{State: vocab.StateEnd, MusicTrack: "END_CARD_THEME", BarMS: 3000, Transition: "fade_4000ms"},
+		{State: vocab.StateLobby, MusicTrack: "THEME_MAIN", Ambience: "ambience_dawn", BarMS: 3000, Transition: "bar"},
+		{State: vocab.StateCreation, MusicTrack: "CREATION_BED_LOOP", Ambience: "ambience_dawn", BarMS: 3000, Transition: "bar"},
+		{State: vocab.StateOpening, MusicTrack: "OPENING_SWELL", Ambience: "ambience_tavern_rain", Shot: "EST_WIDE_PUSH", BarMS: 3000, Transition: "crossfade_at_6000ms"},
+		{State: vocab.StateExploration, MusicTrack: "TAVERN_WARM_LOOP", Ambience: "ambience_tavern_rain", Shot: "NPC_MCU_STATIC", BarMS: 3000, Transition: "bar"},
+		{State: vocab.StateConversation, MusicTrack: "TAVERN_WARM_LOOP", Ambience: "ambience_harbor_night", Shot: "NPC_MCU_STATIC", BarMS: 3000, Transition: "bar"},
+		{State: vocab.StateCheck, MusicTrack: "TAVERN_WARM_LOOP", Ambience: "ambience_harbor_night", Shot: "CHECK_TENSION", BarMS: 3000, Transition: "bar"},
+		{State: vocab.StateResolution, MusicTrack: "TAVERN_WARM_LOOP", Ambience: "ambience_harbor_night", Shot: "HERO_LOW_PUSH", BarMS: 3000, Transition: "bar"},
+		{State: vocab.StateHookEvent, MusicTrack: "STING_STRANGER", Ambience: "ambience_bell_tower_wind", Stinger: "sfx_stranger_sting", Shot: "ARRIVAL_DOOR_STATIC", Transition: "after_line"},
+		{State: vocab.StateCombat, MusicTrack: "COMBAT_SKIRMISH_LOOP", Ambience: "ambience_combat_tension", Stinger: "sfx_door_burst", Shot: "BB_LOOP", BarMS: 1500, Transition: "bar"},
+		{State: vocab.StateCliffhanger, MusicTrack: "CLIFF_TENSION_BED", Ambience: "ambience_dawn", Stinger: "sfx_cliffhanger_hit", Shot: "CLIFF_TWO_PUSH", BarMS: 4000, Transition: "fade_300ms"},
+		{State: vocab.StateEnd, MusicTrack: "END_CARD_THEME", Ambience: "ambience_dawn", BarMS: 3000, Transition: "fade_4000ms"},
 	}
 }

@@ -3,6 +3,7 @@ package game
 import (
 	"testing"
 
+	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
 
@@ -24,6 +25,39 @@ func TestDemoCues_coversEveryDemoState(t *testing.T) {
 		if cue.MusicTrack == "" {
 			t.Errorf("cue %q has no music track", cue.State)
 		}
+		if cue.Ambience == "" {
+			t.Errorf("cue %q has no ambience", cue.State)
+		}
+	}
+}
+
+func TestCueEffect_EffectsTargetsDMAndPreservesAudioOrder(t *testing.T) {
+	effects := CueForState(vocab.StateCombat).Effects()
+	if len(effects) != 3 {
+		t.Fatalf("combat effects = %d, want 3", len(effects))
+	}
+	want := []struct {
+		channel vocab.SoundKind
+		name    string
+		loop    bool
+		gain    float32
+	}{
+		{vocab.SoundMusic, "COMBAT_SKIRMISH_LOOP", true, 0.5},
+		{vocab.SoundAmbience, "ambience_combat_tension", true, 0.25},
+		{vocab.SoundSFX, "sfx_door_burst", false, 1},
+	}
+	for index, expected := range want {
+		got, ok := effects[index].(domain.PlaySound)
+		if !ok || got.Channel != expected.channel || got.Name != expected.name || got.Target != audioTargetDM || got.Loop != expected.loop || got.Gain != expected.gain {
+			t.Fatalf("effect %d = %#v, want %#v", index, effects[index], expected)
+		}
+	}
+}
+
+func TestCueEffect_EffectsOmitsMissingStinger(t *testing.T) {
+	effects := CueForState(vocab.StateOpening).Effects()
+	if len(effects) != 2 {
+		t.Fatalf("opening effects = %d, want 2", len(effects))
 	}
 }
 
