@@ -23,6 +23,9 @@ Build todos (hours 0–24) are generated from plan §0.18.9 (lane table and bloc
 - [x] PLAN-011 · AGENTS.md: 70% unit-test coverage per touched package in every lane gate, fast-test rules, exclusions
   lane: ORCH · paths: AGENTS.md, TODOS.md
   status: done d187597
+- [x] PLAN-019 · Import 20 concept images (10 scenes, 10 grid battle maps) and rename all concepts descriptively by kind
+  lane: ORCH (concept agent) · paths: assets/concept/*, docs/assets/*, README.md, docs/*, AGENTS.md, TODOS.md
+  status: done (this commit)
 - [x] PLAN-018 · AGENTS.md: dfctl debug CLI for Claude Code/Codex (rule 17, section 17); plan §0.18.12 goes in with PLAN-005
   lane: ORCH · paths: AGENTS.md, TODOS.md
   status: done (this commit)
