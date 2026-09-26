@@ -102,8 +102,11 @@ func (s *State) applyHost(cmd domain.HostCmd, env domain.Envelope) domain.StepOu
 		return out
 	}
 	if cmd.Cmd == vocab.HostReset {
+		previous := s.path
 		s.resetPhase()
-		return domain.StepOut{Effects: []domain.Effect{domain.NewRun{Seed: append([]byte(nil), s.seed...)}}, Ack: acceptedAck(env)}
+		effects := []domain.Effect{domain.NewRun{Seed: append([]byte(nil), s.seed...)}}
+		effects = append(effects, s.phaseCueEffects(previous)...)
+		return domain.StepOut{Effects: effects, Ack: acceptedAck(env)}
 	}
 	out := s.dispatch(domain.HostCmd{Cmd: cmd.Cmd})
 	if out.Ack == nil || out.Ack.Reason == "" {
@@ -133,13 +136,23 @@ func (s *State) applyPhase(env domain.Envelope) domain.StepOut {
 }
 
 func (s *State) dispatch(event domain.Event) domain.StepOut {
+	previous := s.path
 	result, err := s.phase.Step(event)
 	if err != nil {
 		return s.rejected("unaccepted_event")
 	}
 	s.path = s.phase.State()
 	s.paused = s.phase.Paused()
-	return domain.StepOut{Effects: append([]domain.Effect(nil), result.Effects...), Ack: &domain.Ack{Accepted: true}}
+	effects := append([]domain.Effect(nil), result.Effects...)
+	effects = append(effects, s.phaseCueEffects(previous)...)
+	return domain.StepOut{Effects: effects, Ack: &domain.Ack{Accepted: true}}
+}
+
+func (s *State) phaseCueEffects(previous vocab.StateID) []domain.Effect {
+	if s.path == previous {
+		return nil
+	}
+	return CueForState(s.path).Effects()
 }
 
 func (s *State) resetPhase() {
@@ -157,9 +170,12 @@ func (s *State) resetPhase() {
 }
 
 func (s *State) applyDebugReset(event domain.DebugReset, env domain.Envelope) domain.StepOut {
+	previous := s.path
 	s.seed = append(s.seed[:0], event.Seed...)
 	s.resetPhase()
-	return domain.StepOut{Effects: []domain.Effect{domain.NewRun{Seed: append([]byte(nil), s.seed...)}}, Ack: acceptedAck(env)}
+	effects := []domain.Effect{domain.NewRun{Seed: append([]byte(nil), s.seed...)}}
+	effects = append(effects, s.phaseCueEffects(previous)...)
+	return domain.StepOut{Effects: effects, Ack: acceptedAck(env)}
 }
 
 func (s *State) rejected(reason string) domain.StepOut {

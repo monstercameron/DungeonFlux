@@ -2,6 +2,7 @@ package game
 
 import (
 	"bytes"
+	"reflect"
 	"testing"
 	"time"
 
@@ -121,7 +122,11 @@ func TestStateStep_RootCommands(t *testing.T) {
 			if s.View().Path != test.path || s.View().Paused != test.paused {
 				t.Fatalf("state = path %q paused %v", s.View().Path, s.View().Paused)
 			}
-			if len(out.Effects) != 1 || out.Effects[0].Kind() != test.effectKind {
+			wantEffects := 1
+			if test.name == "start" {
+				wantEffects = 3
+			}
+			if len(out.Effects) != wantEffects || out.Effects[0].Kind() != test.effectKind {
 				t.Fatalf("effects = %#v", out.Effects)
 			}
 			if s.View().At != 4*time.Second || s.View().Version != 1 {
@@ -129,6 +134,49 @@ func TestStateStep_RootCommands(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStateStep_PhaseTransitionEmitsCueOnce(t *testing.T) {
+	state := New(domain.OneShot{}, []byte{7})
+	commands := []vocab.HostCmd{vocab.HostStart}
+	for range 9 {
+		commands = append(commands, vocab.HostSkip)
+	}
+	for _, command := range commands {
+		out := state.Step(domain.Envelope{Event: domain.HostCmd{Cmd: command}})
+		want := CueForState(state.View().Path).Effects()
+		if got := playSounds(out.Effects); !reflect.DeepEqual(got, want) {
+			t.Fatalf("%s cue = %#v, want %#v", state.View().Path, got, want)
+		}
+	}
+
+	out := state.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostPause}})
+	if got := countPlaySound(out.Effects); got != 0 {
+		t.Fatalf("pause self-transition cue play-sound effects = %d, want 0", got)
+	}
+}
+
+func TestStateStep_ResetTransitionEmitsLobbyCue(t *testing.T) {
+	state := New(domain.OneShot{}, []byte{7})
+	state.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostStart}})
+	out := state.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostReset}})
+	if state.View().Path != vocab.StateLobby || countPlaySound(out.Effects) != 2 {
+		t.Fatalf("reset transition path/effects = %q/%#v", state.View().Path, out.Effects)
+	}
+}
+
+func countPlaySound(effects []domain.Effect) int {
+	return len(playSounds(effects))
+}
+
+func playSounds(effects []domain.Effect) []domain.Effect {
+	plays := make([]domain.Effect, 0, len(effects))
+	for _, effect := range effects {
+		if _, ok := effect.(domain.PlaySound); ok {
+			plays = append(plays, effect)
+		}
+	}
+	return plays
 }
 
 func TestStateStep_RejectionAndReset(t *testing.T) {
