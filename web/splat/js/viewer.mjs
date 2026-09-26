@@ -22,9 +22,6 @@ let camera;
 let gridEntity;
 let pickMode;
 let gridVisible = true;
-let fpsFrames = [];
-let fpsLast = performance.now();
-
 function setStatus(message, kind = "info") {
   statusNode.textContent = message;
   statusNode.dataset.kind = kind;
@@ -87,28 +84,51 @@ function addPresetButtons() {
     });
     presetsNode.append(button);
   }
-  presetsNode.firstElementChild?.setAttribute("aria-pressed", "true");
+  presetsNode.querySelector('[data-preset="TACTICAL"]')?.setAttribute("aria-pressed", "true");
 }
 
+/** Creates a timestamp-driven p5 FPS sampler and logger. */
+export function createFPSReporter({ intervalMs = 2000, logger = () => {} } = {}) {
+  let lastFrameAt = null;
+  let lastReportAt = null;
+  let samples = [];
+  return (now) => {
+    if (!Number.isFinite(now)) return null;
+    if (lastFrameAt === null) {
+      lastFrameAt = now;
+      lastReportAt = now;
+      return null;
+    }
+    const elapsed = now - lastFrameAt;
+    lastFrameAt = now;
+    if (elapsed <= 0) return null;
+    samples.push(1000 / elapsed);
+    if (now - lastReportAt < intervalMs) return null;
+    const sorted = [...samples].sort((left, right) => left - right);
+    const p5 = sorted[Math.floor(Math.max(0, sorted.length - 1) * 0.05)] ?? 0;
+    samples = [];
+    lastReportAt = now;
+    logger(p5);
+    return p5;
+  };
+}
+
+const fpsReporter = createFPSReporter({
+  logger: (p5) => {
+    console.log(`[splat viewer] p5 fps: ${p5.toFixed(1)}`);
+    if (statusNode.dataset.kind !== "error") {
+      statusNode.textContent = `${statusNode.textContent.split("\n")[0]}\np5 fps: ${p5.toFixed(1)}`;
+    }
+  },
+});
+
 function recordFPS() {
-  const now = performance.now();
-  const elapsed = now - fpsLast;
-  fpsLast = now;
-  if (elapsed <= 0) return;
-  fpsFrames.push(1000 / elapsed);
-  if (now - (recordFPS.lastReport ?? now) < 2000) return;
-  recordFPS.lastReport = now;
-  const sorted = [...fpsFrames].sort((left, right) => left - right);
-  const p5 = sorted[Math.floor(Math.max(0, sorted.length - 1) * 0.05)] ?? 0;
-  fpsFrames = [];
-  console.log(`[splat viewer] p5 fps: ${p5.toFixed(1)}`);
-  if (statusNode.dataset.kind !== "error") {
-    statusNode.textContent = `${statusNode.textContent.split("\n")[0]}\np5 fps: ${p5.toFixed(1)}`;
-  }
+  fpsReporter(performance.now());
 }
 
 function installControls() {
   gridButton.addEventListener("click", () => {
+    if (!gridEntity) return;
     gridVisible = !gridVisible;
     gridEntity.enabled = gridVisible;
     gridButton.setAttribute("aria-pressed", String(gridVisible));
@@ -155,4 +175,3 @@ async function start() {
 }
 
 start();
-
