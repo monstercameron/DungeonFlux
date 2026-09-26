@@ -13,16 +13,16 @@ import (
 // TypedInputScreen renders the touch-first text fallback for speech input.
 func TypedInputScreen(model *TypedInputModel) router.Component {
 	return func(_ router.Attrs) *router.Element {
-		state := ui.UseState(model.Snapshot())
+		refresh := ui.UseState(0)
 		change := ui.UseEvent(func(event ui.InputEvent) {
 			if model.SetText(event.GetValue()) == nil {
-				state.Set(model.Snapshot())
+				refresh.Set(refresh.Get() + 1)
 			}
 		})
 		send := ui.UseEvent(func() {
-			go func() { state.Set(model.ApplySay(<-model.Submit(context.Background()))) }()
+			go func() { model.ApplySay(<-model.Submit(context.Background())); refresh.Set(refresh.Get() + 1) }()
 		})
-		snapshot := state.Get()
+		snapshot := model.Snapshot()
 		return html.Main(html.Props{Class: "df-phone df-phone-typed"},
 			html.Label(html.Props{For: "typed-message"}, html.Text("Type your message")),
 			html.Input(html.Props{ID: "typed-message", Value: snapshot.Text, Placeholder: "What do you say?", OnInput: change, AutoFocus: snapshot.Open}),

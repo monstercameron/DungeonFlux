@@ -13,19 +13,19 @@ import (
 // CreationScreen renders the touch-first character creation card.
 func CreationScreen(model *CreationModel) router.Component {
 	return func(_ router.Attrs) *router.Element {
-		state := ui.UseState(model.Snapshot())
+		refresh := ui.UseState(0)
 		chooseSpecies := ui.UseEvent(func() {
 			_ = model.SelectSpecies("human")
-			state.Set(model.Snapshot())
+			refresh.Set(refresh.Get() + 1)
 		})
 		chooseGender := ui.UseEvent(func() {
 			_ = model.SelectGender("nonbinary")
-			state.Set(model.Snapshot())
+			refresh.Set(refresh.Get() + 1)
 		})
 		roll := ui.UseEvent(func() {
-			go func() { state.Set(model.ApplyAct(<-model.RollHero(context.Background()))) }()
+			go func() { model.ApplyAct(<-model.RollHero(context.Background())); refresh.Set(refresh.Get() + 1) }()
 		})
-		snapshot := state.Get()
+		snapshot := model.Snapshot()
 		build := "Choose a species and gender to roll your hero."
 		if snapshot.Build != nil {
 			build = snapshot.Build.GetName() + " · " + snapshot.Build.GetClassName()

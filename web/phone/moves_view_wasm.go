@@ -13,13 +13,13 @@ import (
 // MovesScreen renders the legal action menu for a portrait phone display.
 func MovesScreen(model *MovesModel) router.Component {
 	return func(_ router.Attrs) *router.Element {
-		state := ui.UseState(model.Snapshot())
-		current := state.Get()
+		refresh := ui.UseState(0)
+		current := model.Snapshot()
 		children := make([]ui.Node, 0, len(current.Moves)*2+2)
 		for _, move := range current.Moves {
 			item := move
 			tap := ui.UseEvent(func() {
-				go func() { state.Set(model.ApplyAct(<-model.Tap(context.Background(), item.ID))) }()
+				go func() { model.ApplyAct(<-model.Tap(context.Background(), item.ID)); refresh.Set(refresh.Get() + 1) }()
 			})
 			children = append(children, html.Button(html.Props{Type: "button", Class: moveClass(item), OnClick: tap, Disabled: !item.Enabled}, html.Text(item.Label)))
 			if !item.Enabled && item.Reason != "" {

@@ -79,7 +79,7 @@ func phoneView(props phoneViewProps) ui.Node {
 			}
 		}()
 		return cancel
-	}, props.seatToken)
+	}, props.client, props.seatToken)
 	state := view.Get()
 	return renderPhoneScreen(SelectScreen(state), props)
 }
@@ -140,6 +140,11 @@ func pttScreen(props pttProps) ui.Node {
 		status.Set("Finishing recording…")
 		go func() {
 			if err := current.Stop(); err != nil {
+				current.Dispose()
+				stopTracks(stream.Get())
+				if cancel := cancelRecording.Get(); cancel != nil {
+					cancel()
+				}
 				status.Set(err.Error())
 				return
 			}
@@ -170,28 +175,40 @@ func startPTT(ctx context.Context, model *PTTModel, setStatus func(string), setR
 		setStatus("Push-to-talk unavailable")
 		return
 	}
-	promise := js.Global().Get("navigator").Get("mediaDevices").Call("getUserMedia", map[string]interface{}{"audio": true})
+	navigator := js.Global().Get("navigator")
+	mediaDevices := navigator.Get("mediaDevices")
+	if !mediaDevices.Truthy() {
+		setStatus("Microphone is unavailable")
+		return
+	}
+	promise := mediaDevices.Call("getUserMedia", map[string]interface{}{"audio": true})
 	resolved := make(chan js.Value, 1)
 	rejected := make(chan error, 1)
-	then := js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
+	var then, catch js.Func
+	release := func() { then.Release(); catch.Release() }
+	then = js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
+		defer release()
 		if len(args) > 0 {
-			resolved <- args[0]
+			select {
+			case resolved <- args[0]:
+			case <-ctx.Done():
+				stopTracks(args[0])
+			}
+		} else {
+			rejected <- errors.New("microphone permission returned no stream")
 		}
 		return nil
 	})
-	catch := js.FuncOf(func(js.Value, []js.Value) interface{} {
+	catch = js.FuncOf(func(js.Value, []js.Value) interface{} {
+		defer release()
 		rejected <- errors.New("microphone permission was denied")
 		return nil
 	})
 	promise.Call("then", then).Call("catch", catch)
 	select {
 	case err := <-rejected:
-		then.Release()
-		catch.Release()
 		setStatus(err.Error())
 	case mediaStream := <-resolved:
-		then.Release()
-		catch.Release()
 		setStream(mediaStream)
 		mimeType := recorderMIME()
 		if mimeType == "" {
@@ -206,15 +223,30 @@ func startPTT(ctx context.Context, model *PTTModel, setStatus func(string), setR
 		}
 		recorder, err := NewBrowserRecorder(mediaStream, mimeType, model.QueueChunk)
 		if err != nil {
+			stopTracks(mediaStream)
+			<-model.Stop(context.Background())
 			setStatus(err.Error())
 			return
 		}
 		if err := recorder.Start(); err != nil {
+			recorder.Dispose()
+			stopTracks(mediaStream)
+			<-model.Stop(context.Background())
 			setStatus(err.Error())
 			return
 		}
 		setRecorder(recorder)
 		setStatus("Recording…")
+		go func() {
+			<-recorder.Done()
+			if err := recorder.Err(); err != nil {
+				stopTracks(mediaStream)
+				<-model.Stop(context.Background())
+				setStatus(err.Error())
+			}
+		}()
+	case <-ctx.Done():
+		setStatus("Microphone canceled")
 	}
 }
 
@@ -242,13 +274,27 @@ func stopTracks(stream js.Value) {
 }
 
 func combatScreen(model *CombatModel) ui.Node {
-	state := ui.UseState(model.Snapshot())
-	snapshot := state.Get()
+	refresh := ui.UseState(0)
+	snapshot := model.Snapshot()
 	children := []ui.Node{html.H1(html.Props{}, html.Text("Your turn")), html.P(html.Props{Role: "status"}, html.Text(snapshot.StatusText))}
 	for _, move := range snapshot.Moves {
-		item := move
-		tap := ui.UseEvent(func() { go func() { state.Set(model.ApplyAct(<-model.Tap(context.Background(), item))) }() })
-		children = append(children, html.Button(html.Props{Type: "button", OnClick: tap, Disabled: !item.GetEnabled()}, html.Text(item.GetLabel())))
+		children = append(children, ui.CreateElement(combatMoveButton, combatMoveProps{model: model, move: move, refresh: refresh}))
 	}
 	return html.Main(html.Props{Class: "df-phone df-phone-combat"}, children...)
+}
+
+type combatMoveProps struct {
+	model   *CombatModel
+	move    *df.Move
+	refresh ui.State[int]
+}
+
+func combatMoveButton(props combatMoveProps) ui.Node {
+	tap := ui.UseEvent(func() {
+		go func() {
+			props.model.ApplyAct(<-props.model.Tap(context.Background(), props.move))
+			props.refresh.Set(props.refresh.Get() + 1)
+		}()
+	})
+	return html.Button(html.Props{Type: "button", OnClick: tap, Disabled: !props.move.GetEnabled()}, html.Text(props.move.GetLabel()))
 }

@@ -13,11 +13,11 @@ import (
 // DiceScreen renders the touch-first persuasion roll card.
 func DiceScreen(model *DiceModel) router.Component {
 	return func(_ router.Attrs) *router.Element {
-		state := ui.UseState(model.Snapshot())
+		refresh := ui.UseState(0)
 		roll := ui.UseEvent(func() {
-			go func() { state.Set(model.ApplyAct(<-model.Roll(context.Background()))) }()
+			go func() { model.ApplyAct(<-model.Roll(context.Background())); refresh.Set(refresh.Get() + 1) }()
 		})
-		snapshot := state.Get()
+		snapshot := model.Snapshot()
 		result := "Roll Persuasion"
 		if snapshot.Phase == DiceRolling {
 			result = "Rolling…"
