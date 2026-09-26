@@ -557,7 +557,7 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: After roll_hero a seat still lists species and gender as legal, and after ready it still lists species, gender, and ready; the phone would offer moves the engine rejects.
   lane: L-ENG · block: 8–11 · paths: `internal/game/legal*.go`, `internal/game/phase/creation/legal*.go` · depends: ENG-015
   done when: before roll: species, gender, roll_hero once both picked; after roll: ready only; after ready: none; greyed moves carry reasons; table test per seat state.
-  status: claimed luna
+  status: committed 5ef9de4
 
 ## 8. Engine phases (one package each)
 
@@ -930,6 +930,12 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   lane: L-API · block: 8–11 · paths: `internal/api/debug/events*.go`, `internal/api/debug/logs*.go`, `internal/api/debug/reads.go` · depends: API-011, STORE-003, API-013, E2E-004
   done when: Events streams EventLog records since SEQ and follows new ones while the stream is open; Logs streams the ring buffer filtered by level and follows; bufconn tests; dfctl events --since 0 shows the run.
   status: open
+
+- [ ] API-017 · newest DM Listen replaces the older stream through AudioService
+  why: API-014 added replacement in the Listen hub, but through the real server a second DM Listen leaves the first stream open (E2E path 21 measured by ORCH).
+  lane: L-API · block: 8–11 · paths: `internal/api/listen*.go`, `internal/api/audio*.go`, `internal/wire/e2e_paths_test.go` · depends: API-014
+  done when: the second DM Listen (same DM token) closes the first stream with a clear status; the skip in TestE2E_Path21_LatestDMListenReplacesOlderStream is removed and the test passes.
+  status: claimed luna
 
 ## 14. LLM layer
 
@@ -1583,7 +1589,7 @@ Keeping the build honest: per-commit checks, the 30-minute full gate, checkpoint
   why: A direct game.State test (both seats species, gender, roll_hero, ready) reaches Opening, but the same Acts sent through the debug service to a wire-built server leave the room in creation for 3 s; the composition (room engine vs the engine the debug service reads, the inbox the Runner posts to, NewGame replacement, or effect results) loses or diverts events.
   lane: ORCH · block: 8–11 · paths: `internal/wire/**`, `internal/api/debug/**` · depends: ENG-015, BASE-017, E2E-003
   done when: the root cause is found and fixed in wire or api/debug (one source of truth for the room's current engine, reads serialized through the room loop instead of racing it, one inbox shared by room, runner, timers, and debug service); TestE2E_DfctlRunThroughLobby runs lobby to End without skipping on fakes.
-  status: claimed luna
+  status: committed ef33a57 (full dfctl run lobby to End passes)
 
 - [ ] SPIKE-001 · Spike proto and grpctunnel echo
   why: The riskiest path (phone mic over the tunnel, PCM back) is proven with a throwaway proto first.
