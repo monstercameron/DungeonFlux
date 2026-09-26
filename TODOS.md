@@ -1405,6 +1405,12 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: opening the viewer with ?src=<.ply or .sog>&debug loads the splat, shows the 8×6 grid and camera presets, logs p5 fps, and exports picked cells as JSON.
   status: done 3776fbd
 
+- [ ] SPLAT-009 · streaming LOD battle scenes and registered grid viewer
+  why: The developer supplied a SuperSplat scene and needs its downloaded LOD tree to render as a battlefield with a visibly aligned grid.
+  lane: L-WEB-SPLAT · paths: `web/splat/js/df-splat.mjs`, `web/splat/js/battle_scene.mjs`, `web/splat/js/viewer*.mjs`, `web/splat/js/viewer.html`, `web/splat/scenes/cb2fddd6.json` · depends: SPLAT-008, OPS-019
+  done when: local streaming scene and individual LODs render; grid shares the battlefield camera and renders after splats; visual inspection and lane gate pass.
+  status: claimed Codex 2026-09-26
+
 ## 23. dfctl debug CLI
 
 Command-line reads and demo writes for agents and the developer.
@@ -1544,6 +1550,12 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   lane: L-OPS · block: 1–5 · paths: `scripts/buildtime/splat*.go`, `scripts/buildtime/spz/**` · depends: OPS-006
   done when: the Marble job requests and downloads .ply (and .sog when the API offers it) directly; SPZ request flags, SPZ URL fields, and scripts/buildtime/spz are removed; the manifest records only .ply/.sog assets with metric_scale_factor and ground_plane_offset; 100k decimation, if needed, operates on PLY.
   status: committed 0b2fb50 (Marble exports PLY at full and 100k; no SOG export offered)
+
+- [ ] OPS-019 · PowerShell SuperSplat manifest and complete LOD downloader
+  why: The developer needs a reproducible local copy of every LOD and texture referenced by the supplied SuperSplat scene.
+  lane: L-OPS · paths: `scripts/download-supersplat.ps1` · depends: none
+  done when: discovers the public scene manifest, mirrors every referenced file without escaping the destination, records provenance and hashes, and passes offline fixture tests plus a complete download of cb2fddd6.
+  status: claimed Codex 2026-09-26
 
 ## 25. Test server, gates, and checkpoints
 
