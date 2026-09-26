@@ -1647,13 +1647,37 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   why: The first thing on the TV must look like the concept title screen: painted harbor background, the DungeonFlux wordmark, a framed QR, and parchment panels.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/lobby*.go`, `web/dm/title*.go` · depends: DM-018, WEB-015, OPS-021, INT-005
   done when: lobby uses ui/title_bg (ui/title_bg_wide on ultrawide), ui/logo_wordmark, ui/qr_frame around the QR, ui/panel_frame and ui/divider, loaded through the WEB-015 gRPC asset loader; looks right at all DM-018 aspect ratios; Edge screenshots.
-  status: open (launch after WEB-015)
+  status: claimed luna
 
 - [ ] DM-021 · TV scene, check, combat, and end layers with the generated art
   why: Scene stills, the d20 art, callout banners, status icons, and the cliffhanger/end backdrops make each phase read on the TV.
-  lane: L-WEB-DM · block: 11–14 · paths: `web/dm/scene*.go`, `web/dm/dice*.go`, `web/dm/callout*.go`, `web/dm/combat*.go`, `web/dm/end*.go`, `web/dm/art*.go` · depends: DM-018, WEB-015, OPS-021
+  lane: L-WEB-DM · block: 11–14 · paths: `web/dm/dice*.go`, `web/dm/callout*.go`, `web/dm/combat*.go`, `web/dm/end*.go` · depends: DM-018, WEB-015, OPS-021
   done when: scene layers use the manifest stills (tavern_interior, tavern_doorway, bell_tower, ui/check_backdrop, ui/cliffhanger, ui/end_bg), dice uses ui/d20, ui/d20_success, ui/d20_fail, callouts use ui/banner_callout, seats show ui/class_* crests and ui/status_* icons; all via the gRPC asset loader; Edge screenshots per phase fixture.
-  status: open (launch after WEB-015)
+  status: claimed luna
+
+- [ ] DM-022 · TV creation screen matches the character-creation concept 1:1
+  why: Developer request: the DM UI should match the concept art one to one; assets/concept/ui-tv-character-creation-phone-picker.jpg shows the creation layout.
+  lane: L-WEB-DM · block: 11–14 · paths: `web/dm/creation*.go` · depends: DM-019, DM-018
+  done when: layout, panels, portrait slots, type, and ornament match the concept (layout from the concept; features from plan §0), using generated art via dm.ArtURL; Edge screenshots side by side with the concept at 1920x1080.
+  status: claimed luna
+
+- [ ] DM-023 · TV opening and scene narration match the opening-scene concept 1:1
+  why: assets/concept/ui-tv-opening-scene-drowned-lantern-tavern.jpg defines how scenes, captions, and speakers look.
+  lane: L-WEB-DM · block: 11–14 · paths: `web/dm/scene*.go`, `web/dm/text*.go`, `web/dm/clip*.go` · depends: DM-011, DM-018
+  done when: full-bleed still with the concept's framing, lower-third caption panel, speaker name plate, and ornaments match the concept; stills resolve via dm.ArtURL (tavern_interior and friends); Edge screenshots side by side.
+  status: claimed luna
+
+- [ ] DM-024 · TV exploration HUD matches the exploration-HUD concept 1:1
+  why: assets/concept/ui-tv-sunken-halls-exploration-hud.jpg shows the exploration HUD (party portraits, spotlight, objective, legal-action hints).
+  lane: L-WEB-DM · block: 11–14 · paths: `web/dm/hud*.go` · depends: DM-018, INT-002
+  done when: an exploration HUD layer with party portrait cards (HP, class crest, spotlight glow), objective banner, and action hints matches the concept, fed by the View; registered in the DM screen under the integration-hook rule; Edge screenshots side by side.
+  status: claimed luna
+
+- [ ] DM-025 · TV conversation screen matches the barkeep-dialogue concept 1:1
+  why: assets/concept/ui-tv-tavern-barkeep-dialogue-choices.jpg shows NPC conversation: NPC portrait, speech panel, and the players' available choices.
+  lane: L-WEB-DM · block: 11–14 · paths: `web/dm/dialogue*.go` · depends: DM-018, DM-011
+  done when: in conversation the TV shows the NPC portrait and name plate, the current line, and the spotlight player's options (from legal moves) styled like the concept; registered in the DM screen under the integration-hook rule; Edge screenshots side by side.
+  status: claimed luna
 
 ## 21. Host
 
