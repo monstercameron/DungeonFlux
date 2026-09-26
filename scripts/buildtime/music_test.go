@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 )
 
@@ -41,11 +43,99 @@ func TestBuildMusicRequest_UsesPinnedModelAndSeed(t *testing.T) {
 	if request.ModelID != "music_v2_5" || request.Seed != MusicSeed("THEME_MAIN") || !request.StoreForInpaint {
 		t.Fatalf("unexpected request: %#v", request)
 	}
-	if len(request.CompositionPlan.Chunks) != 1 {
+	if len(request.CompositionPlan.Chunks) != 4 {
 		t.Fatalf("missing composition chunk: %#v", request)
 	}
 	if _, err := BuildMusicRequest(MusicTrack{ID: "bad", DurationMS: 1000, BPM: 80, Prompt: "x"}); err == nil {
 		t.Fatal("accepted short track")
+	}
+}
+
+func TestBuildMusicRequestWithTheme_UsesConditioningAndOmitsEndCardSeed(t *testing.T) {
+	data, err := BuildMusicRequestWithTheme(MusicTracks()[1], "theme-song")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var request MusicRequest
+	if err := json.Unmarshal(data, &request); err != nil {
+		t.Fatal(err)
+	}
+	if request.ConditioningRef == nil || request.ConditioningRef.SongID != "theme-song" || request.ConditioningRef.Range.EndMS != 24000 {
+		t.Fatalf("missing theme conditioning: %#v", request.ConditioningRef)
+	}
+	if request.Seed == 0 || request.ConditionStrength != "medium" {
+		t.Fatalf("unexpected conditioned request: %#v", request)
+	}
+	data, err = BuildMusicRequestWithTheme(MusicTracks()[11], "theme-song")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) == "" || string(data) == "null" {
+		t.Fatal("empty end-card request")
+	}
+	var endCard MusicRequest
+	if err := json.Unmarshal(data, &endCard); err != nil {
+		t.Fatal(err)
+	}
+	if endCard.Seed != 0 || endCard.ConditionStrength != "high" {
+		t.Fatalf("unexpected end-card request: %#v", endCard)
+	}
+}
+
+func TestMusicDryRun_ReportsThreeTakesAndBudget(t *testing.T) {
+	options := DefaultMusicOptions()
+	plan, err := MusicDryRun(options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Tracks != 12 || plan.Takes != 3 || plan.Requests != 36 || plan.MaxConcurrent != 2 || plan.EstimatedCostUSD <= 0 {
+		t.Fatalf("unexpected plan: %+v", plan)
+	}
+	var output bytes.Buffer
+	if err := PrintMusicPlan(&output, options); err != nil || output.Len() == 0 {
+		t.Fatalf("dry-run output: %v %q", err, output.String())
+	}
+}
+
+func TestMusicJob_RetriesOnceAndWritesCostLog(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/music/detailed" || r.URL.Query().Get("output_format") != "mp3_44100_192" {
+			t.Fatalf("unexpected request: %s", r.URL.String())
+		}
+		if requests.Add(1) == 1 {
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("song_id", "theme-song")
+		_, _ = w.Write([]byte("music"))
+	}))
+	defer server.Close()
+	root := t.TempDir()
+	writer, err := NewManifestWriter(filepath.Join(root, "manifest"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	options := MusicOptions{Takes: 1, MaxConcurrent: 2, ProcessAudio: false}
+	job := MusicJobWithOptions(server.Client(), server.URL, filepath.Join(root, "output"), 1, options)
+	if err := job.Run(context.Background(), writer); err != nil {
+		t.Fatal(err)
+	}
+	if requests.Load() != int32(len(MusicTracks())+1) {
+		t.Fatalf("expected one retry, got %d requests", requests.Load())
+	}
+	if _, err := os.Stat(filepath.Join(writer.root, "manifest.lock")); !os.IsNotExist(err) {
+		t.Fatalf("manifest lock remains: %v", err)
+	}
+	costs, err := os.ReadFile(filepath.Join(root, "output", "music", "costs.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if lines := bytes.Count(costs, []byte{'\n'}); lines != len(MusicTracks())+1 {
+		t.Fatalf("expected %d cost records, got %d", len(MusicTracks())+1, lines)
+	}
+	if got := writer.manifest.Assets["TAVERN_WARM_LOOP"].Metadata["model"]; got != musicModel {
+		t.Fatalf("missing model metadata: %q", got)
 	}
 }
 
