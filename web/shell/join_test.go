@@ -50,7 +50,7 @@ func TestJoinModel_RejectsInvalidAndRepeatedRequests(t *testing.T) {
 		t.Fatalf("repeat error = %v", err)
 	}
 	model.ApplyJoin(UnaryResult[*dungeonfluxv1.JoinResponse]{Err: errors.New("denied")})
-	if model.Snapshot().Phase != JoinFailed || model.Snapshot().Error != "denied" {
+	if model.Snapshot().Phase != JoinFailed || model.Snapshot().Error != "We couldn't join the table. Check the code and try again." {
 		t.Fatalf("failure snapshot = %+v", model.Snapshot())
 	}
 	_ = first
@@ -62,6 +62,33 @@ func TestJoinModel_RejectsMissingSeatToken(t *testing.T) {
 	got := model.ApplyJoin(<-model.StartJoin(context.Background(), ""))
 	if got.Phase != JoinFailed || got.Error != "server returned no seat token" {
 		t.Fatalf("snapshot = %+v", got)
+	}
+}
+
+func TestJoinModel_NormalizesPlayerName(t *testing.T) {
+	model := NewJoinModel(nil, "room")
+	model.SetPlayerName("  Astra   Vale  ")
+	if got := model.Snapshot().PlayerName; got != "Astra Vale" {
+		t.Fatalf("player name = %q, want normalized name", got)
+	}
+}
+
+func TestJoinErrorMessage_ClassifiesServerFailures(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want string
+	}{
+		{name: "wrong room", err: errors.New("room code is invalid"), want: "We couldn't find that room. Check the code on the DM screen."},
+		{name: "full room", err: errors.New("no seat available"), want: "That table is full. Ask the DM for another seat."},
+		{name: "unknown", err: errors.New("transport unavailable"), want: "We couldn't join the table. Check the code and try again."},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := joinErrorMessage(test.err); got != test.want {
+				t.Fatalf("message = %q, want %q", got, test.want)
+			}
+		})
 	}
 }
 

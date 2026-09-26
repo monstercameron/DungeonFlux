@@ -25,6 +25,7 @@ const (
 // JoinSnapshot is the render-safe state of the phone join screen.
 type JoinSnapshot struct {
 	RoomCode     string
+	PlayerName   string
 	Phase        JoinPhase
 	Error        string
 	SeatID       string
@@ -80,6 +81,14 @@ func (m *JoinModel) SetRoomCode(roomCode string) {
 	}
 }
 
+// SetPlayerName records the display name entered before joining.
+func (m *JoinModel) SetPlayerName(name string) {
+	if m == nil {
+		return
+	}
+	m.state.PlayerName = normalizePlayerName(name)
+}
+
 // StartJoin submits a phone join without blocking the caller.
 func (m *JoinModel) StartJoin(ctx context.Context, seatToken string) <-chan UnaryResult[*dungeonfluxv1.JoinResponse] {
 	result := make(chan UnaryResult[*dungeonfluxv1.JoinResponse], 1)
@@ -110,7 +119,7 @@ func (m *JoinModel) ApplyJoin(result UnaryResult[*dungeonfluxv1.JoinResponse]) J
 	}
 	if result.Err != nil {
 		m.state.Phase = JoinFailed
-		m.state.Error = result.Err.Error()
+		m.state.Error = joinErrorMessage(result.Err)
 		return m.state
 	}
 	if result.Value == nil || strings.TrimSpace(result.Value.GetSeatToken()) == "" {
@@ -131,4 +140,23 @@ func (m *JoinModel) ApplyJoin(result UnaryResult[*dungeonfluxv1.JoinResponse]) J
 
 func normalizeRoomCode(roomCode string) string {
 	return strings.ToUpper(strings.TrimSpace(roomCode))
+}
+
+func normalizePlayerName(name string) string {
+	return strings.Join(strings.Fields(strings.TrimSpace(name)), " ")
+}
+
+func joinErrorMessage(err error) string {
+	if err == nil {
+		return ""
+	}
+	message := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(message, "full"), strings.Contains(message, "seat") && strings.Contains(message, "available"):
+		return "That table is full. Ask the DM for another seat."
+	case strings.Contains(message, "room"), strings.Contains(message, "code"), strings.Contains(message, "not found"):
+		return "We couldn't find that room. Check the code on the DM screen."
+	default:
+		return "We couldn't join the table. Check the code and try again."
+	}
 }
