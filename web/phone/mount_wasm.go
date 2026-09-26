@@ -125,11 +125,7 @@ func frameScreen(model FrameModel, content ui.Node) ui.Node {
 }
 
 func conversationScreen(props phoneViewProps, locale string) ui.Node {
-	return html.Main(html.Props{Class: "df-phone df-phone-conversation"},
-		ui.CreateElement(MovesScreen(props.moves)),
-		ui.CreateElement(TypedInputScreen(props.typed)),
-		ui.CreateElement(pttScreen, pttProps{model: props.ptt, locale: locale}),
-	)
+	return ui.CreateElement(TalkScreen(props, locale))
 }
 
 type pttProps struct {

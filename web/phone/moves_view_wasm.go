@@ -15,6 +15,9 @@ func MovesScreen(model *MovesModel) router.Component {
 	return func(_ router.Attrs) *router.Element {
 		refresh := ui.UseState(0)
 		current := model.Snapshot()
+		if IsExplorationMoves(current.Moves) {
+			return ExploreScreen(model)(router.Attrs{})
+		}
 		locale := current.Locale
 		if locale == "" {
 			locale = "en"
