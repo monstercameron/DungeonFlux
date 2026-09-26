@@ -5,7 +5,7 @@ param(
     [string] $SourceDir = '',
     [string] $ToolPath = '',
     [string] $NodePath = '',
-    [ValidateRange(0, 5)] [int] $SourceLOD = 1,
+    [int] $SourceLOD = -1,
     [double] $VoxelSize = 0.2,
     [string] $SeedPos = '',
     [string] $FilterBox = '',
@@ -17,7 +17,7 @@ Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 
 function Get-Profile([string] $Name) {
-    if ($Name -eq 'cb2fddd6') { return [pscustomobject]@{ id = 'cb2fddd6'; defaultSeed = '0,0,0'; filter = '-55,-14.5,-65,65,-3,80' } }
+    if ($Name -eq 'cb2fddd6') { return [pscustomobject]@{ id = 'cb2fddd6'; defaultSeed = '0,0,0'; filter = '-55,-14.5,-65,65,8,80' } }
     return [pscustomobject]@{ id = '64bb46d5'; defaultSeed = '0,0,0'; filter = '-35,-35,-145,125,-13,65' }
 }
 
@@ -46,6 +46,8 @@ function Invoke-Tool([string] $Tool, [string] $Node, [string[]] $Arguments) {
 
 $profile = Get-Profile $SceneProfile
 if ([double]::IsNaN($VoxelSize) -or [double]::IsInfinity($VoxelSize) -or $VoxelSize -lt 0.02 -or $VoxelSize -gt 1) { throw 'VoxelSize must be finite and between 0.02 and 1 world units' }
+$sourceLodEffective = if ($PSBoundParameters.ContainsKey('SourceLOD')) { $SourceLOD } elseif ($profile.id -eq 'cb2fddd6') { 2 } else { 1 }
+if ($sourceLodEffective -lt 0 -or $sourceLodEffective -gt 5) { throw 'SourceLOD must be between 0 and 5' }
 $source = Get-Source $SourceDir $profile.id
 $tool = Get-Tool $ToolPath
 $root = [IO.Path]::GetFullPath($OutputDir)
@@ -53,7 +55,7 @@ $root = [IO.Path]::GetFullPath($OutputDir)
 $output = Join-Path $root "$($profile.id).voxel.json"
 if ((Test-Path -LiteralPath $output) -and -not $Overwrite) { throw "Output exists; pass -Overwrite to regenerate: $output" }
 $effectiveSeed = if ($SeedPos) { $SeedPos } else { $profile.defaultSeed }
-$args = @($source, '--select-lod', [string]$SourceLOD, '--voxel-size', $VoxelSize.ToString('R', [Globalization.CultureInfo]::InvariantCulture), '--voxel-opacity', '0.1', '--seed-pos', $effectiveSeed)
+$args = @($source, '--select-lod', [string]$sourceLodEffective, '--voxel-size', $VoxelSize.ToString('R', [Globalization.CultureInfo]::InvariantCulture), '--voxel-opacity', '0.1', '--seed-pos', $effectiveSeed)
 if (-not $NoFilter) {
     if (-not $FilterBox) { $FilterBox = $profile.filter }
     if ($FilterBox) { $args += @('--filter-box', $FilterBox) }
@@ -81,7 +83,7 @@ $record = [ordered]@{
     generated_utc = [DateTime]::UtcNow.ToString('o')
     scene_profile = $SceneProfile
     scene_id = $profile.id
-    source_lod = $SourceLOD
+    source_lod = $sourceLodEffective
     source_path = $source
     source_sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $source).Hash.ToLowerInvariant()
     source_inventory_sha256 = $inventoryHash

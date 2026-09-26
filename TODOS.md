@@ -2158,11 +2158,11 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
 
 Keeping the build honest: per-commit checks, the 30-minute full gate, checkpoints, and e2e tests.
 
-- [ ] OPS-SPLAT-004 · preserve tomb roof occupancy in extended collider
+- [x] OPS-SPLAT-004 · preserve tomb roof occupancy in extended collider
   why: Visual review found the enlarged collider crop omitted roof splat centers and let the ground grid show through the tomb.
   lane: L-OPS · paths: `scripts/generate-supersplat-colliders.ps1` · depends: OPS-SPLAT-003
   done when: the expanded horizontal region and 0.2m resolution remain, the crop contains the roof and supported ground, provenance and binary validation pass, the tomb roof masks the ground grid in actual browser inspection, and the scoped lane gate is green.
-  status: claimed Codex
+  status: completed Codex; scoped gate and visual QA green
 
 - [ ] GATE-001 · Per-commit review loop
   why: Each todo commit gets the lane gate, go build ./..., and archtest before it is marked done.
