@@ -42,15 +42,28 @@ type SceneView struct {
 	Layers              []string
 	Narration, Subtitle string
 }
+
+// LocalizedMessage carries a view string as a key plus arguments. Clients
+// render it through the catalog for the view locale; Fallback covers keys
+// the client's catalog does not know yet.
+type LocalizedMessage struct {
+	Key      string            `json:"key"`
+	Args     map[string]string `json:"args,omitempty"`
+	Count    int               `json:"count,omitempty"`
+	Fallback string            `json:"fallback,omitempty"`
+}
+
 type SeatView struct {
 	Seat         SeatID
 	PlayerNumber int
 	Connected    bool
+	Locale       string
 	Character    *Character
 	Build        *BuildCard
 	Moves        []MoveView
 	TurnTimer    TimerView
 	StatusText   string
+	StatusMsg    LocalizedMessage
 }
 type MoveView struct {
 	ID       vocab.MoveID
@@ -126,6 +139,8 @@ type View struct {
 	Spotlight   SeatID
 	RunMode     vocab.RunMode
 	NextD20     int
+	Locale      string
+	Notice      LocalizedMessage
 	Seats       []SeatView
 	Scene       SceneView
 	Dice        *DiceView

@@ -34,6 +34,7 @@ type Seat struct {
 	Token        string     `json:"token,omitempty"`
 	Character    *Character `json:"character,omitempty"`
 	Connected    bool       `json:"connected"`
+	Locale       string     `json:"locale,omitempty"`
 }
 
 type NPC struct {

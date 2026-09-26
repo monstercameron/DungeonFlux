@@ -17,6 +17,7 @@ type CallMeta struct {
 	UtteranceID domain.UtteranceID
 	Speculative bool
 	ForceReplay bool
+	Locale      string
 }
 type Message struct {
 	Role vocab.MsgRole
@@ -95,7 +96,17 @@ type STTRequest struct {
 	Audio    []byte
 	MIME     string
 	Keyterms []string
+	Language string
 }
+
+// SeatLocales resolves a seat to its settled locale tag for localizable
+// requests. A nil resolver means the room default (English). Composition
+// code wires it to the room state.
+type SeatLocales func(seat domain.SeatID) string
+
+// RoomLocale reports the settled room-default locale tag for room-level
+// requests such as narration and canned lines. A nil source means English.
+type RoomLocale func() string
 type Transcript struct{ Text string }
 type STT interface {
 	Transcribe(context.Context, STTRequest) (Transcript, error)

@@ -56,10 +56,19 @@ enum HostCommandKind {
   HOST_COMMAND_KIND_TIMER_ADD = 8;
   HOST_COMMAND_KIND_TIMERS_OFF = 9;
   HOST_COMMAND_KIND_SPLAT_OFF = 10;
+  HOST_COMMAND_KIND_ROOM_LOCALE = 11;
 }
 
 message Cell { int32 c = 1; int32 r = 2; }
 message Option { string id = 1; string label = 2; }
+// Text carries a localizable string as a key plus arguments. Clients render
+// it through the catalog for the view locale; fallback covers unknown keys.
+message Text {
+  string key = 1;
+  map<string, string> args = 2;
+  int32 count = 3;
+  string fallback = 4;
+}
 message Move {
   string move_id = 1;
   string label = 2;
@@ -69,6 +78,8 @@ message Move {
   MovePreview preview = 6;
   string target_id = 7;
   Cell cell = 8;
+  string label_key = 9;
+  Text reason_msg = 10;
 }
 message MovePreview {
   int32 modifier = 1;
@@ -152,24 +163,27 @@ message DMView {
   int32 round = 18;
   string combat_banner = 19;
   repeated string preload = 20;
+  string locale = 21;
+  Text notice = 22;
 }
 message Character { string name = 1; string class_name = 2; int32 persuasion_modifier = 3; string portrait_url = 4; string hook_text = 5; }
 message PTT { bool enabled = 1; PTTState state = 2; }
-message PhoneView { Character character = 1; repeated Move moves = 2; PTT ptt = 3; Timer turn_timer = 4; string status_text = 5; CombatView combat = 6; }
+message PhoneView { Character character = 1; repeated Move moves = 2; PTT ptt = 3; Timer turn_timer = 4; string status_text = 5; CombatView combat = 6; string locale = 7; Text status_msg = 8; }
 message AssetSlot { string name = 1; string state = 2; }
-message HostView { DMView dm = 1; repeated string event_log_tail = 2; repeated AssetSlot asset_slots = 3; string run_mode = 4; int32 next_d20 = 5; int64 combat_cap_remaining_ms = 6; repeated string log_tail = 7; }
+message HostView { DMView dm = 1; repeated string event_log_tail = 2; repeated AssetSlot asset_slots = 3; string run_mode = 4; int32 next_d20 = 5; int64 combat_cap_remaining_ms = 6; repeated string log_tail = 7; string locale = 8; string room_locale = 9; }
 message ScreenState {
   uint64 version = 1;
   string phase = 2;
   string spotlight_seat = 3;
   bool paused = 4;
   oneof view { DMView dm = 5; PhoneView phone = 6; HostView host = 7; }
+  string locale = 8;
 }
 
 message WatchRequest { string seat_token = 1; }
 message ClientCommand { string command_id = 1; string verb = 2; string arg = 3; }
-message JoinRequest { string room_code = 1; ClientKind kind = 2; string seat_token = 3; string host_token = 4; string dm_token = 5; }
-message JoinResponse { string seat_id = 1; string seat_token = 2; int32 player_number = 3; }
+message JoinRequest { string room_code = 1; ClientKind kind = 2; string seat_token = 3; string host_token = 4; string dm_token = 5; string locale = 6; }
+message JoinResponse { string seat_id = 1; string seat_token = 2; int32 player_number = 3; string locale = 4; }
 message ActRequest { string seat_token = 1; string move_id = 2; string arg = 3; string target_id = 4; Cell cell = 5; }
 message ActResponse { bool accepted = 1; string reason = 2; }
 message SayRequest { string seat_token = 1; string text = 2; }
@@ -192,5 +206,5 @@ message AudioFrame { string utterance_id = 1; string speaker = 2; uint64 seq = 3
 message AudioCancel { string utterance_id = 1; bool all = 2; }
 message AudioMessage { oneof message { AudioFrame frame = 1; AudioCancel cancel = 2; } }
 
-message HostCommand { string host_token = 1; HostCommandKind command = 2; int32 d20 = 3; bool on = 4; int32 seconds = 5; }
+message HostCommand { string host_token = 1; HostCommandKind command = 2; int32 d20 = 3; bool on = 4; int32 seconds = 5; string locale = 6; }
 message HostAck { bool ok = 1; string reason = 2; }

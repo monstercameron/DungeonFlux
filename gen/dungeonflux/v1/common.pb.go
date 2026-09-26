@@ -304,6 +304,7 @@ const (
 	HostCommandKind_HOST_COMMAND_KIND_TIMER_ADD   HostCommandKind = 8
 	HostCommandKind_HOST_COMMAND_KIND_TIMERS_OFF  HostCommandKind = 9
 	HostCommandKind_HOST_COMMAND_KIND_SPLAT_OFF   HostCommandKind = 10
+	HostCommandKind_HOST_COMMAND_KIND_ROOM_LOCALE HostCommandKind = 11
 )
 
 // Enum value maps for HostCommandKind.
@@ -320,6 +321,7 @@ var (
 		8:  "HOST_COMMAND_KIND_TIMER_ADD",
 		9:  "HOST_COMMAND_KIND_TIMERS_OFF",
 		10: "HOST_COMMAND_KIND_SPLAT_OFF",
+		11: "HOST_COMMAND_KIND_ROOM_LOCALE",
 	}
 	HostCommandKind_value = map[string]int32{
 		"HOST_COMMAND_KIND_UNSPECIFIED": 0,
@@ -333,6 +335,7 @@ var (
 		"HOST_COMMAND_KIND_TIMER_ADD":   8,
 		"HOST_COMMAND_KIND_TIMERS_OFF":  9,
 		"HOST_COMMAND_KIND_SPLAT_OFF":   10,
+		"HOST_COMMAND_KIND_ROOM_LOCALE": 11,
 	}
 )
 
@@ -503,6 +506,76 @@ func (x *Option) GetLabel() string {
 	return ""
 }
 
+// Text carries a localizable string as a key plus arguments. Clients render
+// it through the catalog for the view locale; fallback covers unknown keys.
+type Text struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Args          map[string]string      `protobuf:"bytes,2,rep,name=args,proto3" json:"args,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Count         int32                  `protobuf:"varint,3,opt,name=count,proto3" json:"count,omitempty"`
+	Fallback      string                 `protobuf:"bytes,4,opt,name=fallback,proto3" json:"fallback,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Text) Reset() {
+	*x = Text{}
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Text) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Text) ProtoMessage() {}
+
+func (x *Text) ProtoReflect() protoreflect.Message {
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Text.ProtoReflect.Descriptor instead.
+func (*Text) Descriptor() ([]byte, []int) {
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *Text) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *Text) GetArgs() map[string]string {
+	if x != nil {
+		return x.Args
+	}
+	return nil
+}
+
+func (x *Text) GetCount() int32 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
+func (x *Text) GetFallback() string {
+	if x != nil {
+		return x.Fallback
+	}
+	return ""
+}
+
 type Move struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	MoveId        string                 `protobuf:"bytes,1,opt,name=move_id,json=moveId,proto3" json:"move_id,omitempty"`
@@ -513,13 +586,15 @@ type Move struct {
 	Preview       *MovePreview           `protobuf:"bytes,6,opt,name=preview,proto3" json:"preview,omitempty"`
 	TargetId      string                 `protobuf:"bytes,7,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
 	Cell          *Cell                  `protobuf:"bytes,8,opt,name=cell,proto3" json:"cell,omitempty"`
+	LabelKey      string                 `protobuf:"bytes,9,opt,name=label_key,json=labelKey,proto3" json:"label_key,omitempty"`
+	ReasonMsg     *Text                  `protobuf:"bytes,10,opt,name=reason_msg,json=reasonMsg,proto3" json:"reason_msg,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Move) Reset() {
 	*x = Move{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[3]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -531,7 +606,7 @@ func (x *Move) String() string {
 func (*Move) ProtoMessage() {}
 
 func (x *Move) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[3]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -544,7 +619,7 @@ func (x *Move) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Move.ProtoReflect.Descriptor instead.
 func (*Move) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{3}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Move) GetMoveId() string {
@@ -603,6 +678,20 @@ func (x *Move) GetCell() *Cell {
 	return nil
 }
 
+func (x *Move) GetLabelKey() string {
+	if x != nil {
+		return x.LabelKey
+	}
+	return ""
+}
+
+func (x *Move) GetReasonMsg() *Text {
+	if x != nil {
+		return x.ReasonMsg
+	}
+	return nil
+}
+
 type MovePreview struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Modifier      int32                  `protobuf:"varint,1,opt,name=modifier,proto3" json:"modifier,omitempty"`
@@ -615,7 +704,7 @@ type MovePreview struct {
 
 func (x *MovePreview) Reset() {
 	*x = MovePreview{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[4]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -627,7 +716,7 @@ func (x *MovePreview) String() string {
 func (*MovePreview) ProtoMessage() {}
 
 func (x *MovePreview) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[4]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -640,7 +729,7 @@ func (x *MovePreview) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MovePreview.ProtoReflect.Descriptor instead.
 func (*MovePreview) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{4}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *MovePreview) GetModifier() int32 {
@@ -681,7 +770,7 @@ type DamagePreview struct {
 
 func (x *DamagePreview) Reset() {
 	*x = DamagePreview{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[5]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -693,7 +782,7 @@ func (x *DamagePreview) String() string {
 func (*DamagePreview) ProtoMessage() {}
 
 func (x *DamagePreview) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[5]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -706,7 +795,7 @@ func (x *DamagePreview) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DamagePreview.ProtoReflect.Descriptor instead.
 func (*DamagePreview) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{5}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *DamagePreview) GetDice() string {
@@ -735,7 +824,7 @@ type Timer struct {
 
 func (x *Timer) Reset() {
 	*x = Timer{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[6]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -747,7 +836,7 @@ func (x *Timer) String() string {
 func (*Timer) ProtoMessage() {}
 
 func (x *Timer) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[6]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -760,7 +849,7 @@ func (x *Timer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Timer.ProtoReflect.Descriptor instead.
 func (*Timer) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{6}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Timer) GetSeat() string {
@@ -801,7 +890,7 @@ type Narration struct {
 
 func (x *Narration) Reset() {
 	*x = Narration{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[7]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -813,7 +902,7 @@ func (x *Narration) String() string {
 func (*Narration) ProtoMessage() {}
 
 func (x *Narration) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[7]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -826,7 +915,7 @@ func (x *Narration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Narration.ProtoReflect.Descriptor instead.
 func (*Narration) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{7}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Narration) GetSpeaker() string {
@@ -853,7 +942,7 @@ type Subtitle struct {
 
 func (x *Subtitle) Reset() {
 	*x = Subtitle{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[8]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -865,7 +954,7 @@ func (x *Subtitle) String() string {
 func (*Subtitle) ProtoMessage() {}
 
 func (x *Subtitle) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[8]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -878,7 +967,7 @@ func (x *Subtitle) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Subtitle.ProtoReflect.Descriptor instead.
 func (*Subtitle) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{8}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *Subtitle) GetPlayerNumber() int32 {
@@ -912,7 +1001,7 @@ type Dice struct {
 
 func (x *Dice) Reset() {
 	*x = Dice{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[9]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -924,7 +1013,7 @@ func (x *Dice) String() string {
 func (*Dice) ProtoMessage() {}
 
 func (x *Dice) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[9]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -937,7 +1026,7 @@ func (x *Dice) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Dice.ProtoReflect.Descriptor instead.
 func (*Dice) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{9}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *Dice) GetState() DiceState {
@@ -1016,7 +1105,7 @@ type Damage struct {
 
 func (x *Damage) Reset() {
 	*x = Damage{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[10]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1028,7 +1117,7 @@ func (x *Damage) String() string {
 func (*Damage) ProtoMessage() {}
 
 func (x *Damage) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[10]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1041,7 +1130,7 @@ func (x *Damage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Damage.ProtoReflect.Descriptor instead.
 func (*Damage) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{10}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Damage) GetDice() string {
@@ -1091,7 +1180,7 @@ type Clip struct {
 
 func (x *Clip) Reset() {
 	*x = Clip{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[11]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1103,7 +1192,7 @@ func (x *Clip) String() string {
 func (*Clip) ProtoMessage() {}
 
 func (x *Clip) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[11]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1116,7 +1205,7 @@ func (x *Clip) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Clip.ProtoReflect.Descriptor instead.
 func (*Clip) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{11}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *Clip) GetUrl() string {
@@ -1161,7 +1250,7 @@ type Layer struct {
 
 func (x *Layer) Reset() {
 	*x = Layer{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[12]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1173,7 +1262,7 @@ func (x *Layer) String() string {
 func (*Layer) ProtoMessage() {}
 
 func (x *Layer) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[12]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1186,7 +1275,7 @@ func (x *Layer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Layer.ProtoReflect.Descriptor instead.
 func (*Layer) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{12}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *Layer) GetId() string {
@@ -1247,7 +1336,7 @@ type Music struct {
 
 func (x *Music) Reset() {
 	*x = Music{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[13]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1259,7 +1348,7 @@ func (x *Music) String() string {
 func (*Music) ProtoMessage() {}
 
 func (x *Music) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[13]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1272,7 +1361,7 @@ func (x *Music) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Music.ProtoReflect.Descriptor instead.
 func (*Music) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{13}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *Music) GetTrackId() string {
@@ -1341,7 +1430,7 @@ type SoundEffect struct {
 
 func (x *SoundEffect) Reset() {
 	*x = SoundEffect{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[14]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1353,7 +1442,7 @@ func (x *SoundEffect) String() string {
 func (*SoundEffect) ProtoMessage() {}
 
 func (x *SoundEffect) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[14]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1366,7 +1455,7 @@ func (x *SoundEffect) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SoundEffect.ProtoReflect.Descriptor instead.
 func (*SoundEffect) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{14}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *SoundEffect) GetId() string {
@@ -1395,7 +1484,7 @@ type BuildCard struct {
 
 func (x *BuildCard) Reset() {
 	*x = BuildCard{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[15]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1407,7 +1496,7 @@ func (x *BuildCard) String() string {
 func (*BuildCard) ProtoMessage() {}
 
 func (x *BuildCard) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[15]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1420,7 +1509,7 @@ func (x *BuildCard) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BuildCard.ProtoReflect.Descriptor instead.
 func (*BuildCard) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{15}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *BuildCard) GetPlayerNumber() int32 {
@@ -1461,7 +1550,7 @@ type Shot struct {
 
 func (x *Shot) Reset() {
 	*x = Shot{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[16]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1473,7 +1562,7 @@ func (x *Shot) String() string {
 func (*Shot) ProtoMessage() {}
 
 func (x *Shot) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[16]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1486,7 +1575,7 @@ func (x *Shot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Shot.ProtoReflect.Descriptor instead.
 func (*Shot) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{16}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *Shot) GetId() string {
@@ -1520,7 +1609,7 @@ type Battlefield struct {
 
 func (x *Battlefield) Reset() {
 	*x = Battlefield{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[17]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1532,7 +1621,7 @@ func (x *Battlefield) String() string {
 func (*Battlefield) ProtoMessage() {}
 
 func (x *Battlefield) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[17]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1545,7 +1634,7 @@ func (x *Battlefield) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Battlefield.ProtoReflect.Descriptor instead.
 func (*Battlefield) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{17}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *Battlefield) GetMode() string {
@@ -1624,7 +1713,7 @@ type Grid struct {
 
 func (x *Grid) Reset() {
 	*x = Grid{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[18]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1636,7 +1725,7 @@ func (x *Grid) String() string {
 func (*Grid) ProtoMessage() {}
 
 func (x *Grid) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[18]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1649,7 +1738,7 @@ func (x *Grid) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Grid.ProtoReflect.Descriptor instead.
 func (*Grid) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{18}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *Grid) GetOrigin() *Cell {
@@ -1697,7 +1786,7 @@ type FlatBattlefield struct {
 
 func (x *FlatBattlefield) Reset() {
 	*x = FlatBattlefield{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[19]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1709,7 +1798,7 @@ func (x *FlatBattlefield) String() string {
 func (*FlatBattlefield) ProtoMessage() {}
 
 func (x *FlatBattlefield) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[19]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1722,7 +1811,7 @@ func (x *FlatBattlefield) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FlatBattlefield.ProtoReflect.Descriptor instead.
 func (*FlatBattlefield) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{19}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *FlatBattlefield) GetImageUrl() string {
@@ -1750,7 +1839,7 @@ type Camera struct {
 
 func (x *Camera) Reset() {
 	*x = Camera{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[20]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1762,7 +1851,7 @@ func (x *Camera) String() string {
 func (*Camera) ProtoMessage() {}
 
 func (x *Camera) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[20]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1775,7 +1864,7 @@ func (x *Camera) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Camera.ProtoReflect.Descriptor instead.
 func (*Camera) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{20}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *Camera) GetPreset() string {
@@ -1815,7 +1904,7 @@ type Token struct {
 
 func (x *Token) Reset() {
 	*x = Token{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[21]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1827,7 +1916,7 @@ func (x *Token) String() string {
 func (*Token) ProtoMessage() {}
 
 func (x *Token) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[21]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1840,7 +1929,7 @@ func (x *Token) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Token.ProtoReflect.Descriptor instead.
 func (*Token) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{21}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *Token) GetTokenId() string {
@@ -1909,7 +1998,7 @@ type Highlight struct {
 
 func (x *Highlight) Reset() {
 	*x = Highlight{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[22]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1921,7 +2010,7 @@ func (x *Highlight) String() string {
 func (*Highlight) ProtoMessage() {}
 
 func (x *Highlight) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[22]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1934,7 +2023,7 @@ func (x *Highlight) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Highlight.ProtoReflect.Descriptor instead.
 func (*Highlight) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{22}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *Highlight) GetCell() *Cell {
@@ -1966,7 +2055,7 @@ type TurnOrderEntry struct {
 
 func (x *TurnOrderEntry) Reset() {
 	*x = TurnOrderEntry{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[23]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1978,7 +2067,7 @@ func (x *TurnOrderEntry) String() string {
 func (*TurnOrderEntry) ProtoMessage() {}
 
 func (x *TurnOrderEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[23]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1991,7 +2080,7 @@ func (x *TurnOrderEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TurnOrderEntry.ProtoReflect.Descriptor instead.
 func (*TurnOrderEntry) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{23}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *TurnOrderEntry) GetTokenId() string {
@@ -2059,7 +2148,7 @@ type CombatView struct {
 
 func (x *CombatView) Reset() {
 	*x = CombatView{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[24]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2071,7 +2160,7 @@ func (x *CombatView) String() string {
 func (*CombatView) ProtoMessage() {}
 
 func (x *CombatView) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[24]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2084,7 +2173,7 @@ func (x *CombatView) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CombatView.ProtoReflect.Descriptor instead.
 func (*CombatView) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{24}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *CombatView) GetTokenId() string {
@@ -2157,7 +2246,7 @@ type MiniGrid struct {
 
 func (x *MiniGrid) Reset() {
 	*x = MiniGrid{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[25]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2169,7 +2258,7 @@ func (x *MiniGrid) String() string {
 func (*MiniGrid) ProtoMessage() {}
 
 func (x *MiniGrid) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[25]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2182,7 +2271,7 @@ func (x *MiniGrid) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MiniGrid.ProtoReflect.Descriptor instead.
 func (*MiniGrid) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{25}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *MiniGrid) GetCols() int32 {
@@ -2249,13 +2338,15 @@ type DMView struct {
 	Round         int32                  `protobuf:"varint,18,opt,name=round,proto3" json:"round,omitempty"`
 	CombatBanner  string                 `protobuf:"bytes,19,opt,name=combat_banner,json=combatBanner,proto3" json:"combat_banner,omitempty"`
 	Preload       []string               `protobuf:"bytes,20,rep,name=preload,proto3" json:"preload,omitempty"`
+	Locale        string                 `protobuf:"bytes,21,opt,name=locale,proto3" json:"locale,omitempty"`
+	Notice        *Text                  `protobuf:"bytes,22,opt,name=notice,proto3" json:"notice,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DMView) Reset() {
 	*x = DMView{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[26]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2267,7 +2358,7 @@ func (x *DMView) String() string {
 func (*DMView) ProtoMessage() {}
 
 func (x *DMView) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[26]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2280,7 +2371,7 @@ func (x *DMView) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DMView.ProtoReflect.Descriptor instead.
 func (*DMView) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{26}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *DMView) GetBackgroundUrl() string {
@@ -2423,6 +2514,20 @@ func (x *DMView) GetPreload() []string {
 	return nil
 }
 
+func (x *DMView) GetLocale() string {
+	if x != nil {
+		return x.Locale
+	}
+	return ""
+}
+
+func (x *DMView) GetNotice() *Text {
+	if x != nil {
+		return x.Notice
+	}
+	return nil
+}
+
 type Character struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Name               string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -2436,7 +2541,7 @@ type Character struct {
 
 func (x *Character) Reset() {
 	*x = Character{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[27]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2448,7 +2553,7 @@ func (x *Character) String() string {
 func (*Character) ProtoMessage() {}
 
 func (x *Character) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[27]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2461,7 +2566,7 @@ func (x *Character) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Character.ProtoReflect.Descriptor instead.
 func (*Character) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{27}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *Character) GetName() string {
@@ -2509,7 +2614,7 @@ type PTT struct {
 
 func (x *PTT) Reset() {
 	*x = PTT{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[28]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2521,7 +2626,7 @@ func (x *PTT) String() string {
 func (*PTT) ProtoMessage() {}
 
 func (x *PTT) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[28]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2534,7 +2639,7 @@ func (x *PTT) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PTT.ProtoReflect.Descriptor instead.
 func (*PTT) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{28}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *PTT) GetEnabled() bool {
@@ -2559,13 +2664,15 @@ type PhoneView struct {
 	TurnTimer     *Timer                 `protobuf:"bytes,4,opt,name=turn_timer,json=turnTimer,proto3" json:"turn_timer,omitempty"`
 	StatusText    string                 `protobuf:"bytes,5,opt,name=status_text,json=statusText,proto3" json:"status_text,omitempty"`
 	Combat        *CombatView            `protobuf:"bytes,6,opt,name=combat,proto3" json:"combat,omitempty"`
+	Locale        string                 `protobuf:"bytes,7,opt,name=locale,proto3" json:"locale,omitempty"`
+	StatusMsg     *Text                  `protobuf:"bytes,8,opt,name=status_msg,json=statusMsg,proto3" json:"status_msg,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PhoneView) Reset() {
 	*x = PhoneView{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[29]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2577,7 +2684,7 @@ func (x *PhoneView) String() string {
 func (*PhoneView) ProtoMessage() {}
 
 func (x *PhoneView) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[29]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2590,7 +2697,7 @@ func (x *PhoneView) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PhoneView.ProtoReflect.Descriptor instead.
 func (*PhoneView) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{29}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *PhoneView) GetCharacter() *Character {
@@ -2635,6 +2742,20 @@ func (x *PhoneView) GetCombat() *CombatView {
 	return nil
 }
 
+func (x *PhoneView) GetLocale() string {
+	if x != nil {
+		return x.Locale
+	}
+	return ""
+}
+
+func (x *PhoneView) GetStatusMsg() *Text {
+	if x != nil {
+		return x.StatusMsg
+	}
+	return nil
+}
+
 type AssetSlot struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -2645,7 +2766,7 @@ type AssetSlot struct {
 
 func (x *AssetSlot) Reset() {
 	*x = AssetSlot{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[30]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2657,7 +2778,7 @@ func (x *AssetSlot) String() string {
 func (*AssetSlot) ProtoMessage() {}
 
 func (x *AssetSlot) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[30]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2670,7 +2791,7 @@ func (x *AssetSlot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssetSlot.ProtoReflect.Descriptor instead.
 func (*AssetSlot) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{30}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *AssetSlot) GetName() string {
@@ -2696,13 +2817,15 @@ type HostView struct {
 	NextD20              int32                  `protobuf:"varint,5,opt,name=next_d20,json=nextD20,proto3" json:"next_d20,omitempty"`
 	CombatCapRemainingMs int64                  `protobuf:"varint,6,opt,name=combat_cap_remaining_ms,json=combatCapRemainingMs,proto3" json:"combat_cap_remaining_ms,omitempty"`
 	LogTail              []string               `protobuf:"bytes,7,rep,name=log_tail,json=logTail,proto3" json:"log_tail,omitempty"`
+	Locale               string                 `protobuf:"bytes,8,opt,name=locale,proto3" json:"locale,omitempty"`
+	RoomLocale           string                 `protobuf:"bytes,9,opt,name=room_locale,json=roomLocale,proto3" json:"room_locale,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
 
 func (x *HostView) Reset() {
 	*x = HostView{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[31]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2714,7 +2837,7 @@ func (x *HostView) String() string {
 func (*HostView) ProtoMessage() {}
 
 func (x *HostView) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[31]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2727,7 +2850,7 @@ func (x *HostView) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HostView.ProtoReflect.Descriptor instead.
 func (*HostView) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{31}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *HostView) GetDm() *DMView {
@@ -2779,6 +2902,20 @@ func (x *HostView) GetLogTail() []string {
 	return nil
 }
 
+func (x *HostView) GetLocale() string {
+	if x != nil {
+		return x.Locale
+	}
+	return ""
+}
+
+func (x *HostView) GetRoomLocale() string {
+	if x != nil {
+		return x.RoomLocale
+	}
+	return ""
+}
+
 type ScreenState struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Version       uint64                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
@@ -2791,13 +2928,14 @@ type ScreenState struct {
 	//	*ScreenState_Phone
 	//	*ScreenState_Host
 	View          isScreenState_View `protobuf_oneof:"view"`
+	Locale        string             `protobuf:"bytes,8,opt,name=locale,proto3" json:"locale,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ScreenState) Reset() {
 	*x = ScreenState{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[32]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2809,7 +2947,7 @@ func (x *ScreenState) String() string {
 func (*ScreenState) ProtoMessage() {}
 
 func (x *ScreenState) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[32]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2822,7 +2960,7 @@ func (x *ScreenState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScreenState.ProtoReflect.Descriptor instead.
 func (*ScreenState) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{32}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *ScreenState) GetVersion() uint64 {
@@ -2887,6 +3025,13 @@ func (x *ScreenState) GetHost() *HostView {
 	return nil
 }
 
+func (x *ScreenState) GetLocale() string {
+	if x != nil {
+		return x.Locale
+	}
+	return ""
+}
+
 type isScreenState_View interface {
 	isScreenState_View()
 }
@@ -2918,7 +3063,7 @@ type WatchRequest struct {
 
 func (x *WatchRequest) Reset() {
 	*x = WatchRequest{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[33]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2930,7 +3075,7 @@ func (x *WatchRequest) String() string {
 func (*WatchRequest) ProtoMessage() {}
 
 func (x *WatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[33]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2943,7 +3088,7 @@ func (x *WatchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WatchRequest.ProtoReflect.Descriptor instead.
 func (*WatchRequest) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{33}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *WatchRequest) GetSeatToken() string {
@@ -2964,7 +3109,7 @@ type ClientCommand struct {
 
 func (x *ClientCommand) Reset() {
 	*x = ClientCommand{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[34]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2976,7 +3121,7 @@ func (x *ClientCommand) String() string {
 func (*ClientCommand) ProtoMessage() {}
 
 func (x *ClientCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[34]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2989,7 +3134,7 @@ func (x *ClientCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClientCommand.ProtoReflect.Descriptor instead.
 func (*ClientCommand) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{34}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *ClientCommand) GetCommandId() string {
@@ -3020,13 +3165,14 @@ type JoinRequest struct {
 	SeatToken     string                 `protobuf:"bytes,3,opt,name=seat_token,json=seatToken,proto3" json:"seat_token,omitempty"`
 	HostToken     string                 `protobuf:"bytes,4,opt,name=host_token,json=hostToken,proto3" json:"host_token,omitempty"`
 	DmToken       string                 `protobuf:"bytes,5,opt,name=dm_token,json=dmToken,proto3" json:"dm_token,omitempty"`
+	Locale        string                 `protobuf:"bytes,6,opt,name=locale,proto3" json:"locale,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *JoinRequest) Reset() {
 	*x = JoinRequest{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[35]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3038,7 +3184,7 @@ func (x *JoinRequest) String() string {
 func (*JoinRequest) ProtoMessage() {}
 
 func (x *JoinRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[35]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3051,7 +3197,7 @@ func (x *JoinRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JoinRequest.ProtoReflect.Descriptor instead.
 func (*JoinRequest) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{35}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *JoinRequest) GetRoomCode() string {
@@ -3089,18 +3235,26 @@ func (x *JoinRequest) GetDmToken() string {
 	return ""
 }
 
+func (x *JoinRequest) GetLocale() string {
+	if x != nil {
+		return x.Locale
+	}
+	return ""
+}
+
 type JoinResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SeatId        string                 `protobuf:"bytes,1,opt,name=seat_id,json=seatId,proto3" json:"seat_id,omitempty"`
 	SeatToken     string                 `protobuf:"bytes,2,opt,name=seat_token,json=seatToken,proto3" json:"seat_token,omitempty"`
 	PlayerNumber  int32                  `protobuf:"varint,3,opt,name=player_number,json=playerNumber,proto3" json:"player_number,omitempty"`
+	Locale        string                 `protobuf:"bytes,4,opt,name=locale,proto3" json:"locale,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *JoinResponse) Reset() {
 	*x = JoinResponse{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[36]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3112,7 +3266,7 @@ func (x *JoinResponse) String() string {
 func (*JoinResponse) ProtoMessage() {}
 
 func (x *JoinResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[36]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3125,7 +3279,7 @@ func (x *JoinResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JoinResponse.ProtoReflect.Descriptor instead.
 func (*JoinResponse) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{36}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *JoinResponse) GetSeatId() string {
@@ -3149,6 +3303,13 @@ func (x *JoinResponse) GetPlayerNumber() int32 {
 	return 0
 }
 
+func (x *JoinResponse) GetLocale() string {
+	if x != nil {
+		return x.Locale
+	}
+	return ""
+}
+
 type ActRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SeatToken     string                 `protobuf:"bytes,1,opt,name=seat_token,json=seatToken,proto3" json:"seat_token,omitempty"`
@@ -3162,7 +3323,7 @@ type ActRequest struct {
 
 func (x *ActRequest) Reset() {
 	*x = ActRequest{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[37]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3174,7 +3335,7 @@ func (x *ActRequest) String() string {
 func (*ActRequest) ProtoMessage() {}
 
 func (x *ActRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[37]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3187,7 +3348,7 @@ func (x *ActRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActRequest.ProtoReflect.Descriptor instead.
 func (*ActRequest) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{37}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *ActRequest) GetSeatToken() string {
@@ -3235,7 +3396,7 @@ type ActResponse struct {
 
 func (x *ActResponse) Reset() {
 	*x = ActResponse{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[38]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3247,7 +3408,7 @@ func (x *ActResponse) String() string {
 func (*ActResponse) ProtoMessage() {}
 
 func (x *ActResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[38]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3260,7 +3421,7 @@ func (x *ActResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActResponse.ProtoReflect.Descriptor instead.
 func (*ActResponse) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{38}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *ActResponse) GetAccepted() bool {
@@ -3287,7 +3448,7 @@ type SayRequest struct {
 
 func (x *SayRequest) Reset() {
 	*x = SayRequest{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[39]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3299,7 +3460,7 @@ func (x *SayRequest) String() string {
 func (*SayRequest) ProtoMessage() {}
 
 func (x *SayRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[39]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3312,7 +3473,7 @@ func (x *SayRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SayRequest.ProtoReflect.Descriptor instead.
 func (*SayRequest) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{39}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *SayRequest) GetSeatToken() string {
@@ -3340,7 +3501,7 @@ type SayResponse struct {
 
 func (x *SayResponse) Reset() {
 	*x = SayResponse{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[40]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3352,7 +3513,7 @@ func (x *SayResponse) String() string {
 func (*SayResponse) ProtoMessage() {}
 
 func (x *SayResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[40]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3365,7 +3526,7 @@ func (x *SayResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SayResponse.ProtoReflect.Descriptor instead.
 func (*SayResponse) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{40}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *SayResponse) GetAccepted() bool {
@@ -3403,7 +3564,7 @@ type ReportRequest struct {
 
 func (x *ReportRequest) Reset() {
 	*x = ReportRequest{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[41]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3415,7 +3576,7 @@ func (x *ReportRequest) String() string {
 func (*ReportRequest) ProtoMessage() {}
 
 func (x *ReportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[41]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3428,7 +3589,7 @@ func (x *ReportRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportRequest.ProtoReflect.Descriptor instead.
 func (*ReportRequest) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{41}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *ReportRequest) GetSeatToken() string {
@@ -3481,7 +3642,7 @@ type ReportResponse struct {
 
 func (x *ReportResponse) Reset() {
 	*x = ReportResponse{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[42]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3493,7 +3654,7 @@ func (x *ReportResponse) String() string {
 func (*ReportResponse) ProtoMessage() {}
 
 func (x *ReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[42]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3506,7 +3667,7 @@ func (x *ReportResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportResponse.ProtoReflect.Descriptor instead.
 func (*ReportResponse) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{42}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{43}
 }
 
 type TalkStart struct {
@@ -3519,7 +3680,7 @@ type TalkStart struct {
 
 func (x *TalkStart) Reset() {
 	*x = TalkStart{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[43]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3531,7 +3692,7 @@ func (x *TalkStart) String() string {
 func (*TalkStart) ProtoMessage() {}
 
 func (x *TalkStart) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[43]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3544,7 +3705,7 @@ func (x *TalkStart) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TalkStart.ProtoReflect.Descriptor instead.
 func (*TalkStart) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{43}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *TalkStart) GetSeatToken() string {
@@ -3571,7 +3732,7 @@ type AudioChunk struct {
 
 func (x *AudioChunk) Reset() {
 	*x = AudioChunk{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[44]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3583,7 +3744,7 @@ func (x *AudioChunk) String() string {
 func (*AudioChunk) ProtoMessage() {}
 
 func (x *AudioChunk) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[44]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3596,7 +3757,7 @@ func (x *AudioChunk) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AudioChunk.ProtoReflect.Descriptor instead.
 func (*AudioChunk) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{44}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *AudioChunk) GetSeq() uint64 {
@@ -3621,7 +3782,7 @@ type TalkEnd struct {
 
 func (x *TalkEnd) Reset() {
 	*x = TalkEnd{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[45]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3633,7 +3794,7 @@ func (x *TalkEnd) String() string {
 func (*TalkEnd) ProtoMessage() {}
 
 func (x *TalkEnd) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[45]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3646,7 +3807,7 @@ func (x *TalkEnd) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TalkEnd.ProtoReflect.Descriptor instead.
 func (*TalkEnd) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{45}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{46}
 }
 
 type TalkRequest struct {
@@ -3663,7 +3824,7 @@ type TalkRequest struct {
 
 func (x *TalkRequest) Reset() {
 	*x = TalkRequest{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[46]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3675,7 +3836,7 @@ func (x *TalkRequest) String() string {
 func (*TalkRequest) ProtoMessage() {}
 
 func (x *TalkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[46]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3688,7 +3849,7 @@ func (x *TalkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TalkRequest.ProtoReflect.Descriptor instead.
 func (*TalkRequest) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{46}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *TalkRequest) GetMessage() isTalkRequest_Message {
@@ -3756,7 +3917,7 @@ type ChunkAck struct {
 
 func (x *ChunkAck) Reset() {
 	*x = ChunkAck{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[47]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3768,7 +3929,7 @@ func (x *ChunkAck) String() string {
 func (*ChunkAck) ProtoMessage() {}
 
 func (x *ChunkAck) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[47]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3781,7 +3942,7 @@ func (x *ChunkAck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChunkAck.ProtoReflect.Descriptor instead.
 func (*ChunkAck) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{47}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *ChunkAck) GetSeq() uint64 {
@@ -3801,7 +3962,7 @@ type Transcript struct {
 
 func (x *Transcript) Reset() {
 	*x = Transcript{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[48]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3813,7 +3974,7 @@ func (x *Transcript) String() string {
 func (*Transcript) ProtoMessage() {}
 
 func (x *Transcript) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[48]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3826,7 +3987,7 @@ func (x *Transcript) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Transcript.ProtoReflect.Descriptor instead.
 func (*Transcript) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{48}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *Transcript) GetText() string {
@@ -3852,7 +4013,7 @@ type TalkStop struct {
 
 func (x *TalkStop) Reset() {
 	*x = TalkStop{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[49]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3864,7 +4025,7 @@ func (x *TalkStop) String() string {
 func (*TalkStop) ProtoMessage() {}
 
 func (x *TalkStop) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[49]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3877,7 +4038,7 @@ func (x *TalkStop) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TalkStop.ProtoReflect.Descriptor instead.
 func (*TalkStop) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{49}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *TalkStop) GetReason() string {
@@ -3896,7 +4057,7 @@ type TalkError struct {
 
 func (x *TalkError) Reset() {
 	*x = TalkError{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[50]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3908,7 +4069,7 @@ func (x *TalkError) String() string {
 func (*TalkError) ProtoMessage() {}
 
 func (x *TalkError) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[50]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3921,7 +4082,7 @@ func (x *TalkError) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TalkError.ProtoReflect.Descriptor instead.
 func (*TalkError) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{50}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *TalkError) GetMessage() string {
@@ -3946,7 +4107,7 @@ type TalkResponse struct {
 
 func (x *TalkResponse) Reset() {
 	*x = TalkResponse{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[51]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3958,7 +4119,7 @@ func (x *TalkResponse) String() string {
 func (*TalkResponse) ProtoMessage() {}
 
 func (x *TalkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[51]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3971,7 +4132,7 @@ func (x *TalkResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TalkResponse.ProtoReflect.Descriptor instead.
 func (*TalkResponse) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{51}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *TalkResponse) GetMessage() isTalkResponse_Message {
@@ -4054,7 +4215,7 @@ type ListenRequest struct {
 
 func (x *ListenRequest) Reset() {
 	*x = ListenRequest{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[52]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4066,7 +4227,7 @@ func (x *ListenRequest) String() string {
 func (*ListenRequest) ProtoMessage() {}
 
 func (x *ListenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[52]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4079,7 +4240,7 @@ func (x *ListenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListenRequest.ProtoReflect.Descriptor instead.
 func (*ListenRequest) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{52}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *ListenRequest) GetSeatToken() string {
@@ -4103,7 +4264,7 @@ type AudioFrame struct {
 
 func (x *AudioFrame) Reset() {
 	*x = AudioFrame{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[53]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4115,7 +4276,7 @@ func (x *AudioFrame) String() string {
 func (*AudioFrame) ProtoMessage() {}
 
 func (x *AudioFrame) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[53]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4128,7 +4289,7 @@ func (x *AudioFrame) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AudioFrame.ProtoReflect.Descriptor instead.
 func (*AudioFrame) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{53}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *AudioFrame) GetUtteranceId() string {
@@ -4183,7 +4344,7 @@ type AudioCancel struct {
 
 func (x *AudioCancel) Reset() {
 	*x = AudioCancel{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[54]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4195,7 +4356,7 @@ func (x *AudioCancel) String() string {
 func (*AudioCancel) ProtoMessage() {}
 
 func (x *AudioCancel) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[54]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4208,7 +4369,7 @@ func (x *AudioCancel) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AudioCancel.ProtoReflect.Descriptor instead.
 func (*AudioCancel) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{54}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *AudioCancel) GetUtteranceId() string {
@@ -4238,7 +4399,7 @@ type AudioMessage struct {
 
 func (x *AudioMessage) Reset() {
 	*x = AudioMessage{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[55]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4250,7 +4411,7 @@ func (x *AudioMessage) String() string {
 func (*AudioMessage) ProtoMessage() {}
 
 func (x *AudioMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[55]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4263,7 +4424,7 @@ func (x *AudioMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AudioMessage.ProtoReflect.Descriptor instead.
 func (*AudioMessage) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{55}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *AudioMessage) GetMessage() isAudioMessage_Message {
@@ -4314,13 +4475,14 @@ type HostCommand struct {
 	D20           int32                  `protobuf:"varint,3,opt,name=d20,proto3" json:"d20,omitempty"`
 	On            bool                   `protobuf:"varint,4,opt,name=on,proto3" json:"on,omitempty"`
 	Seconds       int32                  `protobuf:"varint,5,opt,name=seconds,proto3" json:"seconds,omitempty"`
+	Locale        string                 `protobuf:"bytes,6,opt,name=locale,proto3" json:"locale,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *HostCommand) Reset() {
 	*x = HostCommand{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[56]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4332,7 +4494,7 @@ func (x *HostCommand) String() string {
 func (*HostCommand) ProtoMessage() {}
 
 func (x *HostCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[56]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4345,7 +4507,7 @@ func (x *HostCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HostCommand.ProtoReflect.Descriptor instead.
 func (*HostCommand) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{56}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *HostCommand) GetHostToken() string {
@@ -4383,6 +4545,13 @@ func (x *HostCommand) GetSeconds() int32 {
 	return 0
 }
 
+func (x *HostCommand) GetLocale() string {
+	if x != nil {
+		return x.Locale
+	}
+	return ""
+}
+
 type HostAck struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
@@ -4393,7 +4562,7 @@ type HostAck struct {
 
 func (x *HostAck) Reset() {
 	*x = HostAck{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[57]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4405,7 +4574,7 @@ func (x *HostAck) String() string {
 func (*HostAck) ProtoMessage() {}
 
 func (x *HostAck) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[57]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4418,7 +4587,7 @@ func (x *HostAck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HostAck.ProtoReflect.Descriptor instead.
 func (*HostAck) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{57}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *HostAck) GetOk() bool {
@@ -4446,7 +4615,15 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\x01r\x18\x02 \x01(\x05R\x01r\".\n" +
 	"\x06Option\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
-	"\x05label\x18\x02 \x01(\tR\x05label\"\x97\x02\n" +
+	"\x05label\x18\x02 \x01(\tR\x05label\"\xb7\x01\n" +
+	"\x04Text\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x122\n" +
+	"\x04args\x18\x02 \x03(\v2\x1e.dungeonflux.v1.Text.ArgsEntryR\x04args\x12\x14\n" +
+	"\x05count\x18\x03 \x01(\x05R\x05count\x12\x1a\n" +
+	"\bfallback\x18\x04 \x01(\tR\bfallback\x1a7\n" +
+	"\tArgsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe9\x02\n" +
 	"\x04Move\x12\x17\n" +
 	"\amove_id\x18\x01 \x01(\tR\x06moveId\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12\x18\n" +
@@ -4455,7 +4632,11 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\aoptions\x18\x05 \x03(\v2\x16.dungeonflux.v1.OptionR\aoptions\x125\n" +
 	"\apreview\x18\x06 \x01(\v2\x1b.dungeonflux.v1.MovePreviewR\apreview\x12\x1b\n" +
 	"\ttarget_id\x18\a \x01(\tR\btargetId\x12(\n" +
-	"\x04cell\x18\b \x01(\v2\x14.dungeonflux.v1.CellR\x04cell\"\x8d\x01\n" +
+	"\x04cell\x18\b \x01(\v2\x14.dungeonflux.v1.CellR\x04cell\x12\x1b\n" +
+	"\tlabel_key\x18\t \x01(\tR\blabelKey\x123\n" +
+	"\n" +
+	"reason_msg\x18\n" +
+	" \x01(\v2\x14.dungeonflux.v1.TextR\treasonMsg\"\x8d\x01\n" +
 	"\vMovePreview\x12\x1a\n" +
 	"\bmodifier\x18\x01 \x01(\x05R\bmodifier\x12\x0e\n" +
 	"\x02vs\x18\x02 \x01(\x05R\x02vs\x12\x1b\n" +
@@ -4583,7 +4764,7 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\bwalkable\x18\x03 \x03(\v2\x14.dungeonflux.v1.CellR\bwalkable\x122\n" +
 	"\treachable\x18\x04 \x03(\v2\x14.dungeonflux.v1.CellR\treachable\x12$\n" +
 	"\x02me\x18\x05 \x01(\v2\x14.dungeonflux.v1.CellR\x02me\x12,\n" +
-	"\x06thrall\x18\x06 \x01(\v2\x14.dungeonflux.v1.CellR\x06thrall\"\x93\a\n" +
+	"\x06thrall\x18\x06 \x01(\v2\x14.dungeonflux.v1.CellR\x06thrall\"\xd9\a\n" +
 	"\x06DMView\x12%\n" +
 	"\x0ebackground_url\x18\x01 \x01(\tR\rbackgroundUrl\x12-\n" +
 	"\x06layers\x18\x02 \x03(\v2\x15.dungeonflux.v1.LayerR\x06layers\x12(\n" +
@@ -4610,7 +4791,9 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"turn_order\x18\x11 \x03(\v2\x1e.dungeonflux.v1.TurnOrderEntryR\tturnOrder\x12\x14\n" +
 	"\x05round\x18\x12 \x01(\x05R\x05round\x12#\n" +
 	"\rcombat_banner\x18\x13 \x01(\tR\fcombatBanner\x12\x18\n" +
-	"\apreload\x18\x14 \x03(\tR\apreload\"\xaf\x01\n" +
+	"\apreload\x18\x14 \x03(\tR\apreload\x12\x16\n" +
+	"\x06locale\x18\x15 \x01(\tR\x06locale\x12,\n" +
+	"\x06notice\x18\x16 \x01(\v2\x14.dungeonflux.v1.TextR\x06notice\"\xaf\x01\n" +
 	"\tCharacter\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
 	"\n" +
@@ -4620,7 +4803,7 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\thook_text\x18\x05 \x01(\tR\bhookText\"O\n" +
 	"\x03PTT\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12.\n" +
-	"\x05state\x18\x02 \x01(\x0e2\x18.dungeonflux.v1.PTTStateR\x05state\"\xa2\x02\n" +
+	"\x05state\x18\x02 \x01(\x0e2\x18.dungeonflux.v1.PTTStateR\x05state\"\xef\x02\n" +
 	"\tPhoneView\x127\n" +
 	"\tcharacter\x18\x01 \x01(\v2\x19.dungeonflux.v1.CharacterR\tcharacter\x12*\n" +
 	"\x05moves\x18\x02 \x03(\v2\x14.dungeonflux.v1.MoveR\x05moves\x12%\n" +
@@ -4629,10 +4812,13 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"turn_timer\x18\x04 \x01(\v2\x15.dungeonflux.v1.TimerR\tturnTimer\x12\x1f\n" +
 	"\vstatus_text\x18\x05 \x01(\tR\n" +
 	"statusText\x122\n" +
-	"\x06combat\x18\x06 \x01(\v2\x1a.dungeonflux.v1.CombatViewR\x06combat\"5\n" +
+	"\x06combat\x18\x06 \x01(\v2\x1a.dungeonflux.v1.CombatViewR\x06combat\x12\x16\n" +
+	"\x06locale\x18\a \x01(\tR\x06locale\x123\n" +
+	"\n" +
+	"status_msg\x18\b \x01(\v2\x14.dungeonflux.v1.TextR\tstatusMsg\"5\n" +
 	"\tAssetSlot\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05state\x18\x02 \x01(\tR\x05state\"\x9c\x02\n" +
+	"\x05state\x18\x02 \x01(\tR\x05state\"\xd5\x02\n" +
 	"\bHostView\x12&\n" +
 	"\x02dm\x18\x01 \x01(\v2\x16.dungeonflux.v1.DMViewR\x02dm\x12$\n" +
 	"\x0eevent_log_tail\x18\x02 \x03(\tR\feventLogTail\x12:\n" +
@@ -4641,7 +4827,10 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\brun_mode\x18\x04 \x01(\tR\arunMode\x12\x19\n" +
 	"\bnext_d20\x18\x05 \x01(\x05R\anextD20\x125\n" +
 	"\x17combat_cap_remaining_ms\x18\x06 \x01(\x03R\x14combatCapRemainingMs\x12\x19\n" +
-	"\blog_tail\x18\a \x03(\tR\alogTail\"\x91\x02\n" +
+	"\blog_tail\x18\a \x03(\tR\alogTail\x12\x16\n" +
+	"\x06locale\x18\b \x01(\tR\x06locale\x12\x1f\n" +
+	"\vroom_locale\x18\t \x01(\tR\n" +
+	"roomLocale\"\xa9\x02\n" +
 	"\vScreenState\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\x04R\aversion\x12\x14\n" +
 	"\x05phase\x18\x02 \x01(\tR\x05phase\x12%\n" +
@@ -4649,7 +4838,8 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\x06paused\x18\x04 \x01(\bR\x06paused\x12(\n" +
 	"\x02dm\x18\x05 \x01(\v2\x16.dungeonflux.v1.DMViewH\x00R\x02dm\x121\n" +
 	"\x05phone\x18\x06 \x01(\v2\x19.dungeonflux.v1.PhoneViewH\x00R\x05phone\x12.\n" +
-	"\x04host\x18\a \x01(\v2\x18.dungeonflux.v1.HostViewH\x00R\x04hostB\x06\n" +
+	"\x04host\x18\a \x01(\v2\x18.dungeonflux.v1.HostViewH\x00R\x04host\x12\x16\n" +
+	"\x06locale\x18\b \x01(\tR\x06localeB\x06\n" +
 	"\x04view\"-\n" +
 	"\fWatchRequest\x12\x1d\n" +
 	"\n" +
@@ -4658,7 +4848,7 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\n" +
 	"command_id\x18\x01 \x01(\tR\tcommandId\x12\x12\n" +
 	"\x04verb\x18\x02 \x01(\tR\x04verb\x12\x10\n" +
-	"\x03arg\x18\x03 \x01(\tR\x03arg\"\xb3\x01\n" +
+	"\x03arg\x18\x03 \x01(\tR\x03arg\"\xcb\x01\n" +
 	"\vJoinRequest\x12\x1b\n" +
 	"\troom_code\x18\x01 \x01(\tR\broomCode\x12.\n" +
 	"\x04kind\x18\x02 \x01(\x0e2\x1a.dungeonflux.v1.ClientKindR\x04kind\x12\x1d\n" +
@@ -4666,12 +4856,14 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"seat_token\x18\x03 \x01(\tR\tseatToken\x12\x1d\n" +
 	"\n" +
 	"host_token\x18\x04 \x01(\tR\thostToken\x12\x19\n" +
-	"\bdm_token\x18\x05 \x01(\tR\admToken\"k\n" +
+	"\bdm_token\x18\x05 \x01(\tR\admToken\x12\x16\n" +
+	"\x06locale\x18\x06 \x01(\tR\x06locale\"\x83\x01\n" +
 	"\fJoinResponse\x12\x17\n" +
 	"\aseat_id\x18\x01 \x01(\tR\x06seatId\x12\x1d\n" +
 	"\n" +
 	"seat_token\x18\x02 \x01(\tR\tseatToken\x12#\n" +
-	"\rplayer_number\x18\x03 \x01(\x05R\fplayerNumber\"\x9d\x01\n" +
+	"\rplayer_number\x18\x03 \x01(\x05R\fplayerNumber\x12\x16\n" +
+	"\x06locale\x18\x04 \x01(\tR\x06locale\"\x9d\x01\n" +
 	"\n" +
 	"ActRequest\x12\x1d\n" +
 	"\n" +
@@ -4752,14 +4944,15 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\fAudioMessage\x122\n" +
 	"\x05frame\x18\x01 \x01(\v2\x1a.dungeonflux.v1.AudioFrameH\x00R\x05frame\x125\n" +
 	"\x06cancel\x18\x02 \x01(\v2\x1b.dungeonflux.v1.AudioCancelH\x00R\x06cancelB\t\n" +
-	"\amessage\"\xa3\x01\n" +
+	"\amessage\"\xbb\x01\n" +
 	"\vHostCommand\x12\x1d\n" +
 	"\n" +
 	"host_token\x18\x01 \x01(\tR\thostToken\x129\n" +
 	"\acommand\x18\x02 \x01(\x0e2\x1f.dungeonflux.v1.HostCommandKindR\acommand\x12\x10\n" +
 	"\x03d20\x18\x03 \x01(\x05R\x03d20\x12\x0e\n" +
 	"\x02on\x18\x04 \x01(\bR\x02on\x12\x18\n" +
-	"\aseconds\x18\x05 \x01(\x05R\aseconds\"1\n" +
+	"\aseconds\x18\x05 \x01(\x05R\aseconds\x12\x16\n" +
+	"\x06locale\x18\x06 \x01(\tR\x06locale\"1\n" +
 	"\aHostAck\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason*j\n" +
@@ -4792,7 +4985,7 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\x0ePTT_STATE_IDLE\x10\x01\x12\x17\n" +
 	"\x13PTT_STATE_RECORDING\x10\x02\x12\x1a\n" +
 	"\x16PTT_STATE_TRANSCRIBING\x10\x03\x12\x14\n" +
-	"\x10PTT_STATE_FAILED\x10\x04*\xeb\x02\n" +
+	"\x10PTT_STATE_FAILED\x10\x04*\x8e\x03\n" +
 	"\x0fHostCommandKind\x12!\n" +
 	"\x1dHOST_COMMAND_KIND_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17HOST_COMMAND_KIND_START\x10\x01\x12\x1b\n" +
@@ -4805,7 +4998,8 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\x1bHOST_COMMAND_KIND_TIMER_ADD\x10\b\x12 \n" +
 	"\x1cHOST_COMMAND_KIND_TIMERS_OFF\x10\t\x12\x1f\n" +
 	"\x1bHOST_COMMAND_KIND_SPLAT_OFF\x10\n" +
-	"BHZFgithub.com/monstercameron/DungeonFlux/gen/dungeonflux/v1;dungeonfluxv1b\x06proto3"
+	"\x12!\n" +
+	"\x1dHOST_COMMAND_KIND_ROOM_LOCALE\x10\vBHZFgithub.com/monstercameron/DungeonFlux/gen/dungeonflux/v1;dungeonfluxv1b\x06proto3"
 
 var (
 	file_dungeonflux_v1_common_proto_rawDescOnce sync.Once
@@ -4820,7 +5014,7 @@ func file_dungeonflux_v1_common_proto_rawDescGZIP() []byte {
 }
 
 var file_dungeonflux_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_dungeonflux_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 58)
+var file_dungeonflux_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 60)
 var file_dungeonflux_v1_common_proto_goTypes = []any{
 	(ClientKind)(0),         // 0: dungeonflux.v1.ClientKind
 	(ReportKind)(0),         // 1: dungeonflux.v1.ReportKind
@@ -4831,126 +5025,132 @@ var file_dungeonflux_v1_common_proto_goTypes = []any{
 	(*Empty)(nil),           // 6: dungeonflux.v1.Empty
 	(*Cell)(nil),            // 7: dungeonflux.v1.Cell
 	(*Option)(nil),          // 8: dungeonflux.v1.Option
-	(*Move)(nil),            // 9: dungeonflux.v1.Move
-	(*MovePreview)(nil),     // 10: dungeonflux.v1.MovePreview
-	(*DamagePreview)(nil),   // 11: dungeonflux.v1.DamagePreview
-	(*Timer)(nil),           // 12: dungeonflux.v1.Timer
-	(*Narration)(nil),       // 13: dungeonflux.v1.Narration
-	(*Subtitle)(nil),        // 14: dungeonflux.v1.Subtitle
-	(*Dice)(nil),            // 15: dungeonflux.v1.Dice
-	(*Damage)(nil),          // 16: dungeonflux.v1.Damage
-	(*Clip)(nil),            // 17: dungeonflux.v1.Clip
-	(*Layer)(nil),           // 18: dungeonflux.v1.Layer
-	(*Music)(nil),           // 19: dungeonflux.v1.Music
-	(*SoundEffect)(nil),     // 20: dungeonflux.v1.SoundEffect
-	(*BuildCard)(nil),       // 21: dungeonflux.v1.BuildCard
-	(*Shot)(nil),            // 22: dungeonflux.v1.Shot
-	(*Battlefield)(nil),     // 23: dungeonflux.v1.Battlefield
-	(*Grid)(nil),            // 24: dungeonflux.v1.Grid
-	(*FlatBattlefield)(nil), // 25: dungeonflux.v1.FlatBattlefield
-	(*Camera)(nil),          // 26: dungeonflux.v1.Camera
-	(*Token)(nil),           // 27: dungeonflux.v1.Token
-	(*Highlight)(nil),       // 28: dungeonflux.v1.Highlight
-	(*TurnOrderEntry)(nil),  // 29: dungeonflux.v1.TurnOrderEntry
-	(*CombatView)(nil),      // 30: dungeonflux.v1.CombatView
-	(*MiniGrid)(nil),        // 31: dungeonflux.v1.MiniGrid
-	(*DMView)(nil),          // 32: dungeonflux.v1.DMView
-	(*Character)(nil),       // 33: dungeonflux.v1.Character
-	(*PTT)(nil),             // 34: dungeonflux.v1.PTT
-	(*PhoneView)(nil),       // 35: dungeonflux.v1.PhoneView
-	(*AssetSlot)(nil),       // 36: dungeonflux.v1.AssetSlot
-	(*HostView)(nil),        // 37: dungeonflux.v1.HostView
-	(*ScreenState)(nil),     // 38: dungeonflux.v1.ScreenState
-	(*WatchRequest)(nil),    // 39: dungeonflux.v1.WatchRequest
-	(*ClientCommand)(nil),   // 40: dungeonflux.v1.ClientCommand
-	(*JoinRequest)(nil),     // 41: dungeonflux.v1.JoinRequest
-	(*JoinResponse)(nil),    // 42: dungeonflux.v1.JoinResponse
-	(*ActRequest)(nil),      // 43: dungeonflux.v1.ActRequest
-	(*ActResponse)(nil),     // 44: dungeonflux.v1.ActResponse
-	(*SayRequest)(nil),      // 45: dungeonflux.v1.SayRequest
-	(*SayResponse)(nil),     // 46: dungeonflux.v1.SayResponse
-	(*ReportRequest)(nil),   // 47: dungeonflux.v1.ReportRequest
-	(*ReportResponse)(nil),  // 48: dungeonflux.v1.ReportResponse
-	(*TalkStart)(nil),       // 49: dungeonflux.v1.TalkStart
-	(*AudioChunk)(nil),      // 50: dungeonflux.v1.AudioChunk
-	(*TalkEnd)(nil),         // 51: dungeonflux.v1.TalkEnd
-	(*TalkRequest)(nil),     // 52: dungeonflux.v1.TalkRequest
-	(*ChunkAck)(nil),        // 53: dungeonflux.v1.ChunkAck
-	(*Transcript)(nil),      // 54: dungeonflux.v1.Transcript
-	(*TalkStop)(nil),        // 55: dungeonflux.v1.TalkStop
-	(*TalkError)(nil),       // 56: dungeonflux.v1.TalkError
-	(*TalkResponse)(nil),    // 57: dungeonflux.v1.TalkResponse
-	(*ListenRequest)(nil),   // 58: dungeonflux.v1.ListenRequest
-	(*AudioFrame)(nil),      // 59: dungeonflux.v1.AudioFrame
-	(*AudioCancel)(nil),     // 60: dungeonflux.v1.AudioCancel
-	(*AudioMessage)(nil),    // 61: dungeonflux.v1.AudioMessage
-	(*HostCommand)(nil),     // 62: dungeonflux.v1.HostCommand
-	(*HostAck)(nil),         // 63: dungeonflux.v1.HostAck
+	(*Text)(nil),            // 9: dungeonflux.v1.Text
+	(*Move)(nil),            // 10: dungeonflux.v1.Move
+	(*MovePreview)(nil),     // 11: dungeonflux.v1.MovePreview
+	(*DamagePreview)(nil),   // 12: dungeonflux.v1.DamagePreview
+	(*Timer)(nil),           // 13: dungeonflux.v1.Timer
+	(*Narration)(nil),       // 14: dungeonflux.v1.Narration
+	(*Subtitle)(nil),        // 15: dungeonflux.v1.Subtitle
+	(*Dice)(nil),            // 16: dungeonflux.v1.Dice
+	(*Damage)(nil),          // 17: dungeonflux.v1.Damage
+	(*Clip)(nil),            // 18: dungeonflux.v1.Clip
+	(*Layer)(nil),           // 19: dungeonflux.v1.Layer
+	(*Music)(nil),           // 20: dungeonflux.v1.Music
+	(*SoundEffect)(nil),     // 21: dungeonflux.v1.SoundEffect
+	(*BuildCard)(nil),       // 22: dungeonflux.v1.BuildCard
+	(*Shot)(nil),            // 23: dungeonflux.v1.Shot
+	(*Battlefield)(nil),     // 24: dungeonflux.v1.Battlefield
+	(*Grid)(nil),            // 25: dungeonflux.v1.Grid
+	(*FlatBattlefield)(nil), // 26: dungeonflux.v1.FlatBattlefield
+	(*Camera)(nil),          // 27: dungeonflux.v1.Camera
+	(*Token)(nil),           // 28: dungeonflux.v1.Token
+	(*Highlight)(nil),       // 29: dungeonflux.v1.Highlight
+	(*TurnOrderEntry)(nil),  // 30: dungeonflux.v1.TurnOrderEntry
+	(*CombatView)(nil),      // 31: dungeonflux.v1.CombatView
+	(*MiniGrid)(nil),        // 32: dungeonflux.v1.MiniGrid
+	(*DMView)(nil),          // 33: dungeonflux.v1.DMView
+	(*Character)(nil),       // 34: dungeonflux.v1.Character
+	(*PTT)(nil),             // 35: dungeonflux.v1.PTT
+	(*PhoneView)(nil),       // 36: dungeonflux.v1.PhoneView
+	(*AssetSlot)(nil),       // 37: dungeonflux.v1.AssetSlot
+	(*HostView)(nil),        // 38: dungeonflux.v1.HostView
+	(*ScreenState)(nil),     // 39: dungeonflux.v1.ScreenState
+	(*WatchRequest)(nil),    // 40: dungeonflux.v1.WatchRequest
+	(*ClientCommand)(nil),   // 41: dungeonflux.v1.ClientCommand
+	(*JoinRequest)(nil),     // 42: dungeonflux.v1.JoinRequest
+	(*JoinResponse)(nil),    // 43: dungeonflux.v1.JoinResponse
+	(*ActRequest)(nil),      // 44: dungeonflux.v1.ActRequest
+	(*ActResponse)(nil),     // 45: dungeonflux.v1.ActResponse
+	(*SayRequest)(nil),      // 46: dungeonflux.v1.SayRequest
+	(*SayResponse)(nil),     // 47: dungeonflux.v1.SayResponse
+	(*ReportRequest)(nil),   // 48: dungeonflux.v1.ReportRequest
+	(*ReportResponse)(nil),  // 49: dungeonflux.v1.ReportResponse
+	(*TalkStart)(nil),       // 50: dungeonflux.v1.TalkStart
+	(*AudioChunk)(nil),      // 51: dungeonflux.v1.AudioChunk
+	(*TalkEnd)(nil),         // 52: dungeonflux.v1.TalkEnd
+	(*TalkRequest)(nil),     // 53: dungeonflux.v1.TalkRequest
+	(*ChunkAck)(nil),        // 54: dungeonflux.v1.ChunkAck
+	(*Transcript)(nil),      // 55: dungeonflux.v1.Transcript
+	(*TalkStop)(nil),        // 56: dungeonflux.v1.TalkStop
+	(*TalkError)(nil),       // 57: dungeonflux.v1.TalkError
+	(*TalkResponse)(nil),    // 58: dungeonflux.v1.TalkResponse
+	(*ListenRequest)(nil),   // 59: dungeonflux.v1.ListenRequest
+	(*AudioFrame)(nil),      // 60: dungeonflux.v1.AudioFrame
+	(*AudioCancel)(nil),     // 61: dungeonflux.v1.AudioCancel
+	(*AudioMessage)(nil),    // 62: dungeonflux.v1.AudioMessage
+	(*HostCommand)(nil),     // 63: dungeonflux.v1.HostCommand
+	(*HostAck)(nil),         // 64: dungeonflux.v1.HostAck
+	nil,                     // 65: dungeonflux.v1.Text.ArgsEntry
 }
 var file_dungeonflux_v1_common_proto_depIdxs = []int32{
-	8,  // 0: dungeonflux.v1.Move.options:type_name -> dungeonflux.v1.Option
-	10, // 1: dungeonflux.v1.Move.preview:type_name -> dungeonflux.v1.MovePreview
-	7,  // 2: dungeonflux.v1.Move.cell:type_name -> dungeonflux.v1.Cell
-	11, // 3: dungeonflux.v1.MovePreview.damage:type_name -> dungeonflux.v1.DamagePreview
-	2,  // 4: dungeonflux.v1.Dice.state:type_name -> dungeonflux.v1.DiceState
-	3,  // 5: dungeonflux.v1.Dice.kind:type_name -> dungeonflux.v1.DiceKind
-	16, // 6: dungeonflux.v1.Dice.damage:type_name -> dungeonflux.v1.Damage
-	24, // 7: dungeonflux.v1.Battlefield.grid:type_name -> dungeonflux.v1.Grid
-	25, // 8: dungeonflux.v1.Battlefield.flat:type_name -> dungeonflux.v1.FlatBattlefield
-	26, // 9: dungeonflux.v1.Battlefield.cameras:type_name -> dungeonflux.v1.Camera
-	26, // 10: dungeonflux.v1.Battlefield.camera:type_name -> dungeonflux.v1.Camera
-	7,  // 11: dungeonflux.v1.Grid.origin:type_name -> dungeonflux.v1.Cell
-	7,  // 12: dungeonflux.v1.Grid.walkable:type_name -> dungeonflux.v1.Cell
-	7,  // 13: dungeonflux.v1.Token.cell:type_name -> dungeonflux.v1.Cell
-	7,  // 14: dungeonflux.v1.Highlight.cell:type_name -> dungeonflux.v1.Cell
-	31, // 15: dungeonflux.v1.CombatView.mini_grid:type_name -> dungeonflux.v1.MiniGrid
-	7,  // 16: dungeonflux.v1.MiniGrid.walkable:type_name -> dungeonflux.v1.Cell
-	7,  // 17: dungeonflux.v1.MiniGrid.reachable:type_name -> dungeonflux.v1.Cell
-	7,  // 18: dungeonflux.v1.MiniGrid.me:type_name -> dungeonflux.v1.Cell
-	7,  // 19: dungeonflux.v1.MiniGrid.thrall:type_name -> dungeonflux.v1.Cell
-	18, // 20: dungeonflux.v1.DMView.layers:type_name -> dungeonflux.v1.Layer
-	17, // 21: dungeonflux.v1.DMView.clip:type_name -> dungeonflux.v1.Clip
-	13, // 22: dungeonflux.v1.DMView.narration:type_name -> dungeonflux.v1.Narration
-	14, // 23: dungeonflux.v1.DMView.subtitle:type_name -> dungeonflux.v1.Subtitle
-	15, // 24: dungeonflux.v1.DMView.dice:type_name -> dungeonflux.v1.Dice
-	12, // 25: dungeonflux.v1.DMView.turn_timer:type_name -> dungeonflux.v1.Timer
-	21, // 26: dungeonflux.v1.DMView.build_cards:type_name -> dungeonflux.v1.BuildCard
-	22, // 27: dungeonflux.v1.DMView.shot:type_name -> dungeonflux.v1.Shot
-	19, // 28: dungeonflux.v1.DMView.music:type_name -> dungeonflux.v1.Music
-	20, // 29: dungeonflux.v1.DMView.sfx:type_name -> dungeonflux.v1.SoundEffect
-	23, // 30: dungeonflux.v1.DMView.battlefield:type_name -> dungeonflux.v1.Battlefield
-	27, // 31: dungeonflux.v1.DMView.tokens:type_name -> dungeonflux.v1.Token
-	28, // 32: dungeonflux.v1.DMView.highlights:type_name -> dungeonflux.v1.Highlight
-	29, // 33: dungeonflux.v1.DMView.turn_order:type_name -> dungeonflux.v1.TurnOrderEntry
-	4,  // 34: dungeonflux.v1.PTT.state:type_name -> dungeonflux.v1.PTTState
-	33, // 35: dungeonflux.v1.PhoneView.character:type_name -> dungeonflux.v1.Character
-	9,  // 36: dungeonflux.v1.PhoneView.moves:type_name -> dungeonflux.v1.Move
-	34, // 37: dungeonflux.v1.PhoneView.ptt:type_name -> dungeonflux.v1.PTT
-	12, // 38: dungeonflux.v1.PhoneView.turn_timer:type_name -> dungeonflux.v1.Timer
-	30, // 39: dungeonflux.v1.PhoneView.combat:type_name -> dungeonflux.v1.CombatView
-	32, // 40: dungeonflux.v1.HostView.dm:type_name -> dungeonflux.v1.DMView
-	36, // 41: dungeonflux.v1.HostView.asset_slots:type_name -> dungeonflux.v1.AssetSlot
-	32, // 42: dungeonflux.v1.ScreenState.dm:type_name -> dungeonflux.v1.DMView
-	35, // 43: dungeonflux.v1.ScreenState.phone:type_name -> dungeonflux.v1.PhoneView
-	37, // 44: dungeonflux.v1.ScreenState.host:type_name -> dungeonflux.v1.HostView
-	0,  // 45: dungeonflux.v1.JoinRequest.kind:type_name -> dungeonflux.v1.ClientKind
-	7,  // 46: dungeonflux.v1.ActRequest.cell:type_name -> dungeonflux.v1.Cell
-	1,  // 47: dungeonflux.v1.ReportRequest.kind:type_name -> dungeonflux.v1.ReportKind
-	49, // 48: dungeonflux.v1.TalkRequest.start:type_name -> dungeonflux.v1.TalkStart
-	50, // 49: dungeonflux.v1.TalkRequest.chunk:type_name -> dungeonflux.v1.AudioChunk
-	51, // 50: dungeonflux.v1.TalkRequest.end:type_name -> dungeonflux.v1.TalkEnd
-	53, // 51: dungeonflux.v1.TalkResponse.ack:type_name -> dungeonflux.v1.ChunkAck
-	54, // 52: dungeonflux.v1.TalkResponse.transcript:type_name -> dungeonflux.v1.Transcript
-	55, // 53: dungeonflux.v1.TalkResponse.stop:type_name -> dungeonflux.v1.TalkStop
-	56, // 54: dungeonflux.v1.TalkResponse.error:type_name -> dungeonflux.v1.TalkError
-	59, // 55: dungeonflux.v1.AudioMessage.frame:type_name -> dungeonflux.v1.AudioFrame
-	60, // 56: dungeonflux.v1.AudioMessage.cancel:type_name -> dungeonflux.v1.AudioCancel
-	5,  // 57: dungeonflux.v1.HostCommand.command:type_name -> dungeonflux.v1.HostCommandKind
-	58, // [58:58] is the sub-list for method output_type
-	58, // [58:58] is the sub-list for method input_type
-	58, // [58:58] is the sub-list for extension type_name
-	58, // [58:58] is the sub-list for extension extendee
-	0,  // [0:58] is the sub-list for field type_name
+	65, // 0: dungeonflux.v1.Text.args:type_name -> dungeonflux.v1.Text.ArgsEntry
+	8,  // 1: dungeonflux.v1.Move.options:type_name -> dungeonflux.v1.Option
+	11, // 2: dungeonflux.v1.Move.preview:type_name -> dungeonflux.v1.MovePreview
+	7,  // 3: dungeonflux.v1.Move.cell:type_name -> dungeonflux.v1.Cell
+	9,  // 4: dungeonflux.v1.Move.reason_msg:type_name -> dungeonflux.v1.Text
+	12, // 5: dungeonflux.v1.MovePreview.damage:type_name -> dungeonflux.v1.DamagePreview
+	2,  // 6: dungeonflux.v1.Dice.state:type_name -> dungeonflux.v1.DiceState
+	3,  // 7: dungeonflux.v1.Dice.kind:type_name -> dungeonflux.v1.DiceKind
+	17, // 8: dungeonflux.v1.Dice.damage:type_name -> dungeonflux.v1.Damage
+	25, // 9: dungeonflux.v1.Battlefield.grid:type_name -> dungeonflux.v1.Grid
+	26, // 10: dungeonflux.v1.Battlefield.flat:type_name -> dungeonflux.v1.FlatBattlefield
+	27, // 11: dungeonflux.v1.Battlefield.cameras:type_name -> dungeonflux.v1.Camera
+	27, // 12: dungeonflux.v1.Battlefield.camera:type_name -> dungeonflux.v1.Camera
+	7,  // 13: dungeonflux.v1.Grid.origin:type_name -> dungeonflux.v1.Cell
+	7,  // 14: dungeonflux.v1.Grid.walkable:type_name -> dungeonflux.v1.Cell
+	7,  // 15: dungeonflux.v1.Token.cell:type_name -> dungeonflux.v1.Cell
+	7,  // 16: dungeonflux.v1.Highlight.cell:type_name -> dungeonflux.v1.Cell
+	32, // 17: dungeonflux.v1.CombatView.mini_grid:type_name -> dungeonflux.v1.MiniGrid
+	7,  // 18: dungeonflux.v1.MiniGrid.walkable:type_name -> dungeonflux.v1.Cell
+	7,  // 19: dungeonflux.v1.MiniGrid.reachable:type_name -> dungeonflux.v1.Cell
+	7,  // 20: dungeonflux.v1.MiniGrid.me:type_name -> dungeonflux.v1.Cell
+	7,  // 21: dungeonflux.v1.MiniGrid.thrall:type_name -> dungeonflux.v1.Cell
+	19, // 22: dungeonflux.v1.DMView.layers:type_name -> dungeonflux.v1.Layer
+	18, // 23: dungeonflux.v1.DMView.clip:type_name -> dungeonflux.v1.Clip
+	14, // 24: dungeonflux.v1.DMView.narration:type_name -> dungeonflux.v1.Narration
+	15, // 25: dungeonflux.v1.DMView.subtitle:type_name -> dungeonflux.v1.Subtitle
+	16, // 26: dungeonflux.v1.DMView.dice:type_name -> dungeonflux.v1.Dice
+	13, // 27: dungeonflux.v1.DMView.turn_timer:type_name -> dungeonflux.v1.Timer
+	22, // 28: dungeonflux.v1.DMView.build_cards:type_name -> dungeonflux.v1.BuildCard
+	23, // 29: dungeonflux.v1.DMView.shot:type_name -> dungeonflux.v1.Shot
+	20, // 30: dungeonflux.v1.DMView.music:type_name -> dungeonflux.v1.Music
+	21, // 31: dungeonflux.v1.DMView.sfx:type_name -> dungeonflux.v1.SoundEffect
+	24, // 32: dungeonflux.v1.DMView.battlefield:type_name -> dungeonflux.v1.Battlefield
+	28, // 33: dungeonflux.v1.DMView.tokens:type_name -> dungeonflux.v1.Token
+	29, // 34: dungeonflux.v1.DMView.highlights:type_name -> dungeonflux.v1.Highlight
+	30, // 35: dungeonflux.v1.DMView.turn_order:type_name -> dungeonflux.v1.TurnOrderEntry
+	9,  // 36: dungeonflux.v1.DMView.notice:type_name -> dungeonflux.v1.Text
+	4,  // 37: dungeonflux.v1.PTT.state:type_name -> dungeonflux.v1.PTTState
+	34, // 38: dungeonflux.v1.PhoneView.character:type_name -> dungeonflux.v1.Character
+	10, // 39: dungeonflux.v1.PhoneView.moves:type_name -> dungeonflux.v1.Move
+	35, // 40: dungeonflux.v1.PhoneView.ptt:type_name -> dungeonflux.v1.PTT
+	13, // 41: dungeonflux.v1.PhoneView.turn_timer:type_name -> dungeonflux.v1.Timer
+	31, // 42: dungeonflux.v1.PhoneView.combat:type_name -> dungeonflux.v1.CombatView
+	9,  // 43: dungeonflux.v1.PhoneView.status_msg:type_name -> dungeonflux.v1.Text
+	33, // 44: dungeonflux.v1.HostView.dm:type_name -> dungeonflux.v1.DMView
+	37, // 45: dungeonflux.v1.HostView.asset_slots:type_name -> dungeonflux.v1.AssetSlot
+	33, // 46: dungeonflux.v1.ScreenState.dm:type_name -> dungeonflux.v1.DMView
+	36, // 47: dungeonflux.v1.ScreenState.phone:type_name -> dungeonflux.v1.PhoneView
+	38, // 48: dungeonflux.v1.ScreenState.host:type_name -> dungeonflux.v1.HostView
+	0,  // 49: dungeonflux.v1.JoinRequest.kind:type_name -> dungeonflux.v1.ClientKind
+	7,  // 50: dungeonflux.v1.ActRequest.cell:type_name -> dungeonflux.v1.Cell
+	1,  // 51: dungeonflux.v1.ReportRequest.kind:type_name -> dungeonflux.v1.ReportKind
+	50, // 52: dungeonflux.v1.TalkRequest.start:type_name -> dungeonflux.v1.TalkStart
+	51, // 53: dungeonflux.v1.TalkRequest.chunk:type_name -> dungeonflux.v1.AudioChunk
+	52, // 54: dungeonflux.v1.TalkRequest.end:type_name -> dungeonflux.v1.TalkEnd
+	54, // 55: dungeonflux.v1.TalkResponse.ack:type_name -> dungeonflux.v1.ChunkAck
+	55, // 56: dungeonflux.v1.TalkResponse.transcript:type_name -> dungeonflux.v1.Transcript
+	56, // 57: dungeonflux.v1.TalkResponse.stop:type_name -> dungeonflux.v1.TalkStop
+	57, // 58: dungeonflux.v1.TalkResponse.error:type_name -> dungeonflux.v1.TalkError
+	60, // 59: dungeonflux.v1.AudioMessage.frame:type_name -> dungeonflux.v1.AudioFrame
+	61, // 60: dungeonflux.v1.AudioMessage.cancel:type_name -> dungeonflux.v1.AudioCancel
+	5,  // 61: dungeonflux.v1.HostCommand.command:type_name -> dungeonflux.v1.HostCommandKind
+	62, // [62:62] is the sub-list for method output_type
+	62, // [62:62] is the sub-list for method input_type
+	62, // [62:62] is the sub-list for extension type_name
+	62, // [62:62] is the sub-list for extension extendee
+	0,  // [0:62] is the sub-list for field type_name
 }
 
 func init() { file_dungeonflux_v1_common_proto_init() }
@@ -4958,23 +5158,23 @@ func file_dungeonflux_v1_common_proto_init() {
 	if File_dungeonflux_v1_common_proto != nil {
 		return
 	}
-	file_dungeonflux_v1_common_proto_msgTypes[32].OneofWrappers = []any{
+	file_dungeonflux_v1_common_proto_msgTypes[33].OneofWrappers = []any{
 		(*ScreenState_Dm)(nil),
 		(*ScreenState_Phone)(nil),
 		(*ScreenState_Host)(nil),
 	}
-	file_dungeonflux_v1_common_proto_msgTypes[46].OneofWrappers = []any{
+	file_dungeonflux_v1_common_proto_msgTypes[47].OneofWrappers = []any{
 		(*TalkRequest_Start)(nil),
 		(*TalkRequest_Chunk)(nil),
 		(*TalkRequest_End)(nil),
 	}
-	file_dungeonflux_v1_common_proto_msgTypes[51].OneofWrappers = []any{
+	file_dungeonflux_v1_common_proto_msgTypes[52].OneofWrappers = []any{
 		(*TalkResponse_Ack)(nil),
 		(*TalkResponse_Transcript)(nil),
 		(*TalkResponse_Stop)(nil),
 		(*TalkResponse_Error)(nil),
 	}
-	file_dungeonflux_v1_common_proto_msgTypes[55].OneofWrappers = []any{
+	file_dungeonflux_v1_common_proto_msgTypes[56].OneofWrappers = []any{
 		(*AudioMessage_Frame)(nil),
 		(*AudioMessage_Cancel)(nil),
 	}
@@ -4984,7 +5184,7 @@ func file_dungeonflux_v1_common_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_dungeonflux_v1_common_proto_rawDesc), len(file_dungeonflux_v1_common_proto_rawDesc)),
 			NumEnums:      6,
-			NumMessages:   58,
+			NumMessages:   60,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -11,6 +11,7 @@ type HostCmd struct {
 type Join struct {
 	Seat     SeatID `json:"seat"`
 	JoinKind string `json:"kind"`
+	Locale   string `json:"locale,omitempty"`
 }
 type Act struct {
 	Seat   SeatID       `json:"seat"`
