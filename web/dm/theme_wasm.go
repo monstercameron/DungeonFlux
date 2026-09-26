@@ -165,6 +165,11 @@ const dmLobbyFinishCSS = `
 .df-corner-brand-subtitle{margin:4px 0 0;color:#e9dcbd;font-family:Cinzel,Georgia,serif;font-size:12.5px;font-weight:600;letter-spacing:.13em;white-space:nowrap;text-shadow:0 2px 4px #000,0 0 10px rgba(0,0,0,.8)}
 .df-dm-layer-scene:has(.df-dm-dialogue) .df-dm-scene-brand,.df-dm-layer-scene:has(.df-dm-dialogue) .df-dm-scene .df-location-title{display:none!important}
 .df-dm-layer-scene:has(.df-dm-dialogue) .df-dm-scene-title{display:none!important}
+.df-dm-scene-cards{width:330px!important;gap:14px!important}
+.df-dm-scene-card{display:grid!important;grid-template-columns:104px 1fr;align-items:center;gap:14px;padding:8px 14px 8px 8px!important;border-radius:6px!important;border-color:rgba(200,152,70,.7)!important;background:linear-gradient(90deg,rgba(14,19,27,.94),rgba(8,11,17,.82))!important;box-shadow:0 10px 26px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,236,190,.06)!important}
+.df-dm-scene-card-portrait{height:120px!important;border:1px solid rgba(231,194,122,.75);border-radius:4px;box-shadow:0 0 0 3px rgba(6,9,14,.9)}
+.df-dm-scene-card-portrait img{object-position:center 18%!important}
+.df-dm-scene-card div,.df-dm-scene-card strong,.df-dm-scene-card p{text-align:left!important}
 `
 
 func themeStyles() ui.Node {
