@@ -10,6 +10,7 @@ import (
 	"github.com/monstercameron/DungeonFlux/internal/clock"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/ports"
+	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
 
 const roomInboxCapacity = 256
@@ -24,20 +25,51 @@ type Room struct {
 	pub    func(domain.View)
 	logger *slog.Logger
 	runner roomRunner
+	timers *Timers
+	scopes *ScopeTree
 	seq    uint64
+}
+
+// RoomOption configures the runtime services owned by a Room.
+type RoomOption func(*roomOptions)
+
+type roomOptions struct {
+	runner *Runner
+	timers *Timers
+	scopes *ScopeTree
+}
+
+// WithRunner installs the work-effect runner used by the room.
+func WithRunner(runner *Runner) RoomOption {
+	return func(options *roomOptions) { options.runner = runner }
+}
+
+// WithTimers installs the timer set used for control effects.
+func WithTimers(timers *Timers) RoomOption {
+	return func(options *roomOptions) { options.timers = timers }
+}
+
+// WithScopes installs the scope tree used for work-effect cancellation.
+func WithScopes(scopes *ScopeTree) RoomOption {
+	return func(options *roomOptions) { options.scopes = scopes }
+}
+
+// WithExecutors installs all runtime effect services in one option.
+func WithExecutors(runner *Runner, timers *Timers, scopes *ScopeTree) RoomOption {
+	return func(options *roomOptions) {
+		options.runner = runner
+		options.timers = timers
+		options.scopes = scopes
+	}
 }
 
 type roomRunner interface {
 	Run([]domain.Effect)
 }
 
-type noopRunner struct{}
-
-func (noopRunner) Run([]domain.Effect) {}
-
 // NewRoom constructs a room with a bounded inbox. A nil logger or publisher is
 // replaced by a no-op, and a nil event log disables persistence.
-func NewRoom(eng ports.Engine, clk clock.Clock, eventLog ports.EventLog, logger *slog.Logger, pub func(domain.View)) *Room {
+func NewRoom(eng ports.Engine, clk clock.Clock, eventLog ports.EventLog, logger *slog.Logger, pub func(domain.View), roomOpts ...RoomOption) *Room {
 	if clk == nil {
 		clk = clock.Real{}
 	}
@@ -47,15 +79,47 @@ func NewRoom(eng ports.Engine, clk clock.Clock, eventLog ports.EventLog, logger 
 	if pub == nil {
 		pub = func(domain.View) {}
 	}
+	options := roomOptions{}
+	for _, option := range roomOpts {
+		if option != nil {
+			option(&options)
+		}
+	}
+	inbox := &roomInbox{queue: make(chan domain.Envelope, roomInboxCapacity)}
+	if options.scopes == nil {
+		options.scopes = NewScopeTree(context.Background())
+	}
+	if options.timers == nil {
+		options.timers = NewTimers(clk, inbox)
+	}
+	if options.runner == nil {
+		options.runner = NewRunner(inbox, logger)
+	}
 	return &Room{
 		eng:    eng,
-		inbox:  make(chan domain.Envelope, roomInboxCapacity),
+		inbox:  inbox.queue,
 		clk:    clk,
 		start:  clk.Now(),
 		log:    eventLog,
 		pub:    pub,
 		logger: logger,
-		runner: noopRunner{},
+		runner: options.runner,
+		timers: options.timers,
+		scopes: options.scopes,
+	}
+}
+
+type roomInbox struct{ queue chan domain.Envelope }
+
+func (i *roomInbox) Post(ctx context.Context, env domain.Envelope) bool {
+	if ctx.Err() != nil {
+		return false
+	}
+	select {
+	case i.queue <- env:
+		return true
+	case <-ctx.Done():
+		return false
 	}
 }
 
@@ -76,6 +140,7 @@ func (r *Room) Post(ctx context.Context, env domain.Envelope) bool {
 // Run processes room events until ctx is cancelled. Only this goroutine calls
 // the engine and touches the room sequence counter.
 func (r *Room) Run(ctx context.Context) error {
+	defer r.scopes.Close()
 	for {
 		select {
 		case <-ctx.Done():
@@ -102,7 +167,51 @@ func (r *Room) process(ctx context.Context, env domain.Envelope) {
 	if env.Reply != nil && out.Ack != nil {
 		env.Reply <- *out.Ack
 	}
-	r.runner.Run(out.Effects)
+	r.applyEffects(out.Effects, env.Scope)
 	r.logger.Debug("room step", "seq", env.Seq, "from", from, "to", to)
 	r.pub(r.eng.View())
+}
+
+func (r *Room) applyEffects(effects []domain.Effect, scope domain.Scope) {
+	work := make([]domain.Effect, 0, len(effects))
+	for _, effect := range effects {
+		if r.applyControl(effect) {
+			continue
+		}
+		work = append(work, effect)
+	}
+	if runner, ok := r.runner.(*Runner); ok {
+		runScopedEffects(runner, work, scope, r.scopes)
+		return
+	}
+	r.runner.Run(work)
+}
+
+func (r *Room) applyControl(effect domain.Effect) bool {
+	switch value := effect.(type) {
+	case domain.StartTimer:
+		r.timers.Start(value)
+	case domain.CancelTimer:
+		r.timers.Cancel(value)
+	case domain.FreezeTimer:
+		r.timers.Freeze(value)
+	case domain.ThawTimer:
+		r.timers.Thaw(value)
+	case domain.PauseAll:
+		r.timers.PauseAll()
+	case domain.ResumeAll:
+		r.timers.ResumeAll()
+	case domain.CancelScope:
+		r.scopes.Cancel(value.Scope)
+	case domain.CancelKey:
+		keyScope := value.Scope
+		keyScope.Key = value.Key
+		r.scopes.CancelKey(keyScope)
+	case domain.NewRun:
+		r.timers.StopAll()
+		r.scopes.Cancel(domain.Scope{Machine: vocab.MachineRun})
+	default:
+		return false
+	}
+	return true
 }

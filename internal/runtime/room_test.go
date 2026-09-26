@@ -16,14 +16,17 @@ import (
 )
 
 type roomEngine struct {
-	views []vocab.StateID
-	seen  []uint64
+	views   []vocab.StateID
+	seen    []uint64
+	effects []domain.Effect
 }
 
 func (e *roomEngine) Step(env domain.Envelope) domain.StepOut {
 	e.seen = append(e.seen, env.Seq)
 	e.views = append(e.views, vocab.StateID(env.Event.Kind()))
-	return domain.StepOut{}
+	effects := e.effects
+	e.effects = nil
+	return domain.StepOut{Effects: effects}
 }
 func (e *roomEngine) LegalMoves(domain.SeatID) []vocab.MoveID { return nil }
 func (e *roomEngine) View() domain.View {
@@ -45,12 +48,7 @@ func (l *roomLog) Append(_ context.Context, records []domain.LogRecord) error {
 }
 func (l *roomLog) Read(context.Context, domain.RunID) iter.Seq2[domain.LogRecord, error] { return nil }
 
-type roomRunnerFake struct{}
-
-func (roomRunnerFake) Run([]domain.Effect) {}
-
 var _ ports.EventLog = (*roomLog)(nil)
-var _ roomRunner = roomRunnerFake{}
 
 func TestRoom_Run_serializesEventsAndStampsSequence(t *testing.T) {
 	engine := &roomEngine{}
@@ -84,5 +82,59 @@ func TestRoom_Post_returnsFalseWhenContextDone(t *testing.T) {
 	cancel()
 	if room.Post(ctx, domain.Envelope{Event: domain.Join{}}) {
 		t.Fatal("Post accepted cancelled context")
+	}
+}
+
+func TestRoom_StartTimerPostsFiredEventBackThroughStep(t *testing.T) {
+	clk := clock.NewFake(time.Unix(0, 0))
+	engine := &roomEngine{effects: []domain.Effect{domain.StartTimer{Name: "turn", After: time.Second}}}
+	published := make(chan struct{}, 2)
+	room := NewRoom(engine, clk, nil, nil, func(domain.View) { published <- struct{}{} })
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- room.Run(ctx) }()
+	if !room.Post(ctx, domain.Envelope{Event: domain.Join{Seat: 1}}) {
+		t.Fatal("post rejected")
+	}
+	<-published
+	clk.Advance(time.Second)
+	<-published
+	if engine.views[1] != vocab.StateID(vocab.EventTimerFired) {
+		t.Fatalf("second event = %v", engine.views[1])
+	}
+	cancel()
+	if err := <-done; !errors.Is(err, context.Canceled) {
+		t.Fatalf("Run error = %v", err)
+	}
+}
+
+func TestRoom_CancelScopeCancelsScopedExecutor(t *testing.T) {
+	inbox := NewInbox(2)
+	runner := NewRunner(inbox, nil)
+	started := make(chan struct{})
+	cancelled := make(chan struct{})
+	Handle[domain.Interpret](runner, func(ctx context.Context, _ domain.Interpret, _ domain.Scope, _ ports.Inbox) {
+		close(started)
+		<-ctx.Done()
+		close(cancelled)
+	})
+	scope := domain.Scope{Machine: vocab.MachineSession, Epoch: 1, Key: "utterance/u"}
+	engine := &roomEngine{effects: []domain.Effect{domain.Interpret{UtteranceID: "u"}}}
+	room := NewRoom(engine, clock.NewFake(time.Unix(0, 0)), nil, nil, nil, WithRunner(runner))
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- room.Run(ctx) }()
+	if !room.Post(ctx, domain.Envelope{Scope: scope, Event: domain.Join{Seat: 1}}) {
+		t.Fatal("post rejected")
+	}
+	<-started
+	engine.effects = []domain.Effect{domain.CancelScope{Scope: scope}}
+	if !room.Post(ctx, domain.Envelope{Scope: scope, Event: domain.Join{Seat: 1}}) {
+		t.Fatal("cancel post rejected")
+	}
+	<-cancelled
+	cancel()
+	if err := <-done; !errors.Is(err, context.Canceled) {
+		t.Fatalf("Run error = %v", err)
 	}
 }
