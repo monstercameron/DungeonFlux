@@ -667,6 +667,12 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   done when: each phase and scene transition emits the table-wide sound effects (music track with crossfade at bar, ambience bed, stingers) targeted at the DM, using manifest names from the build-time audio; Step tests assert cue effects per phase.
   status: committed 7116fb6
 
+- [ ] ENG-025 · phase transitions emit the table audio cues
+  why: ENG-024 built CueForState(...).Effects() for music, ambience, and stingers but game.go never calls it on phase transitions, so nothing plays.
+  lane: L-ENG · block: 11–14 · paths: `internal/game/game.go`, `internal/game/state*.go` · depends: ENG-024
+  done when: every phase transition appends CueForState(new phase).Effects() to Step's effects exactly once (no duplicates on self-transitions); Step tests assert the music/ambience effects per phase; walk tests stay green.
+  status: claimed luna
+
 - [ ] INT-001 · lobby seats and join data reach the TV end to end
   why: Live test: two phones joined (engine View version advanced) but dfctl view --dm shows {"dm":{}} and the TV still shows Waiting to join, room code "/p", and a broken QR, because proto DMView has no seats or lobby fields and the projection never fills them.
   lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/common.proto`, `gen/**`, `internal/api/project*.go`, `web/dm/lobby*.go` · depends: ENG-017, API-019, BASE-021
@@ -2103,6 +2109,12 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
 ## 25. Test server, gates, and checkpoints
 
 Keeping the build honest: per-commit checks, the 30-minute full gate, checkpoints, and e2e tests.
+
+- [ ] OPS-SPLAT-004 · preserve tomb roof occupancy in extended collider
+  why: Visual review found the enlarged collider crop omitted roof splat centers and let the ground grid show through the tomb.
+  lane: L-OPS · paths: `scripts/generate-supersplat-colliders.ps1` · depends: OPS-SPLAT-003
+  done when: the expanded horizontal region and 0.2m resolution remain, the crop contains the roof and supported ground, provenance and binary validation pass, the tomb roof masks the ground grid in actual browser inspection, and the scoped lane gate is green.
+  status: claimed Codex
 
 - [ ] GATE-001 · Per-commit review loop
   why: Each todo commit gets the lane gate, go build ./..., and archtest before it is marked done.
