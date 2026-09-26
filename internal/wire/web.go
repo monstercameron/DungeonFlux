@@ -70,6 +70,10 @@ func wasmHandler(uncompressed string) http.HandlerFunc {
 			name = compressed
 			w.Header().Set("Content-Encoding", "br")
 			w.Header().Set("Vary", "Accept-Encoding")
+		} else if acceptsGzip(r.Header.Get("Accept-Encoding")) && isRegularFile(uncompressed+".gz") {
+			name = uncompressed + ".gz"
+			w.Header().Set("Content-Encoding", "gzip")
+			w.Header().Set("Vary", "Accept-Encoding")
 		}
 		serveNoCacheFile(w, r, name, "application/wasm")
 	}
@@ -113,11 +117,19 @@ func matchesETag(header, etag string) bool {
 }
 
 func acceptsBrotli(value string) bool {
+	return acceptsEncoding(value, "br")
+}
+
+func acceptsGzip(value string) bool {
+	return acceptsEncoding(value, "gzip")
+}
+
+func acceptsEncoding(value, encoding string) bool {
 	for _, part := range strings.Split(value, ",") {
 		bits := strings.Split(strings.TrimSpace(part), ";")
-		if strings.EqualFold(strings.TrimSpace(bits[0]), "br") {
+		if strings.EqualFold(strings.TrimSpace(bits[0]), encoding) {
 			for _, option := range bits[1:] {
-				if strings.TrimSpace(option) == "q=0" || strings.TrimSpace(option) == "q=0.0" {
+				if strings.EqualFold(strings.TrimSpace(option), "q=0") || strings.EqualFold(strings.TrimSpace(option), "q=0.0") {
 					return false
 				}
 			}

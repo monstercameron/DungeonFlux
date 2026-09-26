@@ -114,6 +114,46 @@ func TestMountWeb_ServesBrotliAndValidatesAssets(t *testing.T) {
 	}
 }
 
+func TestMountWeb_ServesGzipWhenBrotliIsUnavailable(t *testing.T) {
+	root := t.TempDir()
+	wasm := filepath.Join(root, "artifacts", "wasm")
+	if err := os.MkdirAll(filepath.Join(root, "web", "shell", "static"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(wasm, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	for path, data := range map[string]string{
+		filepath.Join(root, "web", "shell", "static", "index.html"): "host",
+		filepath.Join(wasm, "dungeonflux.wasm"):                     "wasm",
+		filepath.Join(wasm, "dungeonflux.wasm.gz"):                  "compressed",
+	} {
+		if err := os.WriteFile(path, []byte(data), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	old, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(old) })
+	if err := os.Chdir(root); err != nil {
+		t.Fatal(err)
+	}
+	mux := http.NewServeMux()
+	if err := mountWeb(mux, config.Config{}); err != nil {
+		t.Fatal(err)
+	}
+	res := request(mux, "/app/dungeonflux.wasm", "gzip, br; q=0")
+	if res.Code != http.StatusOK || res.Header().Get("Content-Encoding") != "gzip" || res.Body.String() != "compressed" {
+		t.Fatalf("gzip = %d %q %q", res.Code, res.Header(), res.Body.String())
+	}
+	if res.Header().Get("Vary") != "Accept-Encoding" {
+		t.Fatalf("gzip Vary = %q", res.Header().Get("Vary"))
+	}
+	match := requestWithETag(mux, "/app/dungeonflux.wasm", "gzip", res.Header().Get("ETag"))
+	if match.Code != http.StatusNotModified || match.Body.Len() != 0 {
+		t.Fatalf("gzip conditional = %d %q", match.Code, match.Body.String())
+	}
+}
+
 func request(handler http.Handler, path, encoding string) *httptest.ResponseRecorder {
 	return requestWithETag(handler, path, encoding, "")
 }

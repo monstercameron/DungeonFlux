@@ -5,17 +5,19 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $wasmDir = Join-Path $repoRoot 'artifacts\wasm'
 $wasmPath = Join-Path $wasmDir 'dungeonflux.wasm'
+$gzipPath = "$wasmPath.gz"
 $brotliPath = "$wasmPath.br"
+$compressor = Join-Path $PSScriptRoot 'buildweb'
 
 New-Item -ItemType Directory -Force -Path $wasmDir | Out-Null
-Remove-Item -LiteralPath $wasmPath, $brotliPath -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $wasmPath, $gzipPath, $brotliPath -Force -ErrorAction SilentlyContinue
 
 $oldGOOS = $env:GOOS
 $oldGOARCH = $env:GOARCH
 try {
     $env:GOOS = 'js'
     $env:GOARCH = 'wasm'
-    & go build -o $wasmPath (Join-Path $repoRoot 'web\shell')
+    & go build -trimpath -ldflags='-s -w' -o $wasmPath (Join-Path $repoRoot 'web\shell')
     if ($LASTEXITCODE -ne 0) {
         throw "go build failed with exit code $LASTEXITCODE"
     }
@@ -31,14 +33,15 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $wasmExec)) {
 }
 Copy-Item -LiteralPath $wasmExec -Destination (Join-Path $wasmDir 'wasm_exec.js') -Force
 
-$brotli = Get-Command brotli -ErrorAction SilentlyContinue
-if ($null -ne $brotli) {
-    & $brotli.Source --force --quality=5 --output=$brotliPath $wasmPath
-    if ($LASTEXITCODE -ne 0) { throw "brotli failed with exit code $LASTEXITCODE" }
-    Write-Host "Created $brotliPath"
-}
-else {
-    Write-Host 'brotli not found; skipping optional dungeonflux.wasm.br compression.'
-}
+$env:GOCACHE = Join-Path $repoRoot 'artifacts\cache\go'
+$env:GOTMPDIR = Join-Path $repoRoot 'artifacts\tmp\ORCH-W'
+New-Item -ItemType Directory -Force -Path $env:GOCACHE, $env:GOTMPDIR | Out-Null
+& go run $compressor -input $wasmPath -output $gzipPath
+if ($LASTEXITCODE -ne 0) { throw "gzip compression failed with exit code $LASTEXITCODE" }
+
+$rawSize = (Get-Item -LiteralPath $wasmPath).Length
+$gzipSize = (Get-Item -LiteralPath $gzipPath).Length
+Write-Host ("WASM size: {0:N0} bytes; gzip size: {1:N0} bytes ({2:P1} smaller)" -f $rawSize, $gzipSize, (1 - ($gzipSize / $rawSize)))
+Write-Host 'Brotli encoder is not vendored; skipping optional dungeonflux.wasm.br compression.'
 
 Write-Host "Built $wasmPath"
