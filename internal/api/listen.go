@@ -89,6 +89,11 @@ type ListenSubscription struct {
 	remove   func()
 	target   AudioTarget
 	phone    bool
+	// legacy marks a Subscribe listener that drains Frames(). Only those
+	// get the frame queue and its lag limit: a SubscribeTarget listener
+	// reads Messages() alone, so an undrained frame queue reached the
+	// two-second limit 2 s into every line and dropped the TV's stream.
+	legacy bool
 }
 
 // NewListenHub creates an empty PCM fan-out hub.
@@ -96,22 +101,28 @@ func NewListenHub() *ListenHub {
 	return &ListenHub{subscribers: make(map[uint64]*ListenSubscription)}
 }
 
-// Subscribe adds a listener. Cancellation of ctx removes the listener on its
-// next hub operation; no goroutine is created for the subscription.
+// Subscribe adds a legacy DM listener that drains Frames(). Cancellation of
+// ctx removes the listener on its next hub operation; no goroutine is created
+// for the subscription.
 func (h *ListenHub) Subscribe(ctx context.Context) *ListenSubscription {
-	return h.SubscribeTarget(ctx, AudioTarget{Kind: TargetDM}, false)
+	return h.subscribe(ctx, AudioTarget{Kind: TargetDM}, false, true)
 }
 
-// SubscribeTarget adds a listener filtered to target. Phone listeners receive
-// only SFX messages; DM listeners receive all messages addressed to the DM.
+// SubscribeTarget adds a listener filtered to target that drains Messages().
+// Phone listeners receive only SFX messages; DM listeners receive all
+// messages addressed to the DM.
 func (h *ListenHub) SubscribeTarget(ctx context.Context, target AudioTarget, phone bool) *ListenSubscription {
+	return h.subscribe(ctx, target, phone, false)
+}
+
+func (h *ListenHub) subscribe(ctx context.Context, target AudioTarget, phone, legacy bool) *ListenSubscription {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	h.mu.Lock()
 	h.nextID++
 	id := h.nextID
-	sub := &ListenSubscription{frames: make(chan domain.AudioFrame, 64), messages: make(chan AudioMessage, 64), done: make(chan struct{}), target: target, phone: phone}
+	sub := &ListenSubscription{frames: make(chan domain.AudioFrame, 64), messages: make(chan AudioMessage, 64), done: make(chan struct{}), target: target, phone: phone, legacy: legacy}
 	sub.remove = func() { h.remove(id, sub) }
 	var previous *ListenSubscription
 	for _, current := range h.subscribers {
@@ -141,6 +152,9 @@ func (h *ListenHub) Frame(frame domain.AudioFrame) {
 	h.mu.Lock()
 	deferred := make([]*ListenSubscription, 0)
 	for id, sub := range h.subscribers {
+		if !sub.legacy {
+			continue
+		}
 		if sub.closed() || sub.queueLegacy(frame, duration) {
 			deferred = append(deferred, sub)
 			delete(h.subscribers, id)
@@ -175,13 +189,19 @@ func (h *ListenHub) Publish(message AudioMessage) {
 	}
 }
 
-// Cancel removes queued frames for one utterance from every listener.
+// Cancel removes queued frames for one interrupted utterance from every
+// listener and tells the DM screen to fade out what it already scheduled.
+// It is for interruptions only: a line that finished normally is never
+// cancelled, so the audio the TV has queued plays to its end.
 func (h *ListenHub) Cancel(utteranceID domain.UtteranceID) {
 	h.mu.Lock()
 	for _, sub := range h.subscribers {
 		sub.removeUtterance(utteranceID)
 	}
 	h.mu.Unlock()
+	if utteranceID != "" {
+		h.Publish(AudioMessage{Channel: AudioVoice, Target: AudioTarget{Kind: TargetDM}, CancelID: string(utteranceID)})
+	}
 }
 
 func (h *ListenHub) remove(id uint64, sub *ListenSubscription) {
