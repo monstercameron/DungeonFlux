@@ -1992,6 +1992,12 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: distinct transparent player/enemy/NPC stand-ins face the camera, stay anchored to moving terrain cells, preserve follow and occupied-cell colors, clean up GPU resources, appear in both scenes, and regressions and the lane gate pass.
   status: done Codex; sprite/movement/runtime/viewer regressions and scoped gate pass; both scenes visually verified
 
+- [x] SPLAT-020 · correct registered scan scale for stand-in characters
+  why: The developer reports that characters are far too small compared with the scanned scenery.
+  lane: L-WEB-SPLAT · paths: `web/splat/scenes/64bb46d5.json`, `web/splat/scenes/cb2fddd6.json`, `web/splat/js/token_demo.mjs`, `web/splat/js/viewer.mjs` · depends: SPLAT-019
+  done when: both scans have consistent visual scale registration across splats, colliders and cameras, characters remain 1.8 metres with 1.524 metre rules cells, playable terrain is regenerated at that scale, demo movement selects reachable cells after re-registration, both scenes pass visual review, and regressions and scoped gate pass.
+  status: done Codex; voxel registration, disconnected movement, sprite and viewer regressions pass; scoped gate failures 0; both scenes visually verified
+
 ## 23. dfctl debug CLI
 
 Command-line reads and demo writes for agents and the developer.

@@ -8,26 +8,26 @@
     "height": 1.8,
     "inset": 0.15,
     "all_candidates": true,
-    "floor_search_min": -2.5,
-    "floor_search_max": 3.5,
+    "floor_search_min": -1.0,
+    "floor_search_max": 1.4,
     "support_radius": 0.15,
     "max_floor_slope": 0.45
   },
   "lod": 4,
   "transform": {
-    "scale": 1,
+    "scale": 0.4,
     "offset_y": 0,
     "rot_y_deg": 0,
     "translate": [
       0,
-      8.5,
+      3.4,
       0
     ]
   },
   "grid": {
     "origin": [
-      -6,
-      -5.524
+      -2.4,
+      -2.2096
     ],
     "cell_m": 1.524,
     "cols": 16,
@@ -119,105 +119,105 @@
   "cameras": {
     "TACTICAL": {
       "position": [
+        3.2,
         8,
-        20,
-        24
+        9.6
       ],
       "target": [
-        4,
-        3,
-        2
+        1.6,
+        1.2,
+        0.8
       ],
       "fov": 65
     },
     "COMBAT_EST": {
       "position": [
-        10,
-        26,
-        24
+        4,
+        10.4,
+        9.6
       ],
       "target": [
-        5,
+        2,
         0,
-        2
+        0.8
       ],
       "fov": 65
     },
     "TURN_FOCUS": {
       "position": [
-        12,
-        13,
-        17
+        4.8,
+        5.2,
+        6.8
       ],
       "target": [
-        8,
+        3.2,
         0,
-        1
+        0.4
       ],
       "fov": 65
     },
     "IMPACT": {
       "position": [
-        12,
-        13,
-        17
+        4.8,
+        5.2,
+        6.8
       ],
       "target": [
-        8,
+        3.2,
         0,
-        1
+        0.4
       ],
       "fov": 65
     },
     "KO": {
       "position": [
-        10,
-        26,
-        24
+        4,
+        10.4,
+        9.6
       ],
       "target": [
-        5,
+        2,
         0,
-        2
+        0.8
       ],
       "fov": 65
     },
     "VICTORY": {
       "position": [
+        3.2,
         8,
-        20,
-        24
+        9.6
       ],
       "target": [
-        4,
-        3,
-        2
+        1.6,
+        1.2,
+        0.8
       ],
       "fov": 65
     },
     "SOURCE": {
       "position": [
-        4.072665,
-        10.374437,
-        19.421242
+        1.629066,
+        4.1497748,
+        7.7684968
       ],
       "target": [
-        -0.729762,
-        8.692941,
-        4.865816
+        -0.2919048,
+        3.4771764,
+        1.9463264
       ],
       "fov": 85
     },
     "SURVEY": {
       "position": [
-        12,
-        34,
-        29
+        4.8,
+        13.6,
+        11.6
       ],
       "target": [
-        3,
+        1.2,
         0,
-        3
+        1.2
       ],
       "fov": 70
     }
@@ -230,7 +230,7 @@
     "license": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
     "credits": "Scene description credits Ing. arch. Daniel Dworschak."
   },
-  "registration_note": "Courtyard and side lawn preview uses automatic collider candidates with terrain-height support on 1.524m logical cells. Physical scan units remain approximate; generated 0.2m occupancy is not a surveyed navigation mesh.",
+  "registration_note": "Courtyard and side lawn preview uses a visual calibration estimate of 0.4 metres per source unit (2.5 source units per metre, based on architecture/door framing), with automatic collider candidates and terrain-height support on 1.524m logical cells. Physical scan units remain approximate; generated 0.2m occupancy is not a surveyed navigation mesh.",
   "color_grade": {
     "theme": "crypt",
     "strength": 0.6,

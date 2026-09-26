@@ -7,7 +7,7 @@ import { THEMES } from "./theme_grades.mjs";
 import { installOrbitControls } from "./camera_controls.mjs";
 import { applyCameraPreset, cameraPreset, cameraPresetNames } from "./grid_camera.mjs";
 import { cellsJSON, installDebugPickMode } from "./debug_pick.mjs";
-import { createTokenController, createDemoSnapshot, findDemoPath, selectDemoCells } from "./token_demo.mjs";
+import { createTokenController, createDemoSnapshot, nextDemoMove, selectDemoCells } from "./token_demo.mjs";
 const GRID = Object.freeze({
   origin: [-6.096, -4.572],
   cell_m: 1.524,
@@ -234,9 +234,9 @@ function moveDemoToken() {
   const id = ["villain", "npc"].includes(followNode?.value) ? followNode.value : "player";
   const entry = tokenController.getState().tokens.find((token) => token.id === id);
   if (!entry || entry.moving) return;
-  const target = demoCells[(demoSeq * 7 + (id === "villain" ? 1 : 0)) % demoCells.length];
-  const path = findDemoPath(demoState.grid, { c: entry.cell[0], r: entry.cell[1] }, target);
-  if (!path.length) return;
+  const move = nextDemoMove(demoState.grid, { c: entry.cell[0], r: entry.cell[1] }, demoCells, demoSeq * 7 + (id === "villain" ? 1 : 0));
+  if (!move) return;
+  const { target, path } = move;
   demoSeq += 1;
   const tokens = demoState.tokens.map((token) => token.id === id ? { ...token, cell: target, path, anim_seq: demoSeq } : { ...token, path: [] });
   demoState = { ...demoState, seq: demoSeq, tokens };

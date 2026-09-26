@@ -34,3 +34,16 @@ export function findDemoPath(grid, start, destination) {
   while (previous.get(key(current))) { path.unshift(current); current = previous.get(key(current)); }
   return path;
 }
+
+/** Returns the next reachable demo destination, cycling from the requested offset. */
+export function nextDemoMove(grid, start, candidates, offset = 0) {
+  if (!Array.isArray(candidates) || !candidates.length) return null;
+  const begin = Math.abs(Number(offset) || 0) % candidates.length;
+  for (let step = 0; step < candidates.length; step += 1) {
+    const target = candidates[(begin + step) % candidates.length];
+    if (!target || (target.c === start.c && target.r === start.r)) continue;
+    const path = findDemoPath(grid, start, target);
+    if (path.length) return { target, path };
+  }
+  return null;
+}

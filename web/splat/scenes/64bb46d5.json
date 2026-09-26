@@ -8,26 +8,26 @@
     "height": 1.8,
     "inset": 0.15,
     "all_candidates": true,
-    "floor_search_min": -3.5,
-    "floor_search_max": 5.0,
+    "floor_search_min": -1.4,
+    "floor_search_max": 2.0,
     "support_radius": 0.15,
     "max_floor_slope": 0.45
   },
   "lod": 2,
   "transform": {
-    "scale": 1,
+    "scale": 0.4,
     "offset_y": 0,
     "rot_y_deg": 0,
     "translate": [
       0,
-      23.0,
+      9.2,
       0
     ]
   },
   "grid": {
     "origin": [
-      32.38,
-      -38.048
+      12.952,
+      -15.2192
     ],
     "cell_m": 1.524,
     "cols": 16,
@@ -116,105 +116,105 @@
   "cameras": {
     "TACTICAL": {
       "position": [
-        44,
-        13,
-        -9
+        17.6,
+        5.2,
+        -3.6
       ],
       "target": [
-        47,
+        18.8,
         0,
-        -30
+        -12
       ],
       "fov": 62
     },
     "COMBAT_EST": {
       "position": [
-        47,
-        20,
-        -13
+        18.8,
+        8,
+        -5.2
       ],
       "target": [
-        47,
+        18.8,
         0,
-        -30
+        -12
       ],
       "fov": 60
     },
     "TURN_FOCUS": {
       "position": [
-        44,
-        9,
-        -18
+        17.6,
+        3.6,
+        -7.2
       ],
       "target": [
-        47,
+        18.8,
         0,
-        -29
+        -11.6
       ],
       "fov": 55
     },
     "IMPACT": {
       "position": [
-        44,
-        9,
-        -18
+        17.6,
+        3.6,
+        -7.2
       ],
       "target": [
-        47,
+        18.8,
         0,
-        -29
+        -11.6
       ],
       "fov": 55
     },
     "KO": {
       "position": [
-        47,
-        20,
-        -13
+        18.8,
+        8,
+        -5.2
       ],
       "target": [
-        47,
+        18.8,
         0,
-        -30
+        -12
       ],
       "fov": 60
     },
     "VICTORY": {
       "position": [
-        44,
-        13,
-        -9
+        17.6,
+        5.2,
+        -3.6
       ],
       "target": [
-        47,
+        18.8,
         0,
-        -30
+        -12
       ],
       "fov": 62
     },
     "SOURCE": {
       "position": [
-        51.950321,
-        18.821109,
-        -24.961411
+        20.7801284,
+        7.5284436,
+        -9.9845644
       ],
       "target": [
-        52.213506,
-        18.38106,
-        -25.81995
+        20.8854024,
+        7.352424,
+        -10.32798
       ],
       "fov": 85
     },
     "SURVEY": {
       "position": [
-        47,
-        35,
-        -8
+        18.8,
+        14,
+        -3.2
       ],
       "target": [
-        47,
+        18.8,
         0,
-        -35
+        -14
       ],
       "fov": 70
     }
@@ -226,7 +226,7 @@
     "manifest": "https://d28zzqy0iyovbz.cloudfront.net/64bb46d5/v1/lod-meta.json",
     "license": "https://creativecommons.org/licenses/by/4.0/"
   },
-  "registration_note": "Path and adjacent clearing preview uses automatic collider candidates with terrain-height support on 1.524m logical cells. Physical scan units remain approximate; generated 0.2m occupancy is not a surveyed navigation mesh.",
+  "registration_note": "Path and adjacent clearing preview uses a visual calibration estimate of 0.4 metres per source unit (2.5 source units per metre, based on architecture/path framing), with automatic collider candidates and terrain-height support on 1.524m logical cells. Physical scan units remain approximate; generated 0.2m occupancy is not a surveyed navigation mesh.",
   "color_grade": {
     "theme": "forest",
     "strength": 0.7,
