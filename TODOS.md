@@ -1325,11 +1325,11 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   done when: End card renders at End.; gate green (≥ 70% coverage where applicable)
   status: committed 1b9c6bb
 
-- [ ] DM-008 · compose the DM screen from View
+- [x] DM-008 · compose the DM screen from View
   why: The DM views (lobby, scene, clip, dice/timer, music, FLAT combat, end card) landed separately; the /dm route needs one composition that layers them by phase.
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/screen*.go`, `web/dm/mount*.go` · depends: DM-001, DM-002, DM-003, DM-004, DM-005, DM-006, DM-007, WEB-008
   done when: a pure layer-selection function maps View to visible layers with table tests per phase; the /dm route renders it; GOOS=js GOARCH=wasm build passes.
-  status: committed e955d1f
+  status: done d899bf1
 
 ## 21. Host
 
