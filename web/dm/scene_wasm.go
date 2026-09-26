@@ -56,9 +56,7 @@ func sceneLayers(layers []SceneLayer) []ui.Node {
 }
 
 func sceneBrand(model SceneModel) ui.Node {
-	return html.Div(html.Props{Class: "df-dm-scene-brand", Style: map[string]string{"position": "absolute", "left": "30px", "top": "20px", "width": "470px", "height": "108px", "z-index": "5", "overflow": "hidden", "text-align": "left"}},
-		html.Div(html.Props{Style: map[string]string{"width": "690px", "transform": "scale(.68)", "transform-origin": "top left"}}, TitlePlate(ArtURL("ui/logo_wordmark"), "DungeonFlux", "AI DUNGEON MASTER FOR FIFTH-EDITION FANTASY")),
-	)
+	return html.Div(html.Props{Class: "df-dm-scene-brand", Style: map[string]string{"position": "absolute", "left": "34px", "top": "22px", "z-index": "5"}}, CornerBrand())
 }
 
 func sceneLocation(model SceneModel) ui.Node {

@@ -3,6 +3,7 @@
 package dm
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -196,3 +197,30 @@ func LocationTitle(title, subtitle string) ui.Node {
 
 // SharedComponent is a small named factory used by screen workers.
 type SharedComponent func(router.Attrs) *router.Element
+
+// WordmarkBand renders only the lettering of the ui/logo_wordmark art (the
+// lantern crest is cropped away) at the given width, through a luminance mask
+// of itself so its black plate disappears. The art is 1536x1024 with the
+// lettering at x 120-1425, y 430-790.
+func WordmarkBand(url string, width int) ui.Node {
+	scale := float64(width) / 1305
+	size := fmt.Sprintf("%.0fpx %.0fpx", 1536*scale, 1024*scale)
+	pos := fmt.Sprintf("-%.0fpx -%.0fpx", 120*scale, 445*scale)
+	art := "url('" + url + "')"
+	return html.Div(html.Props{Class: "df-wordmark-art df-wordmark-band", Role: "img", Aria: map[string]string{"label": "DungeonFlux"}, Style: map[string]string{
+		"width": fmt.Sprintf("%dpx", width), "height": fmt.Sprintf("%.0fpx", 345*scale),
+		"background-image": art, "background-size": size, "background-position": pos,
+		"-webkit-mask-image": art, "mask-image": art, "mask-mode": "luminance",
+		"-webkit-mask-size": size, "mask-size": size, "-webkit-mask-position": pos, "mask-position": pos,
+	}})
+}
+
+// CornerBrand is the small top-left wordmark used on in-game screens: the
+// lettering band of the logo art with the subtitle beneath (callers position it).
+func CornerBrand() ui.Node {
+	var mark ui.Node = html.Div(html.Props{Class: "df-corner-brand-text"}, ui.Text("DungeonFlux"))
+	if url := ArtURL("ui/logo_wordmark"); url != "" {
+		mark = WordmarkBand(url, 340)
+	}
+	return html.Div(html.Props{Class: "df-corner-brand"}, mark, html.P(html.Props{Class: "df-corner-brand-subtitle"}, ui.Text(titleSubtitle)))
+}

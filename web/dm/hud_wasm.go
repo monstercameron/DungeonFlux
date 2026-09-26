@@ -35,22 +35,7 @@ func hudRootStyle() map[string]string {
 }
 
 func hudTitlePlate() ui.Node {
-	wordmark := ArtURL("ui/logo_wordmark")
-	var mark ui.Node
-	if wordmark != "" {
-		mark = html.Img(html.Props{Src: wordmark, Alt: "DungeonFlux", Style: map[string]string{
-			"display": "block", "width": "390px", "height": "58px", "object-fit": "contain", "object-position": "left center",
-		}})
-	} else {
-		mark = html.H1(html.Props{Style: map[string]string{
-			"margin": "0", "color": "#e7c27a", "font-family": "Cinzel, Georgia, serif", "font-size": "48px", "font-weight": "500", "line-height": "1",
-		}}, ui.Text("DungeonFlux"))
-	}
-	return html.Header(html.Props{Class: "df-title-plate", Style: map[string]string{
-		"position": "absolute", "left": "30px", "top": "20px", "width": "410px", "height": "92px", "text-align": "left",
-	}}, mark, html.P(html.Props{Class: "df-title-plate-subtitle", Style: map[string]string{
-		"margin": "7px 0 0", "font-size": "13px", "letter-spacing": ".12em", "text-align": "left",
-	}}, ui.Text("AI DUNGEON MASTER FOR FIFTH-EDITION FANTASY")))
+	return html.Div(html.Props{Class: "df-dm-hud-brand", Style: map[string]string{"position": "absolute", "left": "34px", "top": "22px", "z-index": "5"}}, CornerBrand())
 }
 
 func hudParty(party []HUDPartyMember) ui.Node {

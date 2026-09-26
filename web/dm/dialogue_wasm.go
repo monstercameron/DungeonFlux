@@ -35,10 +35,7 @@ func dialogueStyle() map[string]string {
 }
 
 func dialogueTitlePlate() ui.Node {
-	return html.Div(html.Props{Class: "df-dm-dialogue-title-plate", Style: map[string]string{
-		"position": "absolute", "left": "30px", "top": "18px", "width": "820px", "height": "190px", "overflow": "hidden",
-		"transform": "scale(.5)", "transform-origin": "top left", "z-index": "8", "text-align": "left",
-	}}, TitlePlate(ArtURL("ui/logo_wordmark"), "DungeonFlux", "AI DUNGEON MASTER FOR FIFTH-EDITION FANTASY"))
+	return html.Div(html.Props{Class: "df-dm-dialogue-title-plate", Style: map[string]string{"position": "absolute", "left": "34px", "top": "22px", "z-index": "8"}}, CornerBrand())
 }
 
 func dialogueLocation(locale string) ui.Node {

@@ -155,6 +155,15 @@ const dmLobbyFinishCSS = `
 .df-lobby-code-label{position:static!important;margin:0!important;color:#bfa77a!important;font-family:Cinzel,'Cormorant Garamond',Georgia,serif;font-size:13px!important;letter-spacing:.24em!important}
 .df-lobby-code-value{position:static!important;margin:0!important;white-space:nowrap;font-family:Cinzel,'Cormorant Garamond',Georgia,serif!important;font-size:31px!important;letter-spacing:.1em!important;line-height:1}
 .df-portrait-card-name{font-size:26px!important;line-height:1.08!important}
+.df-dm-dialogue-choice-label{font-size:26px!important;white-space:normal!important;line-height:1.1!important}
+.df-dm-dialogue-choice{height:auto!important;min-height:84px}
+.df-dm-layer-scene:has(.df-dm-dialogue) .df-dm-scene-caption,.df-dm-layer-scene:has(.df-dm-dialogue) .df-dm-scene-card,.df-dm-layer-scene:has(.df-dm-dialogue) .df-dm-scene-progress{display:none!important}
+.df-dm-audio-unlock{top:14px!important;right:auto!important;left:50%!important;transform:translateX(-50%)}
+.df-wordmark-band{display:block;filter:brightness(1.3) contrast(1.15) drop-shadow(0 2px 6px rgba(0,0,0,.6))}
+.df-corner-brand{pointer-events:none}
+.df-corner-brand-text{color:#e7c27a;font-family:Cinzel,Georgia,serif;font-size:44px;line-height:1}
+.df-corner-brand-subtitle{margin:4px 0 0;color:#e9dcbd;font-family:Cinzel,Georgia,serif;font-size:12.5px;font-weight:600;letter-spacing:.13em;white-space:nowrap;text-shadow:0 2px 4px #000,0 0 10px rgba(0,0,0,.8)}
+.df-dm-layer-scene:has(.df-dm-dialogue) .df-dm-scene-brand,.df-dm-layer-scene:has(.df-dm-dialogue) .df-dm-scene .df-location-title{display:none!important}
 `
 
 func themeStyles() ui.Node {
