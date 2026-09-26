@@ -677,7 +677,7 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: ENG-023 built and tested the per-seat cue mapping but nothing calls it where attack, damage, spell, down, heal, and victory happen, and staticcheck fails on the unused reason func in internal/game/phase/view.go.
   lane: L-ENG · block: 11–14 · paths: `internal/game/phase/*.go`, `internal/game/combat/*.go` · depends: ENG-023, ENG-025
   done when: those events append the ENG-023 per-seat sound effects (attacker, target, caster) alongside the table cues; staticcheck clean on internal/game/...; Step and combatsim tests assert the targeted effects; walk tests stay green.
-  status: claimed luna
+  status: committed 431ab86
 
 - [ ] INT-001 · lobby seats and join data reach the TV end to end
   why: Live test: two phones joined (engine View version advanced) but dfctl view --dm shows {"dm":{}} and the TV still shows Waiting to join, room code "/p", and a broken QR, because proto DMView has no seats or lobby fields and the projection never fills them.
@@ -1121,7 +1121,7 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: MEDIA-013's voice-pack executor and possibly MEDIA-011's reference executor were not registered because internal/wire/execs.go had other lanes' edits, and PHONE-022's phone audio player was never mounted (its paths excluded the phone mount and shell client).
   lane: ORCH (integration) · block: 11–14 · paths: `internal/wire/execs*.go`, `internal/wire/adapters*.go`, `web/phone/mount*.go`, `web/shell/client*.go`, `web/shell/compose*.go` · depends: MEDIA-012, MEDIA-013, PHONE-022, PHONE-024, ENG-023
   done when: the reference and voice-pack executors run on lock in fake and live config (fake returns placeholders); the phone opens its Listen stream after the first tap and plays seat-targeted clips; a wire test locks a seat and sees reference and voice-pack assets ready; a browser check on a lane server shows the phone receiving a targeted clip.
-  status: open (after MEDIA-012, PHONE-024, ENG-023)
+  status: claimed luna
 
 ## 14. LLM layer
 
@@ -1467,6 +1467,12 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   done when: /dm?preview=<name> and /p?preview=<name> render their fixtures with no gRPC connection (native test for the parser with and without '?'); the unused constant is used by the end screen's attribution link or removed; staticcheck clean on web/shell and web/phone; Edge screenshot of one DM and one phone preview.
   status: committed f5ec7fb
 
+- [ ] WEB-018 · browser DM and host Watch streams deliver no snapshots
+  why: Live check 12:35: the DM lobby renders the concept layout but never receives state (room code shows a dash, QR placeholder, seats empty) and the host page stays on No snapshot yet, even after host_pause/host_resume via dfctl; tokens are now preserved (0bd94ad) and wire/api Watch tests pass, so the break is in the browser client path (WASM Watch stream over GoGRPCBridge, or the updates channel feeding ui state).
+  lane: L-WEB-SHELL · block: 11–14 · paths: `web/dm/mount*.go`, `web/host/client*.go`, `web/shell/client*.go` · depends: WEB-011, INT-005
+  done when: opening /dm?token=... and /host?t=... on a live server shows the room code, QR, seats, and host run status within 2 s, and updates on every engine event; verified in the browser.
+  status: open
+
 ## 19. Phone
 
 The player's controller: character creation, sheet, legal moves, push-to-talk, combat taps.
@@ -1607,43 +1613,43 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   why: ORCH review of the combat preview (artifacts/screenshots/L-WEB-SHELL/phone-preview.png): the phone's combat turn screen is unstyled default HTML buttons on a bare page.
   lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/combat*.go` · depends: PHONE-016, PHONE-021
   done when: the combat screen (your turn, waiting, down) uses the phone frame, theme tokens, generated icons (ui/icon_attack, icon_move, icon_end_turn), HP and timer bar, and large touch targets matching assets/concept/ui-phone-*.jpg; Edge screenshots at 390x844 via /p?preview=<combat fixtures>.
-  status: claimed luna
+  status: committed 6d35d28
 
 - [ ] PHONE-024 · phone frame (header, tab bar), ornate components, and theme matched to the phone concepts
   why: Developer: start the concept-matching effort for the player clients too; both phone concepts share one frame (wordmark header with location, five-tab bottom bar with a raised center tab) and one component language.
   lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/frame*.go`, `web/phone/components*.go`, `web/phone/theme*.go`, `web/phone/screen*.go`, `web/phone/tabs*.go`, `web/phone/journal*.go`, `web/phone/menu*.go` · depends: PHONE-017, PHONE-021, WEB-015
   done when: the frame, tab bar (Character, Journal, Play, Map, Menu with real content), and components per the ORCH phone spec exist and wrap every current screen; Edge screenshots at 390x844 next to the concepts.
-  status: claimed luna
+  status: committed a6d77d7
 
 - [ ] PHONE-025 · phone conversation and exploration screens per the concepts
   why: Talking to NPCs and exploring are most of the demo on the phone.
   lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/moves*.go`, `web/phone/ptt*.go`, `web/phone/typed*.go`, `web/phone/talk*.go`, `web/phone/explore*.go` · depends: PHONE-024
   done when: conversation (NPC hero portrait, quote, choice rows, mic + typed field) and exploration (scene image, narration card, choice rows) match the concepts; screenshots.
-  status: open (after PHONE-024)
+  status: claimed luna
 
 - [ ] PHONE-026 · phone check offer and check result per the concepts
   why: The dice moment on the phone must look like the concept's check and result screens.
   lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/dice*.go`, `web/phone/check*.go` · depends: PHONE-024
   done when: the offer (icon header, modifier panel, big Roll button) and the result (d20 art with number, total, success/failure banner, result text, Continue) match the concepts; screenshots.
-  status: open (after PHONE-024)
+  status: claimed luna
 
 - [ ] PHONE-027 · phone character sheet per the concept
   why: The sheet concept (portrait, stats row, tabs, action rows) is the player's home screen.
   lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/sheet*.go`, `web/phone/class*.go` · depends: PHONE-024
   done when: the sheet matches the concept with real character data; screenshots.
-  status: open (after PHONE-024)
+  status: claimed luna
 
 - [ ] PHONE-028 · phone creation, join, waiting, and end screens in the concept style
   why: Every phone screen must share the same frame and ornate language.
   lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/create*.go`, `web/phone/waiting*.go`, `web/phone/end*.go`, `web/shell/join*.go` · depends: PHONE-024
   done when: each screen uses the frame and components per the spec; screenshots.
-  status: open (after PHONE-024)
+  status: claimed luna
 
 - [ ] PHONE-029 · phone combat screens restyled on the frame
   why: Combat (your turn, waiting, down) must use the same frame and components as the rest of the phone.
   lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/combat*.go` · depends: PHONE-024, PHONE-023
   done when: combat matches the spec section 7 on the frame; screenshots.
-  status: open (after PHONE-024 and PHONE-023)
+  status: claimed luna
 
 ## 20. DM screen
 
@@ -1949,6 +1955,12 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   lane: L-WEB-SPLAT · paths: `web/splat/js/grid*.mjs`, `web/splat/js/viewer.mjs`, `web/splat/js/df-splat.mjs`, `web/splat/js/voxel*.mjs`, `web/splat/js/battle_scene.mjs`, `web/splat/scenes/*.json` · depends: SPLAT-013
   done when: a genuine antialiased line glow shader matches the concept palette and halo, 5-foot cells and voxel exclusion remain valid over substantially larger supported areas, both scenes are visually inspected with usable performance, and the scoped gate passes.
   status: completed Codex; scoped gate and visual QA green 2026-09-26
+
+- [ ] SPLAT-015 · game-triggerable tilt-shift and cinematic camera motion
+  why: The developer requests adjustable tilt-shift, camera shake, and smooth panning that the game can enable and trigger.
+  lane: L-WEB-SPLAT · paths: `web/splat/protocol*.go`, `web/splat/bridge*.go`, `web/splat/js/camera_motion*.mjs`, `web/splat/js/tilt_shift*.mjs`, `web/splat/js/cinematic*.mjs`, `web/splat/js/viewer*.mjs`, `web/splat/js/viewer.html`, `web/splat/js/df-splat.mjs` · depends: SPLAT-014
+  done when: the typed Go bridge and JS runtime accept sequenced effect commands, tilt-shift uses a genuine GPU shader, bounded shake and eased pans support pause/stop/reduced motion, viewer controls demonstrate each effect, both battle scenes pass visual QA with usable performance, regressions and the scoped lane gate pass.
+  status: in progress Codex
 
 ## 23. dfctl debug CLI
 
