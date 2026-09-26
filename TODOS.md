@@ -1111,6 +1111,12 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   done when: AudioMessage gains channel (voice, music, ambience, sfx), encoded chunks (codec mime such as audio/ogg;codecs=opus or audio/mpeg, sequence, final) and mix commands (play, stop, crossfade to track at the next bar with duration, loop on/off, gain, duck); a server audio router turns engine cues (ENG-012 music and shot cues, MEDIA-009 transitions, MEDIA-010 sounds) and manifest assets into streamed chunks on the DM Listen stream with backpressure (drop oldest non-voice chunks, never voice); voice PCM keeps working; Listen also accepts phone seat tokens and every audio message carries a target (dm, seat N, all phones) so the server can send one-off effects to one player (developer request: cool one-off effects on phones), with phone streams limited to the sfx channel and short clips; tests with bufconn and synctest; live check streams the tavern ambience and a music track to a Go test client.
   status: committed 22e9fe0
 
+- [ ] INT-007 · wire the reference sheet, voice packs, and phone audio into the running app
+  why: MEDIA-013's voice-pack executor and possibly MEDIA-011's reference executor were not registered because internal/wire/execs.go had other lanes' edits, and PHONE-022's phone audio player was never mounted (its paths excluded the phone mount and shell client).
+  lane: ORCH (integration) · block: 11–14 · paths: `internal/wire/execs*.go`, `internal/wire/adapters*.go`, `web/phone/mount*.go`, `web/shell/client*.go`, `web/shell/compose*.go` · depends: MEDIA-012, MEDIA-013, PHONE-022, PHONE-024, ENG-023
+  done when: the reference and voice-pack executors run on lock in fake and live config (fake returns placeholders); the phone opens its Listen stream after the first tap and plays seat-targeted clips; a wire test locks a seat and sees reference and voice-pack assets ready; a browser check on a lane server shows the phone receiving a targeted clip.
+  status: open (after MEDIA-012, PHONE-024, ENG-023)
+
 ## 14. LLM layer
 
 SchemaFlux for OpenAI-dialect links, Gemini and Haiku adapters, model chains, budget, and the executors that turn effects into model calls.
