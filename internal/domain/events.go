@@ -38,8 +38,8 @@ type StreamClosed struct {
 	Stream vocab.StreamKind `json:"stream"`
 }
 type Report struct {
-	Kind vocab.ReportKind `json:"kind"`
-	ID   string           `json:"id,omitempty"`
+	ReportKind vocab.ReportKind `json:"kind"`
+	ID         string           `json:"id,omitempty"`
 }
 type TimerFired struct {
 	Name  string `json:"name"`
@@ -51,13 +51,13 @@ type Transcribed struct {
 }
 type STTError struct {
 	UtteranceID UtteranceID   `json:"utterance_id"`
-	Kind        vocab.ErrKind `json:"kind"`
+	FailureKind vocab.ErrKind `json:"kind"`
 }
 type Interpreted struct {
-	UtteranceID UtteranceID  `json:"utterance_id"`
-	CleanText   string       `json:"clean_text"`
-	Kind        string       `json:"kind"`
-	Move        vocab.MoveID `json:"move,omitempty"`
+	UtteranceID        UtteranceID  `json:"utterance_id"`
+	CleanText          string       `json:"clean_text"`
+	InterpretationKind string       `json:"kind"`
+	Move               vocab.MoveID `json:"move,omitempty"`
 }
 type InterpretFailed struct {
 	UtteranceID UtteranceID `json:"utterance_id"`
@@ -79,7 +79,7 @@ type LineAudioFinal struct {
 }
 type LineFailed struct {
 	UtteranceID UtteranceID   `json:"utterance_id"`
-	Kind        vocab.ErrKind `json:"kind"`
+	FailureKind vocab.ErrKind `json:"kind"`
 }
 type NarrationDelta struct {
 	UtteranceID UtteranceID `json:"utterance_id"`
@@ -94,8 +94,8 @@ type AssetReady struct {
 	Asset Asset  `json:"asset"`
 }
 type AssetFailed struct {
-	Slot string        `json:"slot"`
-	Kind vocab.ErrKind `json:"kind"`
+	Slot        string        `json:"slot"`
+	FailureKind vocab.ErrKind `json:"kind"`
 }
 type PrerenderTextDone struct {
 	Set   string   `json:"set"`
