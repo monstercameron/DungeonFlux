@@ -1561,6 +1561,12 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   done when: after the first tap the phone opens its own AudioService.Listen with its seat token, plays sfx-channel clips targeted at its seat (or all phones) with a small Web Audio graph (volume, haptic vibrate where supported), respects a mute toggle and prefers-reduced-motion for haptics, never blocks the JS loop; the cue catalogue (MEDIA-010) gains per-seat cues for roll, your turn, damage, down, and success/failure; native tests for queue logic; live check in the browser.
   status: open (launch after INT-006 and WEB-016)
 
+- [ ] PHONE-023 · phone combat screen matches the phone concepts
+  why: ORCH review of the combat preview (artifacts/screenshots/L-WEB-SHELL/phone-preview.png): the phone's combat turn screen is unstyled default HTML buttons on a bare page.
+  lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/combat*.go` · depends: PHONE-016, PHONE-021
+  done when: the combat screen (your turn, waiting, down) uses the phone frame, theme tokens, generated icons (ui/icon_attack, icon_move, icon_end_turn), HP and timer bar, and large touch targets matching assets/concept/ui-phone-*.jpg; Edge screenshots at 390x844 via /p?preview=<combat fixtures>.
+  status: claimed luna
+
 ## 20. DM screen
 
 The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
