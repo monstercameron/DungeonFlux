@@ -10,3 +10,7 @@ import (
 func transportDialOption(string) grpc.DialOption {
 	return grpc.WithTransportCredentials(insecure.NewCredentials())
 }
+
+func transportDialOptions(endpoint string) []grpc.DialOption {
+	return []grpc.DialOption{transportDialOption(endpoint)}
+}

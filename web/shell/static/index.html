@@ -21,7 +21,7 @@
       try {
         const go = new Go();
         const result = await WebAssembly.instantiateStreaming(
-          fetch("/app/dungeonflux.wasm"), go.importObject);
+          fetch("/app/dungeonflux.wasm", { cache: "no-store" }), go.importObject);
         go.run(result.instance);
       } catch (error) {
         status.textContent = "DungeonFlux could not start.";
