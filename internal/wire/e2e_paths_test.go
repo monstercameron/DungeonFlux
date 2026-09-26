@@ -94,7 +94,6 @@ func TestE2E_Path21_LatestDMListenReplacesOlderStream(t *testing.T) {
 	// stream must end promptly instead of receiving frames forever.
 	// ORCH measured this failing through the real AudioService (the first
 	// stream stays open); API-017 fixes it and removes this skip.
-	t.Skip("API-017: newest DM Listen does not replace the older stream through AudioService")
 	done := make(chan error, 1)
 	go func() {
 		_, err := first.Recv()

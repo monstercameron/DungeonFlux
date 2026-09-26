@@ -98,6 +98,9 @@ func (h *ListenHub) remove(id uint64, sub *ListenSubscription) {
 // Frames returns the subscription's receive-only PCM queue.
 func (s *ListenSubscription) Frames() <-chan domain.AudioFrame { return s.frames }
 
+// Done returns a channel closed when the subscription is no longer active.
+func (s *ListenSubscription) Done() <-chan struct{} { return s.done }
+
 // Close removes the subscription and releases its queue.
 func (s *ListenSubscription) Close() {
 	if s == nil || s.remove == nil {

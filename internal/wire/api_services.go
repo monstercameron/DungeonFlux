@@ -2,12 +2,15 @@ package wire
 
 import (
 	"context"
+	"io"
 	"strconv"
+	"sync"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"github.com/monstercameron/DungeonFlux/internal/api"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -78,6 +81,7 @@ func (s *sessionService) Watch(req *df.WatchRequest, stream df.SessionService_Wa
 // audioService exposes the bounded PCM listener hub through the protobuf API.
 type audioService struct {
 	df.UnimplementedAudioServiceServer
+	mu  sync.Mutex
 	hub *api.ListenHub
 }
 
@@ -88,12 +92,22 @@ func (s *audioService) Listen(req *df.ListenRequest, stream df.AudioService_List
 	if req.GetSeatToken() == "" {
 		return status.Error(codes.Unauthenticated, "seat token is required")
 	}
+	s.mu.Lock()
 	sub := s.hub.Subscribe(stream.Context())
+	if err := stream.SendHeader(metadata.MD{}); err != nil {
+		s.mu.Unlock()
+		sub.Close()
+		return err
+	}
+	s.mu.Unlock()
 	defer sub.Close()
 	for {
 		select {
 		case <-stream.Context().Done():
 			return stream.Context().Err()
+		case <-sub.Done():
+			stream.SetTrailer(metadata.Pairs("dungeonflux-listen", "replaced"))
+			return io.EOF
 		case frame, ok := <-sub.Frames():
 			if !ok {
 				return nil
