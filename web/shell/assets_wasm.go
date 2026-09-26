@@ -19,7 +19,7 @@ func NewBrowserAssetLoader(client dungeonfluxv1.AssetServiceClient) *AssetLoader
 	if client == nil {
 		return NewAssetLoader(nil, browserBlobURLFactory{})
 	}
-	return NewAssetLoader(grpcAssetService{client: client}, browserBlobURLFactory{})
+	return NewAssetLoaderWithStore(grpcAssetService{client: client}, browserBlobURLFactory{}, newBrowserAssetStore())
 }
 
 type grpcAssetService struct {
