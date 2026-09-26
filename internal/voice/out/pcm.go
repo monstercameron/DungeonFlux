@@ -49,7 +49,7 @@ func (e *PCMExecutor) StartLine(ctx context.Context, effect domain.StartLine, sc
 	line := e.track(effect.UtteranceID, cancel)
 	defer e.untrack(effect.UtteranceID, line)
 	stream, err := e.tts.Stream(lineCtx, ports.TTSRequest{
-		Meta:       ports.CallMeta{UtteranceID: effect.UtteranceID, Locale: e.roomLocale()},
+		Meta:       ports.CallMeta{UtteranceID: effect.UtteranceID, Role: effect.Role, Locale: e.roomLocale()},
 		VoiceID:    e.voiceFor(effect.Voice),
 		SampleRate: defaultSampleRate,
 	}, newTextStream(effect.Input))

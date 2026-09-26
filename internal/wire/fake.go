@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/monstercameron/DungeonFlux/internal/config"
+	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/ports"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
@@ -155,20 +156,40 @@ func (fakeSTT) Transcribe(ctx context.Context, _ ports.STTRequest) (ports.Transc
 	return ports.Transcript{Text: "persuade"}, nil
 }
 
-type fakeTTS struct{}
+// fakeTTS voices lines in fake mode. Roles with a build-time canned recording
+// (real ElevenLabs PCM, 24 kHz) play that recording, so the table hears the DM
+// and NPCs; other lines keep the short silence.
+type fakeTTS struct {
+	read func(context.Context, domain.AssetID) ([]byte, error)
+}
 
-func (fakeTTS) Stream(ctx context.Context, _ ports.TTSRequest, _ ports.TextStream) (ports.PCMStream, error) {
+var fakeTTSCanned = map[vocab.Role]domain.AssetID{
+	vocab.RoleOpening:       "canned_opening",
+	vocab.RoleNPCReply:      "canned_npc_reply",
+	vocab.RoleNPCReveal:     "canned_npc_reveal",
+	vocab.RoleNPCRefuse:     "canned_npc_refuse",
+	vocab.RoleStrangerLines: "canned_stranger_found",
+	vocab.RoleCliffhanger:   "canned_cliffhanger_vell",
+}
+
+func (f fakeTTS) Stream(ctx context.Context, req ports.TTSRequest, _ ports.TextStream) (ports.PCMStream, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
+	}
+	if id, ok := fakeTTSCanned[req.Meta.Role]; ok && f.read != nil {
+		if pcm, err := f.read(ctx, id); err == nil && len(pcm) > 0 {
+			return &fakePCMStream{ctx: ctx, pcm: pcm, noTail: true}, nil
+		}
 	}
 	return &fakePCMStream{ctx: ctx, pcm: fakePCM()}, nil
 }
 
 type fakePCMStream struct {
-	ctx  context.Context
-	pcm  []byte
-	done bool
-	wait bool
+	ctx    context.Context
+	pcm    []byte
+	done   bool
+	wait   bool
+	noTail bool
 }
 
 func (s *fakePCMStream) Recv() (ports.PCMChunk, error) {
@@ -176,6 +197,10 @@ func (s *fakePCMStream) Recv() (ports.PCMChunk, error) {
 		return ports.PCMChunk{}, err
 	}
 	if s.done {
+		return ports.PCMChunk{}, io.EOF
+	}
+	if s.wait && s.noTail {
+		s.done = true
 		return ports.PCMChunk{}, io.EOF
 	}
 	if s.wait {
