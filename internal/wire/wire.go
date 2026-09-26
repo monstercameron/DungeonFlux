@@ -47,6 +47,12 @@ type App struct {
 // Build assembles an application from cfg. A non-empty seed is expanded into
 // the deterministic rehearsal seed; an empty seed uses the system CSPRNG.
 func Build(ctx context.Context, cfg config.Config, seed []byte) (*App, error) {
+	return BuildWithWriter(ctx, cfg, seed, os.Stdout)
+}
+
+// BuildWithWriter assembles an application and writes its tester URLs to out.
+// A nil writer suppresses the console presentation while retaining urls.txt.
+func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io.Writer) (*App, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("wire: validate config: %w", err)
 	}
@@ -108,6 +114,19 @@ func Build(ctx context.Context, cfg config.Config, seed []byte) (*App, error) {
 		_ = logFile.Close()
 		return nil, fmt.Errorf("wire: create dm token: %w", err)
 	}
+	urls, err := buildURLs(cfg.Server.Port, roomID, dmToken, hostToken)
+	if err != nil {
+		_ = store.Close()
+		_ = logFile.Close()
+		return nil, err
+	}
+	if err := writeURLs(cfg.Server.DataDir, urls); err != nil {
+		_ = store.Close()
+		_ = logFile.Close()
+		return nil, err
+	}
+	logger.Info("tester URLs ready", "url_count", len(urls))
+	printURLs(out, urls)
 	run, err := domainRun(roomID, seed)
 	if err != nil {
 		_ = store.Close()
