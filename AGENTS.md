@@ -2,7 +2,7 @@
 
 Rules for every coding agent in this repo. Read it in full before your first edit. Owner: the orchestrator (ORCH).
 
-**Who does what:** Claude **Opus 5.5** (Claude Code) is ORCH: coordinator and reviewer. It writes the shared contracts, briefs the lanes, reviews and gates every hand-in, merges, commits, keeps the dev server up, and writes the devlog. **GPT-5.6 Luna in Codex** (`gpt-5.6-luna`, chosen by the developer 2026-09-26; the ChatGPT-login Codex account does not offer `gpt-6-luna`) runs every worker lane: it writes the first draft of all lane code and its tests. ORCH does not write lane code; a lane is never the last set of eyes on its own work.
+**Who does what:** Claude **Opus 5.5** (Claude Code) is ORCH: coordinator and reviewer. It writes the shared contracts, briefs the lanes, reviews and gates every hand-in (workers commit their own todos), pushes at checkpoints, keeps the dev server up, and writes the devlog. **GPT-5.6 Luna in Codex** (`gpt-5.6-luna`, chosen by the developer 2026-09-26; the ChatGPT-login Codex account does not offer `gpt-6-luna`) runs every worker lane: it writes the first draft of all lane code and its tests. ORCH does not write lane code; a lane is never the last set of eyes on its own work.
 
 ## TL;DR
 1. `plan.md` section 0 is the binding spec. Sections 1–7 are post-demo and non-binding; section 0 wins every conflict.
@@ -24,7 +24,7 @@ Rules for every coding agent in this repo. Read it in full before your first edi
 17. To inspect or drive a running server or client, use `dfctl` (section 17), not ad-hoc scripts, database edits, or browser automation. Every change it makes goes through the engine as an event.
 
 ## 1. What this repo is
-Planning stage. DungeonFlux is an AI dungeon-master demo: a Go server, one GoWebComponents WASM client (`/dm`, `/p`, `/host`), and gRPC over WebSocket through GoGRPCBridge. It is built in 24 hours by parallel GPT-6 Luna worker lanes in Codex, coordinated and reviewed by one Claude Opus 5.5 orchestrator. This file overrides the plan's seven-agent limit (§0.18.9): Codex runs every lane whose inputs are ready, bounded only by the lane map, disk, and quota (section 10).
+Planning stage. DungeonFlux is an AI dungeon-master demo: a Go server, one GoWebComponents WASM client (`/dm`, `/p`, `/host`), and gRPC over WebSocket through GoGRPCBridge. It is built in 24 hours by parallel GPT-5.6 Luna worker lanes in Codex, coordinated and reviewed by one Claude Opus 5.5 orchestrator. Codex runs every lane whose inputs are ready, bounded only by the lane map, disk, and quota (section 10).
 
 | Path | What it is | Who edits it |
 |---|---|---|
@@ -39,6 +39,7 @@ Planning stage. DungeonFlux is an AI dungeon-master demo: a Go server, one GoWeb
 ## 2. Target layout (plan §0.18.2 is authoritative)
 ```
 cmd/server/                     composition entry (ORCH)
+cmd/dfctl/                      debug CLI (L-OPS; section 17)
 internal/
   vocab clock domain ports      layer 0–2 contracts (ORCH)
   core/fsm                      generic machine (L-ENG)
@@ -65,7 +66,7 @@ assets/concept/  docs/  artifacts/
 Dependency rule: a package imports only what its §0.18.2 row allows. `internal/archtest` enforces it in every gate, including the purity rules for `game`, `game/combat`, `fsm`, `domain`, `content`, and `sim` (no `net`, `os`, `database/sql`, `log/slog`, `math/rand*`, `crypto/rand`, `sync`, no `go` statement, `time` only for `time.Duration`).
 
 ## 3. Ownership
-**ORCH-owned shared contracts** (plan §0.18.8 rule 17, plus this repo's config files): `go.mod`, `go.sum`, `proto/`, `gen/`, `internal/{vocab,domain,ports,clock,config,wire,fakes,archtest,httpx}`, `cmd/`, `config/`, `scripts/gate.ps1`, `AGENTS.md`, `CLAUDE.md`, `.gitignore`, `.gitattributes`. `internal/core/fsm` belongs to L-ENG, not ORCH.
+**ORCH-owned shared contracts** (plan §0.18.8 rule 17, plus this repo's config files): `go.mod`, `go.sum`, `proto/`, `gen/`, `internal/{vocab,domain,ports,clock,config,wire,fakes,archtest,httpx,logx}`, `cmd/server`, `config/`, `scripts/gate.ps1`, `AGENTS.md`, `CLAUDE.md`, `.gitignore`, `.gitattributes`. `internal/core/fsm` belongs to L-ENG, not ORCH.
 
 **Lane paths** are the "Owns" column of the plan §0.18.9 table. If a path is not in your row, you do not edit it, even to fix a typo.
 
@@ -80,7 +81,7 @@ Everything not meant to be committed goes here. Create the subfolder you need. N
 | `artifacts/wasm/` | `dungeonflux.wasm`, its `.br`, and the copied `wasm_exec.js` |
 | `artifacts/test/<LANE>/` | `go test -artifacts` output, gate transcripts, walk-test traces |
 | `artifacts/coverage/<LANE>/` | Cover profiles and HTML reports |
-| `artifacts/logs/<LANE>/` | Server slog JSON files, dev-server stdout and stderr |
+| `artifacts/logs/<LANE>/` | Dev-server stdout and stderr (the server's slog JSONL lives under `artifacts/runtime/<instance>/logs/`, plan §0.18.12) |
 | `artifacts/screenshots/<LANE>/` | Browser and phone captures |
 | `artifacts/media/` | Ad-hoc generated media outside the runtime store (hour-0 latency samples, vendor test output) |
 | `artifacts/spike/` | L-SPIKE output |
@@ -129,7 +130,7 @@ Full coding rules: plan §0.18.8 (24 rules) and §0.18.7 (errors, context, loggi
 20. Network calls in unit tests; paid API calls anywhere outside a developer-run `live` test.
 
 **Secrets**
-21. Keys come only from env vars (`DF_OPENAI_API_KEY`, `DF_GEMINI_API_KEY`, `DF_ANTHROPIC_API_KEY`, `DF_ELEVENLABS_API_KEY`, `DF_SEGMIND_API_KEY`, `DF_EVOLINK_API_KEY`, `DF_FAL_KEY`, `DF_CEREBRAS_API_KEY`, `DF_TYPESAFE_API_KEY`, `DF_WORLDLABS_API_KEY`; lego's DNS challenge reads its own `DO_AUTH_TOKEN`). Never log, print, commit, or put them in a URL or fixture. `.env*` files are gitignored.
+21. Keys come only from env vars (`DF_OPENAI_API_KEY`, `DF_GEMINI_API_KEY`, `DF_ANTHROPIC_API_KEY`, `DF_ELEVENLABS_API_KEY`, `DF_SEGMIND_API_KEY`, `DF_EVOLINK_API_KEY`, `DF_FAL_KEY`, `DF_CEREBRAS_API_KEY`, `DF_TYPESAFE_API_KEY`, `DF_WORLDLABS_API_KEY`, and `DF_DEBUG_TOKEN` for `dfctl`; lego's DNS challenge reads its own `DO_AUTH_TOKEN`). Never log, print, commit, or put them in a URL or fixture. `.env*` files are gitignored.
 
 **Windows and line endings**
 22. LF line endings, UTF-8 without BOM. This machine has `core.autocrlf=true`, so do not rely on git to normalize. Python edits use `open(p, 'rb'/'wb')` or `newline=''`. In Windows PowerShell 5.1, write text with `[IO.File]::WriteAllText(path, text, [Text.UTF8Encoding]::new($false))`, not `Set-Content` or `Out-File`.
@@ -377,7 +378,7 @@ The goal is to catch bugs early without making anyone wait. The floor is **70% s
 - A worker reports each touched package's coverage percentage in the hand-in ("Coverage: internal/game/nested 78.4%").
 
 ## 15. Concurrency: goroutines with owners
-The binding model is plan §0.18.10. In short:
+The binding model is plan §0.18.11. In short:
 - **Where concurrency lives.** One loop goroutine per room serialises every event. Work effects (vendor calls, STT, TTS, pre-renders, asset fetches) each run in their own goroutine under the scope context that started them (run, phase, check, combat, utterance) and are cancelled with that scope. gRPC streams, Watch/Listen subscribers, the SQLite writer, and each ElevenLabs connection have their own goroutines. Pre-renders run in parallel through a worker pool with one semaphore per vendor, sized to that vendor's quota.
 - **Rules.**
   - Every goroutine has an owner, takes a `context.Context`, and returns when it is cancelled. No fire-and-forget.
@@ -390,7 +391,7 @@ The binding model is plan §0.18.10. In short:
 - **Tests.** Concurrency is tested with `testing/synctest` (a leaked goroutine fails the bubble) or `clock.Fake`, never with sleeps. `go test -race` runs in the GitHub Actions `race.yml` job on every push; a race there opens a fix todo for the owning lane.
 
 ## 16. Structured logging
-The binding spec is plan §0.18.11. In short:
+The binding spec is plan §0.18.12. In short:
 - `log/slog` only. `main` builds a JSON-lines handler (`artifacts/runtime/<instance>/logs/server-<start>.jsonl`) plus a text console handler; the level comes from config (`debug` on lane dev servers, `info` for the demo).
 - Take the `*slog.Logger` you are given and narrow it with `With` at each scope boundary (room, run, scope, utterance, asset, vendor call), so correlation fields ride along automatically. Use the plan's field names (`run`, `room`, `scope`, `utterance_id`, `asset_id`, `trace_id`, `vendor`, `model`, `ttft_ms`, `dur_ms`, `err_kind`, and the rest); do not invent synonyms.
 - Levels: Debug for per-chunk detail, Info for transitions, vendor calls, and asset lifecycle, Warn for fallbacks, retries, and dropped subscribers, Error for broken invariants and recovered panics.
@@ -399,7 +400,7 @@ The binding spec is plan §0.18.11. In short:
 - Read logs with `scripts/logs.ps1 -Instance <name> [-Run <id>] [-Level warn] [-Trace <id>]`. Packages that log assert their key records in tests through a capturing handler.
 
 ## 17. dfctl: the debug CLI for agents
-`dfctl` (`cmd/dfctl`, spec in plan §0.18.12) reads and changes the state of a running server and its clients over native gRPC. It exists so Claude Code and Codex can check and steer the game without a browser. It only works against servers started with `server.debug=true` (lane dev servers and the human test server), on localhost, with `DF_DEBUG_TOKEN` set. The demo config does not include it.
+`dfctl` (`cmd/dfctl`, spec in plan §0.18.13) reads and changes the state of a running server and its clients over native gRPC. It exists so Claude Code and Codex can check and steer the game without a browser. It only works against servers started with `server.debug=true` (lane dev servers and the human test server), on localhost, with `DF_DEBUG_TOKEN` set. The demo config does not include it.
 
 Output is one JSON object per line (add `--pretty` for people). Exit codes: 0 ok, 1 the engine rejected the request, 2 connection or auth failure.
 
