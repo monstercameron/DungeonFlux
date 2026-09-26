@@ -513,6 +513,12 @@ The fixed one-shot: NPCs, beats, prompts, schemas, canned lines, the tavern nav 
   done when: label and reason for move class; for each class a name and a one-line demo-friendly role blurb in en and es; I18N-011 parity passes.
   status: committed 6e24f12
 
+- [ ] CONT-010 · localized label key for the class move
+  why: ENG-021 reports the full walk and downstream wire tests fail because the class move has no localized label_key.
+  lane: L-CONTENT · block: 11–14 · paths: `internal/content/moves*.go`, `internal/i18n/catalog/**` · depends: CONT-009, ENG-019
+  done when: class has label_key and reason keys in en and es; go test ./internal/sim/... ./internal/wire passes; I18N-011 parity passes.
+  status: claimed luna
+
 ## 7. Engine: root, phase dispatcher, and nested flows
 
 The pure deterministic engine `Step(state, envelope) → effects`. The top table is thin; each phase is its own package so lanes can build phases in parallel.
@@ -1061,7 +1067,7 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: Developer decision: gRPC is the only transport after boot, so images (UI art, scene stills, portraits, QR) must reach clients through a gRPC AssetService instead of HTTP /assets routes.
   lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/assets.proto`, `gen/**`, `internal/api/assets*.go`, `internal/wire/assets*.go`, `internal/wire/wire.go` · depends: INT-002, BASE-008, OPS-020
   done when: AssetService has Get (server stream of chunks by logical name or sha256, with content type and size) and Manifest (logical names to sha, type, size for preloading); the server reads the asset store; wire loads every manifest entry (including ui/*) into the store at start and registers the service on the tunnel; HTTP /assets stays only as a debug fallback; bufconn tests; a Go client fetches ui/title_bg from a live server.
-  status: claimed luna
+  status: committed 76a27bf
 
 - [ ] INT-005 · player names and lobby metadata reach the TV
   why: Live test after INT-001: the TV shows Joined seats but as Player 1/2, the room code as "/p", and a broken QR, because JoinRequest has no player name field and wire never passes room code, join URL, and QR URL into the engine's lobby View.
@@ -1387,7 +1393,7 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   why: Screens need image URLs; with assets on gRPC the shell must fetch bytes, build Blob URLs, cache them, and preload the manifest at boot.
   lane: L-WEB-SHELL · block: 8–11 · paths: `web/shell/assets*.go` · depends: INT-004
   done when: an exported loader (usable by web/dm and web/phone via a small interface) returns a Blob URL for a logical name or sha, dedupes in-flight fetches, preloads ui/* at boot with progress, never blocks the JS loop; tested natively for cache logic; live check shows the title art.
-  status: open (launch after INT-004)
+  status: claimed luna
 
 - [ ] WEB-016 · DM Web Audio mixer for streamed channels
   why: The DM client must play the gRPC audio stream as a real mix: music and ambience beds, SFX on top, voice always clear.
@@ -1685,6 +1691,12 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   done when: in conversation the TV shows the NPC portrait and name plate, the current line, and the spotlight player's options (from legal moves) styled like the concept; registered in the DM screen under the integration-hook rule; Edge screenshots side by side.
   status: claimed luna
 
+- [ ] DM-026 · DM integration pass: register every concept layer, fix sibling breaks, screenshot all phases
+  why: Six DM concept lanes worked in parallel in web/dm: their layer hooks in mount_wasm.go are stranded in mixed uncommitted hunks (DM-024 HUD, DM-025 dialogue), and sibling edits broke each other's WASM builds (dividerBackground redeclared, combat_wasm.go syntax), so none could take final screenshots.
+  lane: L-WEB-DM · block: 11–14 · paths: `web/dm/**` · depends: DM-020, DM-021, DM-022, DM-023, DM-024, DM-025, WEB-015
+  done when: GOOS=js GOARCH=wasm go build ./web/... passes; every layer (title/lobby, creation, scene, HUD, dialogue, dice/callouts, combat, cliffhanger/end) is registered once in the DM screen; the art resolves through dm.ArtURL once WEB-015 lands; Edge screenshots of every preview fixture at 1920x1080 and 2560x1080, compared side by side with the concepts; web/dm >= 70%.
+  status: open (launch after DM-021, DM-022, DM-023)
+
 ## 21. Host
 
 The operator page: Start, Pause, Skip, Reset, Force d20, and debug panel.
@@ -1789,11 +1801,11 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: voxel data is sourced or generated from each scene, coordinate transforms and floor versus obstacle clearance are tested, occupied cells are excluded in the viewer and runtime, both scenes are visually inspected, and the lane gate passes.
   status: done 31c20bf, 35949ae
 
-- [ ] SPLAT-013 · rules scale, antialiasing, and complete supported grid coverage
+- [x] SPLAT-013 · rules scale, antialiasing, and complete supported grid coverage
   why: The developer requests correctly scaled rules squares, antialiased lines, and coverage of all walkable space in the battle area.
   lane: L-WEB-SPLAT · paths: `web/splat/protocol*.go`, `web/splat/js/voxel*.mjs`, `web/splat/js/grid_overlay.mjs`, `web/splat/js/debug_pick.mjs`, `web/splat/js/battle_scene.mjs`, `web/splat/js/viewer.mjs`, `web/splat/js/df-splat.mjs`, `web/splat/scenes/*.json` · depends: SPLAT-012
   done when: cells remain 5 feet (1.524 metres), voxel floor support and agent clearance determine every candidate cell in the battle area, grid lines follow supported floor heights, antialiasing is enabled, scale and coverage regressions pass, and both scenes are visually inspected with a green lane gate.
-  status: claimed Codex 2026-09-26
+  status: done a17301a (scoped gate failures 0; coverage 85.3%; both scenes visually verified with MSAA 4)
 ## 23. dfctl debug CLI
 
 Command-line reads and demo writes for agents and the developer.
@@ -1968,6 +1980,12 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   why: The §0.19 score (12 tracks) needs real music with loops cut at downbeats for bar-aligned crossfades.
   lane: L-OPS · block: 8–11 · paths: `scripts/buildtime/music*.go` · depends: OPS-012, OPS-013, REPO-017
   done when: the music job runs live with model music_v2_5 and at most 2 concurrent jobs (Creator plan), each track checked with beatcheck and cut at downbeats, files under artifacts/runtime/buildtime/music/, registered with BPM and loop points under the manifest lock, cost logged; failures retried once, then reported.
+  status: claimed luna
+
+- [ ] OPS-026 · beatcheck folds double and half tempo; music regenerated
+  why: OPS-025's live run produced no accepted track: six ElevenLabs results were rejected at about 169 BPM against a requested 80, which is beatcheck reading double time, and four failed with HTTP 422 seed errors (fixed there); scripts/buildtime coverage is 66.4%, below the floor.
+  lane: L-OPS · block: 11–14 · paths: `scripts/buildtime/beatcheck/**`, `scripts/buildtime/music*.go` · depends: OPS-025, OPS-013
+  done when: beatcheck accepts a measured tempo within ±3% of the target or of its double or half and reports the folded BPM; click-track tests cover 2x and 0.5x; the music job reruns live for the 12 tracks (at most 2 concurrent) and registers accepted tracks with BPM and loop points under the manifest lock; scripts/buildtime back to >= 70%.
   status: claimed luna
 
 - [x] OPS-019 · PowerShell SuperSplat manifest and complete LOD downloader
