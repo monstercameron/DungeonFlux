@@ -1,6 +1,7 @@
 # All generated output lives under artifacts/ (see AGENTS.md section 4).
 artifacts/*
 !artifacts/.gitkeep
+!artifacts/go.mod
 
 # Runtime data if a stray run writes outside artifacts/
 *.db
