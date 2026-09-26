@@ -23,6 +23,7 @@ function normalizedMeta(meta) {
   const bounds = meta.gridBounds ?? meta.grid_bounds;
   const min = vector3(bounds?.min, "gridBounds.min");
   const max = vector3(bounds?.max, "gridBounds.max");
+  const sceneBounds = meta.sceneBounds ?? meta.scene_bounds;
   if (max.some((item, index) => item <= min[index])) throw new Error("voxel grid bounds are empty");
   const resolution = Number(meta.voxelResolution ?? meta.voxel_resolution);
   if (!Number.isFinite(resolution) || resolution <= 0) throw new Error("voxel resolution is invalid");
@@ -32,7 +33,7 @@ function normalizedMeta(meta) {
   const nodeCount = integer(meta.nodeCount ?? meta.node_count, "node count");
   const leafDataCount = integer(meta.leafDataCount ?? meta.leaf_data_count, "leaf data count");
   if (nodeCount > 16_777_216 || leafDataCount % 2 !== 0) throw new Error("voxel node counts are invalid");
-  return { min, max, resolution, treeDepth, nodeCount, leafDataCount, version };
+  return { min, max, sceneMin: sceneBounds ? vector3(sceneBounds.min, "sceneBounds.min") : min, sceneMax: sceneBounds ? vector3(sceneBounds.max, "sceneBounds.max") : max, resolution, treeDepth, nodeCount, leafDataCount, version };
 }
 
 function wordsFromBytes(bytes) {
@@ -80,6 +81,14 @@ function makeCollider(meta, words, options) {
     const local = inverseWorldTransform(point, transform);
     return sourceFrame ? sourceToEngine(local) : local;
   };
+  const toWorld = (point) => {
+    const engine = sourceFrame ? sourceToEngine(point) : point;
+    const angle = -transform.rotY * Math.PI / 180;
+    const c = Math.cos(angle); const s = Math.sin(angle);
+    const x = engine[0] * c - engine[2] * s;
+    const z = engine[0] * s + engine[2] * c;
+    return [x * transform.scale + transform.translate[0], engine[1] * transform.scale + transform.translate[1] + transform.offsetY, z * transform.scale + transform.translate[2]];
+  };
   const voxelAt = (point) => lookupVoxel(normalized, words, toLocal(point));
   const intersectsBox = (min, max) => {
     const corners = [];
@@ -88,7 +97,64 @@ function makeCollider(meta, words, options) {
     const localMax = [0, 1, 2].map((axis) => Math.max(...corners.map((corner) => corner[axis])));
     return intersectsLocalBox(normalized, words, localMin, localMax);
   };
-  return { meta: normalized, transform, voxelAt, intersectsBox, filterGrid: (grid, filterOptions = {}) => filterGrid(grid, intersectsBox, filterOptions) };
+  const floorAt = (point, options = {}) => findFloor(normalized, toLocal, voxelAt, point, { ...options, worldResolution: normalized.resolution * transform.scale });
+  return { meta: normalized, transform, voxelAt, intersectsBox, floorAt, occupiedBoxes: () => occupiedBoxes(normalized, words, toWorld), boundsInWorld: () => boundsInWorld(normalized, toWorld), filterGrid: (grid, filterOptions = {}) => filterGrid(grid, intersectsBox, floorAt, boundsInWorld(normalized, toWorld), filterOptions) };
+}
+
+function boundsInWorld(meta, toWorld) {
+  const corners = [];
+  for (const x of [meta.min[0], meta.max[0]]) for (const y of [meta.min[1], meta.max[1]]) for (const z of [meta.min[2], meta.max[2]]) corners.push(toWorld([x, y, z]));
+  return { min: [0, 1, 2].map((axis) => Math.min(...corners.map((corner) => corner[axis]))), max: [0, 1, 2].map((axis) => Math.max(...corners.map((corner) => corner[axis]))) };
+}
+
+function occupiedBoxes(meta, words, toWorld) {
+  const boxes = []; const pending = [[0, 0, [0, 0, 0]]];
+  while (pending.length) {
+    const [node, depth, origin] = pending.pop();
+    const word = words[node];
+    if (word === SOLID_LEAF) {
+      const box = worldBox(meta, toWorld, origin, LEAF_SIZE * (2 ** (meta.treeDepth - depth)));
+      if (box) boxes.push(box);
+      continue;
+    }
+    if (depth >= meta.treeDepth) {
+      const leafIndex = word & UINT24_MASK;
+      const mixed = mixedLeafBounds(meta, words, leafIndex);
+      if (mixed) {
+        const box = worldBox(meta, toWorld, origin.map((value, axis) => value + mixed.min[axis]), mixed.size);
+        if (box) boxes.push(box);
+      }
+      continue;
+    }
+    const mask = word >>> 24; const first = word & UINT24_MASK;
+    const childSpan = LEAF_SIZE * (2 ** (meta.treeDepth - depth - 1));
+    for (let octant = 7, offset = popcount(mask) - 1; octant >= 0; octant -= 1) if (mask & (1 << octant)) {
+      pending.push([first + offset--, depth + 1, [origin[0] + (octant & 1 ? childSpan : 0), origin[1] + (octant & 2 ? childSpan : 0), origin[2] + (octant & 4 ? childSpan : 0)]]);
+    }
+  }
+  return boxes;
+}
+
+function mixedLeafBounds(meta, words, leafIndex) {
+  const base = meta.nodeCount + leafIndex * 2;
+  const min = [LEAF_SIZE, LEAF_SIZE, LEAF_SIZE]; const max = [-1, -1, -1];
+  for (let bit = 0; bit < 64; bit += 1) if (words[base + Math.floor(bit / 32)] & (1 << (bit % 32))) {
+    const point = [bit & 3, (bit >> 2) & 3, (bit >> 4) & 3];
+    for (let axis = 0; axis < 3; axis += 1) { min[axis] = Math.min(min[axis], point[axis]); max[axis] = Math.max(max[axis], point[axis]); }
+  }
+  return max[0] < 0 ? null : { min, size: max.map((value, axis) => value - min[axis] + 1) };
+}
+
+function worldBox(meta, toWorld, origin, size) {
+  const extents = Array.isArray(size) ? size : [size, size, size];
+  const rawMin = meta.min.map((value, axis) => value + origin[axis] * meta.resolution);
+  const rawMax = rawMin.map((value, axis) => value + extents[axis] * meta.resolution);
+  const localMin = rawMin.map((value, axis) => Math.max(meta.min[axis], value));
+  const localMax = rawMax.map((value, axis) => Math.min(meta.max[axis], value));
+  if (localMax.some((value, axis) => value <= localMin[axis])) return null;
+  const corners = [];
+  for (const x of [localMin[0], localMax[0]]) for (const y of [localMin[1], localMax[1]]) for (const z of [localMin[2], localMax[2]]) corners.push(toWorld([x, y, z]));
+  return { min: [0, 1, 2].map((axis) => Math.min(...corners.map((corner) => corner[axis]))), max: [0, 1, 2].map((axis) => Math.max(...corners.map((corner) => corner[axis]))) };
 }
 
 function validateTree(meta, words) {
@@ -172,7 +238,89 @@ function cellBlocked(grid, index, intersectsBox, options) {
   return intersectsBox([x + inset, options.floorY + options.stepClearance, z + inset], [x + grid.cell_m - inset, options.floorY + options.agentHeight, z + grid.cell_m - inset]);
 }
 
-function filterGrid(grid, voxelAt, rawOptions = {}) {
+function scanFloor(meta, toLocal, voxelAt, point, options) {
+  const low = Number(options.floorSearchMin ?? options.floorY - 1.5);
+  const high = Number(options.floorSearchMax ?? options.floorY + 1.5);
+  const step = Math.max(Number(options.worldResolution ?? meta.resolution), 0.01);
+  if (!Number.isFinite(low) || !Number.isFinite(high) || high <= low) return null;
+  for (let y = high; y >= low; y -= step) {
+    const local = toLocal([point[0], y, point[1]]);
+    const above = toLocal([point[0], y + step, point[1]]);
+    const inside = local.every((value, axis) => value >= meta.min[axis] && value < meta.max[axis]);
+    const aboveInside = above.every((value, axis) => value >= meta.min[axis] && value < meta.max[axis]);
+    if (inside && aboveInside && !voxelAt([point[0], y + step, point[1]]) && voxelAt([point[0], y, point[1]])) return y + step;
+  }
+  return null;
+}
+
+function findFloor(meta, toLocal, voxelAt, point, options) {
+  const radius = Math.max(0, Number(options.supportRadius ?? 0));
+  const offsets = [[0, 0], [radius, 0], [-radius, 0], [0, radius], [0, -radius]];
+  const floors = offsets.map(([x, z]) => scanFloor(meta, toLocal, voxelAt, [point[0] + x, point[1] + z], options)).filter((floor) => floor !== null);
+  return floors.length ? Math.max(...floors) : null;
+}
+
+function supportSamples(grid, index, floorAt, options) {
+  const inset = Math.min(options.insetMargin, grid.cell_m / 2);
+  const x = Number(grid.origin[0]) + (index % grid.cols) * grid.cell_m;
+  const z = Number(grid.origin[1]) + Math.floor(index / grid.cols) * grid.cell_m;
+  const low = Math.min(inset, grid.cell_m / 2);
+  const high = grid.cell_m - low;
+  return [[x + low, z + low], [x + high, z + low], [x + low, z + high], [x + high, z + high], [x + grid.cell_m / 2, z + grid.cell_m / 2]].map(([sx, sz]) => floorAt([sx, sz], options));
+}
+
+function adaptiveCell(grid, index, intersectsBox, floorAt, options) {
+  const floors = supportSamples(grid, index, floorAt, options);
+  if (floors.some((floor) => floor === null)) return { blocked: true, floor: null };
+  const min = Math.min(...floors); const max = Math.max(...floors);
+  if (max - min > options.maxFloorSlope) return { blocked: true, floor: null };
+  const floor = max;
+  return { blocked: intersectsBoxForFloor(grid, index, intersectsBox, options, floor), floor };
+}
+
+function intersectsBoxForFloor(grid, index, intersectsBox, options, floor) {
+  const inset = Math.min(options.insetMargin, grid.cell_m / 2);
+  const x = Number(grid.origin[0]) + (index % grid.cols) * grid.cell_m;
+  const z = Number(grid.origin[1]) + Math.floor(index / grid.cols) * grid.cell_m;
+  return intersectsBox([x + inset, floor + options.stepClearance, z + inset], [x + grid.cell_m - inset, floor + options.agentHeight, z + grid.cell_m - inset]);
+}
+
+function deriveGrid(grid, bounds, options) {
+  if (!options.allCandidates) return grid;
+  const cell = grid.cell_m;
+  const origin = [Math.floor(bounds.min[0] / cell) * cell, Math.floor(bounds.min[2] / cell) * cell];
+  const cols = Math.ceil((bounds.max[0] - origin[0]) / cell);
+  const rows = Math.ceil((bounds.max[2] - origin[1]) / cell);
+  return { ...grid, origin, cols, rows, walkable: Array.from({ length: cols * rows }, (_, index) => index) };
+}
+
+function cornerHeights(grid, floorAt, options, floorsByCell, playable) {
+  const heights = [];
+  for (let row = 0; row <= grid.rows; row += 1) for (let column = 0; column <= grid.cols; column += 1) {
+    const x = Number(grid.origin[0]) + column * grid.cell_m;
+    const z = Number(grid.origin[1]) + row * grid.cell_m;
+    const direct = floorAt([x, z], options);
+    const references = adjacentFloors(grid, column, row, floorsByCell, playable);
+    const reference = references.length ? references.reduce((sum, value) => sum + value, 0) / references.length : null;
+    heights.push(reference !== null && (direct === null || Math.abs(direct - reference) > options.maxFloorSlope) ? reference : direct ?? reference ?? options.floorY);
+  }
+  return heights;
+}
+
+function adjacentFloors(grid, column, row, floorsByCell, playable) {
+  const values = [];
+  for (const [dc, dr] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) {
+    const c = column + dc; const r = row + dr;
+    if (c < 0 || c >= grid.cols || r < 0 || r >= grid.rows) continue;
+    const index = r * grid.cols + c;
+    if (!playable.has(index)) continue;
+    const floor = floorsByCell[index];
+    if (floor !== null && Number.isFinite(floor)) values.push(floor);
+  }
+  return values;
+}
+
+function filterGrid(grid, intersectsBox, floorAt, bounds, rawOptions = {}) {
   if (!grid || !Array.isArray(grid.walkable) || !Number.isInteger(grid.cols) || !Number.isInteger(grid.rows) || !(grid.cell_m > 0)) throw new Error("voxel grid is invalid");
   if (grid.cols <= 0 || grid.rows <= 0 || !Array.isArray(grid.origin) || grid.origin.length < 2 || grid.origin.slice(0, 2).some((value) => !Number.isFinite(Number(value))) || grid.walkable.some((index) => !Number.isInteger(index) || index < 0 || index >= grid.cols * grid.rows) || new Set(grid.walkable).size !== grid.walkable.length) throw new Error("voxel grid cells are invalid");
   const agentHeight = Number(rawOptions.agentHeight ?? rawOptions.height ?? 1.8);
@@ -180,10 +328,17 @@ function filterGrid(grid, voxelAt, rawOptions = {}) {
   const insetMargin = Number(rawOptions.insetMargin ?? rawOptions.inset ?? 0.15);
   const floorY = Number(rawOptions.floorY ?? rawOptions.floor_y ?? 0);
   if (!(agentHeight > stepClearance) || stepClearance < 0 || insetMargin < 0 || insetMargin >= grid.cell_m / 2 || !Number.isFinite(agentHeight + stepClearance + insetMargin + floorY)) throw new Error("voxel collision dimensions are invalid");
-  const options = { agentHeight, stepClearance, insetMargin, floorY };
-  const excluded = grid.walkable.filter((index) => cellBlocked(grid, index, voxelAt, options));
+  const options = { agentHeight, stepClearance, insetMargin, floorY, floorSearchMin: rawOptions.floorSearchMin ?? rawOptions.floor_search_min, floorSearchMax: rawOptions.floorSearchMax ?? rawOptions.floor_search_max, supportRadius: Number(rawOptions.supportRadius ?? rawOptions.support_radius ?? 0), maxFloorSlope: Number(rawOptions.maxFloorSlope ?? rawOptions.max_floor_slope ?? 0.45), allCandidates: Boolean(rawOptions.allCandidates ?? rawOptions.all_candidates) };
+  if (!(options.supportRadius >= 0) || !Number.isFinite(options.supportRadius)) throw new Error("voxel support radius is invalid");
+  if (!(options.maxFloorSlope >= 0) || !Number.isFinite(options.maxFloorSlope)) throw new Error("voxel floor slope is invalid");
+  const activeGrid = deriveGrid(grid, bounds, options);
+  const results = activeGrid.walkable.map((index) => options.allCandidates ? adaptiveCell(activeGrid, index, intersectsBox, floorAt, options) : { blocked: cellBlocked(activeGrid, index, intersectsBox, options), floor: null });
+  const excluded = activeGrid.walkable.filter((_, index) => results[index].blocked);
+  const unsupported = options.allCandidates ? activeGrid.walkable.filter((_, index) => results[index].floor === null) : [];
   const removed = new Set(excluded);
-  return { ...grid, walkable: grid.walkable.filter((index) => !removed.has(index)), excluded, authoredWalkable: grid.walkable.length };
+  const floorsByCell = results.map((result) => result.floor);
+  const playable = new Set(activeGrid.walkable.filter((index) => !removed.has(index)));
+  return { ...activeGrid, walkable: activeGrid.walkable.filter((index) => !removed.has(index)), excluded, excludedUnsupported: unsupported, authoredWalkable: grid.walkable.length, voxel_filtered: true, floorYByCell: floorsByCell, corner_heights: options.allCandidates ? cornerHeights(activeGrid, floorAt, options, floorsByCell, playable) : activeGrid.corner_heights };
 }
 
 /** Parses a validated PlayCanvas voxel metadata object and little-endian binary payload. */

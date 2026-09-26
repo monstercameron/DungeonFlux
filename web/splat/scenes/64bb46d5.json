@@ -6,7 +6,12 @@
     "floor_y": 0,
     "step_height": 0.3,
     "height": 1.8,
-    "inset": 0.15
+    "inset": 0.15,
+    "all_candidates": true,
+    "floor_search_min": -3.5,
+    "floor_search_max": 5.0,
+    "support_radius": 0.15,
+    "max_floor_slope": 0.45
   },
   "lod": 2,
   "transform": {
@@ -208,5 +213,5 @@
     "manifest": "https://d28zzqy0iyovbz.cloudfront.net/64bb46d5/v1/lod-meta.json",
     "license": "https://creativecommons.org/licenses/by/4.0/"
   },
-  "registration_note": "Path and adjacent clearing preview with generated 0.2m voxel occupancy and authored cells. Scan units and flat ground registration remain approximate; voxel collision is not a surveyed navigation mesh."
+  "registration_note": "Path and adjacent clearing preview uses automatic collider candidates with terrain-height support on 1.524m logical cells. Physical scan units remain approximate; generated 0.2m occupancy is not a surveyed navigation mesh."
 }

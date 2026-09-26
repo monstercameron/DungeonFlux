@@ -57,7 +57,7 @@ function createApplication(canvas) {
   const app = new pc.Application(canvas, {
     graphicsDeviceOptions: {
       deviceTypes: ["webgl2"],
-      antialias: false,
+      antialias: true,
       alpha: true,
     },
   });
@@ -66,6 +66,7 @@ function createApplication(canvas) {
   app.scene.gsplat.renderer = pc.GSPLAT_RENDERER_RASTER_CPU_SORT;
   app.scene.gsplat.lodMode = pc.GSPLAT_LODMODE_DISTANCE;
   app.scene.layers.getLayerById(WORLD_LAYER).enabled = true;
+  console.info(`[splat runtime] grid MSAA: ${app.graphicsDevice?.backBuffer?.samples ?? "unknown"}`);
   app.on("destroy", () => {
     if (runtime?.app === app) runtime = null;
   });
@@ -208,10 +209,13 @@ function attachScene(state, message, bundle) {
   const activeGrid = bundle.grid ?? message.grid;
   if (activeGrid) {
     grid = createBattleGrid(pc, app, activeGrid, {
-      name: "df-battle-grid", lineWidth: 0.075, opacity: 0.95,
+      name: "df-battle-grid", lineWidth: 0.035, opacity: 0.72, collider: bundle.collider,
     });
     if (grid.layer?.id !== undefined && !camera.camera.layers.includes(grid.layer.id)) {
       camera.camera.layers = [...camera.camera.layers, grid.layer.id];
+    }
+    if (grid.depthLayer?.id !== undefined && !camera.camera.layers.includes(grid.depthLayer.id)) {
+      camera.camera.layers = [...camera.camera.layers, grid.depthLayer.id];
     }
   }
   state.splat = { asset: bundle.asset, entity };
@@ -263,6 +267,7 @@ async function initialize(message) {
       gaussians: splatCount(bundle.asset),
       playable: bundle.grid?.walkable?.length ?? message.grid?.walkable?.length ?? 0,
       terrain_excluded: bundle.grid?.excluded?.length ?? 0,
+      antialias_samples: app.graphicsDevice?.backBuffer?.samples ?? 0,
       device: "webgl2",
       streaming: bundle.streaming,
       status: bundle.streaming ? "manifest loaded; chunks stream on demand" : "scene loaded",

@@ -31,12 +31,17 @@ type CameraDef struct {
 
 // VoxelCollider describes an explicit terrain occupancy resource and agent envelope.
 type VoxelCollider struct {
-	URL        string     `json:"url"`
-	FloorY     *float64   `json:"floor_y,omitempty"`
-	StepHeight *float64   `json:"step_height,omitempty"`
-	Height     *float64   `json:"height,omitempty"`
-	Inset      *float64   `json:"inset,omitempty"`
-	Transform  *Transform `json:"transform,omitempty"`
+	URL            string     `json:"url"`
+	FloorY         *float64   `json:"floor_y,omitempty"`
+	StepHeight     *float64   `json:"step_height,omitempty"`
+	Height         *float64   `json:"height,omitempty"`
+	Inset          *float64   `json:"inset,omitempty"`
+	AllCandidates  *bool      `json:"all_candidates,omitempty"`
+	FloorSearchMin *float64   `json:"floor_search_min,omitempty"`
+	FloorSearchMax *float64   `json:"floor_search_max,omitempty"`
+	SupportRadius  *float64   `json:"support_radius,omitempty"`
+	MaxFloorSlope  *float64   `json:"max_floor_slope,omitempty"`
+	Transform      *Transform `json:"transform,omitempty"`
 }
 
 // Init loads the battlefield and configures its initial camera.
@@ -99,16 +104,17 @@ type Pause struct {
 
 // Event is a message emitted by the JavaScript module.
 type Event struct {
-	Type            string  `json:"type"`
-	Code            string  `json:"code,omitempty"`
-	Detail          string  `json:"detail,omitempty"`
-	FPS             float64 `json:"fps,omitempty"`
-	FPSP5           float64 `json:"fps_p5,omitempty"`
-	Gaussians       int     `json:"gaussians,omitempty"`
-	Playable        int     `json:"playable,omitempty"`
-	TerrainExcluded int     `json:"terrain_excluded,omitempty"`
-	Device          string  `json:"device,omitempty"`
-	Cell            *Cell   `json:"cell,omitempty"`
+	Type             string  `json:"type"`
+	Code             string  `json:"code,omitempty"`
+	Detail           string  `json:"detail,omitempty"`
+	FPS              float64 `json:"fps,omitempty"`
+	FPSP5            float64 `json:"fps_p5,omitempty"`
+	Gaussians        int     `json:"gaussians,omitempty"`
+	Playable         int     `json:"playable,omitempty"`
+	TerrainExcluded  int     `json:"terrain_excluded,omitempty"`
+	AntialiasSamples int     `json:"antialias_samples,omitempty"`
+	Device           string  `json:"device,omitempty"`
+	Cell             *Cell   `json:"cell,omitempty"`
 }
 
 func envelope(kind string, value any) ([]byte, error) {

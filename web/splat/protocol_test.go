@@ -19,11 +19,11 @@ func TestEnvelope_includesVersionAndType(t *testing.T) {
 }
 
 func TestDecodeEvent_readsReadyAndPickFields(t *testing.T) {
-	event, err := decodeEvent(`{"type":"ready","fps":59.5,"gaussians":100000,"playable":18,"terrain_excluded":63,"device":"webgl2"}`)
+	event, err := decodeEvent(`{"type":"ready","fps":59.5,"gaussians":100000,"playable":18,"terrain_excluded":63,"antialias_samples":4,"device":"webgl2"}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Type != "ready" || event.FPS != 59.5 || event.Gaussians != 100000 || event.Playable != 18 || event.TerrainExcluded != 63 || event.Device != "webgl2" {
+	if event.Type != "ready" || event.FPS != 59.5 || event.Gaussians != 100000 || event.Playable != 18 || event.TerrainExcluded != 63 || event.AntialiasSamples != 4 || event.Device != "webgl2" {
 		t.Fatalf("event = %+v", event)
 	}
 	if _, err := decodeEvent("not json"); err == nil {
@@ -33,13 +33,14 @@ func TestDecodeEvent_readsReadyAndPickFields(t *testing.T) {
 
 func TestEnvelope_initCarriesOptionalVoxelCollider(t *testing.T) {
 	step := 0.35
-	init := Init{CanvasID: "df-splat", SceneURL: "scene.sog", VoxelCollider: &VoxelCollider{URL: "scene.voxel.json", StepHeight: &step}}
+	all := true
+	init := Init{CanvasID: "df-splat", SceneURL: "scene.sog", VoxelCollider: &VoxelCollider{URL: "scene.voxel.json", StepHeight: &step, AllCandidates: &all}}
 	raw, err := envelope("init", init)
 	if err != nil {
 		t.Fatal(err)
 	}
 	text := string(raw)
-	for _, want := range []string{`"voxel_collider"`, `"url":"scene.voxel.json"`, `"step_height":0.35`} {
+	for _, want := range []string{`"voxel_collider"`, `"url":"scene.voxel.json"`, `"step_height":0.35`, `"all_candidates":true`} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("init envelope %s does not contain %s", text, want)
 		}

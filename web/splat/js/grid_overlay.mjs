@@ -14,15 +14,15 @@ function cellIndex(grid, column, row) {
   return row * Number(grid.cols) + column;
 }
 
-function addQuad(positions, indices, a, b, width, height) {
-  const dx = b[0] - a[0];
-  const dz = b[1] - a[1];
+function addQuad(positions, indices, a, b, width) {
+  const dx = b.x - a.x;
+  const dz = b.z - a.z;
   const length = Math.hypot(dx, dz) || 1;
   const px = (-dz / length) * width / 2;
   const pz = (dx / length) * width / 2;
   const base = positions.length / 3;
-  for (const point of [[a[0] + px, height, a[1] + pz], [b[0] + px, height, b[1] + pz],
-    [b[0] - px, height, b[1] - pz], [a[0] - px, height, a[1] - pz]]) {
+  for (const point of [[a.x + px, a.y, a.z + pz], [b.x + px, b.y, b.z + pz],
+    [b.x - px, b.y, b.z - pz], [a.x - px, a.y, a.z - pz]]) {
     positions.push(...point);
   }
   indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
@@ -32,12 +32,24 @@ function edgeKey(a, b) {
   return a < b ? `${a}:${b}` : `${b}:${a}`;
 }
 
-function appendCellEdges(positions, indices, seen, grid, column, row, width, height) {
+function cornerHeight(grid, column, row, fallback) {
+  const cols = Number(grid.cols) || 0;
+  const heights = grid.corner_heights;
+  if (!Array.isArray(heights) || heights.length !== (cols + 1) * (Number(grid.rows) + 1)) return fallback;
+  return number(heights[row * (cols + 1) + column], fallback);
+}
+
+function appendCellEdges(positions, indices, seen, grid, column, row, width, lift) {
   const origin = Array.isArray(grid.origin) ? grid.origin : [0, 0];
   const cellM = number(grid.cell_m, 1.524);
   const x = number(origin[0], 0) + column * cellM;
   const z = number(origin[1], 0) + row * cellM;
-  const corners = [[x, z], [x + cellM, z], [x + cellM, z + cellM], [x, z + cellM]];
+  const corners = [
+    { x, z, y: cornerHeight(grid, column, row, 0) + lift },
+    { x: x + cellM, z, y: cornerHeight(grid, column + 1, row, 0) + lift },
+    { x: x + cellM, z: z + cellM, y: cornerHeight(grid, column + 1, row + 1, 0) + lift },
+    { x, z: z + cellM, y: cornerHeight(grid, column, row + 1, 0) + lift },
+  ];
   for (let side = 0; side < 4; side += 1) {
     const next = (side + 1) % 4;
     const cornersBySide = [[column, row], [column + 1, row], [column + 1, row + 1], [column, row + 1]];
@@ -46,7 +58,7 @@ function appendCellEdges(positions, indices, seen, grid, column, row, width, hei
     const key = edgeKey(`${start[0]},${start[1]}`, `${end[0]},${end[1]}`);
     if (!seen.has(key)) {
       seen.add(key);
-      addQuad(positions, indices, corners[side], corners[next], width, height);
+      addQuad(positions, indices, corners[side], corners[next], width);
     }
   }
 }

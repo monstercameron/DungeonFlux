@@ -1,5 +1,6 @@
 import { createGridOverlay } from "./grid_overlay.mjs";
 import { loadVoxelCollider } from "./voxel_collider.mjs";
+import { createVoxelDepthOccluder } from "./voxel_occlusion.mjs";
 
 const SCENE_EXTENSIONS = /(?:\.(?:ply|sog)|\/(?:meta|lod-meta)\.json)(?:$|[?#])/i;
 
@@ -35,7 +36,8 @@ export async function loadSplatBundle(pc, app, source, options = {}) {
     const colliderDeclared = Boolean(voxelConfig || source?.voxel_collider_url || source?.voxelColliderURL || options.voxelURL);
     if (colliderDeclared && (!voxelURL || (voxelConfig !== undefined && (typeof voxelConfig !== "object" || Array.isArray(voxelConfig))))) throw new Error("voxel collider declaration must include a .voxel.json URL");
     const collider = voxelURL ? await loadVoxelCollider(voxelURL, { ...(voxelConfig ?? {}), ...options.voxelOptions, transform: options.transform ?? voxelConfig?.transform ?? source?.transform }) : null;
-    const grid = collider && options.grid ? collider.filterGrid(options.grid, options.colliderOptions ?? options.voxelOptions) : options.grid ?? null;
+    const filterOptions = { ...(voxelConfig ?? {}), ...(options.voxelOptions ?? {}), ...(options.colliderOptions ?? {}) };
+    const grid = collider && options.grid ? collider.filterGrid(options.grid, filterOptions) : options.grid ?? null;
     return { asset, sceneURL, metaURL, lodMetaURL: lodMetaURL ?? "", metadata, collider, grid, streaming: Boolean(lodMetaURL || /lod-meta\.json(?:$|[?#])/i.test(assetURLValue)) };
   } catch (error) {
     app?.assets?.remove?.(asset);
@@ -79,22 +81,30 @@ export function createBattleGrid(pc, app, grid, options = {}) {
   const world = app.scene.layers.getLayerById(pc.LAYERID_WORLD);
   const layers = app.scene.layers;
   let layer = world;
+  let depthLayer = null;
+  let depthProxy = null;
   if (pc.Layer && layers?.insert && Array.isArray(layers.layerList)) {
+    const index = Math.max(0, layers.layerList.lastIndexOf(world));
+    if (options.collider?.occupiedBoxes) {
+      depthLayer = new pc.Layer({ name: options.depthLayerName ?? "df-voxel-depth", opaqueSortMode: pc.SORTMODE_NONE, transparentSortMode: pc.SORTMODE_NONE, clearDepthBuffer: false });
+      layers.insert(depthLayer, index + 1);
+      depthProxy = createVoxelDepthOccluder(pc, app, options.collider.occupiedBoxes(), grid, { layers: [depthLayer.id], maxBoxes: 65536, name: options.depthName ?? "df-voxel-depth-occluder" });
+      app.on?.("destroy", () => depthProxy?.destroy());
+    }
     layer = new pc.Layer({
       name: options.layerName ?? "df-battle-grid",
       opaqueSortMode: pc.SORTMODE_NONE,
       transparentSortMode: pc.SORTMODE_NONE,
       clearDepthBuffer: false,
     });
-    const index = Math.max(0, layers.layerList.lastIndexOf(world));
-    layers.insert(layer, index + 1);
+    layers.insert(layer, index + (depthLayer ? 2 : 1));
   }
   const entity = createGridOverlay(pc, app, grid, {
     ...options,
     name: options.name ?? "df-battle-grid",
     layers: [layer.id],
   });
-  return { entity, layer };
+  return { entity, layer, depthLayer, depthProxy };
 }
 
 /** Returns the profile encoded in ?battle=, or null for the legacy source mode. */

@@ -37,7 +37,8 @@ function setStatus(message, kind = "info") {
 function gridLabel(grid) {
   const playable = Array.isArray(grid?.walkable) ? grid.walkable.length : 0;
   const excluded = Array.isArray(grid?.excluded) ? grid.excluded.length : 0;
-  return `${Number(grid?.cols) || 0}×${Number(grid?.rows) || 0} grid · ${playable} playable${excluded ? ` · ${excluded} terrain excluded` : ""}`;
+  const feet = Math.abs(Number(grid?.cell_m) - 1.524) < 0.01 ? " · 5 ft cells" : "";
+  return `${Number(grid?.cols) || 0}×${Number(grid?.rows) || 0} grid · ${playable} playable${excluded ? ` · ${excluded} terrain excluded` : ""}${feet}`;
 }
 
 function querySource() {
@@ -52,7 +53,7 @@ function querySource() {
 
 function configureApp() {
   app = new pc.Application(canvas, {
-    graphicsDeviceOptions: { deviceTypes: ["webgl2"], antialias: false, alpha: false },
+    graphicsDeviceOptions: { deviceTypes: ["webgl2"], antialias: true, alpha: false },
   });
   app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
   app.setCanvasResolution(pc.RESOLUTION_AUTO);
@@ -60,6 +61,7 @@ function configureApp() {
   app.scene.gsplat.lodMode = pc.GSPLAT_LODMODE_DISTANCE;
   app.scene.layers.getLayerById(WORLD_LAYER).enabled = true;
   app.scene.ambientLight = new pc.Color(0.28, 0.28, 0.28);
+  console.info(`[splat viewer] grid MSAA: ${app.graphicsDevice?.backBuffer?.samples ?? "unknown"}`);
   return app;
 }
 
@@ -219,13 +221,14 @@ async function attachViewer(profile, source, bundle) {
     addLODOptions(profile, levels);
     const defaultLOD = profile?.lod === undefined ? 0 : Math.max(0, Math.min(levels - 1, Number(profile.lod)));
     const scene = createSplatEntity(pc, app, bundle, { layers: [WORLD_LAYER], lodRangeMin: defaultLOD, lodRangeMax: defaultLOD, name: "df-viewer-splat" });
-    const battleGrid = createBattleGrid(pc, app, activeGrid, { name: "df-viewer-grid", lineWidth: 0.075, opacity: 0.95 });
+    const battleGrid = createBattleGrid(pc, app, activeGrid, { name: "df-viewer-grid", lineWidth: 0.035, opacity: 0.72, collider: bundle.collider });
     gridEntity = battleGrid.entity;
     gridEntity.lodLevels = Number(bundle.asset.resource?.octree?.lodLevels ?? 0);
     if (profile?.transform) {
       applyBattleTransform(scene, profile.transform);
     }
     if (battleGrid.layer?.id !== undefined && !camera.camera.layers.includes(battleGrid.layer.id)) camera.camera.layers = [...camera.camera.layers, battleGrid.layer.id];
+    if (battleGrid.depthLayer?.id !== undefined && !camera.camera.layers.includes(battleGrid.depthLayer.id)) camera.camera.layers = [...camera.camera.layers, battleGrid.depthLayer.id];
     gridEntity.splatEntity = scene;
     gridEntity.profile = { ...(profile ?? {}), grid: activeGrid };
     gridEntity.sourceLabel = profileSourceLabel(profile, source);
