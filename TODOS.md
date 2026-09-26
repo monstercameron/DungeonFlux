@@ -1968,6 +1968,12 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: the typed Go bridge and JS runtime accept sequenced effect commands, tilt-shift uses a genuine GPU shader, bounded shake and eased pans support pause/stop/reduced motion, viewer controls demonstrate each effect, both battle scenes pass visual QA with usable performance, regressions and the scoped lane gate pass.
   status: completed Codex; gate failures 0, coverage 84.4%, WASM build and both-scene visual QA green 2026-09-26
 
+- [x] SPLAT-016 · neutral gray skyboxes for battle scenes
+  why: The developer requests a gray skybox so the skies in both downloaded scenes are consistently gray.
+  lane: L-WEB-SPLAT · paths: `web/splat/js/gray_skybox.mjs`, `web/splat/js/voxel_collider.mjs`, `web/splat/js/df-splat.mjs`, `web/splat/js/viewer.mjs` · depends: SPLAT-015
+  done when: a neutral gray cubemap surrounds both scenes in the viewer and game runtime, captured sky outliers are excluded without removing walkable terrain, camera skybox layers and resource cleanup are correct, upward camera views and cinematic effects are visually checked, and the scoped gate passes.
+  status: completed Codex; neutral cubemap, captured-sky filtering, both-scene GPU review and gate failures 0 green 2026-09-26
+
 ## 23. dfctl debug CLI
 
 Command-line reads and demo writes for agents and the developer.

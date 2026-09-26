@@ -1,6 +1,7 @@
 import * as pc from "../vendor/playcanvas.mjs";
 import { applyBattleTransform, createBattleGrid, createSplatEntity, loadBattleProfile, loadSplatBundle } from "./battle_scene.mjs";
 import { createCinematicEffects } from "./cinematic_effects.mjs";
+import { installCapturedSkyExclusion, installGraySkybox } from "./gray_skybox.mjs";
 import { installOrbitControls } from "./camera_controls.mjs";
 import { applyCameraPreset, cameraPreset, cameraPresetNames } from "./grid_camera.mjs";
 import { cellsJSON, installDebugPickMode } from "./debug_pick.mjs";
@@ -80,12 +81,14 @@ function configureApp() {
 function createViewerCamera() {
   camera = new pc.Entity("df-viewer-camera");
   camera.addComponent("camera", {
-    clearColor: new pc.Color(0.025, 0.04, 0.065, 1),
+    clearColor: new pc.Color(0.47, 0.47, 0.47, 1),
     fov: 35,
     farClip: 1000,
-    layers: [WORLD_LAYER],
+    layers: [WORLD_LAYER, ...(pc.LAYERID_SKYBOX === undefined ? [] : [pc.LAYERID_SKYBOX])],
   });
   app.root.addChild(camera);
+  const skybox = installGraySkybox(pc, app, camera);
+  app.on?.("destroy", () => skybox.destroy());
   applyCameraPreset(camera, "TACTICAL");
 }
 
@@ -275,6 +278,7 @@ async function attachViewer(profile, source, bundle) {
     addLODOptions(profile, levels);
     const defaultLOD = profile?.lod === undefined ? 0 : Math.max(0, Math.min(levels - 1, Number(profile.lod)));
     const scene = createSplatEntity(pc, app, bundle, { layers: [WORLD_LAYER], lodRangeMin: defaultLOD, lodRangeMax: defaultLOD, name: "df-viewer-splat" });
+    installCapturedSkyExclusion(scene, bundle.collider, { floorY: profile?.voxel_collider?.floor_y ?? 0 });
     const battleGrid = createBattleGrid(pc, app, activeGrid, { name: "df-viewer-grid", lineWidth: 0.06, opacity: 0.95, collider: bundle.collider });
     gridEntity = battleGrid.entity;
     gridEntity.lodLevels = Number(bundle.asset.resource?.octree?.lodLevels ?? 0);

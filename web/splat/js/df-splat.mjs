@@ -1,6 +1,7 @@
 import * as pc from "../vendor/playcanvas.mjs";
 import { createBattleGrid, createSplatEntity, loadSplatBundle } from "./battle_scene.mjs";
 import { createCinematicEffects } from "./cinematic_effects.mjs";
+import { installCapturedSkyExclusion, installGraySkybox } from "./gray_skybox.mjs";
 
 const VERSION = 1;
 const WORLD_LAYER = pc.LAYERID_WORLD;
@@ -81,10 +82,10 @@ function createApplication(canvas) {
 function createCamera(app, definition) {
   const camera = new pc.Entity("df-splat-camera");
   camera.addComponent("camera", {
-    clearColor: new pc.Color(0, 0, 0, 0),
+    clearColor: new pc.Color(0.47, 0.47, 0.47, 1),
     fov: Number(definition.fov ?? DEFAULT_CAMERA.fov),
     farClip: Number(definition.far ?? 1000),
-    layers: [WORLD_LAYER],
+    layers: [WORLD_LAYER, ...(pc.LAYERID_SKYBOX === undefined ? [] : [pc.LAYERID_SKYBOX])],
   });
   app.root.addChild(camera);
   return camera;
@@ -205,6 +206,7 @@ function createRuntimeState(app, camera, message) {
     app, camera, canvas: null, cameras: message.cameras ?? {},
     sceneSequence: 0, cameraSequence: 0, effects: null, paused: false, cameraPreset: "TACTICAL", liteURL: message.lite_url,
     liteTried: false, lowFpsReported: false, replacing: false, transform: message.transform,
+    skyFloorY: Number(message.voxel_collider_options?.floor_y ?? message.voxel_collider?.floor_y ?? 0),
     lastFrameAt: 0, lastStatsAt: performance.now(), lowFpsSince: 0, fpsSamples: [], destroyed: false,
   };
 }
@@ -215,6 +217,7 @@ function attachScene(state, message, bundle) {
     layers: [WORLD_LAYER], lodRangeMin: Number(message.lod_range_min ?? 0),
     lodRangeMax: Number(message.lod_range_max ?? 99), name: "df-splat-scene",
   });
+  installCapturedSkyExclusion(entity, bundle.collider, { floorY: state.skyFloorY });
   applyTransform(entity, message.transform);
   let grid = null;
   const activeGrid = bundle.grid ?? message.grid;
@@ -230,6 +233,7 @@ function attachScene(state, message, bundle) {
     }
   }
   state.splat = { asset: bundle.asset, entity };
+  state.capturedSkyCollider = bundle.collider ?? state.capturedSkyCollider;
   state.grid = grid;
   state.streaming = bundle.streaming;
   applyCamera(state, { preset: "TACTICAL" });
@@ -250,9 +254,12 @@ async function initialize(message) {
     const camera = createCamera(app, getCameraDefinition(message.cameras, "TACTICAL"));
     state = createRuntimeState(app, camera, message);
     state.canvas = canvas;
+    runtime = state;
+    const skybox = installGraySkybox(pc, app, camera);
+    app.on("destroy", () => skybox.destroy());
+    state.skybox = skybox;
     state.effects = createCinematicEffects({ pc, app, camera, canvas, cameras: message.cameras ?? {}, reducedMotion: Boolean(message.reduced_motion || window.matchMedia?.("(prefers-reduced-motion: reduce")?.matches), onPanComplete: (target) => state.orbitTarget = target });
     state.effects.setPose(getCameraDefinition(message.cameras, "TACTICAL"));
-    runtime = state;
     app.on("error", (detail) => errorMessage("CONTEXT_LOST", detail));
     app.on("postrender", () => {
       if (runtime?.app === app) recordFrame(runtime);
@@ -317,6 +324,7 @@ async function downgradeForFps(runtimeState) {
       layers: [WORLD_LAYER],
       name: "df-splat-scene-lite",
     });
+    installCapturedSkyExclusion(replacementEntity, bundle.collider ?? runtimeState.capturedSkyCollider, { floorY: runtimeState.skyFloorY });
     applyTransform(replacementEntity, runtimeState.transform);
     const replacement = { asset: bundle.asset, entity: replacementEntity };
     runtimeState.splat.entity.destroy();

@@ -98,7 +98,7 @@ function makeCollider(meta, words, options) {
     return intersectsLocalBox(normalized, words, localMin, localMax);
   };
   const floorAt = (point, options = {}) => findFloor(normalized, toLocal, voxelAt, point, { ...options, worldResolution: normalized.resolution * transform.scale });
-  return { meta: normalized, transform, voxelAt, intersectsBox, floorAt, occupiedBoxes: () => occupiedBoxes(normalized, words, toWorld), boundsInWorld: () => boundsInWorld(normalized, toWorld), filterGrid: (grid, filterOptions = {}) => filterGrid(grid, intersectsBox, floorAt, boundsInWorld(normalized, toWorld), filterOptions) };
+  return { meta: normalized, transform, voxelAt, intersectsBox, floorAt, occupiedBoxes: () => occupiedBoxes(normalized, words, toWorld), boundsInWorld: () => boundsInWorld(normalized, toWorld), sceneBoundsInWorld: () => boundsInWorld({ ...normalized, min: normalized.sceneMin, max: normalized.sceneMax }, toWorld), filterGrid: (grid, filterOptions = {}) => filterGrid(grid, intersectsBox, floorAt, boundsInWorld(normalized, toWorld), filterOptions) };
 }
 
 function boundsInWorld(meta, toWorld) {
