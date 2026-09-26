@@ -309,6 +309,12 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   done when: NewRoom gets WithNewGame (game.New with the one-shot and the given seed) and WithRoomState; TalkStop closes the seat's active Talk stream through the API; a wire test posts host Reset and sees a new run with a new seed and Lobby phase.
   status: committed b0675b8
 
+- [ ] BASE-018 · run IDs unique across restarts (server crash-loops on an existing database)
+  why: The human test server crash-loops: wire starts every process with run id "run-0", so a restart against an existing SQLite data dir fails with UNIQUE constraint failed: runs.id, and the supervisor falls back to the placeholder.
+  lane: ORCH · block: 8–11 · paths: `internal/wire/**` · depends: BASE-017, STORE-005
+  done when: run IDs are unique per start and per NewRun (e.g. the next sequence from the runs table, or a time-plus-seed-hash id); a wire test builds the app twice on the same data dir and both start; the human server stays up across restarts.
+  status: claimed luna
+
 - [x] BASE-007 · internal/wire skeleton and cmd/server skeleton
   why: The server binary must start from hour 1 with fakes, flags (-config, -port, -data-dir, -seed), and graceful shutdown.
   lane: ORCH · block: 1–5 · paths: `internal/wire/**`, `cmd/server/**` · depends: BASE-002, BASE-005
