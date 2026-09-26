@@ -9,6 +9,7 @@ type ClipModel struct {
 	OffsetMS    int64
 	Playing     bool
 	UseFallback bool
+	Locale      string
 }
 
 // ClipModelFromView selects video when its asset is ready and a still otherwise.
@@ -16,7 +17,7 @@ func ClipModelFromView(view *dungeonfluxv1.DMView) ClipModel {
 	if view == nil {
 		return ClipModel{UseFallback: true}
 	}
-	model := ClipModel{StillURL: view.GetBackgroundUrl(), UseFallback: true}
+	model := ClipModel{StillURL: view.GetBackgroundUrl(), UseFallback: true, Locale: view.GetLocale()}
 	clip := view.GetClip()
 	if clip == nil || clip.GetUrl() == "" {
 		return model

@@ -5,6 +5,7 @@ type EndCardModel struct {
 	Title       string
 	Subtitle    string
 	Attribution string
+	Locale      string
 }
 
 // SRDAttribution is the required SRD 5.2.1 attribution statement.
@@ -13,10 +14,19 @@ const SRDAttribution = `This work includes material from the System Reference Do
 // NewEndCardModel creates the end-card copy for the terminal phase state.
 func NewEndCardModel() EndCardModel {
 	return EndCardModel{
-		Title:       "The bell remembers.",
-		Subtitle:    "Thank you for playing DungeonFlux.",
+		Title:       T("en", "dm.end_title", nil),
+		Subtitle:    T("en", "dm.end_subtitle", nil),
 		Attribution: SRDAttribution,
 	}
+}
+
+// Localized returns the end-card copy rendered for a locale.
+func (m EndCardModel) Localized(locale string) EndCardModel {
+	locale = localeOrDefault(locale)
+	m.Locale = locale
+	m.Title = T(locale, "dm.end_title", nil)
+	m.Subtitle = T(locale, "dm.end_subtitle", nil)
+	return m
 }
 
 // EndCardReady reports whether the model has all copy needed to render.

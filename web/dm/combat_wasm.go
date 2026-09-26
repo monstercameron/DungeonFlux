@@ -14,10 +14,11 @@ import (
 // CombatComponent renders the FLAT battlefield with its projected grid and tokens.
 func CombatComponent(view *dungeonfluxv1.DMView) router.Component {
 	model := CombatModelFromView(view)
+	locale := localeOrDefault(view.GetLocale())
 	return func(_ router.Attrs) *router.Element {
 		children := []ui.Node{combatGrid(model.Segments)}
 		children = append(children, combatTokens(model.Tokens)...)
-		return html.Section(html.Props{Class: "df-dm-combat", Role: "img", Aria: map[string]string{"label": "Combat battlefield"}, Style: map[string]string{"position": "relative", "width": "100%", "height": "100%", "overflow": "hidden"}},
+		return html.Section(html.Props{Class: "df-dm-combat", Role: "img", Aria: map[string]string{"label": T(locale, "dm.combat_label", nil)}, Style: map[string]string{"position": "relative", "width": "100%", "height": "100%", "overflow": "hidden"}},
 			html.Div(html.Props{Class: "df-dm-combat-stage", Style: map[string]string{"position": "relative", "width": "100%", "height": "100%", "background-image": "url('" + model.ImageURL + "')", "background-size": "cover", "background-position": "center"}}, children...),
 		)
 	}

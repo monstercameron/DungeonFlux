@@ -13,23 +13,20 @@ import (
 // DiceComponent renders a large, readable result for the DM display.
 func DiceComponent(view DiceView) router.Component {
 	return func(_ router.Attrs) *router.Element {
+		locale := localeOrDefault(view.Locale)
 		if view.State == "" {
 			return html.Div(html.Props{Class: "df-dm-dice", Hidden: true})
 		}
-		label := view.Kind
-		if label == "" {
-			label = "check"
-		}
-		return html.Section(html.Props{Class: "df-dm-dice", Role: "status", Aria: map[string]string{"label": "Dice result"}},
-			html.P(html.Props{Class: "df-eyebrow"}, ui.Text(label+" roll")),
+		return html.Section(html.Props{Class: "df-dm-dice", Role: "status", Aria: map[string]string{"label": T(locale, "dm.dice_aria", nil)}},
+			html.P(html.Props{Class: "df-eyebrow"}, ui.Text(DiceHeading(locale, view.Kind))),
 			html.Div(html.Props{Class: "df-dm-dice-face"}, ui.Text(strconv.Itoa(int(view.D20)))),
-			html.P(html.Props{Class: "df-dm-dice-modifier"}, ui.Text(modifierText(view))),
-			diceOutcome(view),
+			html.P(html.Props{Class: "df-dm-dice-modifier"}, ui.Text(modifierText(locale, view))),
+			diceOutcome(locale, view),
 		)
 	}
 }
 
-func modifierText(view DiceView) string {
+func modifierText(locale string, view DiceView) string {
 	text := "d20"
 	if view.Modifier >= 0 {
 		text += " + " + strconv.Itoa(int(view.Modifier))
@@ -37,7 +34,7 @@ func modifierText(view DiceView) string {
 		text += " - " + strconv.Itoa(int(-view.Modifier))
 	}
 	if view.DC > 0 {
-		text += " vs DC " + strconv.Itoa(int(view.DC))
+		text += " " + VsDC(locale, view.DC)
 	}
 	if view.VsLabel != "" {
 		text += " " + view.VsLabel
@@ -45,13 +42,13 @@ func modifierText(view DiceView) string {
 	return text
 }
 
-func diceOutcome(view DiceView) ui.Node {
+func diceOutcome(locale string, view DiceView) ui.Node {
 	text := view.Outcome
 	if view.Damage != nil && view.Damage.Total != 0 {
 		text += " · " + strconv.Itoa(int(view.Damage.Total)) + " " + view.Damage.Type
 	}
 	if view.Crit {
-		text = "CRITICAL"
+		text = CritLabel(locale)
 	}
 	if text == "" {
 		return html.P(html.Props{Class: "df-dm-dice-outcome"}, ui.Text(view.State))
@@ -62,9 +59,10 @@ func diceOutcome(view DiceView) ui.Node {
 // TimerComponent renders the remaining turn time as a progress bar.
 func TimerComponent(view TimerView) router.Component {
 	return func(_ router.Attrs) *router.Element {
-		props := html.Props{Class: "df-dm-timer", Role: "timer", Aria: map[string]string{"label": timerLabel(view)}}
+		locale := localeOrDefault(view.Locale)
+		props := html.Props{Class: "df-dm-timer", Role: "timer", Aria: map[string]string{"label": timerLabel(locale, view)}}
 		return html.Section(props,
-			html.Div(html.Props{Class: "df-dm-timer-label"}, ui.Text(timerLabel(view))),
+			html.Div(html.Props{Class: "df-dm-timer-label"}, ui.Text(timerLabel(locale, view))),
 			html.Progress(html.Props{Class: "df-dm-timer-bar", Raw: map[string]any{
 				"max":   strconv.FormatInt(view.TotalMS, 10),
 				"value": strconv.FormatInt(maxTimerMS(view.RemainingMS), 10),
@@ -73,11 +71,11 @@ func TimerComponent(view TimerView) router.Component {
 	}
 }
 
-func timerLabel(view TimerView) string {
+func timerLabel(locale string, view TimerView) string {
 	if view.Frozen {
-		return "Turn timer paused"
+		return TimerPaused(locale)
 	}
-	return "Turn timer: " + strconv.FormatInt(maxTimerMS(view.RemainingMS), 10) + " milliseconds remaining"
+	return TimerLabel(locale, maxTimerMS(view.RemainingMS))
 }
 
 func maxTimerMS(value int64) int64 {

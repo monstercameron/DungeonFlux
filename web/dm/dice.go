@@ -22,6 +22,7 @@ type DiceView struct {
 	VsLabel  string
 	Crit     bool
 	Damage   *DamageView
+	Locale   string
 }
 
 // DiceViewFromProto copies the dice fields needed by the TV renderer.
@@ -56,7 +57,9 @@ func DiceViewFromDMView(view *dungeonfluxv1.DMView) DiceView {
 	if view == nil {
 		return DiceView{}
 	}
-	return DiceViewFromProto(view.GetDice())
+	projected := DiceViewFromProto(view.GetDice())
+	projected.Locale = view.GetLocale()
+	return projected
 }
 
 func diceStateName(state dungeonfluxv1.DiceState) string {
@@ -89,6 +92,7 @@ type TimerView struct {
 	RemainingMS int64
 	TotalMS     int64
 	Frozen      bool
+	Locale      string
 }
 
 // TimerViewFromProto copies a timer into a renderer-safe view.
@@ -109,5 +113,7 @@ func TimerViewFromDMView(view *dungeonfluxv1.DMView) TimerView {
 	if view == nil {
 		return TimerView{}
 	}
-	return TimerViewFromProto(view.GetTurnTimer())
+	projected := TimerViewFromProto(view.GetTurnTimer())
+	projected.Locale = view.GetLocale()
+	return projected
 }

@@ -35,29 +35,35 @@ func actionLabels() []string {
 }
 
 type hostSnapshot struct {
-	State     *df.ScreenState
-	View      *df.HostView
-	Status    string
-	SafeMode  bool
-	TimersOn  bool
-	SplatOn   bool
-	Connected bool
+	State      *df.ScreenState
+	View       *df.HostView
+	Status     string
+	SafeMode   bool
+	TimersOn   bool
+	SplatOn    bool
+	Connected  bool
+	Locale     string
+	RoomLocale string
+	Selector   RoomLocaleSelector
 }
 
 func snapshotFromState(state *df.ScreenState) hostSnapshot {
-	snapshot := hostSnapshot{State: state, Status: "Waiting for the room"}
+	snapshot := hostSnapshot{State: state, Status: T("en", "ui.host.waiting", nil), Locale: "en", RoomLocale: "en", Selector: NewRoomLocaleSelector("en")}
 	if state == nil {
 		return snapshot
 	}
 	if state.GetHost() != nil {
 		snapshot.View = state.GetHost()
+		snapshot.Locale = localeOrDefault(state.GetHost().GetLocale())
+		snapshot.RoomLocale = localeOrDefault(state.GetHost().GetRoomLocale())
+		snapshot.Selector = NewRoomLocaleSelector(snapshot.RoomLocale)
 		snapshot.Status = state.GetHost().GetRunMode()
 		if snapshot.Status == "" {
 			snapshot.Status = state.GetPhase()
 		}
 	}
 	if state.GetPaused() {
-		snapshot.Status = "Paused"
+		snapshot.Status = T(snapshot.Locale, "ui.dm.paused", nil)
 	}
 	snapshot.Connected = true
 	return snapshot

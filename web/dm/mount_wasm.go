@@ -101,7 +101,7 @@ func Mount(endpoint string) router.Component {
 type screenProps struct{ client *screenClient }
 
 func screenError(message string) ui.Node {
-	return html.Main(html.Props{Class: "df-dm-error", Role: "main"}, html.H1(html.Props{}, html.Text("DungeonFlux")), html.P(html.Props{Role: "alert"}, html.Text(message)))
+	return html.Main(html.Props{Class: "df-dm-error", Role: "main"}, html.H1(html.Props{}, html.Text(ErrorTitle("en"))), html.P(html.Props{Role: "alert"}, html.Text(message)))
 }
 
 func screenView(props screenProps) ui.Node {
@@ -188,12 +188,15 @@ func dmToken() string {
 
 func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handler) ui.Node {
 	view := state.GetDm()
+	locale := localeOrDefault(view.GetLocale())
 	layers := SelectLayers(state)
 	children := make([]ui.Node, 0, len(layers))
 	for _, layer := range layers {
 		switch layer {
 		case LayerLobby:
-			children = appendLayer(children, layer, LobbyComponent(NewLobbyModel(roomCode, ""))(router.Attrs{}))
+			lobby := NewLobbyModel(roomCode, "")
+			lobby.SetLocale(locale)
+			children = appendLayer(children, layer, LobbyComponent(lobby)(router.Attrs{}))
 		case LayerScene:
 			children = appendLayer(children, layer, SceneComponent(view)(router.Attrs{}))
 		case LayerCallout:
@@ -207,10 +210,10 @@ func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handle
 		case LayerCombat:
 			children = appendLayer(children, layer, CombatComponent(view)(router.Attrs{}))
 		case LayerEnd:
-			children = appendLayer(children, layer, EndCardComponent(NewEndCardModel())(router.Attrs{}))
+			children = appendLayer(children, layer, EndCardComponent(NewEndCardModel().Localized(locale))(router.Attrs{}))
 		}
 	}
-	children = append(children, html.Button(html.Props{Type: "button", Class: "df-dm-audio-unlock", OnClick: unlock, Style: map[string]string{"position": "absolute", "right": "1rem", "top": "1rem", "z-index": "100"}}, html.Text("Enable table audio")))
+	children = append(children, html.Button(html.Props{Type: "button", Class: "df-dm-audio-unlock", OnClick: unlock, Style: map[string]string{"position": "absolute", "right": "1rem", "top": "1rem", "z-index": "100"}}, html.Text(AudioUnlock(locale))))
 	stage := html.Div(html.Props{Class: "df-dm-stage", Style: map[string]string{"position": "relative", "width": "100%", "aspect-ratio": "16 / 9", "overflow": "hidden"}}, children...)
 	return html.Main(html.Props{Class: "df-dm-screen", Role: "main", Style: map[string]string{"width": "100%", "max-width": "1920px", "margin": "0 auto", "padding": "0", "box-sizing": "border-box"}}, stage)
 }

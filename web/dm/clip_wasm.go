@@ -13,16 +13,17 @@ import (
 // ClipComponent renders a playable clip and its still fallback for the DM TV.
 func ClipComponent(model ClipModel) router.Component {
 	return func(_ router.Attrs) *router.Element {
+		locale := localeOrDefault(model.Locale)
 		if model.UseFallback || model.VideoURL == "" {
-			return html.Div(html.Props{Class: "df-dm-clip df-dm-clip-fallback", Role: "img", Aria: map[string]string{"label": "Animated scene still"}, Style: map[string]string{"width": "100%", "height": "100%"}},
+			return html.Div(html.Props{Class: "df-dm-clip df-dm-clip-fallback", Role: "img", Aria: map[string]string{"label": T(locale, "dm.clip_still", nil)}, Style: map[string]string{"width": "100%", "height": "100%"}},
 				html.Img(html.Props{Class: "df-dm-clip-still", Src: model.StillURL, Alt: "", Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}),
 			)
 		}
-		return html.Div(html.Props{Class: "df-dm-clip", Role: "img", Aria: map[string]string{"label": "DungeonFlux scene clip"}, Style: map[string]string{"width": "100%", "height": "100%"}},
+		return html.Div(html.Props{Class: "df-dm-clip", Role: "img", Aria: map[string]string{"label": T(locale, "dm.clip_label", nil)}, Style: map[string]string{"width": "100%", "height": "100%"}},
 			html.Video(html.Props{Class: "df-dm-clip-video", Src: model.VideoURL, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}, Raw: map[string]any{
 				"autoplay": model.Playing, "muted": true, "playsinline": true, "poster": model.StillURL,
 				"data-offset-ms": strconv.FormatInt(model.OffsetMS, 10),
-			}}, ui.Text("Your browser cannot play this scene clip.")),
+			}}, ui.Text(T(locale, "dm.clip_fallback", nil))),
 		)
 	}
 }

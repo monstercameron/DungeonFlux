@@ -23,6 +23,7 @@ type LobbyModel struct {
 	OpeningAudio string
 	Seats        [2]Seat
 	AudioState   string
+	Locale       string
 }
 
 // NewLobbyModel creates a lobby with two empty seats and a join QR URL.
@@ -30,9 +31,19 @@ func NewLobbyModel(roomCode, qrURL string) LobbyModel {
 	return LobbyModel{
 		RoomCode:   roomCode,
 		QRURL:      qrURL,
-		AudioState: "Waiting for the opening…",
+		AudioState: T("en", "dm.audio_waiting", nil),
 		Seats:      [2]Seat{{Number: 1}, {Number: 2}},
+		Locale:     "en",
 	}
+}
+
+// SetLocale settles the render locale for lobby copy.
+func (m *LobbyModel) SetLocale(locale string) {
+	if m == nil {
+		return
+	}
+	m.Locale = localeOrDefault(locale)
+	m.AudioState = T(m.Locale, "dm.audio_waiting", nil)
 }
 
 // SetSeat replaces one seat's lobby state. Invalid seat numbers are ignored.
@@ -45,10 +56,7 @@ func (m *LobbyModel) SetSeat(seat Seat) {
 
 // SeatLabel returns the stable TV label for a seat.
 func SeatLabel(seat Seat) string {
-	if seat.Name != "" {
-		return seat.Name
-	}
-	return "Player " + string(rune('0'+seat.Number))
+	return SeatName("en", seat.Name, seat.Number)
 }
 
 // ListenAudio schedules Listen frames for a PCM player.
