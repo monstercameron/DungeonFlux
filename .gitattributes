@@ -1,0 +1,17 @@
+* text=auto eol=lf
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.wasm binary
+*.spz binary
+*.sog binary
+*.ply binary
+*.mp3 binary
+*.mp4 binary
+*.webm binary
+*.opus binary
+*.wav binary
+*.ps1 text eol=crlf

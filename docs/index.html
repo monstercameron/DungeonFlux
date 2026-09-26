@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DungeonFlux: an AI dungeon master for a table of friends</title>
+<meta name="description" content="DungeonFlux is an AI dungeon master for fifth-edition fantasy. The TV is the table, each phone is a character sheet, the AI tells the story and voices the cast, and a rules engine rolls every die. Built for ShellHacks 2026.">
+<meta name="theme-color" content="#0b1528">
+<link rel="canonical" href="https://monstercameron.github.io/DungeonFlux/">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DungeonFlux">
+<meta property="og:title" content="DungeonFlux: an AI dungeon master for a table of friends">
+<meta property="og:description" content="The AI tells the story and voices the cast. A rules engine rolls every die. Friends play from their phones around one TV. Built for ShellHacks 2026.">
+<meta property="og:url" content="https://monstercameron.github.io/DungeonFlux/">
+<meta property="og:image" content="https://monstercameron.github.io/DungeonFlux/assets/title-screen-concept.jpg">
+<meta property="og:image:width" content="1672">
+<meta property="og:image:height" content="941">
+<meta property="og:image:alt" content="DungeonFlux title screen concept art: a moonlit river town with a tavern lit up along the water">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="DungeonFlux: an AI dungeon master for a table of friends">
+<meta name="twitter:description" content="The AI tells the story and voices the cast. A rules engine rolls every die. Built for ShellHacks 2026.">
+<meta name="twitter:image" content="https://monstercameron.github.io/DungeonFlux/assets/title-screen-concept.jpg">
+<meta name="twitter:image:alt" content="DungeonFlux title screen concept art: a moonlit river town with a tavern lit up along the water">
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b1528'/%3E%3Cg fill='none' stroke='%23e0b061' stroke-width='3' stroke-linejoin='round'%3E%3Cpath d='M32 6 55 19v26L32 58 9 45V19z'/%3E%3Cpath d='M32 6 20 38h24zM20 38 9 19M44 38l11-19M20 38l12 20 12-20M9 45l11-7M55 45l-11-7'/%3E%3C/g%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="script.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="weather" aria-hidden="true"></div>
+
+<header class="site-header">
+  <div class="bar">
+    <a class="brand" href="#top" aria-label="DungeonFlux, back to top">
+      <svg class="brand-die" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round"><path d="M32 6 55 19v26L32 58 9 45V19z"/><path d="M32 6 20 38h24zM20 38 9 19M44 38l11-19M20 38l12 20 12-20M9 45l11-7M55 45l-11-7"/></g></svg>
+      <span>Dungeon<span class="flux">Flux</span></span>
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+      <span class="nav-toggle-lines" aria-hidden="true"></span>
+      <span class="visually-hidden">Menu</span>
+    </button>
+    <nav id="site-nav" class="site-nav" aria-label="Sections">
+      <ul>
+        <li><a href="#bet">The bet</a></li>
+        <li><a href="#session">A session</a></li>
+        <li><a href="#demo">The demo</a></li>
+        <li><a href="#built">How it's built</a></li>
+        <li><a href="#after">What's next</a></li>
+        <li><a class="nav-gh" href="https://github.com/monstercameron/DungeonFlux">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- Hero -->
+<section class="hero" id="top" aria-labelledby="hero-title">
+  <div class="hero-glow" aria-hidden="true"></div>
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c-2 3-5 4-5 8a5 5 0 0 0 10 0c0-4-3-5-5-8Zm0 18v2m-4 0h8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Built for ShellHacks 2026</p>
+      <h1 id="hero-title" class="wordmark">Dungeon<span class="flux">Flux</span></h1>
+      <p class="tagline">An AI dungeon master for a table of friends.</p>
+      <p class="lede">The TV is the table. Every phone is a character sheet. The AI writes the story, narrates it aloud, and plays everyone the party meets, while a rules engine rolls every die and decides every outcome.</p>
+      <div class="actions">
+        <a class="btn btn-gold" href="#demo">See the demo</a>
+        <a class="btn" href="https://github.com/monstercameron/DungeonFlux/blob/main/plan.md">Read the plan</a>
+        <a class="btn btn-quiet" href="https://github.com/monstercameron/DungeonFlux">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 0Z"/></svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+    <figure class="hero-art frame">
+      <a class="zoom" href="assets/title-screen-concept.jpg" data-caption="Title screen concept: the Drowned Lantern tavern on a flooded river town at night, with the join code and the party along the bottom.">
+        <img src="assets/title-screen-concept.jpg" width="1672" height="941" alt="Concept art of the DungeonFlux title screen: a moonlit river town with the Drowned Lantern tavern lit along the water, a room code and QR code to join, and two example party members." fetchpriority="high">
+      </a>
+      <figcaption>Concept art for look and feel. The game's screens will differ in detail.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- The bet -->
+<section class="section bet" id="bet" aria-labelledby="bet-title">
+  <div class="wrap">
+    <header class="section-head">
+      <h2 id="bet-title">The bet</h2>
+      <p class="section-intro">An AI can run a real table for real friends if the work is divided correctly. Most AI game masters give one model both jobs, and the same three problems follow: it forgets the state of the world, it lets players do anything, and it invents numbers. DungeonFlux splits the jobs.</p>
+    </header>
+    <div class="ledger">
+      <div class="ledger-col">
+        <h3>The AI owns the story</h3>
+        <ul>
+          <li>Writes the scene and narrates it in the dungeon master's voice</li>
+          <li>Plays every character the party meets, each with a voice of their own</li>
+          <li>Names your hero and hands them a backstory hook</li>
+          <li>Steers the table toward where the plot is heading</li>
+        </ul>
+      </div>
+      <div class="ledger-seal" aria-hidden="true">
+        <svg viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M32 6 55 19v26L32 58 9 45V19z"/><path d="M32 6 20 38h24zM20 38 9 19M44 38l11-19M20 38l12 20 12-20M9 45l11-7M55 45l-11-7"/></g><text x="32" y="33" text-anchor="middle" font-family="Cinzel, serif" font-size="9" fill="currentColor">20</text></svg>
+      </div>
+      <div class="ledger-col">
+        <h3>The engine owns the facts</h3>
+        <ul>
+          <li>Rolls every die in full view on the TV</li>
+          <li>Decides every check, hit, and hit point</li>
+          <li>Tells each phone which moves are legal right now</li>
+          <li>Keeps the record of what happened, so the story can't rewrite it</li>
+        </ul>
+      </div>
+    </div>
+    <p class="ledger-foot">The AI narrates results the engine has already decided.</p>
+  </div>
+</section>
+
+<!-- How a session feels -->
+<section class="section session" id="session" aria-labelledby="session-title">
+  <div class="wrap">
+    <header class="section-head">
+      <h2 id="session-title">How a session feels</h2>
+      <p class="section-intro">A group of friends in one room. A laptop, or the TV it is plugged into, is the dungeon master's screen. Everyone else holds their phone.</p>
+    </header>
+
+    <div class="moment">
+      <div class="moment-text">
+        <h3>Scan the code and you're at the table</h3>
+        <p>The TV shows a QR code and a room code. Each player scans it and takes a seat. No account and no app to install.</p>
+        <h3>Pick two things, roll a hero</h3>
+        <p>On the phone you choose a species and a gender and tap once. The engine rolls the rest: a class, ability scores, and skills, and the result is always a legal character. The dungeon master names them and gives them a backstory hook, and their portrait appears on the TV beside the rest of the party.</p>
+      </div>
+      <figure class="frame moment-art">
+        <a class="zoom" href="assets/character-creation-concept.jpg" data-caption="Character creation concept: a portrait on the TV while the player makes choices on the phone.">
+          <img src="assets/character-creation-concept.jpg" width="1672" height="941" loading="lazy" alt="Concept art of character creation: a painted portrait of a human fighter on the TV, engine-rolled ability scores in the centre, and a phone showing gender and species choices.">
+        </a>
+        <figcaption>A portrait forms on the TV while the phone handles the choices.</figcaption>
+      </figure>
+    </div>
+
+    <div class="moment moment-flip">
+      <div class="moment-text">
+        <h3>The dungeon master opens the scene</h3>
+        <p>In its own voice, with your characters standing in the scene art. The demo opens on a smugglers' tavern in a flooded river town, on the night the town's lamplighter disappeared.</p>
+      </div>
+      <figure class="frame moment-art">
+        <a class="zoom" href="assets/opening-scene-concept.jpg" data-caption="Opening scene concept: the party arrives at the Drowned Lantern as the dungeon master narrates.">
+          <img src="assets/opening-scene-concept.jpg" width="1672" height="941" loading="lazy" alt="Concept art of the opening scene: a candlelit tavern interior with the party's portraits on the left and the dungeon master's narration across the bottom.">
+        </a>
+        <figcaption>Rain on the roof, a crowded bar, the first lines of the story.</figcaption>
+      </figure>
+    </div>
+
+    <div class="moment">
+      <div class="moment-text">
+        <h3>Talk to people out loud</h3>
+        <p>When you want to talk to someone, you speak. The barkeep answers in a voice of her own, with her own manner and her own reasons for being careful. Push her, and the phone offers a Persuasion check with the odds shown. The die rolls on the TV, and the result decides what she says next.</p>
+      </div>
+      <figure class="frame moment-art">
+        <a class="zoom" href="assets/npc-conversation-concept.jpg" data-caption="Conversation concept: the barkeep answers warily, with the persuasion option offered below.">
+          <img src="assets/npc-conversation-concept.jpg" width="1672" height="941" loading="lazy" alt="Concept art of a conversation: two adventurers lean on the bar while the barkeep answers warily, with options to persuade her, ask something else, or look around.">
+        </a>
+        <figcaption>The barkeep has heard the question before tonight.</figcaption>
+      </figure>
+    </div>
+
+    <div class="moment moment-wide">
+      <div class="moment-text">
+        <h3>Your phone only shows legal moves</h3>
+        <p>What you can do right now, with the modifier and the odds beside each roll. Nobody stops the game to ask what they're allowed to do.</p>
+      </div>
+      <div class="phone-pair">
+        <figure class="frame">
+          <a class="zoom" href="assets/phone-screens-concept.jpg" data-caption="Phone screens concept: a conversation, a persuasion roll, an investigation prompt, and a character sheet.">
+            <img src="assets/phone-screens-concept.jpg" width="1672" height="941" loading="lazy" alt="Concept art of four phone screens: conversation replies, a Persuasion check rolling a 17 for a total of 21, a list of things to investigate, and a character sheet with combat actions.">
+          </a>
+          <figcaption>Conversation, a roll, an investigation, a character sheet.</figcaption>
+        </figure>
+        <figure class="frame">
+          <a class="zoom" href="assets/phone-exploration-concept.jpg" data-caption="Phone exploration concept: a flooded ruin, a door to inspect, an arcana check, and an item found.">
+            <img src="assets/phone-exploration-concept.jpg" width="1670" height="941" loading="lazy" alt="Concept art of four phone screens walking through exploration: a flooded hall, a strange door with check options, an Arcana check succeeding, and an amulet found in a chest.">
+          </a>
+          <figcaption>One exploration beat, from a flooded hall to an amulet in a chest.</figcaption>
+        </figure>
+      </div>
+    </div>
+
+    <div class="sound">
+      <h3>Music and short clips</h3>
+      <p>Music, ambience, and effects run underneath. Short video clips mark the big moments, and they feature the characters you just made.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Demo -->
+<section class="section demo" id="demo" aria-labelledby="demo-title">
+  <div class="wrap">
+    <header class="section-head">
+      <h2 id="demo-title">The three&#8209;minute demo</h2>
+      <p class="section-intro">DungeonFlux is being built in 24 hours at ShellHacks 2026 and shown live with two players. This is the plan for the three minutes.</p>
+    </header>
+
+    <div class="clock" aria-hidden="true">
+      <span style="--s:10">Lobby</span><span style="--s:30">Creation</span><span style="--s:25">Opening</span><span style="--s:35">Conversation</span><span style="--s:20">Hook</span><span style="--s:40">Combat</span><span style="--s:20">Cliffhanger</span>
+    </div>
+
+    <ol class="beats">
+      <li class="beat">
+        <p class="beat-time"><time>0:00</time></p>
+        <div>
+          <h3>Lobby</h3>
+          <p>Both players are already joined from the QR code on the TV. Each taps Ready, and the host starts the session.</p>
+        </div>
+      </li>
+      <li class="beat">
+        <p class="beat-time"><time>0:10</time></p>
+        <div>
+          <h3>Creation</h3>
+          <p>Both seats at once: a species, a gender, and &ldquo;Roll my hero&rdquo;. The engine rolls class, abilities, and skills; the dungeon master names each hero; two portraits resolve on the TV.</p>
+        </div>
+      </li>
+      <li class="beat">
+        <p class="beat-time"><time>0:40</time></p>
+        <div>
+          <h3>Opening</h3>
+          <p>A short establishing clip crossfades into the scene: the tavern, both heroes, and Mother Vell behind the bar. The dungeon master narrates.</p>
+        </div>
+      </li>
+      <li class="beat beat-key">
+        <p class="beat-time"><time>1:05</time></p>
+        <div>
+          <h3>Conversation</h3>
+          <p>Player one taps &ldquo;Talk to Mother Vell&rdquo; and speaks. She deflects, in her own voice. The phone offers <strong class="roll">Persuade +4 vs DC 10, 75%</strong>. The d20 rolls on the TV. On a success she reveals where the lamplighter was taken, a secret she was not given until the roll succeeded.</p>
+        </div>
+      </li>
+      <li class="beat">
+        <p class="beat-time"><time>1:40</time></p>
+        <div>
+          <h3>Hook event</h3>
+          <p>Player two tries to leave. A stranger arrives with a letter from someone in that character's own backstory. The TV shows the steering decision as it happens: personal hook, and whose.</p>
+        </div>
+      </li>
+      <li class="beat beat-key">
+        <p class="beat-time"><time>2:00</time></p>
+        <div>
+          <h3>Combat</h3>
+          <p>The stranger was followed. A drowned thrall breaks through the door and the tavern becomes a Gaussian-splat battlefield with a movement grid. Each player taps Attack; the hero walks the path, the d20 rolls on the TV, and hit points move. The fight ends when the thrall falls, or on its second turn, when the tower bell tolls and calls it away.</p>
+        </div>
+      </li>
+      <li class="beat">
+        <p class="beat-time"><time>2:40</time></p>
+        <div>
+          <h3>Cliffhanger</h3>
+          <p>A closing clip of both players' characters, generated during the demo, then the end card.</p>
+        </div>
+      </li>
+    </ol>
+
+    <aside class="failsafe" aria-label="If a roll fails">
+      <h3>If the roll fails</h3>
+      <p>Mother Vell refuses, and the secret moves to the stranger instead. The fight is capped at 30 seconds. Every path reaches the cliffhanger with the clue delivered, so a bad roll changes the story without breaking the demo.</p>
+    </aside>
+  </div>
+</section>
+
+<!-- Why it holds together -->
+<section class="section holds" id="holds" aria-labelledby="holds-title">
+  <div class="wrap">
+    <header class="section-head">
+      <h2 id="holds-title">Why it holds together</h2>
+    </header>
+    <div class="tenets">
+      <article class="tenet">
+        <h3>The engine decides</h3>
+        <p>The rules engine rolls every die and records every result. The AI receives the outcome and narrates it, and nothing it says can change a result the engine has set.</p>
+      </article>
+      <article class="tenet">
+        <h3>Characters only know what they would know</h3>
+        <p>Each character the AI plays gets only its own knowledge. A secret is withheld from that character entirely until a player earns it, so it can't slip out early.</p>
+      </article>
+      <article class="tenet">
+        <h3>The story has a destination</h3>
+        <p>The dungeon master knows where the plot is heading and funnels the table toward it with material the players supplied: their backstories and the consequences of their choices. Wander off, and someone from your past may turn up with a reason to come back. You still choose how you get to the ending.</p>
+      </article>
+      <article class="tenet">
+        <h3>Nothing waits on media</h3>
+        <p>Art, music, and video are generated as soon as their ingredients exist, ahead of the moment that needs them. If a clip is late, a prepared fallback plays and the game keeps moving.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- How it's built -->
+<section class="section built" id="built" aria-labelledby="built-title">
+  <div class="wrap">
+    <header class="section-head">
+      <h2 id="built-title">How it's built</h2>
+      <p class="section-intro">Go from end to end, with one small JavaScript exception for the 3D battlefield. The architecture below is the plan being built this weekend.</p>
+    </header>
+
+    <div class="stack">
+      <div class="tier">
+        <h3 class="tier-name">Screens</h3>
+        <div class="tier-cells">
+          <div class="cell">
+            <h4>The TV</h4>
+            <p>Go compiled to WebAssembly with GoWebComponents. Scene art, portraits, dice, subtitles, and the steering read-out.</p>
+          </div>
+          <div class="cell">
+            <h4>The phones</h4>
+            <p>The same Go-to-WebAssembly stack. Legal moves, rolls with odds, the character sheet, and push-to-talk.</p>
+          </div>
+          <div class="cell">
+            <h4>The battlefield</h4>
+            <p>A Gaussian-splat tavern rendered with PlayCanvas, with a movement grid and the heroes on it. The only JavaScript in the project.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="wire">
+        <p><strong>gRPC over WebSocket</strong> with GoGRPCBridge carries everything between the screens and the server, including live microphone audio.</p>
+      </div>
+
+      <div class="tier tier-core">
+        <h3 class="tier-name">Go server</h3>
+        <div class="tier-cells">
+          <div class="cell">
+            <h4>State machines</h4>
+            <p>Lobby, creation, scene, and combat are explicit machines, so every screen knows exactly which phase the table is in.</p>
+          </div>
+          <div class="cell cell-engine">
+            <h4>The rules engine</h4>
+            <p>Pure and deterministic: state and one event in, new state and effects out. Seeded dice, no clock, no I/O. Replaying the log reproduces the session exactly.</p>
+          </div>
+          <div class="cell">
+            <h4>SQLite</h4>
+            <p>The event log, runs, and generated assets. The log is the source of truth.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="wire">
+        <p><strong>Ports and adapters.</strong> Every model sits behind an interface with a fallback chain, so swapping a vendor is one adapter and one config line.</p>
+      </div>
+
+      <div class="tier">
+        <h3 class="tier-name">Models</h3>
+        <div class="tier-cells tier-cells-models">
+          <div class="cell">
+            <h4>Narration and dialogue</h4>
+            <p>OpenAI for live lines, Google Gemini for pre-rendered lines, Anthropic Claude as the spoken-line fallback.</p>
+          </div>
+          <div class="cell">
+            <h4>Speech and sound</h4>
+            <p>ElevenLabs for speech-to-text, character voices, sound effects, and music.</p>
+          </div>
+          <div class="cell">
+            <h4>Portraits and clips</h4>
+            <p>OpenAI image generation for portraits; Seedance for short video clips from a first frame.</p>
+          </div>
+          <div class="cell">
+            <h4>Battlefield</h4>
+            <p>World Labs turns a painted still of the tavern into a 3D Gaussian-splat world.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="rules-note">Rules come from the System Reference Document 5.2.1, published under CC-BY-4.0.</p>
+  </div>
+</section>
+
+<!-- After -->
+<section class="section after" id="after" aria-labelledby="after-title">
+  <div class="wrap">
+    <header class="section-head">
+      <h2 id="after-title">What comes after</h2>
+      <p class="section-intro">The demo is one scene. The plan beyond it is the full game.</p>
+    </header>
+    <figure class="frame after-art">
+      <a class="zoom" href="assets/dungeon-exploration-concept.jpg" data-caption="Dungeon exploration concept: a party of four moves through a flooded ruin.">
+        <img src="assets/dungeon-exploration-concept.jpg" width="1672" height="941" loading="lazy" alt="Concept art of dungeon exploration: four adventurers with torches cross a flooded stone hall toward a statue rising from the water, with party hit points on the left and the current objective on the right.">
+      </a>
+      <figcaption>A party of four in the sunken halls.</figcaption>
+    </figure>
+    <div class="roadmap">
+      <article>
+        <h3>Full campaigns</h3>
+        <p>Multiple acts written around the characters the players create, with a cast and places that stay consistent as the story grows.</p>
+      </article>
+      <article>
+        <h3>Full combat</h3>
+        <p>Initiative, spells, reactions, and conditions, all driven from the phone, which still shows only the options that are legal on that turn.</p>
+      </article>
+      <article>
+        <h3>Memory across sessions</h3>
+        <p>The people you've met remember what was said and promised, and each session can open with a recap of the last.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-grid">
+    <div>
+      <p class="footer-mark">Dungeon<span class="flux">Flux</span></p>
+      <p>Built for ShellHacks 2026, Florida's largest hackathon, run by Upsilon Pi Epsilon at FIU in Miami, September 25&ndash;27.</p>
+      <p><a href="https://github.com/monstercameron/DungeonFlux">github.com/monstercameron/DungeonFlux</a></p>
+    </div>
+    <div class="legal">
+      <p>This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by Wizards of the Coast LLC, available at <a href="https://www.dndbeyond.com/srd">https://www.dndbeyond.com/srd</a>. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at <a href="https://creativecommons.org/licenses/by/4.0/legalcode">https://creativecommons.org/licenses/by/4.0/legalcode</a>.</p>
+      <p>Concept art shown is for look and feel.</p>
+    </div>
+  </div>
+</footer>
+
+<dialog class="lightbox" aria-label="Concept art">
+  <form method="dialog"><button class="lightbox-close" type="submit" aria-label="Close">&times;</button></form>
+  <img alt="">
+  <p class="lightbox-caption"></p>
+</dialog>
+</body>
+</html>
