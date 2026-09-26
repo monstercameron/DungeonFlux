@@ -7,6 +7,7 @@ import (
 	"io"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/monstercameron/DungeonFlux/internal/ports"
@@ -100,26 +101,29 @@ func TestChain_JSONDeadlineReturnsError(t *testing.T) {
 }
 
 func TestChain_StreamTextFallbackWinsAndClosesPrimary(t *testing.T) {
-	primary := newBlockingStream()
-	fallback := newFakeStream("fallback")
-	chain := New([]ports.LLM{
-		fakeLLM{jsonFn: func(context.Context) (json.RawMessage, error) { return nil, errors.New("unused") }, streamFn: func(context.Context) (ports.TextStream, error) { return primary, nil }},
-		fakeLLM{jsonFn: func(context.Context) (json.RawMessage, error) { return nil, errors.New("unused") }, streamFn: func(context.Context) (ports.TextStream, error) { return fallback, nil }},
-	}, Config{HedgeDelay: time.Millisecond})
-	stream, err := chain.StreamText(context.Background(), ports.TextRequest{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer stream.Close()
-	text, err := stream.Recv()
-	if err != nil || text != "fallback" {
-		t.Fatalf("Recv = %q, %v", text, err)
-	}
-	select {
-	case <-primary.closed:
-	case <-time.After(time.Second):
-		t.Fatal("primary was not closed")
-	}
+	synctest.Test(t, func(t *testing.T) {
+		primary := newBlockingStream()
+		fallback := newFakeStream("fallback")
+		chain := New([]ports.LLM{
+			fakeLLM{jsonFn: func(context.Context) (json.RawMessage, error) { return nil, errors.New("unused") }, streamFn: func(context.Context) (ports.TextStream, error) { return primary, nil }},
+			fakeLLM{jsonFn: func(context.Context) (json.RawMessage, error) { return nil, errors.New("unused") }, streamFn: func(context.Context) (ports.TextStream, error) { return fallback, nil }},
+		}, Config{HedgeDelay: time.Millisecond})
+		stream, err := chain.StreamText(context.Background(), ports.TextRequest{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer stream.Close()
+		text, err := stream.Recv()
+		if err != nil || text != "fallback" {
+			t.Fatalf("Recv = %q, %v", text, err)
+		}
+		synctest.Wait()
+		select {
+		case <-primary.closed:
+		default:
+			t.Fatal("primary was not closed")
+		}
+	})
 }
 
 func TestDeadline_StreamCloseCancelsContext(t *testing.T) {
