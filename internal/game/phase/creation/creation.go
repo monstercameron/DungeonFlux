@@ -3,6 +3,8 @@ package creation
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/game/rules"
@@ -101,6 +103,9 @@ func (m *Machine) Step(event domain.Event) (Result, error) {
 	case domain.TimerFired:
 		if value.Name == creationTimeout {
 			return m.stepTimeout()
+		}
+		if seat, ok := deadlineSeat(value.Name); ok {
+			return m.stepSeatTimeout(seat)
 		}
 	}
 	return Result{}, fmt.Errorf("creation event %q is not accepted", event.Kind())
@@ -213,6 +218,35 @@ func (m *Machine) stepTimeout() (Result, error) {
 	return Result{Accepted: true, Complete: m.Complete()}, nil
 }
 
+func (m *Machine) stepSeatTimeout(seat domain.SeatID) (Result, error) {
+	index, ok := seatIndex(seat)
+	if !ok {
+		return Result{}, errors.New("seat must be 1 or 2")
+	}
+	if m.seats[index].Locked {
+		return Result{Accepted: true, Complete: m.Complete(), Seat: copySeat(m.seats[index])}, nil
+	}
+	if !m.seats[index].Built {
+		classes, err := m.fallbackClasses()
+		if err != nil {
+			return Result{}, err
+		}
+		if m.seats[index].Class == "" {
+			m.seats[index].Class = classes[index]
+		}
+		m.seats[index].Species = "human"
+		m.seats[index].Gender = "nonbinary"
+		build, err := rules.BuildHero(dice.New(append(append([]byte(nil), m.seed...), byte(index+1))), m.seats[index].Class, "human", "nonbinary")
+		if err != nil {
+			return Result{}, fmt.Errorf("default seat %d: %w", index+1, err)
+		}
+		m.seats[index].Build = build
+		m.seats[index].Built = true
+	}
+	m.seats[index].Locked = true
+	return Result{Accepted: true, Complete: m.Complete(), Seat: copySeat(m.seats[index])}, nil
+}
+
 func (m Machine) fallbackClasses() ([seatCount]rules.Class, error) {
 	roller := dice.New(append(append([]byte(nil), m.seed...), 0))
 	first, err := rules.DrawClass(roller, 1, "")
@@ -231,6 +265,18 @@ func seatIndex(seat domain.SeatID) (int, bool) {
 		return 0, false
 	}
 	return int(seat - 1), true
+}
+
+func deadlineSeat(name string) (domain.SeatID, bool) {
+	parts := strings.Split(name, ":")
+	if len(parts) != 2 || parts[0] != "seat_deadline" {
+		return 0, false
+	}
+	seat, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, false
+	}
+	return domain.SeatID(seat), seat >= 1 && seat <= seatCount
 }
 
 func copySeat(seat SeatState) SeatState {

@@ -135,7 +135,8 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 	printURLs(out, urls)
 	lobbyProjection := api.LobbyProjection{RoomCode: roomID, JoinURL: joinURL, QRURL: qrURL}
 	lobbyOption := game.Lobby{RoomCode: roomID, JoinURL: joinURL, QRAsset: domain.AssetID(qrURL)}
-	eng := newLobbyEngine(game.New(oneShot, seed, game.WithLobby(lobbyOption)), lobbyProjection)
+	gameOptions := []game.Option{game.WithLobby(lobbyOption), game.WithTurnTimers(cfg.Features.TurnTimers)}
+	eng := newLobbyEngine(game.New(oneShot, seed, gameOptions...), lobbyProjection)
 	roomEngine, err := newSynchronizedEngine(eng)
 	if err != nil {
 		_ = store.Close()
@@ -170,8 +171,9 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 	registerAudioExecutor(runner, audioRouter, assetCatalog)
 	room := runtime.NewRoom(roomEngine, clock.Real{}, store, logger, watch.Publish,
 		runtime.WithRunner(runner), runtime.WithRoomState(roomState),
+		runtime.WithTurnTimersEnabled(cfg.Features.TurnTimers),
 		runtime.WithNewGame(func(runSeed []byte) ports.Engine {
-			roomEngine.replace(newLobbyEngine(game.New(oneShot, runSeed, game.WithLobby(lobbyOption)), lobbyProjection))
+			roomEngine.replace(newLobbyEngine(game.New(oneShot, runSeed, gameOptions...), lobbyProjection))
 			return roomEngine
 		}))
 	inbox.room = room

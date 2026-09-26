@@ -38,11 +38,13 @@ type Room struct {
 type RoomOption func(*roomOptions)
 
 type roomOptions struct {
-	runner  *Runner
-	timers  *Timers
-	scopes  *ScopeTree
-	state   *RoomState
-	newGame func([]byte) ports.Engine
+	runner                   *Runner
+	timers                   *Timers
+	scopes                   *ScopeTree
+	state                    *RoomState
+	newGame                  func([]byte) ports.Engine
+	turnTimersEnabled        bool
+	turnTimersPolicyProvided bool
 }
 
 // WithRunner installs the work-effect runner used by the room.
@@ -53,6 +55,14 @@ func WithRunner(runner *Runner) RoomOption {
 // WithTimers installs the timer set used for control effects.
 func WithTimers(timers *Timers) RoomOption {
 	return func(options *roomOptions) { options.timers = timers }
+}
+
+// WithTurnTimersEnabled configures the initial room timer policy.
+func WithTurnTimersEnabled(enabled bool) RoomOption {
+	return func(options *roomOptions) {
+		options.turnTimersEnabled = enabled
+		options.turnTimersPolicyProvided = true
+	}
 }
 
 // WithScopes installs the scope tree used for work-effect cancellation.
@@ -107,6 +117,9 @@ func NewRoom(eng ports.Engine, clk clock.Clock, eventLog ports.EventLog, logger 
 	}
 	if options.timers == nil {
 		options.timers = NewTimers(clk, inbox)
+	}
+	if options.turnTimersPolicyProvided {
+		options.timers.ConfigureTurnTimers(options.turnTimersEnabled)
 	}
 	if options.runner == nil {
 		options.runner = NewRunner(inbox, logger)
@@ -181,6 +194,7 @@ func (r *Room) process(ctx context.Context, env domain.Envelope) {
 	env.At = r.clk.Since(r.start)
 	from := r.eng.View().Path
 	out := r.eng.Step(env)
+	r.applyTimerCommand(env.Event)
 	to := r.eng.View().Path
 	out.Effects = append(out.Effects, rollTimerWiring(env.Event, from, to, out)...)
 	if r.log != nil {
@@ -250,13 +264,26 @@ func (r *Room) applyControl(ctx context.Context, effect domain.Effect) bool {
 		keyScope.Key = value.Key
 		r.scopes.CancelKey(keyScope)
 	case domain.NewRun:
-		r.timers.StopAll()
+		r.timers.Reset()
 		r.scopes.Cancel(domain.Scope{Machine: vocab.MachineRun})
 		r.replaceEngine(ctx)
 	default:
 		return false
 	}
 	return true
+}
+
+func (r *Room) applyTimerCommand(event domain.Event) {
+	command, ok := event.(domain.HostCmd)
+	if !ok {
+		return
+	}
+	switch command.Cmd {
+	case vocab.HostTimersOff:
+		r.timers.SetTurnTimersEnabled(false)
+	case vocab.HostCmd("TIMERS_ON"):
+		r.timers.SetTurnTimersEnabled(true)
+	}
 }
 
 func newRunNote(effects []domain.Effect) *domain.LogNote {

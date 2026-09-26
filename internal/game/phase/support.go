@@ -139,8 +139,11 @@ func (m *Machine) transition(event vocab.EventKind, effects []domain.Effect) (Re
 	if transition.From == vocab.StateResolution && transition.To == vocab.StateExploration {
 		m.conversationDone = true
 	}
-	if event == eventStart {
+	if event == eventStart && m.timersEnabled {
 		out.Effects = append(out.Effects, domain.StartTimer{Name: "creation_timeout", After: 30e9, Pausable: true, Scope: domain.Scope{Machine: vocab.MachineSession}})
+	}
+	if transition.From == vocab.StateCreation && transition.To != vocab.StateCreation {
+		out.Effects = append(out.Effects, domain.CancelTimer{Name: "creation_timeout"})
 	}
 	if transition.To == vocab.StateOpening {
 		out.Effects = append(out.Effects, m.opening.Enter().Effects...)

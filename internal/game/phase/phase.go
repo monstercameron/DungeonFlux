@@ -3,6 +3,7 @@ package phase
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/monstercameron/DungeonFlux/internal/core/fsm"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
@@ -54,6 +55,7 @@ var phaseDefinitions = []Definition{
 type Machine struct {
 	table                                    fsm.Machine
 	paused, conversationDone, strictCreation bool
+	timersEnabled, defaultTimersEnabled      bool
 	lobbyAudioSent                           bool
 	oneShot                                  domain.OneShot
 	seats                                    []domain.SeatView
@@ -99,7 +101,7 @@ func buildMachine(oneShot domain.OneShot, seed []byte, strict bool) (Machine, er
 	if err != nil {
 		return Machine{}, err
 	}
-	return Machine{table: table, strictCreation: strict, oneShot: oneShot, creation: created, opening: opening.New(oneShot), seats: initialSeats(), spotlight: 1}, nil
+	return Machine{table: table, strictCreation: strict, timersEnabled: true, defaultTimersEnabled: true, oneShot: oneShot, creation: created, opening: opening.New(oneShot), seats: initialSeats(), spotlight: 1}, nil
 }
 
 // State returns the current top-level phase.
@@ -107,6 +109,28 @@ func (m Machine) State() vocab.StateID { return m.table.State() }
 
 // Paused reports whether top-level execution is paused.
 func (m Machine) Paused() bool { return m.paused }
+
+// ConfigureTurnTimers sets the default and current turn-timer policy. A reset
+// returns to this configured default.
+func (m *Machine) ConfigureTurnTimers(enabled bool) {
+	if m == nil {
+		return
+	}
+	m.timersEnabled, m.defaultTimersEnabled = enabled, enabled
+}
+
+// SetTurnTimersEnabled changes the current turn-timer policy for this run.
+func (m *Machine) SetTurnTimersEnabled(enabled bool) {
+	if m != nil {
+		m.timersEnabled = enabled
+	}
+}
+
+// TurnTimersEnabled reports whether this run may start turn timers.
+func (m Machine) TurnTimersEnabled() bool { return m.timersEnabled }
+
+// DefaultTurnTimersEnabled reports the configured policy restored by Reset.
+func (m Machine) DefaultTurnTimersEnabled() bool { return m.defaultTimersEnabled }
 
 // ForceD20 makes the next check or combat roll use face.
 func (m *Machine) ForceD20(face int) error {
@@ -138,6 +162,9 @@ func (m *Machine) Step(event domain.Event) (Result, error) {
 	if cmd, ok := event.(domain.HostCmd); ok {
 		return m.stepHost(cmd)
 	}
+	if timer, ok := event.(domain.TimerFired); ok && !m.timersEnabled && isTurnTimer(timer.Name) {
+		return Result{}, &fsm.Rejection{State: m.State(), Event: event.Kind(), Reason: fsm.ReasonGuardRejected}
+	}
 	if m.paused {
 		return Result{}, &fsm.Rejection{State: m.State(), Event: event.Kind(), Reason: fsm.ReasonGuardRejected}
 	}
@@ -146,6 +173,12 @@ func (m *Machine) Step(event domain.Event) (Result, error) {
 
 func (m *Machine) stepHost(cmd domain.HostCmd) (Result, error) {
 	switch cmd.Cmd {
+	case vocab.HostTimersOff:
+		m.timersEnabled = false
+		return Result{Effects: cancelTurnTimerEffects()}, nil
+	case hostTimersOn:
+		m.timersEnabled = true
+		return Result{}, nil
 	case vocab.HostPause:
 		m.paused = true
 		return Result{Paused: true}, nil
@@ -166,6 +199,24 @@ func (m *Machine) stepHost(cmd domain.HostCmd) (Result, error) {
 	default:
 		return Result{}, &fsm.Rejection{State: m.State(), Event: eventForHost(cmd.Cmd), Reason: fsm.ReasonUnknownEvent}
 	}
+}
+
+const hostTimersOn vocab.HostCmd = "TIMERS_ON"
+
+func cancelTurnTimerEffects() []domain.Effect {
+	return []domain.Effect{
+		domain.CancelTimer{Name: "creation_timeout"},
+		domain.CancelTimer{Name: "seat_deadline:1"},
+		domain.CancelTimer{Name: "seat_deadline:2"},
+		domain.CancelTimer{Name: "turn_timer"},
+	}
+}
+
+func isTurnTimer(name string) bool {
+	if name == "creation_timeout" || name == "turn_timer" {
+		return true
+	}
+	return strings.HasPrefix(name, "seat_deadline:") || strings.HasPrefix(name, "turn_timer/") || strings.HasPrefix(name, "combat_turn_timer")
 }
 
 func (m *Machine) stepPhase(event domain.Event) (Result, error) {
@@ -196,8 +247,16 @@ func (m *Machine) stepPhase(event domain.Event) (Result, error) {
 }
 
 func (m *Machine) stepCreation(event domain.Event) (Result, error) {
+	if timer, ok := event.(domain.TimerFired); ok && timer.Name == "creation_timeout" && !m.timersEnabled {
+		return Result{}, errors.New("creation timeout is disabled")
+	}
+	locked := false
 	if act, ok := event.(domain.Act); ok && act.Move == vocab.MoveReady {
 		event = domain.PCLocked{Seat: act.Seat}
+		locked = true
+	}
+	if _, ok := event.(domain.PCLocked); ok {
+		locked = true
 	}
 	if isPassive(event) {
 		return Result{}, nil
@@ -210,6 +269,16 @@ func (m *Machine) stepCreation(event domain.Event) (Result, error) {
 		return Result{}, err
 	}
 	m.updateCreationSeat(result.Seat)
+	if act, ok := event.(domain.Act); ok && act.Move == vocab.MoveRollHero && result.Accepted && m.timersEnabled {
+		result.Effects = append(result.Effects, domain.StartTimer{
+			Name: fmt.Sprintf("seat_deadline:%d", act.Seat), After: 22 * 1000000000, Pausable: true,
+			Scope: domain.Scope{Machine: vocab.MachineSession},
+		})
+	}
+	if locked && result.Accepted {
+		seat := result.Seat.Seat
+		result.Effects = append(result.Effects, domain.CancelTimer{Name: fmt.Sprintf("seat_deadline:%d", seat)})
+	}
 	if !result.Complete {
 		return Result{Effects: result.Effects}, nil
 	}

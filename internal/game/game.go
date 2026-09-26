@@ -91,6 +91,9 @@ func (s *State) apply(env domain.Envelope) domain.StepOut {
 }
 
 func (s *State) applyHost(cmd domain.HostCmd, env domain.Envelope) domain.StepOut {
+	if enabled, ok := timerToggleCommand(cmd.Cmd); ok {
+		s.phase.SetTurnTimersEnabled(enabled)
+	}
 	if cmd.Cmd == vocab.HostForceD20 {
 		out := s.applyForceD20(cmd.N)
 		if out.Ack == nil || !out.Ack.Accepted {
@@ -156,8 +159,10 @@ func (s *State) phaseCueEffects(previous vocab.StateID) []domain.Effect {
 }
 
 func (s *State) resetPhase() {
+	defaultTimers := s.phase.DefaultTurnTimersEnabled()
 	dispatcher, err := phase.NewWithSeed(s.oneShot, s.seed)
 	if err == nil {
+		dispatcher.ConfigureTurnTimers(defaultTimers)
 		if s.debugStart != "" {
 			_ = dispatcher.Goto(s.debugStart)
 		}
