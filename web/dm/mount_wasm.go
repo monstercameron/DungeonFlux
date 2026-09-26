@@ -16,6 +16,7 @@ import (
 	"github.com/monstercameron/GoWebComponents/v6/router"
 	"github.com/monstercameron/GoWebComponents/v6/ui"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type watchClient interface {
@@ -45,7 +46,7 @@ func newScreenClient(endpoint string) (*screenClient, error) {
 	if endpoint == "" {
 		return nil, errors.New("dm: endpoint is required")
 	}
-	conn, err := grpc.NewClient(endpoint, dialer.New(endpoint))
+	conn, err := grpc.NewClient(endpoint, dialer.New(endpoint), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}

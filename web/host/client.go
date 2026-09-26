@@ -26,7 +26,7 @@ func newHostClient(endpoint string) (*hostClient, error) {
 	if endpoint == "" {
 		return nil, errors.New("host: endpoint is required")
 	}
-	conn, err := grpc.NewClient(endpoint, transportDialOption(endpoint))
+	conn, err := grpc.NewClient(endpoint, transportDialOptions(endpoint)...)
 	if err != nil {
 		return nil, err
 	}

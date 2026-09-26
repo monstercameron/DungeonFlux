@@ -47,9 +47,10 @@ func TestHostClientWatch_withoutSessionClosesChannel(t *testing.T) {
 	}
 }
 
-func TestTransportDialOption_returnsOption(t *testing.T) {
-	if transportDialOption("endpoint") == nil {
-		t.Fatal("transportDialOption() returned nil")
+func TestTransportDialOptions_includeCredentials(t *testing.T) {
+	options := transportDialOptions("endpoint")
+	if len(options) == 0 || options[0] == nil {
+		t.Fatalf("transportDialOptions() = %v, want transport credentials", options)
 	}
 }
 

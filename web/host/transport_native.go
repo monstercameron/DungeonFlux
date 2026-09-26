@@ -7,6 +7,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func transportDialOption(string) grpc.DialOption {
-	return grpc.WithTransportCredentials(insecure.NewCredentials())
+func transportDialOptions(string) []grpc.DialOption {
+	return []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 }
