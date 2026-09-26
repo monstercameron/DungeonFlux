@@ -631,6 +631,12 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   done when: vocab.MoveClass = "class" (ORCH names this lane the writer of that one constant); creation accepts class with validation against the 12 SRD classes; both seats may pick the same class; legal moves before roll are species, gender, class, and roll_hero only once all three are set; timeout fallback still draws; Step and walk tests updated.
   status: claimed luna
 
+- [ ] ENG-020 · legal moves for both seats, readable labels, and combat move
+  why: Live probe: seat 2 never has legal moves in any phase, moves arrive with raw ids as labels (talk_vell, end_turn), and combat offers attack and end_turn but never move.
+  lane: L-ENG · block: 8–11 · paths: `internal/game/legal*.go`, `internal/game/phase/*.go` · depends: ENG-015, CONT-008, ENG-019
+  done when: each phase lists the correct moves for the spotlight seat and the other seat (with disabled reasons where the other seat must wait); labels and reasons come from internal/content moves (i18n keys when present); combat on your turn lists move (with reachable cells), attack (with targets), and end_turn; table tests per phase and seat.
+  status: claimed luna
+
 - [ ] INT-001 · lobby seats and join data reach the TV end to end
   why: Live test: two phones joined (engine View version advanced) but dfctl view --dm shows {"dm":{}} and the TV still shows Waiting to join, room code "/p", and a broken QR, because proto DMView has no seats or lobby fields and the projection never fills them.
   lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/common.proto`, `gen/**`, `internal/api/project*.go`, `web/dm/lobby*.go` · depends: ENG-017, API-019, BASE-021
@@ -1057,6 +1063,12 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   done when: JoinRequest gains player_name; the phone sends it; session posts it in domain.Join; wire passes lobby data (room code, LAN join URL, QR URL) to the engine via ENG-017's option; projection fills DMView.lobby; live check: TV shows Aria and Bram, the real room code, the join URL, and a QR image that loads.
   status: claimed luna
 
+- [ ] INT-006 · server streams all DM audio over gRPC: voice, music, ambience, SFX
+  why: Developer request (2026-09-26): all table audio reaches the DM client through gRPC; today AudioService.Listen carries only TTS PCM frames, so music, ambience, and sound effects have no path.
+  lane: ORCH (integration) · block: 11–14 · paths: `proto/dungeonflux/v1/common.proto`, `proto/dungeonflux/v1/session.proto`, `gen/**`, `internal/api/listen*.go`, `internal/api/audio*.go`, `internal/media/audio_router*.go`, `internal/wire/audio*.go`, `internal/wire/wire.go` · depends: INT-004, API-005, VOUT-002, MEDIA-009, MEDIA-010
+  done when: AudioMessage gains channel (voice, music, ambience, sfx), encoded chunks (codec mime such as audio/ogg;codecs=opus or audio/mpeg, sequence, final) and mix commands (play, stop, crossfade to track at the next bar with duration, loop on/off, gain, duck); a server audio router turns engine cues (ENG-012 music and shot cues, MEDIA-009 transitions, MEDIA-010 sounds) and manifest assets into streamed chunks on the DM Listen stream with backpressure (drop oldest non-voice chunks, never voice); voice PCM keeps working; tests with bufconn and synctest; live check streams the tavern ambience and a music track to a Go test client.
+  status: open (launch after INT-004: gen/)
+
 ## 14. LLM layer
 
 SchemaFlux for OpenAI-dialect links, Gemini and Haiku adapters, model chains, budget, and the executors that turn effects into model calls.
@@ -1370,6 +1382,12 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   lane: L-WEB-SHELL · block: 8–11 · paths: `web/shell/assets*.go` · depends: INT-004
   done when: an exported loader (usable by web/dm and web/phone via a small interface) returns a Blob URL for a logical name or sha, dedupes in-flight fetches, preloads ui/* at boot with progress, never blocks the JS loop; tested natively for cache logic; live check shows the title art.
   status: open (launch after INT-004)
+
+- [ ] WEB-016 · DM Web Audio mixer for streamed channels
+  why: The DM client must play the gRPC audio stream as a real mix: music and ambience beds, SFX on top, voice always clear.
+  lane: L-WEB-SHELL · block: 11–14 · paths: `web/shell/audio/**` · depends: INT-006, WEB-004
+  done when: a Web Audio graph with per-channel gain nodes decodes streamed encoded chunks (MediaSource or decodeAudioData on complete segments) and voice PCM, applies play/stop/crossfade/loop/gain commands, ducks music and ambience about 8 dB under voice, and starts after the existing Enable table audio tap; no blocking in JS callbacks; native tests for the mix-state logic; live check in the browser.
+  status: open (launch after INT-006)
 
 ## 19. Phone
 
