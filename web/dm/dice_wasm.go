@@ -133,6 +133,10 @@ func diceAnimationStyle() ui.Node {
 func TimerComponent(view TimerView) router.Component {
 	return func(_ router.Attrs) *router.Element {
 		locale := localeOrDefault(view.Locale)
+		if view.TotalMS <= 0 && !view.Frozen {
+			// Timers are off (or none is running): no "0 milliseconds" readout.
+			return html.Section(html.Props{Class: "df-dm-timer", Hidden: true})
+		}
 		props := html.Props{Class: "df-dm-timer", Role: "timer", Aria: map[string]string{"label": timerLabel(locale, view)}}
 		return html.Section(props,
 			html.Div(html.Props{Class: "df-dm-timer-label"}, ui.Text(timerLabel(locale, view))),

@@ -142,10 +142,29 @@ func combatImageURL(model CombatModel) string {
 }
 
 func combatBanner(model CombatModel) string {
-	if strings.TrimSpace(model.Banner) != "" {
+	// The server sends banner tokens (pc_turn, enemy_turn, ...); show words.
+	switch strings.ToLower(strings.TrimSpace(model.Banner)) {
+	case "":
+		return "Combat"
+	case "pc_turn":
+		for _, token := range model.Tokens {
+			if token.Active && token.Name != "" {
+				return token.Name + "'s turn"
+			}
+		}
+		return "Your move"
+	case "enemy_turn", "thrall_turn", "npc_turn":
+		return "The thrall moves"
+	case "intro":
+		return "To arms!"
+	case "done", "outcome":
+		return "The fight is over"
+	default:
+		if strings.Contains(model.Banner, "_") {
+			return strings.ReplaceAll(model.Banner, "_", " ")
+		}
 		return model.Banner
 	}
-	return "Combat"
 }
 
 func classCrest(className string) string {
