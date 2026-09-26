@@ -12,14 +12,15 @@ import (
 
 func registerRoutes(parseRouter *router.Router, client *Client) {
 	locale := NewLocaleModel(BrowserLocales())
-	parseRouter.Register(string(RouteDM), dm.Mount("/grpc"))
+	parseRouter.Register(string(RouteDM), PreviewComponent(dm.Mount("/grpc"), dmPreviews()))
 	if client == nil {
 		parseRouter.Register(string(RoutePhone), unavailable(locale.T("phone.client_unavail", nil)))
 	} else {
-		parseRouter.Register(string(RoutePhone), JoinScreen(client))
+		parseRouter.Register(string(RoutePhone), PreviewComponent(JoinScreen(client), phonePreviews()))
 	}
 	parseRouter.Register(string(RouteHost), host.Mount("/grpc"))
 	RegisterAboutRoute(parseRouter)
+	RegisterPreviewRoute(parseRouter, NewPreviewCatalog(dmPreviews(), phonePreviews()))
 	parseRouter.Register("/", unavailable(locale.T("shell.redirect", nil)), router.Options{Redirect: string(RouteDM)})
 }
 
