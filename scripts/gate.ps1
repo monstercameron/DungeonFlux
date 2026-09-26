@@ -34,7 +34,9 @@ $script:Failures = 0
 
 function Write-GateLine {
     param([string]$Message)
-    $Message | Tee-Object -FilePath $transcriptPath -Append
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [IO.File]::AppendAllText($transcriptPath, ($Message + [Environment]::NewLine), $utf8NoBom)
+    Write-Output $Message
 }
 
 function Invoke-GateCommand {
@@ -45,7 +47,7 @@ function Invoke-GateCommand {
     )
     Write-GateLine "`n>>> $Label"
     try {
-        & $FilePath @ArgumentList 2>&1 | Tee-Object -FilePath $transcriptPath -Append
+        & $FilePath @ArgumentList 2>&1 | ForEach-Object { Write-GateLine $_.ToString() }
         $exitCode = $LASTEXITCODE
     } catch {
         Write-GateLine $_.Exception.Message
@@ -59,6 +61,43 @@ function Invoke-GateCommand {
     }
     Write-GateLine "PASS: $Label"
     return $true
+}
+
+function Invoke-BuildGate {
+    param([string[]]$TargetPackages)
+    $label = "go build ./..."
+    Write-GateLine "`n>>> $label"
+    $output = @()
+    try {
+        $output = @(& go build ./... 2>&1 | ForEach-Object { $_.ToString() })
+        foreach ($line in $output) { Write-GateLine $line }
+        $exitCode = $LASTEXITCODE
+    } catch {
+        Write-GateLine $_.Exception.Message
+        $exitCode = 1
+    }
+    if ($null -eq $exitCode) { $exitCode = 0 }
+    if ($exitCode -eq 0) {
+        Write-GateLine "PASS: $label"
+        return $true
+    }
+
+    $failedPackages = @($output | ForEach-Object {
+        if ($_ -match '^#\s+([^\s]+)$') { $Matches[1] }
+    } | Sort-Object -Unique)
+    $outside = @($failedPackages | Where-Object {
+        $failed = $_
+        -not (@($TargetPackages | Where-Object {
+            $target = $_ -replace '^\./', ''
+            $failed -eq $_ -or $failed.EndsWith("/$target")
+        }).Count -gt 0)
+    })
+    if ($outside.Count -gt 0 -and $outside.Count -eq $failedPackages.Count) {
+        Write-GateLine ("build broken outside target: {0}" -f ($outside -join ", "))
+    }
+    $script:Failures++
+    Write-GateLine "FAILED ($exitCode): $label"
+    return $false
 }
 
 function Get-TodoPaths {
@@ -83,10 +122,17 @@ function Get-GoFiles {
     param([string[]]$PathPatterns)
     $files = @()
     foreach ($pattern in $PathPatterns) {
-        $candidate = Join-Path $repoRoot $pattern
-        $items = @(Get-ChildItem -Path $candidate -File -ErrorAction SilentlyContinue)
-        if ($items.Count -eq 0 -and (Test-Path $candidate -PathType Container)) {
+        $normalized = $pattern.Trim() -replace '\\', '/'
+        $recursive = $normalized.EndsWith('/**')
+        if ($recursive) { $normalized = $normalized.Substring(0, $normalized.Length - 3).TrimEnd('/') }
+        $candidate = Join-Path $repoRoot ($normalized -replace '^\./', '' -replace '/', '\')
+        if ($recursive -and (Test-Path $candidate -PathType Container)) {
             $items = @(Get-ChildItem -Path $candidate -Recurse -File -Filter "*.go")
+        } else {
+            $items = @(Get-ChildItem -Path $candidate -File -ErrorAction SilentlyContinue)
+            if ($items.Count -eq 0 -and (Test-Path $candidate -PathType Container)) {
+                $items = @(Get-ChildItem -Path $candidate -Recurse -File -Filter "*.go")
+            }
         }
         foreach ($item in $items) {
             if ($item.Extension -eq ".go") { $files += $item.FullName }
@@ -167,7 +213,7 @@ function Invoke-LaneGate {
     if ((Test-Path $archDir -PathType Container) -and (@(Get-ChildItem $archDir -Filter "*.go" -File).Count -gt 0)) {
         Invoke-GateCommand "archtest" "go" @("test", "./internal/archtest") | Out-Null
     } else { Write-GateLine "SKIP: archtest (package not present)" }
-    Invoke-GateCommand "go build ./..." "go" @("build", "./...") | Out-Null
+    Invoke-BuildGate $TargetPackages | Out-Null
 }
 
 function Invoke-FullGate {
@@ -201,7 +247,9 @@ if ($Full) {
     Invoke-FullGate
 } else {
     if ($Todo) { $pathPatterns = Get-TodoPaths $Todo }
-    elseif ($Packages.Count -gt 0) { $pathPatterns = $Packages }
+    elseif ($Packages.Count -gt 0) {
+        $pathPatterns = @($Packages | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    }
     else { $pathPatterns = @() }
     if ($pathPatterns.Count -gt 0) {
         $goFiles = Get-GoFiles $pathPatterns
