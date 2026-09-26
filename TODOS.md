@@ -175,6 +175,12 @@ The skeleton everything else builds in: module, pinned tools, gate script, CI, a
   done when: go build ./... ignores artifacts/; GOOS=js GOARCH=wasm go build ./web/... resolves every module.
   status: done 4428334
 
+- [ ] REPO-016 · supervisor supplies DF_DEBUG_TOKEN and captures server output
+  why: The human server crash-loops with "DF_DEBUG_TOKEN is required when server.debug=true" because the scheduled task has no token, and the supervisor does not record the child's stderr, so the cause was invisible.
+  lane: ORCH (delegated) · block: 8–11 · paths: `scripts/devserver/**`, `scripts/devserver.ps1` · depends: REPO-012
+  done when: when DF_DEBUG_TOKEN is unset the supervisor generates a random token per start with crypto/rand, writes it to artifacts/runtime/human/debug.token (gitignored, never logged), and passes it only in the child's environment; child stdout and stderr go to artifacts/logs/devserver/server-<start>.log and the last stderr line is copied into status.json last_error; tests cover both.
+  status: claimed luna
+
 ## 2. Contracts
 
 The shared vocabulary, domain types, ports, and protobuf API every lane codes against. ORCH writes these first; lanes that need only vocab/domain start at 0:45.
@@ -313,7 +319,7 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   why: The human test server crash-loops: wire starts every process with run id "run-0", so a restart against an existing SQLite data dir fails with UNIQUE constraint failed: runs.id, and the supervisor falls back to the placeholder.
   lane: ORCH · block: 8–11 · paths: `internal/wire/**` · depends: BASE-017, STORE-005
   done when: run IDs are unique per start and per NewRun (e.g. the next sequence from the runs table, or a time-plus-seed-hash id); a wire test builds the app twice on the same data dir and both start; the human server stays up across restarts.
-  status: claimed luna
+  status: committed 938b093
 
 - [x] BASE-007 · internal/wire skeleton and cmd/server skeleton
   why: The server binary must start from hour 1 with fakes, flags (-config, -port, -data-dir, -seed), and graceful shutdown.
@@ -941,7 +947,7 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: API-014 added replacement in the Listen hub, but through the real server a second DM Listen leaves the first stream open (E2E path 21 measured by ORCH).
   lane: L-API · block: 8–11 · paths: `internal/api/listen*.go`, `internal/api/audio*.go`, `internal/wire/e2e_paths_test.go` · depends: API-014
   done when: the second DM Listen (same DM token) closes the first stream with a clear status; the skip in TestE2E_Path21_LatestDMListenReplacesOlderStream is removed and the test passes.
-  status: claimed luna
+  status: committed 6cdf5f7
 
 ## 14. LLM layer
 
@@ -1023,7 +1029,7 @@ SchemaFlux for OpenAI-dialect links, Gemini and Haiku adapters, model chains, bu
   why: TestChain_StreamTextFallbackWinsAndClosesPrimary passes 10/10 alone but failed in the full gate under load (1.00 s), so it depends on real time rather than synctest or clock.Fake.
   lane: L-LLM · block: 8–11 · paths: `internal/modelchain/*_test.go` · depends: LLM-005
   done when: the test uses testing/synctest or clock.Fake with no wall-clock waits; go test -count=50 ./internal/modelchain passes while another heavy package test runs in parallel.
-  status: claimed luna
+  status: committed 848fdaa
 
 - [ ] LLM-013 · live smoke tests for every vendor adapter
   why: The hour-11 gate needs one cheap real call per adapter to prove keys, endpoints, and parsing before the voice loop is tested.
