@@ -10,13 +10,24 @@ import (
 // Player schedules PCM chunks on a browser AudioContext and tracks sources by
 // utterance so AudioCancel can stop them without waiting for playback to end.
 type Player struct {
-	context js.Value
-	sources map[string][]js.Value
+	context   js.Value
+	sources   map[string][]js.Value
+	buses     map[Channel]js.Value
+	tracks    map[string][]js.Value
+	scheduler Scheduler
 }
 
 // NewPlayer creates a player using a new browser AudioContext.
 func NewPlayer() *Player {
-	return &Player{context: js.Global().Get("AudioContext").New(), sources: make(map[string][]js.Value)}
+	context := js.Global().Get("AudioContext").New()
+	buses := make(map[Channel]js.Value)
+	for _, channel := range []Channel{VoiceChannel, MusicChannel, AmbienceChannel, SFXChannel} {
+		gain := context.Call("createGain")
+		gain.Get("gain").Set("value", 1)
+		gain.Call("connect", context.Get("destination"))
+		buses[channel] = gain
+	}
+	return &Player{context: context, sources: make(map[string][]js.Value), buses: buses, tracks: make(map[string][]js.Value)}
 }
 
 // Resume unlocks PCM playback from the table's explicit user gesture.
@@ -53,11 +64,18 @@ func (p *Player) Play(chunk ScheduledChunk) error {
 	buffer.Call("copyToChannel", data, 0)
 	source := p.context.Call("createBufferSource")
 	source.Set("buffer", buffer)
-	source.Call("connect", p.context.Get("destination"))
+	source.Call("connect", p.bus(VoiceChannel))
 	when := p.context.Get("currentTime").Float() + chunk.Start.Seconds()
 	source.Call("start", when)
 	p.sources[chunk.UtteranceID] = append(p.sources[chunk.UtteranceID], source)
 	return nil
+}
+
+func (p *Player) bus(channel Channel) js.Value {
+	if bus, ok := p.buses[channel]; ok {
+		return bus
+	}
+	return p.context.Get("destination")
 }
 
 // Cancel stops every source for utteranceID, or all tracked sources when the
