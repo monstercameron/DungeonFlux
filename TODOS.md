@@ -1215,6 +1215,12 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   done when: web/host is a library with a Mount entry (no package main); the shell router mounts /dm, /p, /host, and /about with the shared client injected through narrow interfaces (screens never import the web/shell root, only its subpackages); client reports start on boot; GOOS=js GOARCH=wasm go build ./web/shell passes and native tests cover the route table.
   status: committed 6f53085
 
+- [ ] WEB-009 · host page has the #app mount; router uses Register
+  why: In the browser the WASM app panics at start-up (GWC-RUNTIME-PANIC-STARTUP: RenderTo target #app not found) because web/shell/static/index.html only has <p id=status>, so /dm, /p, and /host never render; the shell also uses the deprecated router GoRegisterRoute.
+  lane: L-WEB-SHELL · block: 8–11 · paths: `web/shell/static/index.html`, `web/shell/compose*.go`, `web/shell/boot*.go` · depends: WEB-007, WEB-008
+  done when: index.html contains the #app container (loading text inside it, replaced on mount); compose uses router.Register; after scripts/buildweb.ps1, loading /dm, /p, and /host on a lane server shows no console errors and renders each screen (verify headless with node or a Go test that checks index.html contains the mount id).
+  status: claimed luna
+
 ## 19. Phone
 
 The player's controller: character creation, sheet, legal moves, push-to-talk, combat taps.
