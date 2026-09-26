@@ -160,7 +160,7 @@ async function start() {
     app.root.addChild(scene);
     gridEntity = createGridOverlay(pc, app, GRID, { layers: [WORLD_LAYER], name: "df-viewer-grid" });
     pickMode = installDebugPickMode({
-      camera,
+      camera: camera.camera,
       canvas,
       grid: GRID,
       onPick: ({ c, r, selected, walkable }) => {
