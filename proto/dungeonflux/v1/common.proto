@@ -243,7 +243,53 @@ message TalkResponse { oneof message { ChunkAck ack = 1; Transcript transcript =
 message ListenRequest { string seat_token = 1; }
 message AudioFrame { string utterance_id = 1; string speaker = 2; uint64 seq = 3; int32 sample_rate = 4; bytes pcm_s16le = 5; bool final = 6; }
 message AudioCancel { string utterance_id = 1; bool all = 2; }
-message AudioMessage { oneof message { AudioFrame frame = 1; AudioCancel cancel = 2; } }
+enum AudioChannel {
+  AUDIO_CHANNEL_UNSPECIFIED = 0;
+  AUDIO_CHANNEL_VOICE = 1;
+  AUDIO_CHANNEL_MUSIC = 2;
+  AUDIO_CHANNEL_AMBIENCE = 3;
+  AUDIO_CHANNEL_SFX = 4;
+}
+enum AudioTargetKind {
+  AUDIO_TARGET_KIND_UNSPECIFIED = 0;
+  AUDIO_TARGET_KIND_DM = 1;
+  AUDIO_TARGET_KIND_SEAT = 2;
+  AUDIO_TARGET_KIND_ALL_PHONES = 3;
+}
+message AudioTarget { AudioTargetKind kind = 1; int32 seat = 2; }
+message EncodedAudioChunk {
+  string codec_mime = 1;
+  uint64 seq = 2;
+  bytes data = 3;
+  bool final = 4;
+  int32 duration_ms = 5;
+}
+enum AudioMixCommandKind {
+  AUDIO_MIX_COMMAND_KIND_UNSPECIFIED = 0;
+  AUDIO_MIX_COMMAND_KIND_PLAY = 1;
+  AUDIO_MIX_COMMAND_KIND_STOP = 2;
+  AUDIO_MIX_COMMAND_KIND_CROSSFADE = 3;
+  AUDIO_MIX_COMMAND_KIND_DUCK = 4;
+}
+message AudioMixCommand {
+  AudioMixCommandKind kind = 1;
+  string track_id = 2;
+  int64 start_at_ms = 3;
+  int32 duration_ms = 4;
+  bool loop = 5;
+  float gain = 6;
+  float duck = 7;
+}
+message AudioMessage {
+  oneof message {
+    AudioFrame frame = 1;
+    AudioCancel cancel = 2;
+    EncodedAudioChunk chunk = 3;
+    AudioMixCommand mix = 4;
+  }
+  AudioChannel channel = 5;
+  AudioTarget target = 6;
+}
 
 message HostCommand { string host_token = 1; HostCommandKind command = 2; int32 d20 = 3; bool on = 4; int32 seconds = 5; string locale = 6; }
 message HostAck { bool ok = 1; string reason = 2; }

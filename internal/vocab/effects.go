@@ -23,6 +23,8 @@ const (
 	EffectTalkStop EffectKind = "talk_stop"
 	// EffectSendAudioCancel cancels sent audio.
 	EffectSendAudioCancel EffectKind = "send_audio_cancel"
+	// EffectPlaySound routes a music, ambience, or sound-effect cue.
+	EffectPlaySound EffectKind = "play_sound"
 	// EffectTranscribe requests transcription.
 	EffectTranscribe EffectKind = "transcribe"
 	// EffectInterpret requests interpretation.

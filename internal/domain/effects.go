@@ -28,6 +28,17 @@ type TalkStop struct {
 type SendAudioCancel struct {
 	UtteranceID UtteranceID `json:"utterance_id"`
 }
+
+// PlaySound requests a media cue to be resolved and streamed to its target.
+type PlaySound struct {
+	Channel vocab.SoundKind
+	Name    string
+	Prompt  string
+	Target  string
+	Seat    SeatID
+	Loop    bool
+	Gain    float32
+}
 type Transcribe struct {
 	Seat        SeatID
 	UtteranceID UtteranceID
@@ -121,6 +132,8 @@ func (TalkStop) sealedEffect()                        {}
 func (TalkStop) Kind() vocab.EffectKind               { return vocab.EffectTalkStop }
 func (SendAudioCancel) sealedEffect()                 {}
 func (SendAudioCancel) Kind() vocab.EffectKind        { return vocab.EffectSendAudioCancel }
+func (PlaySound) sealedEffect()                       {}
+func (PlaySound) Kind() vocab.EffectKind              { return vocab.EffectPlaySound }
 func (Transcribe) sealedEffect()                      {}
 func (Transcribe) Kind() vocab.EffectKind             { return vocab.EffectTranscribe }
 func (Interpret) sealedEffect()                       {}

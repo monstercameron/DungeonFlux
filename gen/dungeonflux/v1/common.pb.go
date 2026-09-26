@@ -366,6 +366,168 @@ func (HostCommandKind) EnumDescriptor() ([]byte, []int) {
 	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{5}
 }
 
+type AudioChannel int32
+
+const (
+	AudioChannel_AUDIO_CHANNEL_UNSPECIFIED AudioChannel = 0
+	AudioChannel_AUDIO_CHANNEL_VOICE       AudioChannel = 1
+	AudioChannel_AUDIO_CHANNEL_MUSIC       AudioChannel = 2
+	AudioChannel_AUDIO_CHANNEL_AMBIENCE    AudioChannel = 3
+	AudioChannel_AUDIO_CHANNEL_SFX         AudioChannel = 4
+)
+
+// Enum value maps for AudioChannel.
+var (
+	AudioChannel_name = map[int32]string{
+		0: "AUDIO_CHANNEL_UNSPECIFIED",
+		1: "AUDIO_CHANNEL_VOICE",
+		2: "AUDIO_CHANNEL_MUSIC",
+		3: "AUDIO_CHANNEL_AMBIENCE",
+		4: "AUDIO_CHANNEL_SFX",
+	}
+	AudioChannel_value = map[string]int32{
+		"AUDIO_CHANNEL_UNSPECIFIED": 0,
+		"AUDIO_CHANNEL_VOICE":       1,
+		"AUDIO_CHANNEL_MUSIC":       2,
+		"AUDIO_CHANNEL_AMBIENCE":    3,
+		"AUDIO_CHANNEL_SFX":         4,
+	}
+)
+
+func (x AudioChannel) Enum() *AudioChannel {
+	p := new(AudioChannel)
+	*p = x
+	return p
+}
+
+func (x AudioChannel) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AudioChannel) Descriptor() protoreflect.EnumDescriptor {
+	return file_dungeonflux_v1_common_proto_enumTypes[6].Descriptor()
+}
+
+func (AudioChannel) Type() protoreflect.EnumType {
+	return &file_dungeonflux_v1_common_proto_enumTypes[6]
+}
+
+func (x AudioChannel) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AudioChannel.Descriptor instead.
+func (AudioChannel) EnumDescriptor() ([]byte, []int) {
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{6}
+}
+
+type AudioTargetKind int32
+
+const (
+	AudioTargetKind_AUDIO_TARGET_KIND_UNSPECIFIED AudioTargetKind = 0
+	AudioTargetKind_AUDIO_TARGET_KIND_DM          AudioTargetKind = 1
+	AudioTargetKind_AUDIO_TARGET_KIND_SEAT        AudioTargetKind = 2
+	AudioTargetKind_AUDIO_TARGET_KIND_ALL_PHONES  AudioTargetKind = 3
+)
+
+// Enum value maps for AudioTargetKind.
+var (
+	AudioTargetKind_name = map[int32]string{
+		0: "AUDIO_TARGET_KIND_UNSPECIFIED",
+		1: "AUDIO_TARGET_KIND_DM",
+		2: "AUDIO_TARGET_KIND_SEAT",
+		3: "AUDIO_TARGET_KIND_ALL_PHONES",
+	}
+	AudioTargetKind_value = map[string]int32{
+		"AUDIO_TARGET_KIND_UNSPECIFIED": 0,
+		"AUDIO_TARGET_KIND_DM":          1,
+		"AUDIO_TARGET_KIND_SEAT":        2,
+		"AUDIO_TARGET_KIND_ALL_PHONES":  3,
+	}
+)
+
+func (x AudioTargetKind) Enum() *AudioTargetKind {
+	p := new(AudioTargetKind)
+	*p = x
+	return p
+}
+
+func (x AudioTargetKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AudioTargetKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_dungeonflux_v1_common_proto_enumTypes[7].Descriptor()
+}
+
+func (AudioTargetKind) Type() protoreflect.EnumType {
+	return &file_dungeonflux_v1_common_proto_enumTypes[7]
+}
+
+func (x AudioTargetKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AudioTargetKind.Descriptor instead.
+func (AudioTargetKind) EnumDescriptor() ([]byte, []int) {
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{7}
+}
+
+type AudioMixCommandKind int32
+
+const (
+	AudioMixCommandKind_AUDIO_MIX_COMMAND_KIND_UNSPECIFIED AudioMixCommandKind = 0
+	AudioMixCommandKind_AUDIO_MIX_COMMAND_KIND_PLAY        AudioMixCommandKind = 1
+	AudioMixCommandKind_AUDIO_MIX_COMMAND_KIND_STOP        AudioMixCommandKind = 2
+	AudioMixCommandKind_AUDIO_MIX_COMMAND_KIND_CROSSFADE   AudioMixCommandKind = 3
+	AudioMixCommandKind_AUDIO_MIX_COMMAND_KIND_DUCK        AudioMixCommandKind = 4
+)
+
+// Enum value maps for AudioMixCommandKind.
+var (
+	AudioMixCommandKind_name = map[int32]string{
+		0: "AUDIO_MIX_COMMAND_KIND_UNSPECIFIED",
+		1: "AUDIO_MIX_COMMAND_KIND_PLAY",
+		2: "AUDIO_MIX_COMMAND_KIND_STOP",
+		3: "AUDIO_MIX_COMMAND_KIND_CROSSFADE",
+		4: "AUDIO_MIX_COMMAND_KIND_DUCK",
+	}
+	AudioMixCommandKind_value = map[string]int32{
+		"AUDIO_MIX_COMMAND_KIND_UNSPECIFIED": 0,
+		"AUDIO_MIX_COMMAND_KIND_PLAY":        1,
+		"AUDIO_MIX_COMMAND_KIND_STOP":        2,
+		"AUDIO_MIX_COMMAND_KIND_CROSSFADE":   3,
+		"AUDIO_MIX_COMMAND_KIND_DUCK":        4,
+	}
+)
+
+func (x AudioMixCommandKind) Enum() *AudioMixCommandKind {
+	p := new(AudioMixCommandKind)
+	*p = x
+	return p
+}
+
+func (x AudioMixCommandKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AudioMixCommandKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_dungeonflux_v1_common_proto_enumTypes[8].Descriptor()
+}
+
+func (AudioMixCommandKind) Type() protoreflect.EnumType {
+	return &file_dungeonflux_v1_common_proto_enumTypes[8]
+}
+
+func (x AudioMixCommandKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AudioMixCommandKind.Descriptor instead.
+func (AudioMixCommandKind) EnumDescriptor() ([]byte, []int) {
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{8}
+}
+
 type Empty struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -4738,20 +4900,244 @@ func (x *AudioCancel) GetAll() bool {
 	return false
 }
 
+type AudioTarget struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Kind          AudioTargetKind        `protobuf:"varint,1,opt,name=kind,proto3,enum=dungeonflux.v1.AudioTargetKind" json:"kind,omitempty"`
+	Seat          int32                  `protobuf:"varint,2,opt,name=seat,proto3" json:"seat,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AudioTarget) Reset() {
+	*x = AudioTarget{}
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[60]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AudioTarget) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AudioTarget) ProtoMessage() {}
+
+func (x *AudioTarget) ProtoReflect() protoreflect.Message {
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[60]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AudioTarget.ProtoReflect.Descriptor instead.
+func (*AudioTarget) Descriptor() ([]byte, []int) {
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{60}
+}
+
+func (x *AudioTarget) GetKind() AudioTargetKind {
+	if x != nil {
+		return x.Kind
+	}
+	return AudioTargetKind_AUDIO_TARGET_KIND_UNSPECIFIED
+}
+
+func (x *AudioTarget) GetSeat() int32 {
+	if x != nil {
+		return x.Seat
+	}
+	return 0
+}
+
+type EncodedAudioChunk struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CodecMime     string                 `protobuf:"bytes,1,opt,name=codec_mime,json=codecMime,proto3" json:"codec_mime,omitempty"`
+	Seq           uint64                 `protobuf:"varint,2,opt,name=seq,proto3" json:"seq,omitempty"`
+	Data          []byte                 `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
+	Final         bool                   `protobuf:"varint,4,opt,name=final,proto3" json:"final,omitempty"`
+	DurationMs    int32                  `protobuf:"varint,5,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EncodedAudioChunk) Reset() {
+	*x = EncodedAudioChunk{}
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[61]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EncodedAudioChunk) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EncodedAudioChunk) ProtoMessage() {}
+
+func (x *EncodedAudioChunk) ProtoReflect() protoreflect.Message {
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[61]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EncodedAudioChunk.ProtoReflect.Descriptor instead.
+func (*EncodedAudioChunk) Descriptor() ([]byte, []int) {
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{61}
+}
+
+func (x *EncodedAudioChunk) GetCodecMime() string {
+	if x != nil {
+		return x.CodecMime
+	}
+	return ""
+}
+
+func (x *EncodedAudioChunk) GetSeq() uint64 {
+	if x != nil {
+		return x.Seq
+	}
+	return 0
+}
+
+func (x *EncodedAudioChunk) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *EncodedAudioChunk) GetFinal() bool {
+	if x != nil {
+		return x.Final
+	}
+	return false
+}
+
+func (x *EncodedAudioChunk) GetDurationMs() int32 {
+	if x != nil {
+		return x.DurationMs
+	}
+	return 0
+}
+
+type AudioMixCommand struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Kind          AudioMixCommandKind    `protobuf:"varint,1,opt,name=kind,proto3,enum=dungeonflux.v1.AudioMixCommandKind" json:"kind,omitempty"`
+	TrackId       string                 `protobuf:"bytes,2,opt,name=track_id,json=trackId,proto3" json:"track_id,omitempty"`
+	StartAtMs     int64                  `protobuf:"varint,3,opt,name=start_at_ms,json=startAtMs,proto3" json:"start_at_ms,omitempty"`
+	DurationMs    int32                  `protobuf:"varint,4,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
+	Loop          bool                   `protobuf:"varint,5,opt,name=loop,proto3" json:"loop,omitempty"`
+	Gain          float32                `protobuf:"fixed32,6,opt,name=gain,proto3" json:"gain,omitempty"`
+	Duck          float32                `protobuf:"fixed32,7,opt,name=duck,proto3" json:"duck,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AudioMixCommand) Reset() {
+	*x = AudioMixCommand{}
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[62]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AudioMixCommand) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AudioMixCommand) ProtoMessage() {}
+
+func (x *AudioMixCommand) ProtoReflect() protoreflect.Message {
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[62]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AudioMixCommand.ProtoReflect.Descriptor instead.
+func (*AudioMixCommand) Descriptor() ([]byte, []int) {
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{62}
+}
+
+func (x *AudioMixCommand) GetKind() AudioMixCommandKind {
+	if x != nil {
+		return x.Kind
+	}
+	return AudioMixCommandKind_AUDIO_MIX_COMMAND_KIND_UNSPECIFIED
+}
+
+func (x *AudioMixCommand) GetTrackId() string {
+	if x != nil {
+		return x.TrackId
+	}
+	return ""
+}
+
+func (x *AudioMixCommand) GetStartAtMs() int64 {
+	if x != nil {
+		return x.StartAtMs
+	}
+	return 0
+}
+
+func (x *AudioMixCommand) GetDurationMs() int32 {
+	if x != nil {
+		return x.DurationMs
+	}
+	return 0
+}
+
+func (x *AudioMixCommand) GetLoop() bool {
+	if x != nil {
+		return x.Loop
+	}
+	return false
+}
+
+func (x *AudioMixCommand) GetGain() float32 {
+	if x != nil {
+		return x.Gain
+	}
+	return 0
+}
+
+func (x *AudioMixCommand) GetDuck() float32 {
+	if x != nil {
+		return x.Duck
+	}
+	return 0
+}
+
 type AudioMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Message:
 	//
 	//	*AudioMessage_Frame
 	//	*AudioMessage_Cancel
+	//	*AudioMessage_Chunk
+	//	*AudioMessage_Mix
 	Message       isAudioMessage_Message `protobuf_oneof:"message"`
+	Channel       AudioChannel           `protobuf:"varint,5,opt,name=channel,proto3,enum=dungeonflux.v1.AudioChannel" json:"channel,omitempty"`
+	Target        *AudioTarget           `protobuf:"bytes,6,opt,name=target,proto3" json:"target,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AudioMessage) Reset() {
 	*x = AudioMessage{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[60]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4763,7 +5149,7 @@ func (x *AudioMessage) String() string {
 func (*AudioMessage) ProtoMessage() {}
 
 func (x *AudioMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[60]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4776,7 +5162,7 @@ func (x *AudioMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AudioMessage.ProtoReflect.Descriptor instead.
 func (*AudioMessage) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{60}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *AudioMessage) GetMessage() isAudioMessage_Message {
@@ -4804,6 +5190,38 @@ func (x *AudioMessage) GetCancel() *AudioCancel {
 	return nil
 }
 
+func (x *AudioMessage) GetChunk() *EncodedAudioChunk {
+	if x != nil {
+		if x, ok := x.Message.(*AudioMessage_Chunk); ok {
+			return x.Chunk
+		}
+	}
+	return nil
+}
+
+func (x *AudioMessage) GetMix() *AudioMixCommand {
+	if x != nil {
+		if x, ok := x.Message.(*AudioMessage_Mix); ok {
+			return x.Mix
+		}
+	}
+	return nil
+}
+
+func (x *AudioMessage) GetChannel() AudioChannel {
+	if x != nil {
+		return x.Channel
+	}
+	return AudioChannel_AUDIO_CHANNEL_UNSPECIFIED
+}
+
+func (x *AudioMessage) GetTarget() *AudioTarget {
+	if x != nil {
+		return x.Target
+	}
+	return nil
+}
+
 type isAudioMessage_Message interface {
 	isAudioMessage_Message()
 }
@@ -4816,9 +5234,21 @@ type AudioMessage_Cancel struct {
 	Cancel *AudioCancel `protobuf:"bytes,2,opt,name=cancel,proto3,oneof"`
 }
 
+type AudioMessage_Chunk struct {
+	Chunk *EncodedAudioChunk `protobuf:"bytes,3,opt,name=chunk,proto3,oneof"`
+}
+
+type AudioMessage_Mix struct {
+	Mix *AudioMixCommand `protobuf:"bytes,4,opt,name=mix,proto3,oneof"`
+}
+
 func (*AudioMessage_Frame) isAudioMessage_Message() {}
 
 func (*AudioMessage_Cancel) isAudioMessage_Message() {}
+
+func (*AudioMessage_Chunk) isAudioMessage_Message() {}
+
+func (*AudioMessage_Mix) isAudioMessage_Message() {}
 
 type HostCommand struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -4834,7 +5264,7 @@ type HostCommand struct {
 
 func (x *HostCommand) Reset() {
 	*x = HostCommand{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[61]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4846,7 +5276,7 @@ func (x *HostCommand) String() string {
 func (*HostCommand) ProtoMessage() {}
 
 func (x *HostCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[61]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4859,7 +5289,7 @@ func (x *HostCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HostCommand.ProtoReflect.Descriptor instead.
 func (*HostCommand) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{61}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{64}
 }
 
 func (x *HostCommand) GetHostToken() string {
@@ -4914,7 +5344,7 @@ type HostAck struct {
 
 func (x *HostAck) Reset() {
 	*x = HostAck{}
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[62]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4926,7 +5356,7 @@ func (x *HostAck) String() string {
 func (*HostAck) ProtoMessage() {}
 
 func (x *HostAck) ProtoReflect() protoreflect.Message {
-	mi := &file_dungeonflux_v1_common_proto_msgTypes[62]
+	mi := &file_dungeonflux_v1_common_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4939,7 +5369,7 @@ func (x *HostAck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HostAck.ProtoReflect.Descriptor instead.
 func (*HostAck) Descriptor() ([]byte, []int) {
-	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{62}
+	return file_dungeonflux_v1_common_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *HostAck) GetOk() bool {
@@ -5329,10 +5759,34 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\x05final\x18\x06 \x01(\bR\x05final\"B\n" +
 	"\vAudioCancel\x12!\n" +
 	"\futterance_id\x18\x01 \x01(\tR\vutteranceId\x12\x10\n" +
-	"\x03all\x18\x02 \x01(\bR\x03all\"\x84\x01\n" +
+	"\x03all\x18\x02 \x01(\bR\x03all\"V\n" +
+	"\vAudioTarget\x123\n" +
+	"\x04kind\x18\x01 \x01(\x0e2\x1f.dungeonflux.v1.AudioTargetKindR\x04kind\x12\x12\n" +
+	"\x04seat\x18\x02 \x01(\x05R\x04seat\"\x8f\x01\n" +
+	"\x11EncodedAudioChunk\x12\x1d\n" +
+	"\n" +
+	"codec_mime\x18\x01 \x01(\tR\tcodecMime\x12\x10\n" +
+	"\x03seq\x18\x02 \x01(\x04R\x03seq\x12\x12\n" +
+	"\x04data\x18\x03 \x01(\fR\x04data\x12\x14\n" +
+	"\x05final\x18\x04 \x01(\bR\x05final\x12\x1f\n" +
+	"\vduration_ms\x18\x05 \x01(\x05R\n" +
+	"durationMs\"\xe2\x01\n" +
+	"\x0fAudioMixCommand\x127\n" +
+	"\x04kind\x18\x01 \x01(\x0e2#.dungeonflux.v1.AudioMixCommandKindR\x04kind\x12\x19\n" +
+	"\btrack_id\x18\x02 \x01(\tR\atrackId\x12\x1e\n" +
+	"\vstart_at_ms\x18\x03 \x01(\x03R\tstartAtMs\x12\x1f\n" +
+	"\vduration_ms\x18\x04 \x01(\x05R\n" +
+	"durationMs\x12\x12\n" +
+	"\x04loop\x18\x05 \x01(\bR\x04loop\x12\x12\n" +
+	"\x04gain\x18\x06 \x01(\x02R\x04gain\x12\x12\n" +
+	"\x04duck\x18\a \x01(\x02R\x04duck\"\xe1\x02\n" +
 	"\fAudioMessage\x122\n" +
 	"\x05frame\x18\x01 \x01(\v2\x1a.dungeonflux.v1.AudioFrameH\x00R\x05frame\x125\n" +
-	"\x06cancel\x18\x02 \x01(\v2\x1b.dungeonflux.v1.AudioCancelH\x00R\x06cancelB\t\n" +
+	"\x06cancel\x18\x02 \x01(\v2\x1b.dungeonflux.v1.AudioCancelH\x00R\x06cancel\x129\n" +
+	"\x05chunk\x18\x03 \x01(\v2!.dungeonflux.v1.EncodedAudioChunkH\x00R\x05chunk\x123\n" +
+	"\x03mix\x18\x04 \x01(\v2\x1f.dungeonflux.v1.AudioMixCommandH\x00R\x03mix\x126\n" +
+	"\achannel\x18\x05 \x01(\x0e2\x1c.dungeonflux.v1.AudioChannelR\achannel\x123\n" +
+	"\x06target\x18\x06 \x01(\v2\x1b.dungeonflux.v1.AudioTargetR\x06targetB\t\n" +
 	"\amessage\"\xbb\x01\n" +
 	"\vHostCommand\x12\x1d\n" +
 	"\n" +
@@ -5388,7 +5842,24 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\x1cHOST_COMMAND_KIND_TIMERS_OFF\x10\t\x12\x1f\n" +
 	"\x1bHOST_COMMAND_KIND_SPLAT_OFF\x10\n" +
 	"\x12!\n" +
-	"\x1dHOST_COMMAND_KIND_ROOM_LOCALE\x10\vBHZFgithub.com/monstercameron/DungeonFlux/gen/dungeonflux/v1;dungeonfluxv1b\x06proto3"
+	"\x1dHOST_COMMAND_KIND_ROOM_LOCALE\x10\v*\x92\x01\n" +
+	"\fAudioChannel\x12\x1d\n" +
+	"\x19AUDIO_CHANNEL_UNSPECIFIED\x10\x00\x12\x17\n" +
+	"\x13AUDIO_CHANNEL_VOICE\x10\x01\x12\x17\n" +
+	"\x13AUDIO_CHANNEL_MUSIC\x10\x02\x12\x1a\n" +
+	"\x16AUDIO_CHANNEL_AMBIENCE\x10\x03\x12\x15\n" +
+	"\x11AUDIO_CHANNEL_SFX\x10\x04*\x8c\x01\n" +
+	"\x0fAudioTargetKind\x12!\n" +
+	"\x1dAUDIO_TARGET_KIND_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14AUDIO_TARGET_KIND_DM\x10\x01\x12\x1a\n" +
+	"\x16AUDIO_TARGET_KIND_SEAT\x10\x02\x12 \n" +
+	"\x1cAUDIO_TARGET_KIND_ALL_PHONES\x10\x03*\xc6\x01\n" +
+	"\x13AudioMixCommandKind\x12&\n" +
+	"\"AUDIO_MIX_COMMAND_KIND_UNSPECIFIED\x10\x00\x12\x1f\n" +
+	"\x1bAUDIO_MIX_COMMAND_KIND_PLAY\x10\x01\x12\x1f\n" +
+	"\x1bAUDIO_MIX_COMMAND_KIND_STOP\x10\x02\x12$\n" +
+	" AUDIO_MIX_COMMAND_KIND_CROSSFADE\x10\x03\x12\x1f\n" +
+	"\x1bAUDIO_MIX_COMMAND_KIND_DUCK\x10\x04BHZFgithub.com/monstercameron/DungeonFlux/gen/dungeonflux/v1;dungeonfluxv1b\x06proto3"
 
 var (
 	file_dungeonflux_v1_common_proto_rawDescOnce sync.Once
@@ -5402,154 +5873,166 @@ func file_dungeonflux_v1_common_proto_rawDescGZIP() []byte {
 	return file_dungeonflux_v1_common_proto_rawDescData
 }
 
-var file_dungeonflux_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_dungeonflux_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 65)
+var file_dungeonflux_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 9)
+var file_dungeonflux_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 68)
 var file_dungeonflux_v1_common_proto_goTypes = []any{
-	(ClientKind)(0),         // 0: dungeonflux.v1.ClientKind
-	(ReportKind)(0),         // 1: dungeonflux.v1.ReportKind
-	(DiceState)(0),          // 2: dungeonflux.v1.DiceState
-	(DiceKind)(0),           // 3: dungeonflux.v1.DiceKind
-	(PTTState)(0),           // 4: dungeonflux.v1.PTTState
-	(HostCommandKind)(0),    // 5: dungeonflux.v1.HostCommandKind
-	(*Empty)(nil),           // 6: dungeonflux.v1.Empty
-	(*Cell)(nil),            // 7: dungeonflux.v1.Cell
-	(*Option)(nil),          // 8: dungeonflux.v1.Option
-	(*Text)(nil),            // 9: dungeonflux.v1.Text
-	(*Move)(nil),            // 10: dungeonflux.v1.Move
-	(*MovePreview)(nil),     // 11: dungeonflux.v1.MovePreview
-	(*DamagePreview)(nil),   // 12: dungeonflux.v1.DamagePreview
-	(*Timer)(nil),           // 13: dungeonflux.v1.Timer
-	(*Narration)(nil),       // 14: dungeonflux.v1.Narration
-	(*Subtitle)(nil),        // 15: dungeonflux.v1.Subtitle
-	(*Dice)(nil),            // 16: dungeonflux.v1.Dice
-	(*Damage)(nil),          // 17: dungeonflux.v1.Damage
-	(*Clip)(nil),            // 18: dungeonflux.v1.Clip
-	(*Layer)(nil),           // 19: dungeonflux.v1.Layer
-	(*Music)(nil),           // 20: dungeonflux.v1.Music
-	(*SoundEffect)(nil),     // 21: dungeonflux.v1.SoundEffect
-	(*BuildCard)(nil),       // 22: dungeonflux.v1.BuildCard
-	(*Shot)(nil),            // 23: dungeonflux.v1.Shot
-	(*LobbySeat)(nil),       // 24: dungeonflux.v1.LobbySeat
-	(*Lobby)(nil),           // 25: dungeonflux.v1.Lobby
-	(*Battlefield)(nil),     // 26: dungeonflux.v1.Battlefield
-	(*Grid)(nil),            // 27: dungeonflux.v1.Grid
-	(*FlatBattlefield)(nil), // 28: dungeonflux.v1.FlatBattlefield
-	(*Camera)(nil),          // 29: dungeonflux.v1.Camera
-	(*Token)(nil),           // 30: dungeonflux.v1.Token
-	(*Highlight)(nil),       // 31: dungeonflux.v1.Highlight
-	(*TurnOrderEntry)(nil),  // 32: dungeonflux.v1.TurnOrderEntry
-	(*CombatView)(nil),      // 33: dungeonflux.v1.CombatView
-	(*MiniGrid)(nil),        // 34: dungeonflux.v1.MiniGrid
-	(*DMView)(nil),          // 35: dungeonflux.v1.DMView
-	(*CharacterFlavor)(nil), // 36: dungeonflux.v1.CharacterFlavor
-	(*CharacterBuild)(nil),  // 37: dungeonflux.v1.CharacterBuild
-	(*Character)(nil),       // 38: dungeonflux.v1.Character
-	(*PTT)(nil),             // 39: dungeonflux.v1.PTT
-	(*PhoneView)(nil),       // 40: dungeonflux.v1.PhoneView
-	(*AssetSlot)(nil),       // 41: dungeonflux.v1.AssetSlot
-	(*HostView)(nil),        // 42: dungeonflux.v1.HostView
-	(*ScreenState)(nil),     // 43: dungeonflux.v1.ScreenState
-	(*WatchRequest)(nil),    // 44: dungeonflux.v1.WatchRequest
-	(*ClientCommand)(nil),   // 45: dungeonflux.v1.ClientCommand
-	(*JoinRequest)(nil),     // 46: dungeonflux.v1.JoinRequest
-	(*JoinResponse)(nil),    // 47: dungeonflux.v1.JoinResponse
-	(*ActRequest)(nil),      // 48: dungeonflux.v1.ActRequest
-	(*ActResponse)(nil),     // 49: dungeonflux.v1.ActResponse
-	(*SayRequest)(nil),      // 50: dungeonflux.v1.SayRequest
-	(*SayResponse)(nil),     // 51: dungeonflux.v1.SayResponse
-	(*ReportRequest)(nil),   // 52: dungeonflux.v1.ReportRequest
-	(*ReportResponse)(nil),  // 53: dungeonflux.v1.ReportResponse
-	(*TalkStart)(nil),       // 54: dungeonflux.v1.TalkStart
-	(*AudioChunk)(nil),      // 55: dungeonflux.v1.AudioChunk
-	(*TalkEnd)(nil),         // 56: dungeonflux.v1.TalkEnd
-	(*TalkRequest)(nil),     // 57: dungeonflux.v1.TalkRequest
-	(*ChunkAck)(nil),        // 58: dungeonflux.v1.ChunkAck
-	(*Transcript)(nil),      // 59: dungeonflux.v1.Transcript
-	(*TalkStop)(nil),        // 60: dungeonflux.v1.TalkStop
-	(*TalkError)(nil),       // 61: dungeonflux.v1.TalkError
-	(*TalkResponse)(nil),    // 62: dungeonflux.v1.TalkResponse
-	(*ListenRequest)(nil),   // 63: dungeonflux.v1.ListenRequest
-	(*AudioFrame)(nil),      // 64: dungeonflux.v1.AudioFrame
-	(*AudioCancel)(nil),     // 65: dungeonflux.v1.AudioCancel
-	(*AudioMessage)(nil),    // 66: dungeonflux.v1.AudioMessage
-	(*HostCommand)(nil),     // 67: dungeonflux.v1.HostCommand
-	(*HostAck)(nil),         // 68: dungeonflux.v1.HostAck
-	nil,                     // 69: dungeonflux.v1.Text.ArgsEntry
-	nil,                     // 70: dungeonflux.v1.CharacterBuild.SkillProfsEntry
+	(ClientKind)(0),           // 0: dungeonflux.v1.ClientKind
+	(ReportKind)(0),           // 1: dungeonflux.v1.ReportKind
+	(DiceState)(0),            // 2: dungeonflux.v1.DiceState
+	(DiceKind)(0),             // 3: dungeonflux.v1.DiceKind
+	(PTTState)(0),             // 4: dungeonflux.v1.PTTState
+	(HostCommandKind)(0),      // 5: dungeonflux.v1.HostCommandKind
+	(AudioChannel)(0),         // 6: dungeonflux.v1.AudioChannel
+	(AudioTargetKind)(0),      // 7: dungeonflux.v1.AudioTargetKind
+	(AudioMixCommandKind)(0),  // 8: dungeonflux.v1.AudioMixCommandKind
+	(*Empty)(nil),             // 9: dungeonflux.v1.Empty
+	(*Cell)(nil),              // 10: dungeonflux.v1.Cell
+	(*Option)(nil),            // 11: dungeonflux.v1.Option
+	(*Text)(nil),              // 12: dungeonflux.v1.Text
+	(*Move)(nil),              // 13: dungeonflux.v1.Move
+	(*MovePreview)(nil),       // 14: dungeonflux.v1.MovePreview
+	(*DamagePreview)(nil),     // 15: dungeonflux.v1.DamagePreview
+	(*Timer)(nil),             // 16: dungeonflux.v1.Timer
+	(*Narration)(nil),         // 17: dungeonflux.v1.Narration
+	(*Subtitle)(nil),          // 18: dungeonflux.v1.Subtitle
+	(*Dice)(nil),              // 19: dungeonflux.v1.Dice
+	(*Damage)(nil),            // 20: dungeonflux.v1.Damage
+	(*Clip)(nil),              // 21: dungeonflux.v1.Clip
+	(*Layer)(nil),             // 22: dungeonflux.v1.Layer
+	(*Music)(nil),             // 23: dungeonflux.v1.Music
+	(*SoundEffect)(nil),       // 24: dungeonflux.v1.SoundEffect
+	(*BuildCard)(nil),         // 25: dungeonflux.v1.BuildCard
+	(*Shot)(nil),              // 26: dungeonflux.v1.Shot
+	(*LobbySeat)(nil),         // 27: dungeonflux.v1.LobbySeat
+	(*Lobby)(nil),             // 28: dungeonflux.v1.Lobby
+	(*Battlefield)(nil),       // 29: dungeonflux.v1.Battlefield
+	(*Grid)(nil),              // 30: dungeonflux.v1.Grid
+	(*FlatBattlefield)(nil),   // 31: dungeonflux.v1.FlatBattlefield
+	(*Camera)(nil),            // 32: dungeonflux.v1.Camera
+	(*Token)(nil),             // 33: dungeonflux.v1.Token
+	(*Highlight)(nil),         // 34: dungeonflux.v1.Highlight
+	(*TurnOrderEntry)(nil),    // 35: dungeonflux.v1.TurnOrderEntry
+	(*CombatView)(nil),        // 36: dungeonflux.v1.CombatView
+	(*MiniGrid)(nil),          // 37: dungeonflux.v1.MiniGrid
+	(*DMView)(nil),            // 38: dungeonflux.v1.DMView
+	(*CharacterFlavor)(nil),   // 39: dungeonflux.v1.CharacterFlavor
+	(*CharacterBuild)(nil),    // 40: dungeonflux.v1.CharacterBuild
+	(*Character)(nil),         // 41: dungeonflux.v1.Character
+	(*PTT)(nil),               // 42: dungeonflux.v1.PTT
+	(*PhoneView)(nil),         // 43: dungeonflux.v1.PhoneView
+	(*AssetSlot)(nil),         // 44: dungeonflux.v1.AssetSlot
+	(*HostView)(nil),          // 45: dungeonflux.v1.HostView
+	(*ScreenState)(nil),       // 46: dungeonflux.v1.ScreenState
+	(*WatchRequest)(nil),      // 47: dungeonflux.v1.WatchRequest
+	(*ClientCommand)(nil),     // 48: dungeonflux.v1.ClientCommand
+	(*JoinRequest)(nil),       // 49: dungeonflux.v1.JoinRequest
+	(*JoinResponse)(nil),      // 50: dungeonflux.v1.JoinResponse
+	(*ActRequest)(nil),        // 51: dungeonflux.v1.ActRequest
+	(*ActResponse)(nil),       // 52: dungeonflux.v1.ActResponse
+	(*SayRequest)(nil),        // 53: dungeonflux.v1.SayRequest
+	(*SayResponse)(nil),       // 54: dungeonflux.v1.SayResponse
+	(*ReportRequest)(nil),     // 55: dungeonflux.v1.ReportRequest
+	(*ReportResponse)(nil),    // 56: dungeonflux.v1.ReportResponse
+	(*TalkStart)(nil),         // 57: dungeonflux.v1.TalkStart
+	(*AudioChunk)(nil),        // 58: dungeonflux.v1.AudioChunk
+	(*TalkEnd)(nil),           // 59: dungeonflux.v1.TalkEnd
+	(*TalkRequest)(nil),       // 60: dungeonflux.v1.TalkRequest
+	(*ChunkAck)(nil),          // 61: dungeonflux.v1.ChunkAck
+	(*Transcript)(nil),        // 62: dungeonflux.v1.Transcript
+	(*TalkStop)(nil),          // 63: dungeonflux.v1.TalkStop
+	(*TalkError)(nil),         // 64: dungeonflux.v1.TalkError
+	(*TalkResponse)(nil),      // 65: dungeonflux.v1.TalkResponse
+	(*ListenRequest)(nil),     // 66: dungeonflux.v1.ListenRequest
+	(*AudioFrame)(nil),        // 67: dungeonflux.v1.AudioFrame
+	(*AudioCancel)(nil),       // 68: dungeonflux.v1.AudioCancel
+	(*AudioTarget)(nil),       // 69: dungeonflux.v1.AudioTarget
+	(*EncodedAudioChunk)(nil), // 70: dungeonflux.v1.EncodedAudioChunk
+	(*AudioMixCommand)(nil),   // 71: dungeonflux.v1.AudioMixCommand
+	(*AudioMessage)(nil),      // 72: dungeonflux.v1.AudioMessage
+	(*HostCommand)(nil),       // 73: dungeonflux.v1.HostCommand
+	(*HostAck)(nil),           // 74: dungeonflux.v1.HostAck
+	nil,                       // 75: dungeonflux.v1.Text.ArgsEntry
+	nil,                       // 76: dungeonflux.v1.CharacterBuild.SkillProfsEntry
 }
 var file_dungeonflux_v1_common_proto_depIdxs = []int32{
-	69, // 0: dungeonflux.v1.Text.args:type_name -> dungeonflux.v1.Text.ArgsEntry
-	8,  // 1: dungeonflux.v1.Move.options:type_name -> dungeonflux.v1.Option
-	11, // 2: dungeonflux.v1.Move.preview:type_name -> dungeonflux.v1.MovePreview
-	7,  // 3: dungeonflux.v1.Move.cell:type_name -> dungeonflux.v1.Cell
-	9,  // 4: dungeonflux.v1.Move.reason_msg:type_name -> dungeonflux.v1.Text
-	12, // 5: dungeonflux.v1.MovePreview.damage:type_name -> dungeonflux.v1.DamagePreview
+	75, // 0: dungeonflux.v1.Text.args:type_name -> dungeonflux.v1.Text.ArgsEntry
+	11, // 1: dungeonflux.v1.Move.options:type_name -> dungeonflux.v1.Option
+	14, // 2: dungeonflux.v1.Move.preview:type_name -> dungeonflux.v1.MovePreview
+	10, // 3: dungeonflux.v1.Move.cell:type_name -> dungeonflux.v1.Cell
+	12, // 4: dungeonflux.v1.Move.reason_msg:type_name -> dungeonflux.v1.Text
+	15, // 5: dungeonflux.v1.MovePreview.damage:type_name -> dungeonflux.v1.DamagePreview
 	2,  // 6: dungeonflux.v1.Dice.state:type_name -> dungeonflux.v1.DiceState
 	3,  // 7: dungeonflux.v1.Dice.kind:type_name -> dungeonflux.v1.DiceKind
-	17, // 8: dungeonflux.v1.Dice.damage:type_name -> dungeonflux.v1.Damage
-	27, // 9: dungeonflux.v1.Battlefield.grid:type_name -> dungeonflux.v1.Grid
-	28, // 10: dungeonflux.v1.Battlefield.flat:type_name -> dungeonflux.v1.FlatBattlefield
-	29, // 11: dungeonflux.v1.Battlefield.cameras:type_name -> dungeonflux.v1.Camera
-	29, // 12: dungeonflux.v1.Battlefield.camera:type_name -> dungeonflux.v1.Camera
-	7,  // 13: dungeonflux.v1.Grid.origin:type_name -> dungeonflux.v1.Cell
-	7,  // 14: dungeonflux.v1.Grid.walkable:type_name -> dungeonflux.v1.Cell
-	7,  // 15: dungeonflux.v1.Token.cell:type_name -> dungeonflux.v1.Cell
-	7,  // 16: dungeonflux.v1.Highlight.cell:type_name -> dungeonflux.v1.Cell
-	34, // 17: dungeonflux.v1.CombatView.mini_grid:type_name -> dungeonflux.v1.MiniGrid
-	7,  // 18: dungeonflux.v1.MiniGrid.walkable:type_name -> dungeonflux.v1.Cell
-	7,  // 19: dungeonflux.v1.MiniGrid.reachable:type_name -> dungeonflux.v1.Cell
-	7,  // 20: dungeonflux.v1.MiniGrid.me:type_name -> dungeonflux.v1.Cell
-	7,  // 21: dungeonflux.v1.MiniGrid.thrall:type_name -> dungeonflux.v1.Cell
-	19, // 22: dungeonflux.v1.DMView.layers:type_name -> dungeonflux.v1.Layer
-	18, // 23: dungeonflux.v1.DMView.clip:type_name -> dungeonflux.v1.Clip
-	14, // 24: dungeonflux.v1.DMView.narration:type_name -> dungeonflux.v1.Narration
-	15, // 25: dungeonflux.v1.DMView.subtitle:type_name -> dungeonflux.v1.Subtitle
-	16, // 26: dungeonflux.v1.DMView.dice:type_name -> dungeonflux.v1.Dice
-	13, // 27: dungeonflux.v1.DMView.turn_timer:type_name -> dungeonflux.v1.Timer
-	22, // 28: dungeonflux.v1.DMView.build_cards:type_name -> dungeonflux.v1.BuildCard
-	23, // 29: dungeonflux.v1.DMView.shot:type_name -> dungeonflux.v1.Shot
-	20, // 30: dungeonflux.v1.DMView.music:type_name -> dungeonflux.v1.Music
-	21, // 31: dungeonflux.v1.DMView.sfx:type_name -> dungeonflux.v1.SoundEffect
-	26, // 32: dungeonflux.v1.DMView.battlefield:type_name -> dungeonflux.v1.Battlefield
-	30, // 33: dungeonflux.v1.DMView.tokens:type_name -> dungeonflux.v1.Token
-	31, // 34: dungeonflux.v1.DMView.highlights:type_name -> dungeonflux.v1.Highlight
-	32, // 35: dungeonflux.v1.DMView.turn_order:type_name -> dungeonflux.v1.TurnOrderEntry
-	9,  // 36: dungeonflux.v1.DMView.notice:type_name -> dungeonflux.v1.Text
-	24, // 37: dungeonflux.v1.DMView.seats:type_name -> dungeonflux.v1.LobbySeat
-	25, // 38: dungeonflux.v1.DMView.lobby:type_name -> dungeonflux.v1.Lobby
-	70, // 39: dungeonflux.v1.CharacterBuild.skill_profs:type_name -> dungeonflux.v1.CharacterBuild.SkillProfsEntry
-	36, // 40: dungeonflux.v1.Character.flavor:type_name -> dungeonflux.v1.CharacterFlavor
-	37, // 41: dungeonflux.v1.Character.build:type_name -> dungeonflux.v1.CharacterBuild
+	20, // 8: dungeonflux.v1.Dice.damage:type_name -> dungeonflux.v1.Damage
+	30, // 9: dungeonflux.v1.Battlefield.grid:type_name -> dungeonflux.v1.Grid
+	31, // 10: dungeonflux.v1.Battlefield.flat:type_name -> dungeonflux.v1.FlatBattlefield
+	32, // 11: dungeonflux.v1.Battlefield.cameras:type_name -> dungeonflux.v1.Camera
+	32, // 12: dungeonflux.v1.Battlefield.camera:type_name -> dungeonflux.v1.Camera
+	10, // 13: dungeonflux.v1.Grid.origin:type_name -> dungeonflux.v1.Cell
+	10, // 14: dungeonflux.v1.Grid.walkable:type_name -> dungeonflux.v1.Cell
+	10, // 15: dungeonflux.v1.Token.cell:type_name -> dungeonflux.v1.Cell
+	10, // 16: dungeonflux.v1.Highlight.cell:type_name -> dungeonflux.v1.Cell
+	37, // 17: dungeonflux.v1.CombatView.mini_grid:type_name -> dungeonflux.v1.MiniGrid
+	10, // 18: dungeonflux.v1.MiniGrid.walkable:type_name -> dungeonflux.v1.Cell
+	10, // 19: dungeonflux.v1.MiniGrid.reachable:type_name -> dungeonflux.v1.Cell
+	10, // 20: dungeonflux.v1.MiniGrid.me:type_name -> dungeonflux.v1.Cell
+	10, // 21: dungeonflux.v1.MiniGrid.thrall:type_name -> dungeonflux.v1.Cell
+	22, // 22: dungeonflux.v1.DMView.layers:type_name -> dungeonflux.v1.Layer
+	21, // 23: dungeonflux.v1.DMView.clip:type_name -> dungeonflux.v1.Clip
+	17, // 24: dungeonflux.v1.DMView.narration:type_name -> dungeonflux.v1.Narration
+	18, // 25: dungeonflux.v1.DMView.subtitle:type_name -> dungeonflux.v1.Subtitle
+	19, // 26: dungeonflux.v1.DMView.dice:type_name -> dungeonflux.v1.Dice
+	16, // 27: dungeonflux.v1.DMView.turn_timer:type_name -> dungeonflux.v1.Timer
+	25, // 28: dungeonflux.v1.DMView.build_cards:type_name -> dungeonflux.v1.BuildCard
+	26, // 29: dungeonflux.v1.DMView.shot:type_name -> dungeonflux.v1.Shot
+	23, // 30: dungeonflux.v1.DMView.music:type_name -> dungeonflux.v1.Music
+	24, // 31: dungeonflux.v1.DMView.sfx:type_name -> dungeonflux.v1.SoundEffect
+	29, // 32: dungeonflux.v1.DMView.battlefield:type_name -> dungeonflux.v1.Battlefield
+	33, // 33: dungeonflux.v1.DMView.tokens:type_name -> dungeonflux.v1.Token
+	34, // 34: dungeonflux.v1.DMView.highlights:type_name -> dungeonflux.v1.Highlight
+	35, // 35: dungeonflux.v1.DMView.turn_order:type_name -> dungeonflux.v1.TurnOrderEntry
+	12, // 36: dungeonflux.v1.DMView.notice:type_name -> dungeonflux.v1.Text
+	27, // 37: dungeonflux.v1.DMView.seats:type_name -> dungeonflux.v1.LobbySeat
+	28, // 38: dungeonflux.v1.DMView.lobby:type_name -> dungeonflux.v1.Lobby
+	76, // 39: dungeonflux.v1.CharacterBuild.skill_profs:type_name -> dungeonflux.v1.CharacterBuild.SkillProfsEntry
+	39, // 40: dungeonflux.v1.Character.flavor:type_name -> dungeonflux.v1.CharacterFlavor
+	40, // 41: dungeonflux.v1.Character.build:type_name -> dungeonflux.v1.CharacterBuild
 	4,  // 42: dungeonflux.v1.PTT.state:type_name -> dungeonflux.v1.PTTState
-	38, // 43: dungeonflux.v1.PhoneView.character:type_name -> dungeonflux.v1.Character
-	10, // 44: dungeonflux.v1.PhoneView.moves:type_name -> dungeonflux.v1.Move
-	39, // 45: dungeonflux.v1.PhoneView.ptt:type_name -> dungeonflux.v1.PTT
-	13, // 46: dungeonflux.v1.PhoneView.turn_timer:type_name -> dungeonflux.v1.Timer
-	33, // 47: dungeonflux.v1.PhoneView.combat:type_name -> dungeonflux.v1.CombatView
-	9,  // 48: dungeonflux.v1.PhoneView.status_msg:type_name -> dungeonflux.v1.Text
-	35, // 49: dungeonflux.v1.HostView.dm:type_name -> dungeonflux.v1.DMView
-	41, // 50: dungeonflux.v1.HostView.asset_slots:type_name -> dungeonflux.v1.AssetSlot
-	35, // 51: dungeonflux.v1.ScreenState.dm:type_name -> dungeonflux.v1.DMView
-	40, // 52: dungeonflux.v1.ScreenState.phone:type_name -> dungeonflux.v1.PhoneView
-	42, // 53: dungeonflux.v1.ScreenState.host:type_name -> dungeonflux.v1.HostView
+	41, // 43: dungeonflux.v1.PhoneView.character:type_name -> dungeonflux.v1.Character
+	13, // 44: dungeonflux.v1.PhoneView.moves:type_name -> dungeonflux.v1.Move
+	42, // 45: dungeonflux.v1.PhoneView.ptt:type_name -> dungeonflux.v1.PTT
+	16, // 46: dungeonflux.v1.PhoneView.turn_timer:type_name -> dungeonflux.v1.Timer
+	36, // 47: dungeonflux.v1.PhoneView.combat:type_name -> dungeonflux.v1.CombatView
+	12, // 48: dungeonflux.v1.PhoneView.status_msg:type_name -> dungeonflux.v1.Text
+	38, // 49: dungeonflux.v1.HostView.dm:type_name -> dungeonflux.v1.DMView
+	44, // 50: dungeonflux.v1.HostView.asset_slots:type_name -> dungeonflux.v1.AssetSlot
+	38, // 51: dungeonflux.v1.ScreenState.dm:type_name -> dungeonflux.v1.DMView
+	43, // 52: dungeonflux.v1.ScreenState.phone:type_name -> dungeonflux.v1.PhoneView
+	45, // 53: dungeonflux.v1.ScreenState.host:type_name -> dungeonflux.v1.HostView
 	0,  // 54: dungeonflux.v1.JoinRequest.kind:type_name -> dungeonflux.v1.ClientKind
-	7,  // 55: dungeonflux.v1.ActRequest.cell:type_name -> dungeonflux.v1.Cell
+	10, // 55: dungeonflux.v1.ActRequest.cell:type_name -> dungeonflux.v1.Cell
 	1,  // 56: dungeonflux.v1.ReportRequest.kind:type_name -> dungeonflux.v1.ReportKind
-	54, // 57: dungeonflux.v1.TalkRequest.start:type_name -> dungeonflux.v1.TalkStart
-	55, // 58: dungeonflux.v1.TalkRequest.chunk:type_name -> dungeonflux.v1.AudioChunk
-	56, // 59: dungeonflux.v1.TalkRequest.end:type_name -> dungeonflux.v1.TalkEnd
-	58, // 60: dungeonflux.v1.TalkResponse.ack:type_name -> dungeonflux.v1.ChunkAck
-	59, // 61: dungeonflux.v1.TalkResponse.transcript:type_name -> dungeonflux.v1.Transcript
-	60, // 62: dungeonflux.v1.TalkResponse.stop:type_name -> dungeonflux.v1.TalkStop
-	61, // 63: dungeonflux.v1.TalkResponse.error:type_name -> dungeonflux.v1.TalkError
-	64, // 64: dungeonflux.v1.AudioMessage.frame:type_name -> dungeonflux.v1.AudioFrame
-	65, // 65: dungeonflux.v1.AudioMessage.cancel:type_name -> dungeonflux.v1.AudioCancel
-	5,  // 66: dungeonflux.v1.HostCommand.command:type_name -> dungeonflux.v1.HostCommandKind
-	67, // [67:67] is the sub-list for method output_type
-	67, // [67:67] is the sub-list for method input_type
-	67, // [67:67] is the sub-list for extension type_name
-	67, // [67:67] is the sub-list for extension extendee
-	0,  // [0:67] is the sub-list for field type_name
+	57, // 57: dungeonflux.v1.TalkRequest.start:type_name -> dungeonflux.v1.TalkStart
+	58, // 58: dungeonflux.v1.TalkRequest.chunk:type_name -> dungeonflux.v1.AudioChunk
+	59, // 59: dungeonflux.v1.TalkRequest.end:type_name -> dungeonflux.v1.TalkEnd
+	61, // 60: dungeonflux.v1.TalkResponse.ack:type_name -> dungeonflux.v1.ChunkAck
+	62, // 61: dungeonflux.v1.TalkResponse.transcript:type_name -> dungeonflux.v1.Transcript
+	63, // 62: dungeonflux.v1.TalkResponse.stop:type_name -> dungeonflux.v1.TalkStop
+	64, // 63: dungeonflux.v1.TalkResponse.error:type_name -> dungeonflux.v1.TalkError
+	7,  // 64: dungeonflux.v1.AudioTarget.kind:type_name -> dungeonflux.v1.AudioTargetKind
+	8,  // 65: dungeonflux.v1.AudioMixCommand.kind:type_name -> dungeonflux.v1.AudioMixCommandKind
+	67, // 66: dungeonflux.v1.AudioMessage.frame:type_name -> dungeonflux.v1.AudioFrame
+	68, // 67: dungeonflux.v1.AudioMessage.cancel:type_name -> dungeonflux.v1.AudioCancel
+	70, // 68: dungeonflux.v1.AudioMessage.chunk:type_name -> dungeonflux.v1.EncodedAudioChunk
+	71, // 69: dungeonflux.v1.AudioMessage.mix:type_name -> dungeonflux.v1.AudioMixCommand
+	6,  // 70: dungeonflux.v1.AudioMessage.channel:type_name -> dungeonflux.v1.AudioChannel
+	69, // 71: dungeonflux.v1.AudioMessage.target:type_name -> dungeonflux.v1.AudioTarget
+	5,  // 72: dungeonflux.v1.HostCommand.command:type_name -> dungeonflux.v1.HostCommandKind
+	73, // [73:73] is the sub-list for method output_type
+	73, // [73:73] is the sub-list for method input_type
+	73, // [73:73] is the sub-list for extension type_name
+	73, // [73:73] is the sub-list for extension extendee
+	0,  // [0:73] is the sub-list for field type_name
 }
 
 func init() { file_dungeonflux_v1_common_proto_init() }
@@ -5573,17 +6056,19 @@ func file_dungeonflux_v1_common_proto_init() {
 		(*TalkResponse_Stop)(nil),
 		(*TalkResponse_Error)(nil),
 	}
-	file_dungeonflux_v1_common_proto_msgTypes[60].OneofWrappers = []any{
+	file_dungeonflux_v1_common_proto_msgTypes[63].OneofWrappers = []any{
 		(*AudioMessage_Frame)(nil),
 		(*AudioMessage_Cancel)(nil),
+		(*AudioMessage_Chunk)(nil),
+		(*AudioMessage_Mix)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_dungeonflux_v1_common_proto_rawDesc), len(file_dungeonflux_v1_common_proto_rawDesc)),
-			NumEnums:      6,
-			NumMessages:   65,
+			NumEnums:      9,
+			NumMessages:   68,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

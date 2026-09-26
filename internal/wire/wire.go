@@ -161,6 +161,13 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 		_ = logFile.Close()
 		return nil, fmt.Errorf("wire: create executors: %w", err)
 	}
+	audioRouter, err := newAudioRouter(listen)
+	if err != nil {
+		_ = store.Close()
+		_ = logFile.Close()
+		return nil, fmt.Errorf("wire: create audio router: %w", err)
+	}
+	registerAudioExecutor(runner, audioRouter, assetCatalog)
 	room := runtime.NewRoom(roomEngine, clock.Real{}, store, logger, watch.Publish,
 		runtime.WithRunner(runner), runtime.WithRoomState(roomState),
 		runtime.WithNewGame(func(runSeed []byte) ports.Engine {
@@ -214,7 +221,7 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 		return nil, fmt.Errorf("wire: create talk server: %w", err)
 	}
 	df.RegisterVoiceServiceServer(grpcServer, talk)
-	df.RegisterAudioServiceServer(grpcServer, &audioService{hub: listen})
+	df.RegisterAudioServiceServer(grpcServer, &audioStreamService{hub: listen, sessions: session})
 	apiServer, err := api.NewServer(grpcServer, cfg.Server.AllowedOrigins)
 	if err != nil {
 		cancel()

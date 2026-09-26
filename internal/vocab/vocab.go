@@ -186,6 +186,8 @@ const (
 	JobFailed JobState = "failed"
 	// SoundMusic identifies music.
 	SoundMusic SoundKind = "music"
+	// SoundAmbience identifies a continuous environmental bed.
+	SoundAmbience SoundKind = "ambience"
 	// SoundSFX identifies a sound effect.
 	SoundSFX SoundKind = "sfx"
 	// MsgSystem identifies a system message.
