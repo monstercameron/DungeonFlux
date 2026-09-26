@@ -37,15 +37,16 @@ const (
 
 // PTTModel owns one recording and uploads chunks in sequence.
 type PTTModel struct {
-	opener TalkOpener
-	token  string
-	mu     sync.Mutex
-	state  PTTState
-	queue  chan []byte
-	stream TalkStream
-	done   chan struct{}
-	stop   chan struct{}
-	err    error
+	opener  TalkOpener
+	token   string
+	mu      sync.Mutex
+	state   PTTState
+	queue   chan []byte
+	pending int
+	stream  TalkStream
+	done    chan struct{}
+	stop    chan struct{}
+	err     error
 }
 
 // NewPTTModel creates a recorder model with a bounded audio queue.
@@ -108,8 +109,14 @@ func (m *PTTModel) QueueChunk(chunk []byte) bool {
 		m.mu.Unlock()
 		return false
 	}
+	if m.pending >= cap(m.queue) {
+		m.state, m.err = PTTFailed, errors.New("ptt audio queue is full")
+		m.mu.Unlock()
+		return false
+	}
 	select {
 	case m.queue <- copyOfChunk:
+		m.pending++
 		m.mu.Unlock()
 		return true
 	default:
@@ -166,6 +173,9 @@ func (m *PTTModel) upload(ctx context.Context, stream TalkStream, done, stop cha
 				if err := m.sendChunk(stream, seq, chunk); err != nil {
 					sendErr = err
 				}
+				m.mu.Lock()
+				m.pending--
+				m.mu.Unlock()
 				seq++
 			default:
 				goto drained
@@ -178,6 +188,9 @@ func (m *PTTModel) upload(ctx context.Context, stream TalkStream, done, stop cha
 				sendErr = err
 				m.fail(err)
 			}
+			m.mu.Lock()
+			m.pending--
+			m.mu.Unlock()
 			seq++
 		case <-stop:
 			draining = true
