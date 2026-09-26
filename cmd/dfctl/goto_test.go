@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -55,7 +56,7 @@ func TestParseGotoOptionsAndValidation(t *testing.T) {
 
 func TestRunGotoRejectsUnknownTarget(t *testing.T) {
 	var stderr strings.Builder
-	if code, handled := runGoto(nil, []string{"goto", "opening"}, io.Discard, &stderr); !handled || code != exitTransport || !strings.Contains(stderr.String(), "usage") {
+	if code, handled := runGoto(context.TODO(), []string{"goto", "opening"}, io.Discard, &stderr); !handled || code != exitTransport || !strings.Contains(stderr.String(), "usage") {
 		t.Fatalf("%d %v %q", code, handled, stderr.String())
 	}
 }

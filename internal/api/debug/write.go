@@ -108,6 +108,14 @@ func decodeEvent(kind, payload string) (domain.Event, error) {
 		event = domain.DebugReset{}
 	case vocab.EventDebugGoto:
 		event = domain.DebugGoto{}
+	case vocab.EventDebugPatch:
+		event = domain.DebugPatch{}
+	case vocab.EventDebugTimer:
+		event = domain.DebugTimer{}
+	case vocab.EventDebugForceDice:
+		event = domain.DebugForceDice{}
+	case "host_timers_on":
+		event = domain.HostCmd{Cmd: vocab.HostCmd("TIMERS_ON")}
 	default:
 		return nil, errors.New("unsupported debug event")
 	}
@@ -122,6 +130,12 @@ func decodeEvent(kind, payload string) (domain.Event, error) {
 		target = &value
 	case domain.DebugGoto:
 		target = &value
+	case domain.DebugPatch:
+		target = &value
+	case domain.DebugTimer:
+		target = &value
+	case domain.DebugForceDice:
+		target = &value
 	}
 	if err := json.Unmarshal([]byte(payload), target); err != nil {
 		return nil, err
@@ -132,6 +146,12 @@ func decodeEvent(kind, payload string) (domain.Event, error) {
 	case *domain.DebugReset:
 		return *value, nil
 	case *domain.DebugGoto:
+		return *value, nil
+	case *domain.DebugPatch:
+		return *value, nil
+	case *domain.DebugTimer:
+		return *value, nil
+	case *domain.DebugForceDice:
 		return *value, nil
 	default:
 		return nil, errors.New("unsupported debug event")

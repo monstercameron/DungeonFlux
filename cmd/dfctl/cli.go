@@ -29,6 +29,7 @@ type options struct {
 	room    string
 	token   string
 	pretty  bool
+	dryRun  bool
 }
 
 type connectFunc func(context.Context, string) (dungeonfluxv1.DebugServiceClient, io.Closer, error)
@@ -42,6 +43,9 @@ func connect(_ context.Context, address string) (dungeonfluxv1.DebugServiceClien
 }
 
 func run(ctx context.Context, args []string, stdout, stderr io.Writer, dial connectFunc) int {
+	if code, handled := runControl(ctx, args, stdout, stderr, dial); handled {
+		return code
+	}
 	if code, handled := runGoto(ctx, args, stdout, stderr); handled {
 		return code
 	}

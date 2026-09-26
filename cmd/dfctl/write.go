@@ -13,12 +13,16 @@ import (
 
 	dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/proto"
 )
 
 func runWrite(ctx context.Context, args []string, stdout, stderr io.Writer, dial connectFunc) (int, bool) {
 	verb := writeVerb(args)
 	if verb == "" {
 		return 0, false
+	}
+	if containsArg(args, "--dry-run") {
+		return runWriteDryRun(args, verb, stdout, stderr), true
 	}
 	opts, command, err := parseWriteOptions(args, stderr)
 	if err != nil {
@@ -45,6 +49,86 @@ func runWrite(ctx context.Context, args []string, stdout, stderr io.Writer, dial
 		return exitRejected, true
 	}
 	return exitOK, true
+}
+
+func runWriteDryRun(args []string, verb string, stdout, stderr io.Writer) int {
+	clean := make([]string, 0, len(args)-1)
+	for _, arg := range args {
+		if arg != "--dry-run" {
+			clean = append(clean, arg)
+		}
+	}
+	opts, _, err := parseWriteOptions(clean, stderr)
+	if err != nil {
+		writeError(stderr, err)
+		return exitTransport
+	}
+	_, suffix := splitWriteArgs(clean, verb)
+	if _, err := makeWriteCommand(verb, opts.room, suffix); err != nil {
+		writeError(stderr, err)
+		return exitTransport
+	}
+	request, err := previewWriteRequest(opts.room, verb, suffix)
+	if err != nil {
+		writeError(stderr, err)
+		return exitTransport
+	}
+	if err := writeDryRun(stdout, request, opts.pretty); err != nil {
+		writeError(stderr, err)
+		return exitTransport
+	}
+	return exitOK
+}
+
+func previewWriteRequest(room, verb string, args []string) (proto.Message, error) {
+	switch verb {
+	case "send":
+		payload := "{}"
+		if len(args) == 2 {
+			payload = args[1]
+		}
+		return &dungeonfluxv1.SendRequest{Room: room, Event: args[0], PayloadJson: payload}, nil
+	case "act":
+		seat, move := "", ""
+		payload := map[string]string{}
+		for i := 0; i < len(args); i++ {
+			switch args[i] {
+			case "--seat":
+				seat, i = args[i+1], i+1
+			case "--arg":
+				payload["arg"], i = args[i+1], i+1
+			case "--target":
+				payload["target_id"], i = args[i+1], i+1
+			case "--cell":
+				payload["cell"], i = args[i+1], i+1
+			default:
+				move = args[i]
+			}
+		}
+		payload["seat"], payload["move_id"] = seat, move
+		return &dungeonfluxv1.SendRequest{Room: room, Event: "act", PayloadJson: marshalJSON(payload)}, nil
+	case "say":
+		return &dungeonfluxv1.SendRequest{Room: room, Event: "say", PayloadJson: marshalJSON(map[string]string{"seat": args[1], "text": strings.Join(args[2:], " ")})}, nil
+	case "reset":
+		seed := ""
+		if len(args) == 2 {
+			seed = args[1]
+		}
+		return &dungeonfluxv1.SendRequest{Room: room, Event: "debug_reset", PayloadJson: marshalJSON(map[string]string{"seed": seed})}, nil
+	case "dice":
+		return &dungeonfluxv1.SendRequest{Room: room, Event: "host_force_d20", PayloadJson: marshalJSON(map[string]string{"d20": strings.TrimPrefix(args[1], "d20=")})}, nil
+	default:
+		return nil, fmt.Errorf("unknown write verb %q", verb)
+	}
+}
+
+func containsArg(args []string, want string) bool {
+	for _, arg := range args {
+		if arg == want {
+			return true
+		}
+	}
+	return false
 }
 
 type writeCommand func(context.Context, dungeonfluxv1.DebugServiceClient) (*dungeonfluxv1.SendResponse, error)
