@@ -10,20 +10,24 @@ import (
 
 // State is the pure, single-threaded state owned by one game room.
 type State struct {
-	oneShot     domain.OneShot
-	seed        []byte
-	path        vocab.StateID
-	debug       bool
-	debugStart  vocab.StateID
-	paused      bool
-	version     uint64
-	at          int64
-	spotlight   domain.SeatID
-	diceCounter uint64
-	nextD20     int
-	seats       []domain.SeatView
-	lobby       Lobby
-	phase       phase.Machine
+	oneShot          domain.OneShot
+	seed             []byte
+	path             vocab.StateID
+	debug            bool
+	debugStart       vocab.StateID
+	paused           bool
+	version          uint64
+	at               int64
+	spotlight        domain.SeatID
+	diceCounter      uint64
+	nextD20          int
+	seats            []domain.SeatView
+	lobby            Lobby
+	phase            phase.Machine
+	narrationSpeaker string
+	narrationText    string
+	narrationLineID  domain.UtteranceID
+	narrationDone    bool
 }
 
 func newState(oneShot domain.OneShot, seed []byte, options ...Option) *State {
@@ -73,6 +77,10 @@ func (s *State) view() domain.View {
 	view.Paused = s.paused
 	view.NextD20 = s.nextD20
 	view.Seats = mergeSeatViews(view.Seats, s.seats)
+	view.Scene.Narration = s.narrationText
+	view.Scene.NarrationSpeaker = s.narrationSpeaker
+	view.Scene.NarrationLineID = s.narrationLineID
+	view.Scene.NarrationDone = s.narrationDone
 	return view
 }
 

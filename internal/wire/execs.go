@@ -76,6 +76,7 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 	pcm := voiceout.NewPCMExecutor(set.tts, audio)
 	canned := voiceout.NewCannedExecutor(assets, audio)
 	interpret := llmexec.NewInterpretExecutor(llmexec.InterpretConfig{LLM: set.llm})
+	npcReply := llmexec.NewNPCReplyExecutor(set.llm)
 	composeSource := assets.Read
 	if fakeMode {
 		composeSource = func(ctx context.Context, id domain.AssetID) ([]byte, error) {
@@ -97,7 +98,14 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 	runtime.Handle(runner, loggedExecutor(cfg.logger, transcriber.Execute))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, interpret.Execute))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, llmexec.NewCharacterFlavorExecutor(set.llm).Execute))
-	runtime.Handle(runner, loggedExecutor(cfg.logger, pcm.StartLine))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, func(ctx context.Context, effect domain.StartLine, scope domain.Scope, in ports.Inbox) {
+		switch effect.Role {
+		case vocab.RoleNPCReply:
+			npcReply.Execute(ctx, effect, scope, in)
+		default:
+			pcm.StartLine(ctx, effect, scope, in)
+		}
+	}))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, canned.PlayCanned))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, llmexec.NewPrerenderTextExecutor(set.llm).Execute))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, voiceout.NewRenderLinesExecutor(set.tts, assets).Execute))

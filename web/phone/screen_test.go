@@ -45,6 +45,16 @@ func TestSeatViewFromState_CarriesSnapshotVersion(t *testing.T) {
 	}
 }
 
+func TestSeatViewFromState_ProjectsNarration(t *testing.T) {
+	state := &df.ScreenState{View: &df.ScreenState_Phone{Phone: &df.PhoneView{
+		Narration: &df.Narration{Speaker: "Mother Vell", TextSoFar: "Speak or drink.", Done: true},
+	}}}
+	view := seatViewFromState(state)
+	if view.Narration.Speaker != "Mother Vell" || view.Narration.Text != "Speak or drink." || !view.Narration.Done {
+		t.Fatalf("narration = %#v", view.Narration)
+	}
+}
+
 func TestSelectScreen_UsesSeatViewState(t *testing.T) {
 	if got := SelectScreen(SeatView{Phone: &df.PhoneView{Moves: []*df.Move{{MoveId: "talk_vell"}}}}); got != ScreenMoves {
 		t.Fatalf("moves screen = %q", got)

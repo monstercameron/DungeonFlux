@@ -75,9 +75,16 @@ func (m *Machine) Enter() Result {
 		Effects: []domain.Effect{
 			domain.ComposeStill{Slot: OpeningStillSlot, Background: "background_tavern", Layers: []string{"pc_seat_1", "pc_seat_2", "mother_vell"}},
 			domain.GenerateClip{Slot: OpeningClipSlot, Shot: OpeningShot, Resolution: "720p"},
-			domain.StartLine{UtteranceID: OpeningUtteranceID, Role: vocab.RoleOpening, Voice: "dm", Hold: true, GateOnClip: true},
+			domain.StartLine{UtteranceID: OpeningUtteranceID, Role: vocab.RoleOpening, Speaker: "Dungeon Master", Voice: "dm", Input: m.openingInput(), Hold: true, GateOnClip: true},
 		},
 	}
+}
+
+func (m Machine) openingInput() string {
+	if m.oneShot.Title != "" {
+		return m.oneShot.Title
+	}
+	return m.oneShot.ID
 }
 
 // Step advances the opening phase. A completed line returns to the caller's

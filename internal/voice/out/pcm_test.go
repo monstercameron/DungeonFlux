@@ -23,8 +23,11 @@ func TestPCMExecutor_StartLinePublishesFramesAndEvents(t *testing.T) {
 	if audio.frames[0].UtteranceID != "u-1" || audio.frames[0].Speaker != string(vocab.RoleOpening) {
 		t.Fatalf("frame metadata = %+v", audio.frames[0])
 	}
-	if got := eventKinds(in.events); len(got) != 3 || got[0] != vocab.EventLineFirstAudio || got[1] != vocab.EventLineAudioFinal || got[2] != vocab.EventLineDone {
+	if got := eventKinds(in.events); len(got) != 5 || got[0] != vocab.EventNarrationDelta || got[1] != vocab.EventLineFirstAudio || got[2] != vocab.EventNarrationDelta || got[3] != vocab.EventLineAudioFinal || got[4] != vocab.EventLineDone {
 		t.Fatalf("events = %v", got)
+	}
+	if final := in.events[2].Event.(domain.NarrationDelta); !final.Final || final.TextSoFar != "hello" || final.Speaker != "Dungeon Master" {
+		t.Fatalf("final narration = %#v", final)
 	}
 }
 

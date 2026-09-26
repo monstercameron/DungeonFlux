@@ -95,7 +95,12 @@ message Timer {
   int64 total_ms = 3;
   bool frozen = 4;
 }
-message Narration { string speaker = 1; string text_so_far = 2; }
+message Narration {
+  string speaker = 1;
+  string text_so_far = 2;
+  bool done = 3;
+  string line_id = 4;
+}
 message Subtitle { int32 player_number = 1; string text = 2; }
 message Dice {
   DiceState state = 1;
@@ -207,7 +212,7 @@ message Character {
   bool locked = 10;
 }
 message PTT { bool enabled = 1; PTTState state = 2; }
-message PhoneView { Character character = 1; repeated Move moves = 2; PTT ptt = 3; Timer turn_timer = 4; string status_text = 5; CombatView combat = 6; string locale = 7; Text status_msg = 8; }
+message PhoneView { Character character = 1; repeated Move moves = 2; PTT ptt = 3; Timer turn_timer = 4; string status_text = 5; CombatView combat = 6; string locale = 7; Text status_msg = 8; Narration narration = 9; }
 message AssetSlot { string name = 1; string state = 2; }
 message HostView { DMView dm = 1; repeated string event_log_tail = 2; repeated AssetSlot asset_slots = 3; string run_mode = 4; int32 next_d20 = 5; int64 combat_cap_remaining_ms = 6; repeated string log_tail = 7; string locale = 8; string room_locale = 9; }
 message ScreenState {

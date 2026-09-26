@@ -139,6 +139,7 @@ func (m *Machine) Enter() (Result, error) {
 	effect := domain.StartLine{
 		UtteranceID: m.lineID,
 		Role:        vocab.RoleCliffhanger,
+		Speaker:     "Dungeon Master",
 		Voice:       m.config.VoiceID,
 		Input:       m.config.NarrationInput,
 	}

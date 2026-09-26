@@ -27,6 +27,8 @@ type DialogueModel struct {
 	PortraitURL   string
 	Speaker       string
 	Line          string
+	LineID        string
+	Done          bool
 	SpotlightSeat string
 	Locale        string
 	Paused        bool
@@ -54,7 +56,7 @@ func DialogueModelFromState(state *dungeonfluxv1.ScreenState) DialogueModel {
 		return model
 	}
 	model.Locale = localeOrDefault(view.GetLocale())
-	model.Speaker, model.Line = dialogueLine(view)
+	model.Speaker, model.Line, model.LineID, model.Done = dialogueLine(view)
 	if model.Speaker == "" && model.Line != "" {
 		model.Speaker = model.NPCName
 	}
@@ -62,16 +64,16 @@ func DialogueModelFromState(state *dungeonfluxv1.ScreenState) DialogueModel {
 	return model
 }
 
-func dialogueLine(view *dungeonfluxv1.DMView) (string, string) {
+func dialogueLine(view *dungeonfluxv1.DMView) (string, string, string, bool) {
 	if narration := view.GetNarration(); narration != nil {
 		if text := strings.TrimSpace(narration.GetTextSoFar()); text != "" {
-			return strings.TrimSpace(narration.GetSpeaker()), text
+			return strings.TrimSpace(narration.GetSpeaker()), text, narration.GetLineId(), narration.GetDone()
 		}
 	}
 	if subtitle := view.GetSubtitle(); subtitle != nil {
-		return "", strings.TrimSpace(subtitle.GetText())
+		return "", strings.TrimSpace(subtitle.GetText()), "", true
 	}
-	return "", ""
+	return "", "", "", false
 }
 
 func dialogueOptionsFromState(state *dungeonfluxv1.ScreenState) []DialogueOption {

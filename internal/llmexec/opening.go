@@ -80,6 +80,7 @@ func (e *OpeningExecutor) Execute(ctx context.Context, effect domain.StartLine, 
 				postLineFailure(ctx, scope, in, effect.UtteranceID, vocab.ErrBadOutput)
 				return
 			}
+			postNarration(ctx, scope, in, effect, "", text.String(), true)
 			post(ctx, in, scope, domain.LineDone{UtteranceID: effect.UtteranceID})
 			return
 		}
@@ -93,7 +94,7 @@ func (e *OpeningExecutor) Execute(ctx context.Context, effect domain.StartLine, 
 			continue
 		}
 		text.WriteString(chunk)
-		post(ctx, in, scope, domain.NarrationDelta{UtteranceID: effect.UtteranceID, Text: chunk})
+		postNarration(ctx, scope, in, effect, chunk, text.String(), false)
 	}
 }
 

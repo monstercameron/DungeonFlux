@@ -131,11 +131,73 @@ func (s *State) applyPhase(env domain.Envelope) domain.StepOut {
 		}
 		return domain.StepOut{Ack: acceptedAck(env)}
 	}
+	s.applyNarrationEvent(env.Event)
 	out := s.dispatch(env.Event)
 	if out.Ack == nil || out.Ack.Reason == "" {
 		out.Ack = acceptedAck(env)
 	}
 	return out
+}
+
+func (s *State) applyNarrationEvent(event domain.Event) {
+	switch value := event.(type) {
+	case domain.NarrationDelta:
+		lineID := value.LineID
+		if lineID == "" {
+			lineID = value.UtteranceID
+		}
+		if s.narrationLineID != "" && lineID != "" && lineID != s.narrationLineID {
+			return
+		}
+		if lineID != "" {
+			s.narrationLineID = lineID
+		}
+		if value.Speaker != "" {
+			s.narrationSpeaker = value.Speaker
+		}
+		if value.TextSoFar != "" {
+			s.narrationText = value.TextSoFar
+		} else if value.Text != "" {
+			s.narrationText += value.Text
+		}
+		s.narrationDone = value.Final
+	case domain.LineDone:
+		if s.narrationLineID == "" || value.UtteranceID == "" || value.UtteranceID == s.narrationLineID {
+			s.narrationDone = true
+		}
+	}
+}
+
+func (s *State) applyNarrationEffects(effects []domain.Effect) {
+	for _, effect := range effects {
+		switch value := effect.(type) {
+		case domain.StartLine:
+			s.beginNarration(value.UtteranceID, value.Speaker, string(value.Role))
+		case domain.PlayCanned:
+			s.beginNarration(value.UtteranceID, value.Speaker, string(value.AssetID))
+		}
+	}
+}
+
+func (s *State) beginNarration(lineID domain.UtteranceID, speaker, hint string) {
+	s.narrationLineID = lineID
+	s.narrationSpeaker = narrationSpeaker(speaker, hint)
+	s.narrationText = ""
+	s.narrationDone = false
+}
+
+func narrationSpeaker(speaker, hint string) string {
+	if speaker != "" {
+		return speaker
+	}
+	switch hint {
+	case string(vocab.RoleNPCReply), string(vocab.RoleNPCReveal), string(vocab.RoleNPCRefuse), "canned_npc_reply", "canned_npc_reveal", "canned_npc_refuse":
+		return "Mother Vell"
+	case string(vocab.RoleStrangerLines), "canned_stranger_found", "canned_stranger_relocated":
+		return "Stranger"
+	default:
+		return "Dungeon Master"
+	}
 }
 
 func (s *State) dispatch(event domain.Event) domain.StepOut {
@@ -146,9 +208,20 @@ func (s *State) dispatch(event domain.Event) domain.StepOut {
 	}
 	s.path = s.phase.State()
 	s.paused = s.phase.Paused()
+	if s.path != previous {
+		s.clearNarration()
+	}
 	effects := append([]domain.Effect(nil), result.Effects...)
+	s.applyNarrationEffects(effects)
 	effects = append(effects, s.phaseCueEffects(previous)...)
 	return domain.StepOut{Effects: effects, Ack: &domain.Ack{Accepted: true}}
+}
+
+func (s *State) clearNarration() {
+	s.narrationSpeaker = ""
+	s.narrationText = ""
+	s.narrationLineID = ""
+	s.narrationDone = false
 }
 
 func (s *State) phaseCueEffects(previous vocab.StateID) []domain.Effect {
@@ -172,6 +245,7 @@ func (s *State) resetPhase() {
 	s.paused = false
 	s.spotlight = 0
 	s.nextD20 = 0
+	s.clearNarration()
 }
 
 func (s *State) applyDebugReset(event domain.DebugReset, env domain.Envelope) domain.StepOut {

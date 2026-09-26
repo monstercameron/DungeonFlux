@@ -30,9 +30,11 @@ type SceneCharacter struct {
 type SceneCaption struct {
 	Speaker      string
 	Text         string
+	LineID       string
 	PlayerNumber int32
 	Visible      bool
 	Speaking     bool
+	Done         bool
 }
 
 // SceneModel contains the DM scene data needed by the browser renderer.
@@ -80,7 +82,7 @@ func SceneModelFromView(view *dungeonfluxv1.DMView) SceneModel {
 		ShowTitle:          !caption.Visible || isDMSpeaker(caption.Speaker),
 	}
 	if model.Opening && !caption.Visible {
-		model.Caption = SceneCaption{Speaker: "Dungeon Master", Text: openingNarration, Visible: true, Speaking: true}
+		model.Caption = SceneCaption{Speaker: "Dungeon Master", Text: openingNarration, Visible: true, Speaking: true, Done: true}
 		model.SpeakerPortraitURL = speakerPortraitURL(model.Caption.Speaker)
 		model.ShowTitle = true
 	}
@@ -201,6 +203,8 @@ func SceneCaptionFromView(view *dungeonfluxv1.DMView) SceneCaption {
 	if narration != nil {
 		caption.Speaker = narration.GetSpeaker()
 		caption.Text = narration.GetTextSoFar()
+		caption.LineID = narration.GetLineId()
+		caption.Done = narration.GetDone()
 	}
 	if caption.Text == "" && subtitle != nil {
 		caption.Text = subtitle.GetText()

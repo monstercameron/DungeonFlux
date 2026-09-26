@@ -98,7 +98,7 @@ func (m *Machine) stepClip(event domain.Event) (Result, error) {
 	m.state = StrangerLine
 	m.active = domain.UtteranceID(m.config.StrangerUtterance)
 	return Result{State: StrangerLine, Effects: []domain.Effect{domain.StartLine{
-		UtteranceID: m.active, Role: vocab.RoleStrangerLines, Input: m.config.StrangerText,
+		UtteranceID: m.active, Role: vocab.RoleStrangerLines, Speaker: "Stranger", Input: m.config.StrangerText,
 	}}}, nil
 }
 

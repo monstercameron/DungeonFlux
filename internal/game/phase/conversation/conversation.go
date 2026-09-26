@@ -100,7 +100,7 @@ func (r *Result) interpreted(event domain.Interpreted) {
 	r.State.NPCReplies++
 	r.State.LastText = text
 	r.Events = append(r.Events, domain.UtteranceFinal{Seat: r.State.Seat, UtteranceID: event.UtteranceID, CleanText: text})
-	r.Effects = append(r.Effects, domain.StartLine{UtteranceID: event.UtteranceID, Role: vocab.RoleNPCReply, Input: text})
+	r.Effects = append(r.Effects, domain.StartLine{UtteranceID: event.UtteranceID, Role: vocab.RoleNPCReply, Speaker: "Mother Vell", Input: text})
 }
 
 func (r *Result) interpretFailed(event domain.InterpretFailed) {

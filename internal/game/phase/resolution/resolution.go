@@ -111,5 +111,5 @@ func (m Machine) startLine() domain.StartLine {
 		role = vocab.RoleNPCReveal
 		text = m.config.SuccessText
 	}
-	return domain.StartLine{UtteranceID: m.active, Role: role, Input: text}
+	return domain.StartLine{UtteranceID: m.active, Role: role, Speaker: "Mother Vell", Input: text}
 }

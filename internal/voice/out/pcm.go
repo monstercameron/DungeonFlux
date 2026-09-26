@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strings"
 	"sync"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
@@ -48,6 +49,9 @@ func (e *PCMExecutor) StartLine(ctx context.Context, effect domain.StartLine, sc
 	defer cancel()
 	line := e.track(effect.UtteranceID, cancel)
 	defer e.untrack(effect.UtteranceID, line)
+	if text := strings.TrimSpace(effect.Input); text != "" && !strings.HasPrefix(text, "{") {
+		postNarrationText(ctx, scope, in, effect.UtteranceID, lineSpeaker(effect), text, false)
+	}
 	stream, err := e.tts.Stream(lineCtx, ports.TTSRequest{
 		Meta:       ports.CallMeta{UtteranceID: effect.UtteranceID, Role: effect.Role, Locale: e.roomLocale()},
 		VoiceID:    e.voiceFor(effect.Voice),
@@ -121,6 +125,9 @@ func (e *PCMExecutor) consume(ctx context.Context, stream ports.PCMStream, effec
 			if havePrevious {
 				samples += e.frame(ctx, scope, in, effect, previous, seq, true, first)
 			}
+			if text := strings.TrimSpace(effect.Input); text != "" && !strings.HasPrefix(text, "{") {
+				postNarrationText(ctx, scope, in, effect.UtteranceID, lineSpeaker(effect), text, true)
+			}
 			postLineFinal(ctx, scope, in, effect.UtteranceID, samples, previous.SampleRate)
 			postLineDone(ctx, scope, in, effect.UtteranceID)
 			return
@@ -186,6 +193,28 @@ func postLineDone(ctx context.Context, scope domain.Scope, in ports.Inbox, id do
 func postLineFailed(ctx context.Context, scope domain.Scope, in ports.Inbox, id domain.UtteranceID, kind vocab.ErrKind) {
 	if in != nil {
 		in.Post(ctx, domain.Envelope{Scope: scope, Event: domain.LineFailed{UtteranceID: id, FailureKind: kind}})
+	}
+}
+
+func postNarrationText(ctx context.Context, scope domain.Scope, in ports.Inbox, id domain.UtteranceID, speaker, text string, final bool) {
+	if in != nil && strings.TrimSpace(text) != "" {
+		in.Post(ctx, domain.Envelope{Scope: scope, Event: domain.NarrationDelta{
+			UtteranceID: id, LineID: id, Speaker: speaker, TextSoFar: text, Final: final,
+		}})
+	}
+}
+
+func lineSpeaker(effect domain.StartLine) string {
+	if effect.Speaker != "" {
+		return effect.Speaker
+	}
+	switch effect.Role {
+	case vocab.RoleNPCReply, vocab.RoleNPCReveal, vocab.RoleNPCRefuse:
+		return "Mother Vell"
+	case vocab.RoleStrangerLines:
+		return "Stranger"
+	default:
+		return "Dungeon Master"
 	}
 }
 

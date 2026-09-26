@@ -87,7 +87,7 @@ func projectDM(view domain.View, lobby ...LobbyProjection) *df.DMView {
 	out := &df.DMView{
 		BackgroundUrl: view.Scene.BackgroundURL,
 		Layers:        projectLayers(view.Scene.Layers),
-		Narration:     &df.Narration{TextSoFar: view.Scene.Narration},
+		Narration:     projectNarration(view.Scene),
 		Subtitle:      &df.Subtitle{Text: view.Scene.Subtitle},
 		Callout:       view.Callout,
 		BuildCards:    projectBuildCards(view.Seats),
@@ -169,7 +169,7 @@ func projectLobby(lobby LobbyProjection) *df.Lobby {
 }
 
 func projectPhone(view domain.View, seat domain.SeatID) *df.PhoneView {
-	out := &df.PhoneView{Ptt: &df.PTT{State: df.PTTState_PTT_STATE_IDLE}}
+	out := &df.PhoneView{Ptt: &df.PTT{State: df.PTTState_PTT_STATE_IDLE}, Narration: projectNarration(view.Scene)}
 	for _, item := range view.Seats {
 		if item.Seat != seat {
 			continue
@@ -187,6 +187,15 @@ func projectPhone(view domain.View, seat domain.SeatID) *df.PhoneView {
 		out.Combat = projectPhoneCombat(*view.Combat)
 	}
 	return out
+}
+
+func projectNarration(scene domain.SceneView) *df.Narration {
+	return &df.Narration{
+		Speaker:   scene.NarrationSpeaker,
+		TextSoFar: scene.Narration,
+		Done:      scene.NarrationDone,
+		LineId:    string(scene.NarrationLineID),
+	}
 }
 
 func projectHost(view domain.View) *df.HostView {

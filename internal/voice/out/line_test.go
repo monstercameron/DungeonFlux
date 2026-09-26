@@ -25,7 +25,7 @@ func TestLineExecutor_StreamsStartLineThroughTTS(t *testing.T) {
 	if len(audio.frames) != 1 || !audio.frames[0].Final {
 		t.Fatalf("frames = %+v, want one final frame", audio.frames)
 	}
-	if got := eventKinds(in.events); len(got) != 3 || got[0] != vocab.EventLineFirstAudio || got[1] != vocab.EventLineAudioFinal || got[2] != vocab.EventLineDone {
+	if got := eventKinds(in.events); len(got) != 5 || got[0] != vocab.EventNarrationDelta || got[1] != vocab.EventLineFirstAudio || got[2] != vocab.EventNarrationDelta || got[3] != vocab.EventLineAudioFinal || got[4] != vocab.EventLineDone {
 		t.Fatalf("events = %v", got)
 	}
 }

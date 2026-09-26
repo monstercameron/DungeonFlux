@@ -26,15 +26,19 @@ func TestOpeningExecutor_StreamsDeltas(t *testing.T) {
 		Role: vocab.RoleOpening, UtteranceID: "opening-1",
 		Input: `{"one_shot":"A missing lamplighter","characters":"Asha and Bram"}`,
 	}, domain.Scope{Key: "opening"}, in)
-	if len(in.events) != 3 {
-		t.Fatalf("events = %d, want 3", len(in.events))
+	if len(in.events) != 4 {
+		t.Fatalf("events = %d, want 4", len(in.events))
 	}
 	first := in.events[0].(domain.NarrationDelta)
-	if first.Text != "Rain falls." || first.UtteranceID != "opening-1" {
+	if first.Text != "Rain falls." || first.TextSoFar != "Rain falls." || first.Speaker != "Dungeon Master" || first.UtteranceID != "opening-1" {
 		t.Fatalf("first delta = %#v", first)
 	}
-	if _, ok := in.events[2].(domain.LineDone); !ok {
-		t.Fatalf("last event = %#v, want LineDone", in.events[2])
+	final := in.events[2].(domain.NarrationDelta)
+	if !final.Final || final.TextSoFar != "Rain falls. The bell waits." {
+		t.Fatalf("final delta = %#v", final)
+	}
+	if _, ok := in.events[3].(domain.LineDone); !ok {
+		t.Fatalf("last event = %#v, want LineDone", in.events[3])
 	}
 	if len(llm.TextCalls) != 1 || llm.TextCalls[0].Request.Messages[1].Text == "" {
 		t.Fatal("opening prompt was not sent")

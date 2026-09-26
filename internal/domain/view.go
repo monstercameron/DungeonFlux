@@ -37,10 +37,22 @@ type SlotView struct {
 	State string
 	Asset AssetID
 }
+
+// NarrationView is the current read-along line shared by the DM and phones.
+type NarrationView struct {
+	Speaker   string
+	TextSoFar string
+	LineID    UtteranceID
+	Done      bool
+}
+
 type SceneView struct {
 	BackgroundURL       string
 	Layers              []string
 	Narration, Subtitle string
+	NarrationSpeaker    string
+	NarrationLineID     UtteranceID
+	NarrationDone       bool
 }
 
 // LocalizedMessage carries a view string as a key plus arguments. Clients

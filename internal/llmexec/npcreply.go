@@ -95,6 +95,7 @@ func (e *NPCReplyExecutor) consume(ctx context.Context, stream ports.TextStream,
 					postFailure(ctx, scope, in, effect.UtteranceID, vocab.ErrBadOutput)
 					return
 				}
+				postNarration(ctx, scope, in, effect, "", text.String(), true)
 				postEvent(ctx, scope, in, domain.LineDone{UtteranceID: effect.UtteranceID})
 				return
 			}
@@ -107,7 +108,35 @@ func (e *NPCReplyExecutor) consume(ctx context.Context, stream ports.TextStream,
 			continue
 		}
 		text.WriteString(chunk)
-		postEvent(ctx, scope, in, domain.NarrationDelta{UtteranceID: effect.UtteranceID, Text: chunk})
+		postNarration(ctx, scope, in, effect, chunk, text.String(), false)
+	}
+}
+
+func postNarration(ctx context.Context, scope domain.Scope, in ports.Inbox, effect domain.StartLine, delta, text string, final bool) {
+	postEvent(ctx, scope, in, domain.NarrationDelta{
+		UtteranceID: effect.UtteranceID,
+		LineID:      effect.UtteranceID,
+		Speaker:     lineSpeaker(effect),
+		Text:        delta,
+		TextSoFar:   text,
+		Final:       final,
+	})
+}
+
+func lineSpeaker(effect domain.StartLine) string {
+	if effect.Speaker != "" {
+		return effect.Speaker
+	}
+	if effect.Role == "" {
+		return "Mother Vell"
+	}
+	switch effect.Role {
+	case vocab.RoleNPCReply, vocab.RoleNPCReveal, vocab.RoleNPCRefuse:
+		return "Mother Vell"
+	case vocab.RoleStrangerLines:
+		return "Stranger"
+	default:
+		return "Dungeon Master"
 	}
 }
 

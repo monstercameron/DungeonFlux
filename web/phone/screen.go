@@ -33,16 +33,29 @@ type SeatView struct {
 	Version      uint64
 	Phase        string
 	Phone        *df.PhoneView
+	Narration    NarrationModel
 	PlayerName   string
 	PlayerNumber int32
 	LobbySeats   []*df.LobbySeat
+}
+
+// NarrationModel is the phone-safe read-along line projection.
+type NarrationModel struct {
+	Speaker string
+	Text    string
+	Done    bool
 }
 
 func seatViewFromState(state *df.ScreenState) SeatView {
 	if state == nil {
 		return SeatView{}
 	}
-	return SeatView{Version: state.GetVersion(), Phase: state.GetPhase(), Phone: state.GetPhone()}
+	phone := state.GetPhone()
+	model := NarrationModel{}
+	if narration := phone.GetNarration(); narration != nil {
+		model = NarrationModel{Speaker: narration.GetSpeaker(), Text: narration.GetTextSoFar(), Done: narration.GetDone()}
+	}
+	return SeatView{Version: state.GetVersion(), Phase: state.GetPhase(), Phone: phone, Narration: model}
 }
 
 // ConnectionState identifies the transport state shown in the phone header.

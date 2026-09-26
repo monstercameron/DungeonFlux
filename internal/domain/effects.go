@@ -58,6 +58,7 @@ type CharacterFlavor struct {
 type StartLine struct {
 	UtteranceID      UtteranceID
 	Role             vocab.Role
+	Speaker          string
 	Voice, Input     string
 	Hold, GateOnClip bool
 }
@@ -66,6 +67,7 @@ type DropLine struct{ UtteranceID UtteranceID }
 type PlayCanned struct {
 	UtteranceID UtteranceID
 	AssetID     AssetID
+	Speaker     string
 }
 type PrerenderText struct {
 	Set      string

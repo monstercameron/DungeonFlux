@@ -1046,6 +1046,8 @@ type Narration struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Speaker       string                 `protobuf:"bytes,1,opt,name=speaker,proto3" json:"speaker,omitempty"`
 	TextSoFar     string                 `protobuf:"bytes,2,opt,name=text_so_far,json=textSoFar,proto3" json:"text_so_far,omitempty"`
+	Done          bool                   `protobuf:"varint,3,opt,name=done,proto3" json:"done,omitempty"`
+	LineId        string                 `protobuf:"bytes,4,opt,name=line_id,json=lineId,proto3" json:"line_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1090,6 +1092,20 @@ func (x *Narration) GetSpeaker() string {
 func (x *Narration) GetTextSoFar() string {
 	if x != nil {
 		return x.TextSoFar
+	}
+	return ""
+}
+
+func (x *Narration) GetDone() bool {
+	if x != nil {
+		return x.Done
+	}
+	return false
+}
+
+func (x *Narration) GetLineId() string {
+	if x != nil {
+		return x.LineId
 	}
 	return ""
 }
@@ -3172,6 +3188,7 @@ type PhoneView struct {
 	Combat        *CombatView            `protobuf:"bytes,6,opt,name=combat,proto3" json:"combat,omitempty"`
 	Locale        string                 `protobuf:"bytes,7,opt,name=locale,proto3" json:"locale,omitempty"`
 	StatusMsg     *Text                  `protobuf:"bytes,8,opt,name=status_msg,json=statusMsg,proto3" json:"status_msg,omitempty"`
+	Narration     *Narration             `protobuf:"bytes,9,opt,name=narration,proto3" json:"narration,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3258,6 +3275,13 @@ func (x *PhoneView) GetLocale() string {
 func (x *PhoneView) GetStatusMsg() *Text {
 	if x != nil {
 		return x.StatusMsg
+	}
+	return nil
+}
+
+func (x *PhoneView) GetNarration() *Narration {
+	if x != nil {
+		return x.Narration
 	}
 	return nil
 }
@@ -5431,10 +5455,12 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\x04seat\x18\x01 \x01(\tR\x04seat\x12!\n" +
 	"\fremaining_ms\x18\x02 \x01(\x03R\vremainingMs\x12\x19\n" +
 	"\btotal_ms\x18\x03 \x01(\x03R\atotalMs\x12\x16\n" +
-	"\x06frozen\x18\x04 \x01(\bR\x06frozen\"E\n" +
+	"\x06frozen\x18\x04 \x01(\bR\x06frozen\"r\n" +
 	"\tNarration\x12\x18\n" +
 	"\aspeaker\x18\x01 \x01(\tR\aspeaker\x12\x1e\n" +
-	"\vtext_so_far\x18\x02 \x01(\tR\ttextSoFar\"C\n" +
+	"\vtext_so_far\x18\x02 \x01(\tR\ttextSoFar\x12\x12\n" +
+	"\x04done\x18\x03 \x01(\bR\x04done\x12\x17\n" +
+	"\aline_id\x18\x04 \x01(\tR\x06lineId\"C\n" +
 	"\bSubtitle\x12#\n" +
 	"\rplayer_number\x18\x01 \x01(\x05R\fplayerNumber\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\"\x9c\x02\n" +
@@ -5620,7 +5646,7 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	" \x01(\bR\x06locked\"O\n" +
 	"\x03PTT\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12.\n" +
-	"\x05state\x18\x02 \x01(\x0e2\x18.dungeonflux.v1.PTTStateR\x05state\"\xef\x02\n" +
+	"\x05state\x18\x02 \x01(\x0e2\x18.dungeonflux.v1.PTTStateR\x05state\"\xa8\x03\n" +
 	"\tPhoneView\x127\n" +
 	"\tcharacter\x18\x01 \x01(\v2\x19.dungeonflux.v1.CharacterR\tcharacter\x12*\n" +
 	"\x05moves\x18\x02 \x03(\v2\x14.dungeonflux.v1.MoveR\x05moves\x12%\n" +
@@ -5632,7 +5658,8 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\x06combat\x18\x06 \x01(\v2\x1a.dungeonflux.v1.CombatViewR\x06combat\x12\x16\n" +
 	"\x06locale\x18\a \x01(\tR\x06locale\x123\n" +
 	"\n" +
-	"status_msg\x18\b \x01(\v2\x14.dungeonflux.v1.TextR\tstatusMsg\"5\n" +
+	"status_msg\x18\b \x01(\v2\x14.dungeonflux.v1.TextR\tstatusMsg\x127\n" +
+	"\tnarration\x18\t \x01(\v2\x19.dungeonflux.v1.NarrationR\tnarration\"5\n" +
 	"\tAssetSlot\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05state\x18\x02 \x01(\tR\x05state\"\xd5\x02\n" +
@@ -6004,35 +6031,36 @@ var file_dungeonflux_v1_common_proto_depIdxs = []int32{
 	16, // 46: dungeonflux.v1.PhoneView.turn_timer:type_name -> dungeonflux.v1.Timer
 	36, // 47: dungeonflux.v1.PhoneView.combat:type_name -> dungeonflux.v1.CombatView
 	12, // 48: dungeonflux.v1.PhoneView.status_msg:type_name -> dungeonflux.v1.Text
-	38, // 49: dungeonflux.v1.HostView.dm:type_name -> dungeonflux.v1.DMView
-	44, // 50: dungeonflux.v1.HostView.asset_slots:type_name -> dungeonflux.v1.AssetSlot
-	38, // 51: dungeonflux.v1.ScreenState.dm:type_name -> dungeonflux.v1.DMView
-	43, // 52: dungeonflux.v1.ScreenState.phone:type_name -> dungeonflux.v1.PhoneView
-	45, // 53: dungeonflux.v1.ScreenState.host:type_name -> dungeonflux.v1.HostView
-	0,  // 54: dungeonflux.v1.JoinRequest.kind:type_name -> dungeonflux.v1.ClientKind
-	10, // 55: dungeonflux.v1.ActRequest.cell:type_name -> dungeonflux.v1.Cell
-	1,  // 56: dungeonflux.v1.ReportRequest.kind:type_name -> dungeonflux.v1.ReportKind
-	57, // 57: dungeonflux.v1.TalkRequest.start:type_name -> dungeonflux.v1.TalkStart
-	58, // 58: dungeonflux.v1.TalkRequest.chunk:type_name -> dungeonflux.v1.AudioChunk
-	59, // 59: dungeonflux.v1.TalkRequest.end:type_name -> dungeonflux.v1.TalkEnd
-	61, // 60: dungeonflux.v1.TalkResponse.ack:type_name -> dungeonflux.v1.ChunkAck
-	62, // 61: dungeonflux.v1.TalkResponse.transcript:type_name -> dungeonflux.v1.Transcript
-	63, // 62: dungeonflux.v1.TalkResponse.stop:type_name -> dungeonflux.v1.TalkStop
-	64, // 63: dungeonflux.v1.TalkResponse.error:type_name -> dungeonflux.v1.TalkError
-	7,  // 64: dungeonflux.v1.AudioTarget.kind:type_name -> dungeonflux.v1.AudioTargetKind
-	8,  // 65: dungeonflux.v1.AudioMixCommand.kind:type_name -> dungeonflux.v1.AudioMixCommandKind
-	67, // 66: dungeonflux.v1.AudioMessage.frame:type_name -> dungeonflux.v1.AudioFrame
-	68, // 67: dungeonflux.v1.AudioMessage.cancel:type_name -> dungeonflux.v1.AudioCancel
-	70, // 68: dungeonflux.v1.AudioMessage.chunk:type_name -> dungeonflux.v1.EncodedAudioChunk
-	71, // 69: dungeonflux.v1.AudioMessage.mix:type_name -> dungeonflux.v1.AudioMixCommand
-	6,  // 70: dungeonflux.v1.AudioMessage.channel:type_name -> dungeonflux.v1.AudioChannel
-	69, // 71: dungeonflux.v1.AudioMessage.target:type_name -> dungeonflux.v1.AudioTarget
-	5,  // 72: dungeonflux.v1.HostCommand.command:type_name -> dungeonflux.v1.HostCommandKind
-	73, // [73:73] is the sub-list for method output_type
-	73, // [73:73] is the sub-list for method input_type
-	73, // [73:73] is the sub-list for extension type_name
-	73, // [73:73] is the sub-list for extension extendee
-	0,  // [0:73] is the sub-list for field type_name
+	17, // 49: dungeonflux.v1.PhoneView.narration:type_name -> dungeonflux.v1.Narration
+	38, // 50: dungeonflux.v1.HostView.dm:type_name -> dungeonflux.v1.DMView
+	44, // 51: dungeonflux.v1.HostView.asset_slots:type_name -> dungeonflux.v1.AssetSlot
+	38, // 52: dungeonflux.v1.ScreenState.dm:type_name -> dungeonflux.v1.DMView
+	43, // 53: dungeonflux.v1.ScreenState.phone:type_name -> dungeonflux.v1.PhoneView
+	45, // 54: dungeonflux.v1.ScreenState.host:type_name -> dungeonflux.v1.HostView
+	0,  // 55: dungeonflux.v1.JoinRequest.kind:type_name -> dungeonflux.v1.ClientKind
+	10, // 56: dungeonflux.v1.ActRequest.cell:type_name -> dungeonflux.v1.Cell
+	1,  // 57: dungeonflux.v1.ReportRequest.kind:type_name -> dungeonflux.v1.ReportKind
+	57, // 58: dungeonflux.v1.TalkRequest.start:type_name -> dungeonflux.v1.TalkStart
+	58, // 59: dungeonflux.v1.TalkRequest.chunk:type_name -> dungeonflux.v1.AudioChunk
+	59, // 60: dungeonflux.v1.TalkRequest.end:type_name -> dungeonflux.v1.TalkEnd
+	61, // 61: dungeonflux.v1.TalkResponse.ack:type_name -> dungeonflux.v1.ChunkAck
+	62, // 62: dungeonflux.v1.TalkResponse.transcript:type_name -> dungeonflux.v1.Transcript
+	63, // 63: dungeonflux.v1.TalkResponse.stop:type_name -> dungeonflux.v1.TalkStop
+	64, // 64: dungeonflux.v1.TalkResponse.error:type_name -> dungeonflux.v1.TalkError
+	7,  // 65: dungeonflux.v1.AudioTarget.kind:type_name -> dungeonflux.v1.AudioTargetKind
+	8,  // 66: dungeonflux.v1.AudioMixCommand.kind:type_name -> dungeonflux.v1.AudioMixCommandKind
+	67, // 67: dungeonflux.v1.AudioMessage.frame:type_name -> dungeonflux.v1.AudioFrame
+	68, // 68: dungeonflux.v1.AudioMessage.cancel:type_name -> dungeonflux.v1.AudioCancel
+	70, // 69: dungeonflux.v1.AudioMessage.chunk:type_name -> dungeonflux.v1.EncodedAudioChunk
+	71, // 70: dungeonflux.v1.AudioMessage.mix:type_name -> dungeonflux.v1.AudioMixCommand
+	6,  // 71: dungeonflux.v1.AudioMessage.channel:type_name -> dungeonflux.v1.AudioChannel
+	69, // 72: dungeonflux.v1.AudioMessage.target:type_name -> dungeonflux.v1.AudioTarget
+	5,  // 73: dungeonflux.v1.HostCommand.command:type_name -> dungeonflux.v1.HostCommandKind
+	74, // [74:74] is the sub-list for method output_type
+	74, // [74:74] is the sub-list for method input_type
+	74, // [74:74] is the sub-list for extension type_name
+	74, // [74:74] is the sub-list for extension extendee
+	0,  // [0:74] is the sub-list for field type_name
 }
 
 func init() { file_dungeonflux_v1_common_proto_init() }

@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
+	"github.com/monstercameron/DungeonFlux/internal/i18n"
 	"github.com/monstercameron/DungeonFlux/internal/ports"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
@@ -51,13 +53,15 @@ func (e *CannedExecutor) PlayCanned(ctx context.Context, effect domain.PlayCanne
 	defer cancel()
 	line := e.track(effect.UtteranceID, cancel)
 	defer e.untrack(effect.UtteranceID, line)
+	text := cannedText(e.roomLocale(), effect.AssetID)
+	postNarrationText(ctx, scope, in, effect.UtteranceID, cannedSpeaker(effect), text, false)
 	reader, err := e.openLocalized(lineCtx, effect.AssetID)
 	if err != nil {
 		if !isCanceled(lineCtx, err) {
 			// Build-time media is optional in fake mode and may be absent during
 			// early rehearsals. A short silence preserves the line lifecycle so
 			// the engine can continue instead of waiting forever.
-			e.playSilence(ctx, scope, in, effect.UtteranceID)
+			e.playSilence(ctx, scope, in, effect)
 		}
 		return
 	}
@@ -81,6 +85,7 @@ func (e *CannedExecutor) PlayCanned(ctx context.Context, effect domain.PlayCanne
 				if len(previous) > 0 {
 					samples += e.assetFrame(ctx, scope, in, effect.UtteranceID, previous, seq, true, &first)
 				}
+				postNarrationText(ctx, scope, in, effect.UtteranceID, cannedSpeaker(effect), text, true)
 				postLineFinal(ctx, scope, in, effect.UtteranceID, samples, defaultSampleRate)
 				postLineDone(ctx, scope, in, effect.UtteranceID)
 			}
@@ -97,7 +102,7 @@ func (e *CannedExecutor) PlayCanned(ctx context.Context, effect domain.PlayCanne
 	}
 }
 
-func (e *CannedExecutor) playSilence(ctx context.Context, scope domain.Scope, in ports.Inbox, id domain.UtteranceID) {
+func (e *CannedExecutor) playSilence(ctx context.Context, scope domain.Scope, in ports.Inbox, effect domain.PlayCanned) {
 	timer := time.NewTimer(1200 * time.Millisecond)
 	defer timer.Stop()
 	select {
@@ -105,10 +110,34 @@ func (e *CannedExecutor) playSilence(ctx context.Context, scope domain.Scope, in
 	case <-ctx.Done():
 		return
 	}
-	e.audio.Frame(domain.AudioFrame{UtteranceID: id, SampleRate: defaultSampleRate, PCMS16LE: make([]byte, defaultSampleRate*2*5/4), Final: true})
-	postLineFirst(ctx, scope, in, id)
-	postLineFinal(ctx, scope, in, id, defaultSampleRate*5/4, defaultSampleRate)
-	postLineDone(ctx, scope, in, id)
+	text := cannedText(e.roomLocale(), effect.AssetID)
+	e.audio.Frame(domain.AudioFrame{UtteranceID: effect.UtteranceID, SampleRate: defaultSampleRate, PCMS16LE: make([]byte, defaultSampleRate*2*5/4), Final: true})
+	postNarrationText(ctx, scope, in, effect.UtteranceID, cannedSpeaker(effect), text, true)
+	postLineFirst(ctx, scope, in, effect.UtteranceID)
+	postLineFinal(ctx, scope, in, effect.UtteranceID, defaultSampleRate*5/4, defaultSampleRate)
+	postLineDone(ctx, scope, in, effect.UtteranceID)
+}
+
+func cannedText(locale string, id domain.AssetID) string {
+	value := i18n.Default().T(locale, "canned."+string(id), nil, 0, "")
+	if value == "canned."+string(id) {
+		return ""
+	}
+	return strings.TrimSpace(value)
+}
+
+func cannedSpeaker(effect domain.PlayCanned) string {
+	if effect.Speaker != "" {
+		return effect.Speaker
+	}
+	switch {
+	case strings.Contains(string(effect.AssetID), "npc") || strings.Contains(string(effect.AssetID), "nudge_conversation"):
+		return "Mother Vell"
+	case strings.Contains(string(effect.AssetID), "stranger"):
+		return "Stranger"
+	default:
+		return "Dungeon Master"
+	}
 }
 
 func (e *CannedExecutor) assetFrame(ctx context.Context, scope domain.Scope, in ports.Inbox, id domain.UtteranceID, data []byte, seq int, final bool, first *bool) int {

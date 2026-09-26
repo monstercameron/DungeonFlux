@@ -85,7 +85,11 @@ type LineFailed struct {
 }
 type NarrationDelta struct {
 	UtteranceID UtteranceID `json:"utterance_id"`
+	LineID      UtteranceID `json:"line_id,omitempty"`
+	Speaker     string      `json:"speaker,omitempty"`
 	Text        string      `json:"text"`
+	TextSoFar   string      `json:"text_so_far,omitempty"`
+	Final       bool        `json:"final,omitempty"`
 }
 type AssetPartial struct {
 	Slot  string `json:"slot"`
