@@ -179,7 +179,7 @@ The skeleton everything else builds in: module, pinned tools, gate script, CI, a
   why: The human server crash-loops with "DF_DEBUG_TOKEN is required when server.debug=true" because the scheduled task has no token, and the supervisor does not record the child's stderr, so the cause was invisible.
   lane: ORCH (delegated) · block: 8–11 · paths: `scripts/devserver/**`, `scripts/devserver.ps1` · depends: REPO-012
   done when: when DF_DEBUG_TOKEN is unset the supervisor generates a random token per start with crypto/rand, writes it to artifacts/runtime/human/debug.token (gitignored, never logged), and passes it only in the child's environment; child stdout and stderr go to artifacts/logs/devserver/server-<start>.log and the last stderr line is copied into status.json last_error; tests cover both.
-  status: claimed luna
+  status: committed 279e4ea
 
 ## 2. Contracts
 
