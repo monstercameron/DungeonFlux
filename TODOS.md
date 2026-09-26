@@ -935,6 +935,12 @@ SchemaFlux for OpenAI-dialect links, Gemini and Haiku adapters, model chains, bu
   done when: Executor posts the text set; tests.; gate green (≥ 70% coverage where applicable)
   status: done 564eb78
 
+- [ ] LLM-012 · llmexec coverage back above 70%
+  why: ORCH review measured internal/llmexec at 63.8% after LLM-008 to LLM-011 landed in parallel, below the 70% floor.
+  lane: L-LLM · block: 8–11 · paths: `internal/llmexec/*_test.go` · depends: LLM-008, LLM-009, LLM-010, LLM-011
+  done when: internal/llmexec >= 70% with behaviour-asserting tests (failure events, fallbacks, schema rejection).
+  status: claimed luna
+
 ## 15. Voice in (STT)
 
 Mic audio from phones to transcripts.
