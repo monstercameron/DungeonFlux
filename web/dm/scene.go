@@ -69,8 +69,8 @@ func SceneModelFromView(view *dungeonfluxv1.DMView) SceneModel {
 	caption := SceneCaptionFromView(view)
 	model := SceneModel{
 		BackgroundURL:      sceneBackgroundURL(view),
-		FrameURL:           ArtURL("ui/panel_frame"),
-		DividerURL:         ArtURL("ui/divider"),
+		FrameURL:           artSrc("ui/panel_frame"),
+		DividerURL:         artSrc("ui/divider"),
 		SpeakerPortraitURL: speakerPortraitURL(caption.Speaker),
 		Opening:            isOpeningView(view),
 		Title:              SceneTitle(""),
@@ -111,7 +111,7 @@ func SceneModelFromView(view *dungeonfluxv1.DMView) SceneModel {
 			PlayerNumber: card.GetPlayerNumber(),
 			Name:         card.GetName(),
 			Class:        card.GetClassName(),
-			PortraitURL:  card.GetPortraitUrl(),
+			PortraitURL:  artSrc(card.GetPortraitUrl()),
 		})
 	}
 	return model
@@ -129,22 +129,22 @@ func isOpeningView(view *dungeonfluxv1.DMView) bool {
 
 func sceneBackgroundURL(view *dungeonfluxv1.DMView) string {
 	for _, name := range []string{"tavern_interior", "establishing_tavern"} {
-		if value := ArtURL(name); value != "" {
+		if value := artSrc(name); value != "" {
 			return value
 		}
 	}
-	return view.GetBackgroundUrl()
+	return artSrc(view.GetBackgroundUrl())
 }
 
 func layerURL(id, fallback string) string {
 	if fallback != "" {
-		return fallback
+		return artSrc(fallback)
 	}
 	switch {
 	case strings.Contains(normalizeCaptionText(id), "vell"):
-		return ArtURL("mother_vell")
+		return artSrc("mother_vell")
 	case strings.Contains(normalizeCaptionText(id), "stranger"), strings.Contains(normalizeCaptionText(id), "courier"):
-		return ArtURL("stranger")
+		return artSrc("stranger")
 	default:
 		return ""
 	}
@@ -154,11 +154,11 @@ func speakerPortraitURL(speaker string) string {
 	normalized := normalizeCaptionText(speaker)
 	switch {
 	case isDMSpeaker(speaker):
-		return ArtURL("ui/dm_speaker")
+		return artSrc("ui/dm_speaker")
 	case strings.Contains(normalized, "vell"):
-		return ArtURL("mother_vell")
+		return artSrc("mother_vell")
 	case strings.Contains(normalized, "stranger"), strings.Contains(normalized, "courier"):
-		return ArtURL("stranger")
+		return artSrc("stranger")
 	default:
 		return ""
 	}

@@ -27,7 +27,7 @@ func SceneComponent(view *dungeonfluxv1.DMView) router.Component {
 
 func sceneStageStyle(backgroundURL string) map[string]string {
 	background := "linear-gradient(180deg, rgba(7,10,16,.16), rgba(5,7,11,.76)), radial-gradient(ellipse at 50% 40%, rgba(42,39,34,.04), rgba(5,7,11,.55) 84%), linear-gradient(180deg, #111722, #0b0d12)"
-	if backgroundURL != "" {
+	if backgroundURL = artSrc(backgroundURL); backgroundURL != "" {
 		background += ", url('" + backgroundURL + "')"
 	}
 	return map[string]string{"position": "absolute", "inset": "0", "background-image": background, "background-size": "cover", "background-position": "center 42%", "filter": "saturate(.92) contrast(1.04)"}
@@ -50,7 +50,7 @@ func sceneLayers(layers []SceneLayer) []ui.Node {
 		style := SceneLayerStyle(layer)
 		style["position"], style["z-index"] = "absolute", "1"
 		style["max-width"], style["max-height"] = "52%", "72%"
-		nodes = append(nodes, html.Img(html.Props{ID: layer.ID, Class: class, Src: layer.URL, Alt: "", Style: style, Raw: map[string]any{"aria-hidden": "true"}}))
+		nodes = append(nodes, html.Img(html.Props{ID: layer.ID, Class: class, Src: artSrc(layer.URL), Alt: "", Style: style, Raw: map[string]any{"aria-hidden": "true"}}))
 	}
 	return nodes
 }
@@ -86,7 +86,7 @@ func sceneCharacters(characters []SceneCharacter, locale string) []ui.Node {
 		if name == "" {
 			name = SeatName(locale, "", int(character.PlayerNumber))
 		}
-		portrait := html.Div(html.Props{Class: "df-dm-scene-card-portrait", Style: map[string]string{"height": "180px", "overflow": "hidden", "background": "radial-gradient(circle at 50% 30%,#4a5564,#111722 70%)"}}, html.Img(html.Props{Src: character.PortraitURL, Alt: name, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))
+		portrait := html.Div(html.Props{Class: "df-dm-scene-card-portrait", Style: map[string]string{"height": "180px", "overflow": "hidden", "background": "radial-gradient(circle at 50% 30%,#4a5564,#111722 70%)"}}, html.Img(html.Props{Src: artSrc(character.PortraitURL), Alt: name, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))
 		nodes = append(nodes, html.Div(html.Props{Class: "df-dm-scene-card", Role: "listitem", Style: map[string]string{"overflow": "hidden", "border": "1px solid rgba(217,164,65,.84)", "border-radius": "9px", "background": "linear-gradient(165deg,rgba(16,20,28,.96),rgba(8,10,15,.94))", "box-shadow": "0 10px 30px rgba(0,0,0,.58), inset 0 0 0 1px rgba(239,230,210,.06)", "color": "#efe6d2"}}, portrait, html.Div(html.Props{Style: map[string]string{"padding": "10px 8px 12px", "text-align": "center", "text-shadow": "0 1px 2px #000"}}, html.Strong(html.Props{Style: map[string]string{"display": "block", "font-family": "Cinzel, Georgia, serif", "font-size": "24px", "line-height": "1.05"}}, ui.Text(name)), html.Small(html.Props{Style: map[string]string{"display": "block", "margin-top": "6px", "color": "#c8bda8", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "17px"}}, ui.Text(character.Class)))))
 	}
 	return nodes
@@ -112,6 +112,7 @@ func sceneCaption(caption SceneCaption, portraitURL, frameURL, dividerURL, local
 		return html.Div(html.Props{Hidden: true})
 	}
 	name := SceneSpeaker(locale, caption.Speaker)
+	portraitURL = artSrc(portraitURL)
 	portrait := html.Div(html.Props{Class: "df-dm-scene-speaker", Style: map[string]string{"position": "absolute", "left": "-104px", "top": "30px", "width": "150px", "height": "150px", "overflow": "hidden", "border": "2px solid #d9a441", "border-radius": "50%", "background": "radial-gradient(circle at 50% 38%,#2b3542,#07090d 70%)", "box-shadow": "0 0 0 5px rgba(15,17,23,.92), 0 8px 24px rgba(0,0,0,.65)"}}, html.Img(html.Props{Src: portraitURL, Alt: name, Hidden: portraitURL == "", Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}), html.Span(html.Props{Hidden: portraitURL != "", Style: map[string]string{"display": "grid", "place-items": "center", "width": "100%", "height": "100%", "color": "#d9a441", "font-size": "42px"}}, ui.Text("✦")))
 	_ = frameURL
 	_ = dividerURL
@@ -120,6 +121,7 @@ func sceneCaption(caption SceneCaption, portraitURL, frameURL, dividerURL, local
 }
 
 func sceneThumbBackground(url string) string {
+	url = artSrc(url)
 	if url == "" {
 		return "linear-gradient(145deg,#243348,#10141d)"
 	}

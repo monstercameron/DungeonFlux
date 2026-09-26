@@ -71,9 +71,9 @@ func combatTokens(tokens []CombatToken) []ui.Node {
 		if status != "" {
 			label += " · " + status
 		}
-		portrait := token.Portrait
+		portrait := artSrc(token.Portrait)
 		if portrait == "" {
-			portrait = ArtURL("ui/logo_emblem")
+			portrait = artSrc("ui/logo_emblem")
 		}
 		bar := html.Div(html.Props{Style: map[string]string{"position": "absolute", "left": "8%", "right": "8%", "bottom": "12px", "height": "10px", "border": "2px solid #efe6d2", "border-radius": "8px", "background": "#291b1b", "overflow": "hidden"}}, html.Div(html.Props{Style: map[string]string{"width": combatHPPercent(token.HP, token.HPMax), "height": "100%", "background": combatHPColor(token.HP, token.HPMax)}}))
 		imageChildren := []ui.Node{html.Img(html.Props{Src: portrait, Alt: token.Name, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "contain"}}), bar}
@@ -93,7 +93,7 @@ func combatPartyRail(model CombatModel) ui.Node {
 			continue
 		}
 		items = append(items, html.Div(html.Props{Style: map[string]string{"display": "grid", "grid-template-columns": "68px 1fr", "gap": "12px", "align-items": "center", "padding": "8px", "border": "1px solid rgba(184,137,58,.68)", "border-radius": "8px", "background": "rgba(12,18,28,.86)"}},
-			html.Img(html.Props{Src: token.Portrait, Alt: token.Name, Style: map[string]string{"width": "64px", "height": "64px", "object-fit": "cover", "border": "1px solid #b8893a"}}),
+			html.Img(html.Props{Src: artSrc(token.Portrait), Alt: token.Name, Style: map[string]string{"width": "64px", "height": "64px", "object-fit": "cover", "border": "1px solid #b8893a"}}),
 			html.Div(html.Props{Style: map[string]string{"min-width": "0"}}, html.Strong(html.Props{Style: map[string]string{"display": "block", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "24px", "white-space": "nowrap", "overflow": "hidden", "text-overflow": "ellipsis"}}, ui.Text(token.Name)), html.Span(html.Props{Style: map[string]string{"color": "#2fb59a", "font-size": "18px"}}, ui.Text("HP "+strconv.Itoa(int(token.HP))+"/"+strconv.Itoa(int(token.HPMax))))),
 		))
 	}
@@ -112,7 +112,7 @@ func combatEnemyCard(model CombatModel) ui.Node {
 func enemyCard(token CombatToken) ui.Node {
 	return html.Div(html.Props{Class: "df-dm-combat-enemy", Style: map[string]string{"position": "absolute", "right": "36px", "top": "135px", "width": "310px", "padding": "14px", "border": "1px solid #b3372f", "border-radius": "10px", "background": "rgba(12,18,28,.9)", "box-shadow": "0 12px 28px rgba(0,0,0,.52)"}},
 		html.Div(html.Props{Style: map[string]string{"color": "#e7c27a", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "22px", "letter-spacing": ".1em", "text-transform": "uppercase"}}, ui.Text("Enemy")),
-		html.Div(html.Props{Style: map[string]string{"display": "flex", "gap": "14px", "align-items": "center", "margin-top": "10px"}}, html.Img(html.Props{Src: token.Portrait, Alt: token.Name, Style: map[string]string{"width": "92px", "height": "92px", "object-fit": "cover", "border": "2px solid #b3372f"}}), html.Div(html.Props{Style: map[string]string{"font-family": "Cormorant Garamond,Georgia,serif", "font-size": "28px"}}, ui.Text(token.Name))),
+		html.Div(html.Props{Style: map[string]string{"display": "flex", "gap": "14px", "align-items": "center", "margin-top": "10px"}}, html.Img(html.Props{Src: artSrc(token.Portrait), Alt: token.Name, Style: map[string]string{"width": "92px", "height": "92px", "object-fit": "cover", "border": "2px solid #b3372f"}}), html.Div(html.Props{Style: map[string]string{"font-family": "Cormorant Garamond,Georgia,serif", "font-size": "28px"}}, ui.Text(token.Name))),
 		html.Div(html.Props{Style: map[string]string{"margin-top": "12px", "height": "8px", "background": "#291b1b", "border-radius": "5px", "overflow": "hidden"}}, html.Div(html.Props{Style: map[string]string{"width": combatHPPercent(token.HP, token.HPMax), "height": "100%", "background": "#b3372f"}})),
 	)
 }
@@ -138,7 +138,7 @@ func combatImageURL(model CombatModel) string {
 	if artURL := ArtURL("battlefield_tavern_flat"); artURL != "" {
 		return artURL
 	}
-	return model.ImageURL
+	return artSrc(model.ImageURL)
 }
 
 func combatBanner(model CombatModel) string {

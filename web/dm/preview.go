@@ -46,14 +46,14 @@ func state(phase string, view *dungeonfluxv1.DMView) *dungeonfluxv1.ScreenState 
 
 func baseView() *dungeonfluxv1.DMView {
 	return &dungeonfluxv1.DMView{
-		BackgroundUrl: "/assets/preview/tavern.webp",
+		BackgroundUrl: "establishing_tavern",
 		Locale:        "en",
 		Layers: []*dungeonfluxv1.Layer{
-			{Id: "mother-vell", Url: "/assets/preview/mother-vell.webp", X: 68, Y: 49, Scale: 1},
+			{Id: "mother-vell", Url: "mother_vell", X: 68, Y: 49, Scale: 1},
 		},
 		BuildCards: []*dungeonfluxv1.BuildCard{
-			{PlayerNumber: 1, Name: "Mira", ClassName: "Rogue", PortraitUrl: "/assets/preview/mira.webp"},
-			{PlayerNumber: 2, Name: "Rook", ClassName: "Paladin", PortraitUrl: "/assets/preview/rook.webp"},
+			{PlayerNumber: 1, Name: "Mira", ClassName: "Rogue", PortraitUrl: "ui/class_rogue"},
+			{PlayerNumber: 2, Name: "Rook", ClassName: "Paladin", PortraitUrl: "ui/class_paladin"},
 		},
 	}
 }
@@ -70,7 +70,7 @@ func scenePreview(phase string) *dungeonfluxv1.ScreenState {
 
 func openingPreview() *dungeonfluxv1.ScreenState {
 	view := baseView()
-	view.Clip = &dungeonfluxv1.Clip{Url: "/assets/preview/opening.webm", Playing: true, Then: "SCENE"}
+	view.Clip = &dungeonfluxv1.Clip{Url: "establishing_tavern", Playing: true, Then: "STILL"}
 	return state("opening", view)
 }
 
@@ -90,7 +90,7 @@ func checkPreview(diceState dungeonfluxv1.DiceState, outcome string) *dungeonflu
 
 func hookPreview() *dungeonfluxv1.ScreenState {
 	view := baseView()
-	view.Clip = &dungeonfluxv1.Clip{Url: "/assets/preview/stranger.webm", Playing: true, Then: "SCENE"}
+	view.Clip = &dungeonfluxv1.Clip{Url: "stranger", Playing: true, Then: "STILL"}
 	view.Callout = "DM steering: personal hook → Rook"
 	return state("hook_event", view)
 }
@@ -101,12 +101,12 @@ func combatPreview() *dungeonfluxv1.ScreenState {
 		Battlefield: &dungeonfluxv1.Battlefield{
 			Mode: "FLAT", Visible: true,
 			Grid: &dungeonfluxv1.Grid{Cols: 4, Rows: 3, Walkable: []*dungeonfluxv1.Cell{{C: 0, R: 1}, {C: 1, R: 1}, {C: 2, R: 1}, {C: 3, R: 1}, {C: 1, R: 2}, {C: 2, R: 2}}},
-			Flat: &dungeonfluxv1.FlatBattlefield{ImageUrl: "/assets/preview/battlefield.webp", FloorQuadPx: []float32{120, 180, 1800, 120, 1740, 940, 160, 900}},
+			Flat: &dungeonfluxv1.FlatBattlefield{ImageUrl: "battlefield_tavern_flat", FloorQuadPx: []float32{120, 180, 1800, 120, 1740, 940, 160, 900}},
 		},
 		Tokens: []*dungeonfluxv1.Token{
-			{TokenId: "mira", Name: "Mira", PortraitUrl: "/assets/preview/mira.webp", Cell: &dungeonfluxv1.Cell{C: 1, R: 1}, Hp: 9, HpMax: 10, Active: true},
-			{TokenId: "rook", Name: "Rook", PortraitUrl: "/assets/preview/rook.webp", Cell: &dungeonfluxv1.Cell{C: 2, R: 2}, Hp: 12, HpMax: 12},
-			{TokenId: "thrall", Name: "Drowned Thrall", PortraitUrl: "/assets/preview/thrall.webp", Cell: &dungeonfluxv1.Cell{C: 3, R: 1}, Hp: 18, HpMax: 24, Statuses: []string{"bloodied"}},
+			{TokenId: "mira", Name: "Mira", PortraitUrl: "ui/class_rogue", Cell: &dungeonfluxv1.Cell{C: 1, R: 1}, Hp: 9, HpMax: 10, Active: true},
+			{TokenId: "rook", Name: "Rook", PortraitUrl: "ui/class_paladin", Cell: &dungeonfluxv1.Cell{C: 2, R: 2}, Hp: 12, HpMax: 12},
+			{TokenId: "thrall", Name: "Drowned Thrall", PortraitUrl: "stranger", Cell: &dungeonfluxv1.Cell{C: 3, R: 1}, Hp: 18, HpMax: 24, Statuses: []string{"bloodied"}},
 		},
 		Dice:         &dungeonfluxv1.Dice{State: dungeonfluxv1.DiceState_DICE_STATE_OFFERED, Kind: dungeonfluxv1.DiceKind_DICE_KIND_ATTACK},
 		TurnTimer:    &dungeonfluxv1.Timer{Seat: "1", RemainingMs: 12000, TotalMs: 15000},
@@ -117,7 +117,7 @@ func combatPreview() *dungeonfluxv1.ScreenState {
 
 func cliffhangerPreview() *dungeonfluxv1.ScreenState {
 	view := baseView()
-	view.Clip = &dungeonfluxv1.Clip{Url: "/assets/preview/cliffhanger.webm", Playing: true, Then: "END"}
+	view.Clip = &dungeonfluxv1.Clip{Url: "cliff_generic_tower", Playing: true, Then: "STILL"}
 	return state("cliffhanger", view)
 }
 

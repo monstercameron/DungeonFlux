@@ -64,7 +64,7 @@ func CreationModelFromView(view *dungeonfluxv1.DMView) CreationModel {
 			continue
 		}
 		seat := &model.Seats[card.GetPlayerNumber()-1]
-		seat.Name, seat.Class, seat.PortraitURL = card.GetName(), card.GetClassName(), card.GetPortraitUrl()
+		seat.Name, seat.Class, seat.PortraitURL = card.GetName(), card.GetClassName(), artSrc(card.GetPortraitUrl())
 		if seat.Name != "" || seat.Class != "" || seat.PortraitURL != "" {
 			seat.Status, seat.Ready = "Hero ready", true
 		}
@@ -76,7 +76,7 @@ func CreationModelFromView(view *dungeonfluxv1.DMView) CreationModel {
 			seat.Class = update.Class
 		}
 		if update.ClassCrestURL != "" {
-			seat.ClassCrestURL = update.ClassCrestURL
+			seat.ClassCrestURL = artSrc(update.ClassCrestURL)
 		}
 		if !seat.Ready {
 			seat.Status = creationPickStatus(*seat)
@@ -109,10 +109,7 @@ func classArtName(className string) string {
 
 func creationAssetURL(value string) string {
 	value = strings.TrimSpace(value)
-	if strings.HasPrefix(value, "/assets/preview/") {
-		return ""
-	}
-	return value
+	return artSrc(value)
 }
 
 // CreationCallout is the temporary additive representation for live picks.

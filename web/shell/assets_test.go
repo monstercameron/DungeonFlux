@@ -149,6 +149,21 @@ func TestReadAssetStream_ValidatesChunks(t *testing.T) {
 	}
 }
 
+func TestAssetLoader_LoadPreservesVideoContentTypeForBlob(t *testing.T) {
+	service := &fakeAssetService{assets: map[string]fakeAsset{
+		"opening_clip": {name: "opening_clip", contentType: "video/webm", data: []byte("video")},
+	}}
+	blobs := &fakeBlobURLFactory{}
+	loader := NewAssetLoader(service, blobs)
+	result := <-loader.Load(context.Background(), "opening_clip")
+	if result.Err != nil || result.URL == "" {
+		t.Fatalf("video load = %#v", result)
+	}
+	if len(blobs.contentTypes) != 1 || blobs.contentTypes[0] != "video/webm" {
+		t.Fatalf("Blob content types = %#v, want video/webm", blobs.contentTypes)
+	}
+}
+
 type fakeAssetService struct {
 	mu          sync.Mutex
 	manifest    *dungeonfluxv1.AssetManifestResponse
@@ -225,13 +240,15 @@ func (f *fakeAssetStream) Recv() (*dungeonfluxv1.AssetChunk, error) {
 }
 
 type fakeBlobURLFactory struct {
-	mu    sync.Mutex
-	calls int
+	mu           sync.Mutex
+	calls        int
+	contentTypes []string
 }
 
-func (f *fakeBlobURLFactory) Create([]byte, string) (string, error) {
+func (f *fakeBlobURLFactory) Create(_ []byte, contentType string) (string, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.calls++
+	f.contentTypes = append(f.contentTypes, contentType)
 	return "blob:test/" + string(rune('0'+f.calls)), nil
 }

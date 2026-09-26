@@ -60,8 +60,8 @@ func hudPartyCard(member HUDPartyMember) ui.Node {
 		"border-radius": "7px", "background": "radial-gradient(circle at 50% 25%,#4d5964,#111722 68%)",
 	}
 	var portrait ui.Node
-	if member.PortraitURL != "" {
-		portrait = html.Img(html.Props{Src: member.PortraitURL, Alt: nameOrSeat(member), Style: portraitStyle})
+	if resolved := artSrc(member.PortraitURL); resolved != "" {
+		portrait = html.Img(html.Props{Src: resolved, Alt: nameOrSeat(member), Style: portraitStyle})
 	} else {
 		portrait = html.Div(html.Props{Aria: map[string]string{"label": nameOrSeat(member) + " portrait placeholder"}, Style: portraitStyle},
 			html.Span(html.Props{Style: map[string]string{"display": "block", "padding-top": "25px", "color": "#d9a441", "font-size": "28px", "text-align": "center"}}, ui.Text("✦")))
@@ -124,7 +124,7 @@ func hudNarration(model HUDModel) ui.Node {
 	if model.NarrationText == "" {
 		return html.Section(html.Props{Hidden: true})
 	}
-	portraitURL := ArtURL("ui/dm_speaker")
+	portraitURL := artSrc("ui/dm_speaker")
 	portraitStyle := map[string]string{"width": "118px", "height": "118px", "flex": "0 0 118px", "border": "2px solid #d9a441", "border-radius": "50%", "object-fit": "cover", "background": "radial-gradient(circle at 50% 35%,#293241,#07090d 70%)"}
 	var portrait ui.Node = html.Div(html.Props{Style: portraitStyle}, html.Span(html.Props{Style: map[string]string{"display": "block", "padding-top": "36px", "color": "#d9a441", "font-size": "40px", "text-align": "center"}}, ui.Text("✦")))
 	if portraitURL != "" {
@@ -155,8 +155,8 @@ func hudActions(model HUDModel) ui.Node {
 
 func hudMinimap(model HUDModel) ui.Node {
 	style := map[string]string{"position": "absolute", "right": "30px", "top": "590px", "width": "240px", "height": "240px", "overflow": "hidden", "border": "2px solid #b8893a", "border-radius": "50%", "background": "radial-gradient(circle,#263746,#0b1018 72%)", "box-shadow": "0 0 0 7px rgba(12,18,28,.76),0 10px 25px rgba(0,0,0,.55)"}
-	if model.MinimapURL != "" {
-		style["background-image"] = "linear-gradient(rgba(7,12,18,.2),rgba(7,12,18,.45)),url('" + model.MinimapURL + "')"
+	if minimapURL := artSrc(model.MinimapURL); minimapURL != "" {
+		style["background-image"] = "linear-gradient(rgba(7,12,18,.2),rgba(7,12,18,.45)),url('" + minimapURL + "')"
 		style["background-size"] = "cover"
 		style["background-position"] = "center"
 	}

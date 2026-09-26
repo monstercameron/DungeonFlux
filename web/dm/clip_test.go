@@ -8,7 +8,7 @@ import (
 
 func TestClipModelFromView_MissingClipUsesStill(t *testing.T) {
 	got := ClipModelFromView(&dungeonfluxv1.DMView{BackgroundUrl: "tavern.jpg"})
-	if !got.UseFallback || got.VideoURL != "" || got.StillURL != "tavern.jpg" {
+	if !got.UseFallback || got.VideoURL != "" || got.StillURL != "" {
 		t.Fatalf("missing clip model = %#v", got)
 	}
 }
@@ -18,7 +18,7 @@ func TestClipModelFromView_ReadyClipPreservesPlayback(t *testing.T) {
 		BackgroundUrl: "tavern.jpg",
 		Clip:          &dungeonfluxv1.Clip{Url: "opening.mp4", OffsetMs: 1200, Playing: true},
 	})
-	if got.UseFallback || got.VideoURL != "opening.mp4" || got.StillURL != "tavern.jpg" || !got.Playing || got.OffsetMS != 1200 {
+	if got.UseFallback || got.VideoURL != "opening.mp4" || got.StillURL != "" || !got.Playing || got.OffsetMS != 1200 {
 		t.Fatalf("ready clip model = %#v", got)
 	}
 }

@@ -1,6 +1,9 @@
 package dm
 
-import "sync/atomic"
+import (
+	"strings"
+	"sync/atomic"
+)
 
 // ArtSource resolves a logical UI art name, as registered in the build-time
 // manifest (for example "ui/title_bg" or "tavern_interior"), to a URL the
@@ -33,6 +36,22 @@ func ArtURL(name string) string {
 		return ""
 	}
 	return box.source.ArtURL(name)
+}
+
+// artSrc resolves a wire art selector without allowing an unresolved view URL
+// to reach the DOM. Blob and data URLs are already browser-local and are
+// passed through; logical names, SHA-256 selectors, and /assets paths go
+// through the gRPC-backed ArtURL source and remain empty while loading.
+func artSrc(selector string) string {
+	selector = strings.TrimSpace(selector)
+	if selector == "" {
+		return ""
+	}
+	lower := strings.ToLower(selector)
+	if strings.HasPrefix(lower, "blob:") || strings.HasPrefix(lower, "data:") {
+		return selector
+	}
+	return ArtURL(selector)
 }
 
 // artBox gives atomic.Value one concrete type for every stored source.

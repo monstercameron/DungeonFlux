@@ -8,13 +8,15 @@ import (
 )
 
 func TestCliffhangerModelFromView_UsesCaptionAndStillFallback(t *testing.T) {
+	SetArtSource(mapArt{"tower.webp": "blob:tower"})
+	t.Cleanup(func() { SetArtSource(nil) })
 	view := &dungeonfluxv1.DMView{
-		BackgroundUrl: "/tower.webp",
+		BackgroundUrl: "tower.webp",
 		Locale:        "es",
 		Subtitle:      &dungeonfluxv1.Subtitle{Text: "The bell rings again."},
 	}
 	model := CliffhangerModelFromView(view)
-	if model.Caption != "The bell rings again." || model.Clip.StillURL != "/tower.webp" || model.Locale != "es" {
+	if model.Caption != "The bell rings again." || model.Clip.StillURL != "blob:tower" || model.Locale != "es" {
 		t.Fatalf("CliffhangerModelFromView() = %+v", model)
 	}
 	if !CliffhangerReady(model) {

@@ -14,7 +14,7 @@ func TestSceneModelFromView_CopiesLayersAndCharacters(t *testing.T) {
 		Narration:     &dungeonfluxv1.Narration{Speaker: "Mother Vell", TextSoFar: "The river remembers."},
 	}
 	got := SceneModelFromView(view)
-	if got.BackgroundURL != "tavern.jpg" || len(got.Layers) != 1 || len(got.Characters) != 1 {
+	if got.BackgroundURL != "" || len(got.Layers) != 1 || len(got.Characters) != 1 {
 		t.Fatalf("scene = %#v", got)
 	}
 	if got.Layers[0].ID != "vell" || !got.Layers[0].Highlight || !got.Layers[0].Speaking || got.Characters[0].Name != "Mira" {
@@ -25,7 +25,7 @@ func TestSceneModelFromView_CopiesLayersAndCharacters(t *testing.T) {
 	}
 	view.Layers[0].Url = "changed.png"
 	view.BuildCards[0].Name = "changed"
-	if got.Layers[0].URL != "vell.png" || got.Characters[0].Name != "Mira" {
+	if got.Layers[0].URL != "" || got.Characters[0].Name != "Mira" {
 		t.Fatal("scene shares wire message data")
 	}
 }

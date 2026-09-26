@@ -27,3 +27,33 @@ func TestArtURL_resolvesThroughInstalledSource(t *testing.T) {
 	}
 	SetArtSource(nil)
 }
+
+func TestArtSrc_PassesBrowserURLsAndResolvesAssetSelectors(t *testing.T) {
+	SetArtSource(mapArt{
+		"mother_vell": "blob:vell",
+		"e9d36f1b11ccbed4c55847d2358a913051f8214b37d96a9e49783ce702515e7d":             "blob:vell",
+		"/assets/e9d36f1b11ccbed4c55847d2358a913051f8214b37d96a9e49783ce702515e7d.png": "blob:vell",
+	})
+	t.Cleanup(func() { SetArtSource(nil) })
+	tests := []struct {
+		name string
+		want string
+	}{
+		{name: "blob URL", want: "blob:already"},
+		{name: "data URL", want: "data:image/webp;base64,abc"},
+		{name: "logical name", want: "blob:vell"},
+		{name: "sha selector", want: "blob:vell"},
+		{name: "/assets SHA path", want: "blob:vell"},
+		{name: "/assets path", want: ""},
+		{name: "unknown selector", want: ""},
+		{name: "blank selector", want: ""},
+	}
+	selectors := []string{" blob:already ", "data:image/webp;base64,abc", "mother_vell", "e9d36f1b11ccbed4c55847d2358a913051f8214b37d96a9e49783ce702515e7d", "/assets/e9d36f1b11ccbed4c55847d2358a913051f8214b37d96a9e49783ce702515e7d.png", "/assets/preview/missing.webp", "missing", "  "}
+	for index, selector := range selectors {
+		t.Run(tests[index].name, func(t *testing.T) {
+			if got := artSrc(selector); got != tests[index].want {
+				t.Fatalf("artSrc(%q) = %q, want %q", selector, got, tests[index].want)
+			}
+		})
+	}
+}
