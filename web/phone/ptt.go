@@ -77,6 +77,10 @@ func (m *PTTModel) Start(ctx context.Context, mimeType string) error {
 		m.mu.Unlock()
 		return errors.New("ptt recording is already active")
 	}
+	for len(m.queue) > 0 {
+		<-m.queue
+	}
+	m.pending = 0
 	m.mu.Unlock()
 	stream, err := m.opener.OpenTalk(ctx)
 	if err != nil {
@@ -111,6 +115,7 @@ func (m *PTTModel) QueueChunk(chunk []byte) bool {
 	}
 	if m.pending >= cap(m.queue) {
 		m.state, m.err = PTTFailed, errors.New("ptt audio queue is full")
+		close(m.stop)
 		m.mu.Unlock()
 		return false
 	}
@@ -206,6 +211,14 @@ func (m *PTTModel) upload(ctx context.Context, stream TalkStream, done, stop cha
 		}
 	}
 drained:
+	m.mu.Lock()
+	failed := m.state == PTTFailed
+	m.mu.Unlock()
+	if failed {
+		_ = stream.CloseSend()
+		close(done)
+		return
+	}
 	if sendErr == nil {
 		sendErr = stream.Send(&df.TalkRequest{Message: &df.TalkRequest_End{End: &df.TalkEnd{}}})
 		if sendErr != nil {
