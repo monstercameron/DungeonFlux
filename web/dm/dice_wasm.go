@@ -23,7 +23,7 @@ func DiceComponent(view DiceView) router.Component {
 			diceAnimationStyle(),
 			html.Div(html.Props{Class: "df-dm-dice-kicker", Style: map[string]string{"color": "#d9a441", "font-family": "Georgia, serif", "font-size": "clamp(18px, 2vw, 32px)", "letter-spacing": "0.12em", "text-transform": "uppercase"}}, ui.Text(DiceHeading(locale, view.Kind))),
 			html.Div(html.Props{Class: "df-dm-dice-main", Style: map[string]string{"display": "flex", "align-items": "center", "gap": "clamp(18px, 2vw, 36px)"}},
-				html.Div(html.Props{Class: "df-dm-dice-face", Style: diceFaceStyle(presentation), Raw: map[string]any{"data-state": view.State}}, ui.Text(presentation.FaceLabel)),
+				diceFace(view, presentation),
 				html.Div(html.Props{Class: "df-dm-dice-detail", Style: map[string]string{"display": "flex", "flex": "1 1 220px", "min-width": "0", "flex-direction": "column", "gap": "8px"}},
 					html.P(html.Props{Class: "df-dm-dice-modifier", Style: map[string]string{"margin": "0", "font-size": "clamp(20px, 2.3vw, 40px)", "font-weight": "700", "color": "#efe6d2"}}, ui.Text(modifierText(locale, view))),
 					diceOutcome(locale, view),
@@ -42,12 +42,23 @@ func diceAnimationStyle() ui.Node {
 }
 
 func diceFaceStyle(presentation DicePresentation) map[string]string {
-	style := map[string]string{"display": "grid", "place-items": "center", "flex": "0 0 clamp(104px, 10vw, 180px)", "height": "clamp(104px, 10vw, 180px)", "border": "3px solid #d9a441", "border-radius": "22px", "background": "radial-gradient(circle at 35% 28%, #fff8e7, #d9a441 70%, #8f641d)", "color": "#17130c", "font-family": "Georgia, serif", "font-size": "clamp(62px, 7vw, 126px)", "font-weight": "700", "line-height": "1", "box-shadow": "0 8px 22px rgba(0, 0, 0, 0.45), inset 0 2px 0 rgba(255,255,255,0.5)"}
+	style := map[string]string{"position": "relative", "display": "grid", "place-items": "center", "flex": "0 0 clamp(104px, 10vw, 180px)", "height": "clamp(104px, 10vw, 180px)", "border": "3px solid #d9a441", "border-radius": "22px", "background": "radial-gradient(circle at 35% 28%, #fff8e7, #d9a441 70%, #8f641d)", "color": "#17130c", "font-family": "Georgia, serif", "font-size": "clamp(62px, 7vw, 126px)", "font-weight": "700", "line-height": "1", "box-shadow": "0 8px 22px rgba(0, 0, 0, 0.45), inset 0 2px 0 rgba(255,255,255,0.5)", "overflow": "hidden"}
 	if presentation.IsRolling {
 		style["animation"] = "df-dice-roll 650ms ease-in-out infinite alternate"
 		style["color"] = "#3a2a11"
 	}
 	return style
+}
+
+func diceFace(view DiceView, presentation DicePresentation) ui.Node {
+	style := diceFaceStyle(presentation)
+	children := make([]ui.Node, 0, 2)
+	if artURL := ArtURL(diceArtName(view, presentation)); artURL != "" {
+		style["background"] = "#0f1117"
+		children = append(children, html.Img(html.Props{Src: artURL, Alt: "", Style: map[string]string{"position": "absolute", "inset": "0", "width": "100%", "height": "100%", "object-fit": "cover", "opacity": "0.94"}, Raw: map[string]any{"aria-hidden": "true"}}))
+	}
+	children = append(children, html.Span(html.Props{Style: map[string]string{"position": "relative", "z-index": "1", "text-shadow": "0 2px 4px rgba(255,248,231,.55)"}}, ui.Text(presentation.FaceLabel)))
+	return html.Div(html.Props{Class: "df-dm-dice-face", Style: style, Raw: map[string]any{"data-state": view.State, "data-art": diceArtName(view, presentation)}}, children...)
 }
 
 func modifierText(locale string, view DiceView) string {

@@ -19,5 +19,11 @@ func CalloutComponent(view CalloutView) router.Component {
 }
 
 func calloutStyle() map[string]string {
-	return map[string]string{"box-sizing": "border-box", "max-width": "min(980px, 78vw)", "margin": "0 auto", "padding": "clamp(18px, 2vw, 34px) clamp(24px, 3vw, 48px)", "border-left": "5px solid #d9a441", "border-radius": "0 12px 12px 0", "background": "linear-gradient(90deg, rgba(15, 17, 23, 0.97), rgba(15, 17, 23, 0.75))", "box-shadow": "0 12px 32px rgba(0, 0, 0, 0.38)", "font-family": "Arial, sans-serif", "pointer-events": "none"}
+	style := map[string]string{"box-sizing": "border-box", "max-width": "min(1280px, 82vw)", "margin": "0 auto", "padding": "clamp(28px, 3vw, 58px) clamp(42px, 5vw, 92px)", "border": "1px solid rgba(217, 164, 65, 0.72)", "border-radius": "12px", "background": "linear-gradient(90deg, rgba(15, 17, 23, 0.97), rgba(15, 17, 23, 0.75))", "box-shadow": "0 12px 32px rgba(0, 0, 0, 0.38)", "font-family": "Arial, sans-serif", "pointer-events": "none"}
+	if artURL := ArtURL("ui/banner_callout"); artURL != "" {
+		style["background-image"] = "linear-gradient(90deg, rgba(15,17,23,.18), rgba(15,17,23,.18)), url('" + artURL + "')"
+		style["background-size"] = "100% 100%"
+		style["background-position"] = "center"
+	}
+	return style
 }

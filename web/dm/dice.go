@@ -42,6 +42,16 @@ type DicePresentation struct {
 	IsFailure  bool
 }
 
+func diceArtName(view DiceView, presentation DicePresentation) string {
+	if presentation.IsSuccess || view.Crit {
+		return "ui/d20_success"
+	}
+	if presentation.IsFailure {
+		return "ui/d20_fail"
+	}
+	return "ui/d20"
+}
+
 // PresentDice converts a wire-facing dice view into renderer-friendly copy.
 func PresentDice(view DiceView) DicePresentation {
 	state := strings.ToLower(strings.TrimSpace(view.State))

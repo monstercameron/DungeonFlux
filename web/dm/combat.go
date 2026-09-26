@@ -30,6 +30,7 @@ type CombatToken struct {
 	HPMax      int32
 	Active     bool
 	Statuses   []string
+	Class      string
 	CellColumn int32
 	CellRow    int32
 }
@@ -78,7 +79,7 @@ func CombatModelFromView(view *dungeonfluxv1.DMView) CombatModel {
 	if flat := flatBattlefield(battlefield); flat != nil {
 		model.ImageURL = flat.GetImageUrl()
 		model.Segments = projectedGrid(battlefield.GetGrid(), flat.GetFloorQuadPx())
-		model.Tokens = projectedTokens(view.GetTokens(), battlefield.GetGrid(), flat.GetFloorQuadPx())
+		model.Tokens = projectedTokens(view.GetTokens(), battlefield.GetGrid(), flat.GetFloorQuadPx(), view.GetBuildCards())
 		model.Highlights = projectedHighlights(view.GetHighlights(), battlefield.GetGrid(), flat.GetFloorQuadPx())
 	}
 	return model
@@ -127,7 +128,7 @@ func flatBattlefield(battlefield *dungeonfluxv1.Battlefield) *dungeonfluxv1.Flat
 	return battlefield.GetFlat()
 }
 
-func projectedTokens(tokens []*dungeonfluxv1.Token, grid *dungeonfluxv1.Grid, quad []float32) []CombatToken {
+func projectedTokens(tokens []*dungeonfluxv1.Token, grid *dungeonfluxv1.Grid, quad []float32, cards []*dungeonfluxv1.BuildCard) []CombatToken {
 	if grid == nil || len(quad) < 8 {
 		return nil
 	}
@@ -145,9 +146,21 @@ func projectedTokens(tokens []*dungeonfluxv1.Token, grid *dungeonfluxv1.Grid, qu
 		if !valid {
 			continue
 		}
-		result = append(result, CombatToken{ID: token.GetTokenId(), Name: token.GetName(), Portrait: token.GetPortraitUrl(), X: point.X, Y: point.Y, HP: token.GetHp(), HPMax: token.GetHpMax(), Active: token.GetActive(), Statuses: append([]string(nil), token.GetStatuses()...), CellColumn: cell.GetC(), CellRow: cell.GetR()})
+		result = append(result, CombatToken{ID: token.GetTokenId(), Name: token.GetName(), Portrait: token.GetPortraitUrl(), X: point.X, Y: point.Y, HP: token.GetHp(), HPMax: token.GetHpMax(), Active: token.GetActive(), Statuses: append([]string(nil), token.GetStatuses()...), Class: tokenClass(token, cards), CellColumn: cell.GetC(), CellRow: cell.GetR()})
 	}
 	return result
+}
+
+func tokenClass(token *dungeonfluxv1.Token, cards []*dungeonfluxv1.BuildCard) string {
+	if token == nil {
+		return ""
+	}
+	for _, card := range cards {
+		if card != nil && strings.EqualFold(strings.TrimSpace(card.GetName()), strings.TrimSpace(token.GetName())) {
+			return card.GetClassName()
+		}
+	}
+	return ""
 }
 
 func projectedGrid(grid *dungeonfluxv1.Grid, quad []float32) []CombatSegment {

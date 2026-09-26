@@ -68,6 +68,26 @@ func TestPresentDice_ClassifiesOutcome(t *testing.T) {
 	}
 }
 
+func TestDiceArtName_ChoosesOutcomeVariant(t *testing.T) {
+	tests := []struct {
+		name    string
+		view    DiceView
+		wantArt string
+	}{
+		{name: "success", view: DiceView{Outcome: "success"}, wantArt: "ui/d20_success"},
+		{name: "critical", view: DiceView{Crit: true}, wantArt: "ui/d20_success"},
+		{name: "failure", view: DiceView{Outcome: "failure"}, wantArt: "ui/d20_fail"},
+		{name: "default", view: DiceView{State: "rolling"}, wantArt: "ui/d20"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := diceArtName(test.view, PresentDice(test.view)); got != test.wantArt {
+				t.Fatalf("dice art = %q, want %q", got, test.wantArt)
+			}
+		})
+	}
+}
+
 func TestTimerViewFromProto_CopiesFields(t *testing.T) {
 	got := TimerViewFromProto(&dungeonfluxv1.Timer{Seat: "2", RemainingMs: 1200, TotalMs: 3000, Frozen: true})
 	if got.Seat != "2" || got.RemainingMS != 1200 || got.TotalMS != 3000 || !got.Frozen {
