@@ -9,18 +9,21 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"github.com/monstercameron/DungeonFlux/internal/api"
+	"github.com/monstercameron/DungeonFlux/internal/api/debug"
 	"github.com/monstercameron/DungeonFlux/internal/clock"
 	"github.com/monstercameron/DungeonFlux/internal/config"
 	"github.com/monstercameron/DungeonFlux/internal/content"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/game"
 	"github.com/monstercameron/DungeonFlux/internal/logx"
+	"github.com/monstercameron/DungeonFlux/internal/ports"
 	"github.com/monstercameron/DungeonFlux/internal/runtime"
 	"github.com/monstercameron/DungeonFlux/internal/store/sqlite"
 	"google.golang.org/grpc"
@@ -28,13 +31,14 @@ import (
 
 // App is the assembled server and its owned resources.
 type App struct {
-	handler  http.Handler
-	room     *runtime.Room
-	roomDone chan error
-	roomStop context.CancelFunc
-	store    *sqlite.Store
-	logFile  io.Closer
-	logger   *slog.Logger
+	handler   http.Handler
+	room      *runtime.Room
+	roomDone  chan error
+	roomStop  context.CancelFunc
+	store     *sqlite.Store
+	logFile   io.Closer
+	logger    *slog.Logger
+	debugStop context.CancelFunc
 }
 
 // Build assembles an application from cfg. A non-empty seed is expanded into
@@ -69,13 +73,27 @@ func Build(ctx context.Context, cfg config.Config, seed []byte) (*App, error) {
 	if roomID == "" {
 		roomID = "default"
 	}
+	hostToken, err := tokenOrGenerate(cfg.Server.HostToken)
+	if err != nil {
+		_ = store.Close()
+		_ = logFile.Close()
+		return nil, fmt.Errorf("wire: create host token: %w", err)
+	}
+	dmToken, err := tokenOrGenerate(cfg.Server.DMToken)
+	if err != nil {
+		_ = store.Close()
+		_ = logFile.Close()
+		return nil, fmt.Errorf("wire: create dm token: %w", err)
+	}
 	run := domainRun(roomID, seed)
 	if err := store.Start(ctx, run); err != nil {
 		_ = store.Close()
 		_ = logFile.Close()
 		return nil, fmt.Errorf("wire: start run: %w", err)
 	}
-	room := runtime.NewRoom(eng, clock.Real{}, store, logger, nil)
+	watch := api.NewWatchHub()
+	listen := api.NewListenHub()
+	room := runtime.NewRoom(eng, clock.Real{}, store, logger, watch.Publish)
 	roomCtx, cancel := context.WithCancel(context.Background())
 	roomDone := make(chan error, 1)
 	go func() { roomDone <- room.Run(roomCtx) }()
@@ -88,7 +106,32 @@ func Build(ctx context.Context, cfg config.Config, seed []byte) (*App, error) {
 		_ = logFile.Close()
 		return nil, fmt.Errorf("wire: create report server: %w", err)
 	}
-	df.RegisterSessionServiceServer(grpcServer, report)
+	session, err := api.NewSessionServer(room, roomID, hostToken, dmToken)
+	if err != nil {
+		cancel()
+		_ = store.Close()
+		_ = logFile.Close()
+		return nil, fmt.Errorf("wire: create session server: %w", err)
+	}
+	df.RegisterSessionServiceServer(grpcServer, &sessionService{SessionServer: session, ReportServer: report,
+		watch: watch, room: roomID, dm: dmToken, host: hostToken})
+	host, err := api.NewHostServer(room, hostToken)
+	if err != nil {
+		cancel()
+		_ = store.Close()
+		_ = logFile.Close()
+		return nil, fmt.Errorf("wire: create host server: %w", err)
+	}
+	df.RegisterHostServiceServer(grpcServer, host)
+	talk, err := api.NewTalkServer(room, session, noopTalkSink{})
+	if err != nil {
+		cancel()
+		_ = store.Close()
+		_ = logFile.Close()
+		return nil, fmt.Errorf("wire: create talk server: %w", err)
+	}
+	df.RegisterVoiceServiceServer(grpcServer, talk)
+	df.RegisterAudioServiceServer(grpcServer, &audioService{hub: listen})
 	apiServer, err := api.NewServer(grpcServer, cfg.Server.AllowedOrigins)
 	if err != nil {
 		cancel()
@@ -99,8 +142,44 @@ func Build(ctx context.Context, cfg config.Config, seed []byte) (*App, error) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", health)
 	mux.Handle("/grpc", apiServer.Handler())
-	return &App{handler: mux, room: room, roomDone: roomDone, roomStop: cancel,
-		store: store, logFile: logFile, logger: logger}, nil
+	if err := mountWeb(mux, cfg); err != nil {
+		cancel()
+		_ = store.Close()
+		_ = logFile.Close()
+		return nil, fmt.Errorf("wire: mount web: %w", err)
+	}
+	app := &App{handler: mux, room: room, roomDone: roomDone, roomStop: cancel,
+		store: store, logFile: logFile, logger: logger}
+	if cfg.Server.Debug {
+		if err := startDebug(ctx, app, eng, room, cfg.Server.Port+1000); err != nil {
+			_ = app.Close()
+			return nil, err
+		}
+	}
+	return app, nil
+}
+
+func startDebug(ctx context.Context, app *App, eng ports.Engine, inbox ports.Inbox, port int) error {
+	token := os.Getenv("DF_DEBUG_TOKEN")
+	if token == "" {
+		return errors.New("wire: DF_DEBUG_TOKEN is required when server.debug=true")
+	}
+	service, err := debug.NewServer(eng, inbox)
+	if err != nil {
+		return fmt.Errorf("wire: create debug service: %w", err)
+	}
+	listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	if err != nil {
+		return fmt.Errorf("wire: listen debug port: %w", err)
+	}
+	debugCtx, stop := context.WithCancel(ctx)
+	app.debugStop = stop
+	go func() {
+		if err := debug.Serve(debugCtx, listener, service, token); err != nil && !errors.Is(err, context.Canceled) {
+			app.logger.Error("debug listener stopped", "err", err)
+		}
+	}()
+	return nil
 }
 
 // Handler returns the HTTP handler for the assembled application.
@@ -118,6 +197,9 @@ func (a *App) Close() error {
 	}
 	if a.roomStop != nil {
 		a.roomStop()
+	}
+	if a.debugStop != nil {
+		a.debugStop()
 	}
 	var errs []error
 	if a.roomDone != nil {
@@ -157,6 +239,17 @@ func makeSeed(input []byte) ([]byte, error) {
 	var zero [4]byte
 	_, _ = h.Write(zero[:])
 	return h.Sum(nil), nil
+}
+
+func tokenOrGenerate(value string) (string, error) {
+	if value != "" {
+		return value, nil
+	}
+	data := make([]byte, 16)
+	if _, err := rand.Read(data); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(data), nil
 }
 
 func domainRun(room string, seed []byte) domain.Run {
