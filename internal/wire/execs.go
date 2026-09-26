@@ -100,6 +100,7 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 	runtime.Handle(runner, loggedExecutor(cfg.logger, llmexec.NewPrerenderTextExecutor(set.llm).Execute))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, voiceout.NewRenderLinesExecutor(set.tts, assets).Execute))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, portrait.Execute))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, media.NewReferenceExecutor(media.ReferenceConfig{Images: set.image, Assets: assets}).Execute))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, compose.Execute))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, clip.Execute))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, billboardExecutor(cfg.config.Server.DataDir, fakeMode)))
