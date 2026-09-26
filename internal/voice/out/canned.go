@@ -53,6 +53,12 @@ func (e *CannedExecutor) PlayCanned(ctx context.Context, effect domain.PlayCanne
 	defer cancel()
 	line := e.track(effect.UtteranceID, cancel)
 	defer e.untrack(effect.UtteranceID, line)
+	completed := false
+	defer func() {
+		if !completed && lineCtx.Err() != nil {
+			e.interrupt(effect.UtteranceID, line)
+		}
+	}()
 	text := cannedText(e.roomLocale(), effect.AssetID)
 	postNarrationText(ctx, scope, in, effect.UtteranceID, cannedSpeaker(effect), text, false)
 	reader, err := e.openLocalized(lineCtx, effect.AssetID)
@@ -93,6 +99,7 @@ func (e *CannedExecutor) PlayCanned(ctx context.Context, effect domain.PlayCanne
 				postNarrationText(ctx, scope, in, effect.UtteranceID, cannedSpeaker(effect), text, true)
 				postLineFinal(ctx, scope, in, effect.UtteranceID, samples, defaultSampleRate)
 				postLineDone(ctx, scope, in, effect.UtteranceID)
+				completed = true
 			}
 			if !errors.Is(readErr, io.EOF) && !isCanceled(lineCtx, readErr) {
 				postLineFailed(ctx, scope, in, effect.UtteranceID, vocab.ErrUnavailable)
@@ -171,6 +178,7 @@ func (e *CannedExecutor) Cancel(id domain.UtteranceID) {
 	}
 	e.mu.Lock()
 	line := e.stop[id]
+	delete(e.stop, id)
 	e.mu.Unlock()
 	if line != nil {
 		line.cancel()
@@ -189,6 +197,17 @@ func (e *CannedExecutor) track(id domain.UtteranceID, cancel context.CancelFunc)
 	e.stop[id] = line
 	e.mu.Unlock()
 	return line
+}
+
+// interrupt fades out a canned line stopped before its end; see
+// PCMExecutor.interrupt.
+func (e *CannedExecutor) interrupt(id domain.UtteranceID, line *lineControl) {
+	e.mu.Lock()
+	current := e.stop[id] == line
+	e.mu.Unlock()
+	if current && e.audio != nil {
+		e.audio.Cancel(id)
+	}
 }
 
 func (e *CannedExecutor) untrack(id domain.UtteranceID, line *lineControl) {

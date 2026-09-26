@@ -49,6 +49,12 @@ func (e *PCMExecutor) StartLine(ctx context.Context, effect domain.StartLine, sc
 	defer cancel()
 	line := e.track(effect.UtteranceID, cancel)
 	defer e.untrack(effect.UtteranceID, line)
+	completed := false
+	defer func() {
+		if !completed && lineCtx.Err() != nil {
+			e.interrupt(effect.UtteranceID, line)
+		}
+	}()
 	if text := strings.TrimSpace(effect.Input); text != "" && !strings.HasPrefix(text, "{") {
 		postNarrationText(ctx, scope, in, effect.UtteranceID, lineSpeaker(effect), text, false)
 	}
@@ -69,7 +75,7 @@ func (e *PCMExecutor) StartLine(ctx context.Context, effect domain.StartLine, sc
 	}
 	defer stream.Close()
 	go closeOnCancel(lineCtx, stream)
-	e.consume(lineCtx, stream, effect, scope, in)
+	completed = e.consume(lineCtx, stream, effect, scope, in)
 }
 
 // Execute is an alias suitable for executor registration by composition code.
@@ -84,6 +90,7 @@ func (e *PCMExecutor) Cancel(id domain.UtteranceID) {
 	}
 	e.mu.Lock()
 	line := e.stop[id]
+	delete(e.stop, id)
 	e.mu.Unlock()
 	if line != nil {
 		line.cancel()
@@ -104,6 +111,18 @@ func (e *PCMExecutor) track(id domain.UtteranceID, cancel context.CancelFunc) *l
 	return line
 }
 
+// interrupt tells the Listen hub that a line stopped before its end (a
+// scope cancel such as a host Skip), so the TV fades out the audio it has
+// queued. A line replaced by a newer line with the same ID is left alone.
+func (e *PCMExecutor) interrupt(id domain.UtteranceID, line *lineControl) {
+	e.mu.Lock()
+	current := e.stop[id] == line
+	e.mu.Unlock()
+	if current && e.audio != nil {
+		e.audio.Cancel(id)
+	}
+}
+
 func (e *PCMExecutor) untrack(id domain.UtteranceID, line *lineControl) {
 	e.mu.Lock()
 	if current := e.stop[id]; current == line {
@@ -114,7 +133,9 @@ func (e *PCMExecutor) untrack(id domain.UtteranceID, line *lineControl) {
 
 type lineControl struct{ cancel context.CancelFunc }
 
-func (e *PCMExecutor) consume(ctx context.Context, stream ports.PCMStream, effect domain.StartLine, scope domain.Scope, in ports.Inbox) {
+// consume forwards the stream's PCM and reports whether the line reached its
+// end (line_done posted).
+func (e *PCMExecutor) consume(ctx context.Context, stream ports.PCMStream, effect domain.StartLine, scope domain.Scope, in ports.Inbox) bool {
 	var previous ports.PCMChunk
 	seq, samples := 0, 0
 	havePrevious := false
@@ -130,13 +151,13 @@ func (e *PCMExecutor) consume(ctx context.Context, stream ports.PCMStream, effec
 			}
 			postLineFinal(ctx, scope, in, effect.UtteranceID, samples, previous.SampleRate)
 			postLineDone(ctx, scope, in, effect.UtteranceID)
-			return
+			return true
 		}
 		if err != nil {
 			if !isCanceled(ctx, err) {
 				postLineFailed(ctx, scope, in, effect.UtteranceID, vocab.ErrUnavailable)
 			}
-			return
+			return false
 		}
 		if chunk.SampleRate <= 0 || len(chunk.S16LE) == 0 {
 			continue
@@ -149,7 +170,7 @@ func (e *PCMExecutor) consume(ctx context.Context, stream ports.PCMStream, effec
 		previous, havePrevious = chunk, true
 		select {
 		case <-ctx.Done():
-			return
+			return false
 		default:
 		}
 	}
