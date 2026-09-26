@@ -182,11 +182,10 @@ func (m *PTTModel) upload(ctx context.Context, stream TalkStream, done, stop cha
 			m.mu.Unlock()
 			seq++
 		case <-stop:
-			drainErr, next := m.drainQueue(stream, seq)
+			drainErr := m.drainQueue(stream, seq)
 			if sendErr == nil {
 				sendErr = drainErr
 			}
-			seq = next
 			goto drained
 		case <-ctx.Done():
 			sendErr = ctx.Err()
@@ -228,7 +227,7 @@ drained:
 	close(done)
 }
 
-func (m *PTTModel) drainQueue(stream TalkStream, seq uint64) (error, uint64) {
+func (m *PTTModel) drainQueue(stream TalkStream, seq uint64) error {
 	var sendErr error
 	for {
 		select {
@@ -241,7 +240,7 @@ func (m *PTTModel) drainQueue(stream TalkStream, seq uint64) (error, uint64) {
 			m.mu.Unlock()
 			seq++
 		default:
-			return sendErr, seq
+			return sendErr
 		}
 	}
 }
