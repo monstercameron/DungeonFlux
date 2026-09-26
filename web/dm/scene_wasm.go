@@ -89,7 +89,7 @@ func sceneCharacters(characters []SceneCharacter, locale string) []ui.Node {
 		if name == "" {
 			name = SeatName(locale, "", int(character.PlayerNumber))
 		}
-		portrait := html.Div(html.Props{Class: "df-dm-scene-card-portrait", Style: map[string]string{"height": "180px", "overflow": "hidden", "background": "radial-gradient(circle at 50% 30%,#4a5564,#111722 70%)"}}, heroPortrait(character.PortraitURL, character.ClassName, name))
+		portrait := html.Div(html.Props{Class: "df-dm-scene-card-portrait", Style: map[string]string{"height": "180px", "overflow": "hidden", "background": "radial-gradient(circle at 50% 30%,#4a5564,#111722 70%)"}}, heroPortrait(character.PortraitURL, character.Class, name))
 		nodes = append(nodes, html.Div(html.Props{Class: "df-dm-scene-card", Role: "listitem", Style: map[string]string{"overflow": "hidden", "border": "1px solid rgba(217,164,65,.84)", "border-radius": "9px", "background": "linear-gradient(165deg,rgba(16,20,28,.96),rgba(8,10,15,.94))", "box-shadow": "0 10px 30px rgba(0,0,0,.58), inset 0 0 0 1px rgba(239,230,210,.06)", "color": "#efe6d2"}}, portrait, html.Div(html.Props{Style: map[string]string{"padding": "10px 8px 12px", "text-align": "center", "text-shadow": "0 1px 2px #000"}}, html.Strong(html.Props{Style: map[string]string{"display": "block", "font-family": "Cinzel, Georgia, serif", "font-size": "24px", "line-height": "1.05"}}, ui.Text(name)), html.Small(html.Props{Style: map[string]string{"display": "block", "margin-top": "6px", "color": "#c8bda8", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "17px"}}, ui.Text(character.Class)))))
 	}
 	return nodes
