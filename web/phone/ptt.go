@@ -170,35 +170,24 @@ func (m *PTTModel) Stop(ctx context.Context) <-chan error {
 func (m *PTTModel) upload(ctx context.Context, stream TalkStream, done, stop chan struct{}) {
 	var sendErr error
 	var seq uint64
-	draining := false
 	for {
-		if draining {
-			select {
-			case chunk := <-m.queue:
-				if err := m.sendChunk(stream, seq, chunk); err != nil {
-					sendErr = err
-				}
-				m.mu.Lock()
-				m.pending--
-				m.mu.Unlock()
-				seq++
-			default:
-				goto drained
-			}
-			continue
-		}
 		select {
 		case chunk := <-m.queue:
-			if err := stream.Send(&df.TalkRequest{Message: &df.TalkRequest_Chunk{Chunk: &df.AudioChunk{Seq: seq, Data: chunk}}}); err != nil {
-				sendErr = err
-				m.fail(err)
+			sendErr = m.sendChunk(stream, seq, chunk)
+			if sendErr != nil {
+				m.fail(sendErr)
 			}
 			m.mu.Lock()
 			m.pending--
 			m.mu.Unlock()
 			seq++
 		case <-stop:
-			draining = true
+			drainErr, next := m.drainQueue(stream, seq)
+			if sendErr == nil {
+				sendErr = drainErr
+			}
+			seq = next
+			goto drained
 		case <-ctx.Done():
 			sendErr = ctx.Err()
 			m.fail(ctx.Err())
@@ -237,6 +226,24 @@ drained:
 	}
 	m.mu.Unlock()
 	close(done)
+}
+
+func (m *PTTModel) drainQueue(stream TalkStream, seq uint64) (error, uint64) {
+	var sendErr error
+	for {
+		select {
+		case chunk := <-m.queue:
+			if err := m.sendChunk(stream, seq, chunk); sendErr == nil && err != nil {
+				sendErr = err
+			}
+			m.mu.Lock()
+			m.pending--
+			m.mu.Unlock()
+			seq++
+		default:
+			return sendErr, seq
+		}
+	}
 }
 
 func (m *PTTModel) sendChunk(stream TalkStream, seq uint64, chunk []byte) error {

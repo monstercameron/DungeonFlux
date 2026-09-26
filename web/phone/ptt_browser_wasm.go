@@ -55,7 +55,12 @@ func NewBrowserRecorder(stream js.Value, mimeType string, queue func([]byte) boo
 }
 
 // Start begins 100 ms MediaRecorder timeslices.
-func (b *BrowserRecorder) Start() error {
+func (b *BrowserRecorder) Start() (err error) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			err = errors.New("media recorder start failed")
+		}
+	}()
 	if b == nil || !b.recorder.Truthy() {
 		return errors.New("media recorder is unavailable")
 	}
@@ -64,7 +69,12 @@ func (b *BrowserRecorder) Start() error {
 }
 
 // Stop ends the MediaRecorder; its final dataavailable event is queued too.
-func (b *BrowserRecorder) Stop() error {
+func (b *BrowserRecorder) Stop() (err error) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			err = errors.New("media recorder stop failed")
+		}
+	}()
 	if b == nil || !b.recorder.Truthy() {
 		return errors.New("media recorder is unavailable")
 	}
