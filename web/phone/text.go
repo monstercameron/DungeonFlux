@@ -2,6 +2,7 @@ package phone
 
 import (
 	"strconv"
+	"strings"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"github.com/monstercameron/DungeonFlux/internal/i18n"
@@ -152,3 +153,25 @@ func ErrorTitle(locale string) string { return T(locale, "phone.error_title", ni
 
 // ClientUnavailable returns the localized unavailable-client message.
 func ClientUnavailable(locale string) string { return T(locale, "phone.client_unavail", nil) }
+
+// ConnectionLabel returns the short, localized connection state for the frame.
+func ConnectionLabel(locale string, state ConnectionState) string {
+	if strings.HasPrefix(strings.ToLower(locale), "es") {
+		switch state {
+		case ConnectionOnline:
+			return "Conectado"
+		case ConnectionConnecting:
+			return "Conectando…"
+		default:
+			return "Sin conexión"
+		}
+	}
+	switch state {
+	case ConnectionOnline:
+		return "Connected"
+	case ConnectionConnecting:
+		return "Connecting…"
+	default:
+		return "Offline"
+	}
+}

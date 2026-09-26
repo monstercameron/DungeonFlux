@@ -30,6 +30,63 @@ type SeatView struct {
 	Phone *df.PhoneView
 }
 
+// ConnectionState identifies the transport state shown in the phone header.
+type ConnectionState string
+
+const (
+	// ConnectionOnline means the watch stream is receiving current state.
+	ConnectionOnline ConnectionState = "online"
+	// ConnectionConnecting means the client is opening or restoring its stream.
+	ConnectionConnecting ConnectionState = "connecting"
+	// ConnectionOffline means actions cannot currently reach the server.
+	ConnectionOffline ConnectionState = "offline"
+)
+
+// FrameModel is the small, render-safe state shared by the phone frame.
+type FrameModel struct {
+	DisplayName string
+	Title       string
+	Locale      string
+	Connection  ConnectionState
+	Screen      ScreenKind
+}
+
+// NewFrameModel creates a frame with sensible labels for a seat.
+func NewFrameModel(displayName, locale string) FrameModel {
+	if displayName == "" {
+		displayName = "Player"
+	}
+	if locale == "" {
+		locale = "en"
+	}
+	return FrameModel{DisplayName: displayName, Title: "Your adventure", Locale: locale, Connection: ConnectionConnecting}
+}
+
+// ApplyView updates the frame screen and marks the connection online.
+func (m *FrameModel) ApplyView(view SeatView) ScreenTransition {
+	if m == nil {
+		return ScreenTransition{}
+	}
+	previous := m.Screen
+	m.Screen = SelectScreen(view)
+	m.Connection = ConnectionOnline
+	return ScreenTransition{From: previous, To: m.Screen, Changed: previous != m.Screen}
+}
+
+// SetConnection records a transport state for the next render.
+func (m *FrameModel) SetConnection(state ConnectionState) {
+	if m != nil {
+		m.Connection = state
+	}
+}
+
+// ScreenTransition describes a phase-driven phone screen change.
+type ScreenTransition struct {
+	From    ScreenKind
+	To      ScreenKind
+	Changed bool
+}
+
 // SelectScreen maps every demo phase to the phone screen that owns its actions.
 func SelectScreen(view SeatView) ScreenKind {
 	phase := strings.ToLower(strings.TrimSpace(view.Phase))
