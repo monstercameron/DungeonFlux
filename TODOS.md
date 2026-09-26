@@ -1271,6 +1271,12 @@ Portraits, stills, clips, and their worker pool with per-vendor concurrency.
   done when: Transition math tests.; gate green (≥ 70% coverage where applicable)
   status: done 5373670
 
+- [ ] MEDIA-010 · on-demand sound pipeline at game time (SFX, ambience, music)
+  why: New scenes, improvised moments, and missing assets need sounds generated when the game asks for them, not only at build time.
+  lane: L-MEDIA · block: 8–11 · paths: `internal/adapters/sound/elevenlabs/**`, `internal/media/sound*.go`, `internal/content/sound_cues*.go` · depends: MEDIA-001, LLM-007, CON-006
+  done when: an ElevenLabs sound adapter (sound-generation and music endpoints, fixture-tested) and a media executor resolve a sound request by logical name from the manifest first, then by prompt hash from the asset-store cache, and otherwise generate, normalise, store, and post asset_ready (with a timeout fallback to silence); per-vendor semaphore and budget caps apply; content provides a cue catalogue mapping phases and events to sound requests; tests with fakes and httptest.
+  status: claimed luna
+
 ## 18. Web shell (shared WASM client)
 
 One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, audio.
@@ -1885,6 +1891,30 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   lane: L-OPS · block: 8–11 · paths: `scripts/buildtime/ui*.go` · depends: OPS-002, OPS-020
   done when: every image listed in the art job list exists under artifacts/runtime/buildtime/ui, is converted to WebP (quality 82, max 1920 px; theme-plate icons trimmed), and is registered in the manifest as ui/<name>; a checker lists missing items.
   status: claimed luna (generation done: 42 of 45 images, species_c regenerating)
+
+- [ ] OPS-022 · live ElevenLabs pre-generation: canned lines and nudges
+  why: Developer go-ahead (2026-09-26) with the ElevenLabs key in .env: canned lines (§0.7) and the two turn-timer nudges must exist as real audio so the opening and fallbacks play.
+  lane: L-OPS · block: 8–11 · paths: `scripts/buildtime/canned*.go`, `scripts/buildtime/nudges*.go`, `scripts/buildtime/lock*.go` · depends: OPS-010, OPS-014, REPO-017
+  done when: the canned and nudge jobs run live (en; es if the I18N-010 job supports it) with at most 4 concurrent TTS requests, every file lands under artifacts/runtime/buildtime/audio/, is loudness-normalised, and is registered in the manifest under a file lock (artifacts/runtime/buildtime/manifest.lock); a cost line per request is logged; a summary lists files, durations, and character counts.
+  status: claimed luna
+
+- [ ] OPS-023 · live ElevenLabs pre-generation: sound-effect library
+  why: Dice, success, failure, door, sting, cliffhanger hit, and combat sounds make the table feel alive.
+  lane: L-OPS · block: 8–11 · paths: `scripts/buildtime/sfx*.go` · depends: OPS-011, REPO-017, OPS-022
+  done when: the SFX job runs live, 2–3 takes per effect with the best kept by duration and loudness checks, files under artifacts/runtime/buildtime/sfx/, normalised, registered under the manifest lock, cost logged.
+  status: claimed luna
+
+- [ ] OPS-024 · ambience loop job and live generation
+  why: Each scene needs a quiet loopable bed (tavern murmur and rain, harbor night, bell tower wind, combat tension, dawn) under narration.
+  lane: L-OPS · block: 8–11 · paths: `scripts/buildtime/ambience*.go` · depends: OPS-001, REPO-017, OPS-022
+  done when: a new ambience job (prompts derived from the one-shot scenes in internal/content) generates 30–60 s loops via ElevenLabs sound generation, crossfades the loop point with ffmpeg, normalises to a lower level than dialogue, registers under the manifest lock, runs live; unit tests for prompt and loop math.
+  status: claimed luna
+
+- [ ] OPS-025 · live ElevenLabs music: the 12 tracks with beat-aligned loops
+  why: The §0.19 score (12 tracks) needs real music with loops cut at downbeats for bar-aligned crossfades.
+  lane: L-OPS · block: 8–11 · paths: `scripts/buildtime/music*.go` · depends: OPS-012, OPS-013, REPO-017
+  done when: the music job runs live with model music_v2_5 and at most 2 concurrent jobs (Creator plan), each track checked with beatcheck and cut at downbeats, files under artifacts/runtime/buildtime/music/, registered with BPM and loop points under the manifest lock, cost logged; failures retried once, then reported.
+  status: claimed luna
 
 - [x] OPS-019 · PowerShell SuperSplat manifest and complete LOD downloader
   why: The developer needs a reproducible local copy of every LOD and texture referenced by the supplied SuperSplat scene.
