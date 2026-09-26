@@ -26,7 +26,7 @@ func TestCreationModel_SelectRollLockAndProject(t *testing.T) {
 		t.Fatalf("snapshot = %+v", got)
 	}
 	model.ApplyAct(<-model.Lock(context.Background()))
-	if model.Snapshot().Phase != CreationLocked || fake.request.GetMoveId() != "pc_locked" {
+	if model.Snapshot().Phase != CreationLocked || fake.request.GetMoveId() != "ready" {
 		t.Fatalf("locked snapshot = %+v", model.Snapshot())
 	}
 }

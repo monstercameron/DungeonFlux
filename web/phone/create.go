@@ -108,12 +108,28 @@ func (m *CreationModel) SelectGender(gender string) error {
 
 // RollHero starts the server-authoritative hero roll.
 func (m *CreationModel) RollHero(ctx context.Context) <-chan ActResult {
-	return m.send(ctx, "roll_hero", "")
+	result := make(chan ActResult, 1)
+	if m == nil || m.client == nil || m.state.Species == "" || m.state.Gender == "" {
+		return m.send(ctx, "roll_hero", "")
+	}
+	// The engine records species and gender as their own moves before it
+	// accepts roll_hero, so the three acts are sent in order.
+	go func() {
+		for _, step := range [][2]string{{"species", m.state.Species}, {"gender", m.state.Gender}} {
+			request := &df.ActRequest{SeatToken: m.state.SeatToken, MoveId: step[0], Arg: step[1]}
+			if outcome := <-m.client.Act(ctx, request); outcome.Err != nil || (outcome.Value != nil && !outcome.Value.GetAccepted()) {
+				result <- outcome
+				return
+			}
+		}
+		result <- <-m.send(ctx, "roll_hero", "")
+	}()
+	return result
 }
 
 // Lock submits the completed character to the engine.
 func (m *CreationModel) Lock(ctx context.Context) <-chan ActResult {
-	return m.send(ctx, "pc_locked", "")
+	return m.send(ctx, "ready", "")
 }
 
 // ApplyAct updates the model after an Act response arrives.
@@ -183,7 +199,7 @@ func (m *CreationModel) send(ctx context.Context, move, arg string) <-chan ActRe
 		}
 		m.state.Phase = CreationRolling
 	}
-	if move == "pc_locked" {
+	if move == "ready" {
 		m.state.Phase = CreationLocked
 	}
 	request := &df.ActRequest{SeatToken: m.state.SeatToken, MoveId: move, Arg: arg}
