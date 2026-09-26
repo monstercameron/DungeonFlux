@@ -11,6 +11,7 @@ import (
 )
 
 func main() {
+	rememberBootQuery()
 	parseRouter := router.NewHistoryRouter(router.RouterOptions{DefaultRoute: string(RouteDM)})
 	client, err := newBootClient()
 	if err != nil {

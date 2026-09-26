@@ -42,6 +42,14 @@ func hostView(props hostViewProps) ui.Node {
 	if token == "" {
 		token = query.Get("token")
 	}
+	if token == "" {
+		// The shell saves the boot token before the router drops the query.
+		if storage := js.Global().Get("sessionStorage"); storage.Truthy() {
+			if saved := storage.Call("getItem", "df-host-token"); saved.Truthy() {
+				token = saved.String()
+			}
+		}
+	}
 	ui.UseEffect(func() func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		updates := props.Client.watch(ctx, token)

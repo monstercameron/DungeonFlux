@@ -181,7 +181,13 @@ func dmToken() string {
 	}
 	params := js.Global().Get("URLSearchParams").New(location.Get("search"))
 	value := params.Call("get", "token")
-	if value.IsNull() || value.IsUndefined() {
+	if value.IsNull() || value.IsUndefined() || value.String() == "" {
+		// The shell saves the boot token before the router drops the query.
+		if storage := js.Global().Get("sessionStorage"); storage.Truthy() {
+			if saved := storage.Call("getItem", "df-dm-token"); saved.Truthy() {
+				return saved.String()
+			}
+		}
 		return ""
 	}
 	return value.String()
