@@ -202,7 +202,7 @@ Known gaps: <what is missing or fragile, and why>
 Artifacts: <paths under artifacts/ worth looking at>
 Devlog entries: <zero or more entries in the section 9 template, or "none">
 ```
-ORCH then reviews your commit: it re-runs your gate and the full gate, reads the diff against the plan, and marks the todo `done <hash>` in `TODOS.md`. Problems become a follow-up todo sent back to your lane; ORCH does not rewrite your code, and nobody rewrites your commit. A hand-in covers exactly one todo; a lane working several todos commits and hands in each one separately.
+ORCH then reviews your commit: it re-runs your lane gate, `go build ./...`, and archtest (the full gate, WASM build, and walk tests run on the merged head every 30 minutes and at checkpoints), reads the diff against the plan, and marks the todo `done <hash>` in `TODOS.md`. Problems become a follow-up todo sent back to your lane; ORCH does not rewrite your code, and nobody rewrites your commit. A hand-in covers exactly one todo; a lane working several todos commits and hands in each one separately.
 
 ## 9. Devlog: record hard issues and discoveries
 The devlog is a public timeline at `docs/devlog.html` (live at https://monstercameron.github.io/DungeonFlux/devlog.html). It is how this project shows its agentic process, so write entries generously for anything a future agent or a reader would learn from.
@@ -253,7 +253,7 @@ PowerShell has no `<` input redirection, so the brief is piped in. Run each lane
 
 **ORCH review loop (Opus 5.5), per hand-in:**
 1. Read the hand-in and the diff (`git diff --stat` on the lane's paths only). Anything outside owned paths: reject.
-2. Run the lane gate and the full gate yourself; never trust a reported green.
+2. Run the lane gate, `go build ./...`, and archtest yourself on each commit; never trust a reported green. Every 30 minutes and at checkpoints, run the full gate, the WASM build, and the walk tests on the merged head.
 3. Review against the binding plan sections and the contracts. Send findings back to the same lane as a follow-up brief; the lane fixes, ORCH re-reviews.
 4. Accept the commit (mark `done <hash>` in `TODOS.md`), push `main` at checkpoints, append the lane's devlog entries, and let the human test server pick up the new build (section 11). A bad commit is fixed forward by a new todo, never by rewriting history.
 5. Launch the lane's next item at once.
@@ -280,7 +280,7 @@ The developer tests the game by hand throughout the build, so a working server i
 - **Where:** `https://dm.{domain}:8443/dm` on the laptop (or `http://localhost:8443/dm` before HTTPS is set up); phones at `/p`; host controls at `/host`. Data under `artifacts/runtime/human/`, separate from lane instances and from the stage's `show` instance.
 - **What it runs:** the last build of `main` that passed the full gate. It starts with the fake adapters and switches to live vendors (`config/human.json`) once the vendor adapters pass their gates; the host page shows which mode is active.
 - **Who runs it:** ORCH, through `scripts/devserver.ps1`, registered as a Windows scheduled task (`Register-ScheduledTask` + `Start-ScheduledTask`, `-ExecutionTimeLimit ([TimeSpan]::Zero)`) so it survives the orchestrating session. A process started from an agent's shell dies with that shell; do not rely on one.
-- **Supervisor behaviour:** after each ORCH merge it rebuilds into `artifacts/build/human/`. It swaps to the new binary only if the build and the full gate pass; otherwise it keeps the last good build running and writes the failure to `artifacts/logs/devserver/`. It restarts the server within 5 seconds if the process exits, and exposes `GET /healthz` plus `artifacts/logs/devserver/status.json` (commit, build time, mode, uptime, last error).
+- **Supervisor behaviour:** after each ORCH merge it rebuilds into `artifacts/build/human/`. On the 30-minute cadence it swaps to the new binary only if the full gate, the WASM build, and the walk tests pass; otherwise it keeps the last good build running and writes the failure to `artifacts/logs/devserver/`. It restarts the server within 5 seconds if the process exits, and exposes `GET /healthz` plus `artifacts/logs/devserver/status.json` (commit, build time, mode, uptime, last error).
 - **Before any code exists** (hours 0–2), the supervisor serves a placeholder page on 8443 that shows the current phase of the build and the latest devlog entries, so the URL never 404s.
 - **ORCH checks it** after every merge (health endpoint and one page load) and at least every 30 minutes; a down server is fixed before any new lane is launched.
 - **Nobody else touches it:** lanes never start, stop, restart, or bind port 8443, and never write under `artifacts/runtime/human/`.
@@ -419,13 +419,13 @@ go run ./cmd/dfctl --addr localhost:19101 logs --level warn --follow
 | Group | Verbs |
 |---|---|
 | Read (no side effects) | `state`, `view --seat N\|--dm`, `legal --seat N`, `scopes`, `assets`, `events --since SEQ [--follow]`, `logs`, `clients`, `costs` |
-| Drive the game (engine events) | `send <event>`, `act`, `say`, `dice force`, `goto <phase>`, `seat set`, `timer set\|pause\|expire`, `reset [--seed]`, `snapshot save\|load` |
-| Vendors (no paid calls) | `vendor fake <role> on\|off\|fail\|slow=MS` |
-| Clients (via the Watch stream) | `client <id\|dm\|seat:N> reload\|route\|overlay\|mute\|unmute\|splat flat\|splat on\|screenshot` |
+| Drive the game (engine events) | `send <event>`, `act`, `say`, `dice force d20=N`, `reset`; backlog: `goto <phase>`, `seat set`, `timer set\|pause\|expire`, multi-die force, `snapshot save\|load` |
+| Vendors (backlog) | `vendor fake <role> on\|off\|fail\|slow=MS` |
+| Clients (backlog, via the Watch stream) | `client <id\|dm\|seat:N> reload\|route\|overlay\|mute\|unmute\|splat flat\|splat on\|screenshot` |
 
 Rules:
-- Write verbs never mutate state directly. They send events through `Step`, so they land in the event log and replay deterministically. Pass `--dry-run` to see the effects without applying them.
+- Write verbs never mutate state directly. They send events through `Step`, so they land in the event log and replay deterministically. (`--dry-run` is backlog.)
 - `dfctl` connects to the debug listener at `127.0.0.1:<server port + 1000>` (your lane's server) or `:9443` (the human test server, ORCH only). Lanes without a server (L-ENG, L-COMBAT, L-RT) use `debug_start` runs on ORCH's scratch server (:8444) through ORCH.
 - The demo build of `dfctl` has reads plus `send`, `act`, `say`, `dice force d20=N`, and `reset`; `goto combat` is the `debug_start: combat` config. The other verbs in the table are an only-if-idle backlog after hour 17.
-- Point `dfctl` at a server, not a vendor: `vendor fake` is how you test fallbacks, never a live call.
+- Test fallbacks with fake adapters in unit tests; `vendor fake` is post-hour-17 backlog. Never make a live vendor call to test one.
 - Put `dfctl` output you cite in a hand-in under `artifacts/test/<LANE>/`.
