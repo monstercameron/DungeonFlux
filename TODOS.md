@@ -643,7 +643,7 @@ The drowned-thrall fight: fixed turn order, R-D1–R-D7 rules, bell flee, 30 s c
   why: The full run must reach combat from the hook and continue to the cliffhanger.
   lane: L-ENG · block: 11–14 · paths: `internal/game/phase/*.go` · depends: COMBAT-007, PH-HOOK-001
   done when: Walk paths through combat pass in sim.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed ad604cb
 
 - [ ] COMBAT-009 · Battlefield mode rule (SPLAT vs FLAT)
   why: The engine decides SPLAT or FLAT from the room-level splat_ready report and projects View.Battlefield from Opening entry.
@@ -701,7 +701,7 @@ Deterministic virtual-time simulation of whole runs.
   why: The whole demo must walk from lobby to end, including combat outcomes, in sim.
   lane: L-ENG · block: 11–14 · paths: `internal/sim/walk/full/**` · depends: COMBAT-008
   done when: Combat paths 26–34, 37 pass in sim at hour 14.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 ## 11. Storage
 
@@ -793,7 +793,7 @@ The room loop, runner, scope tree, inbox, timers, and executors registry that ru
   why: ORCH review found Room always uses a no-op runner with no way to install the Runner, and Timers and ScopeTree are never driven, so no engine effect (timers, cancels, vendor work) ever executes; BASE-011 was blocked on this.
   lane: L-RT · block: 5–8 · paths: `internal/runtime/room*.go`, `internal/runtime/effects*.go` · depends: RT-003, RT-004, RT-005, RT-006
   done when: NewRoom accepts options (WithRunner, WithTimers, WithScopes or one WithExecutors); after each Step the room applies control effects itself (start/cancel/freeze/thaw timers, pause/resume all, cancel scope/key, new run) and hands work effects to the Runner under the scope context from ScopeTree; synctest tests prove a StartTimer fires timer_fired back into Step and a CancelScope cancels a running executor's context.
-  status: claimed luna
+  status: committed efc65c8
 
 ## 13. API and streams
 
