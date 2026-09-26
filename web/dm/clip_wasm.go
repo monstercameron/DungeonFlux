@@ -19,11 +19,11 @@ func ClipComponent(model ClipModel) router.Component {
 			mediaStyle["opacity"] = ".12"
 		}
 		if model.UseFallback || model.VideoURL == "" {
-			return html.Div(html.Props{Class: "df-dm-clip df-dm-clip-fallback", Role: "img", Aria: map[string]string{"label": T(locale, "dm.clip_still", nil)}, Style: map[string]string{"position": "absolute", "left": "-50%", "top": "0", "width": "1920px", "height": "1080px", "overflow": "hidden", "background": "linear-gradient(180deg, rgba(13,17,24,.06), rgba(8,10,15,.68))"}},
+			return html.Div(html.Props{Class: "df-dm-clip df-dm-clip-fallback", Role: "img", Aria: map[string]string{"label": T(locale, "dm.clip_still", nil)}, Style: map[string]string{"position": "absolute", "left": "0", "top": "0", "width": "1920px", "height": "1080px", "overflow": "hidden", "background": "linear-gradient(180deg, rgba(13,17,24,.06), rgba(8,10,15,.68))"}},
 				html.Img(html.Props{Class: "df-dm-clip-still", Src: model.StillURL, Alt: "", Style: mediaStyle}),
 			)
 		}
-		return html.Div(html.Props{Class: "df-dm-clip", Role: "img", Aria: map[string]string{"label": T(locale, "dm.clip_label", nil)}, Style: map[string]string{"position": "absolute", "left": "-50%", "top": "0", "width": "1920px", "height": "1080px", "overflow": "hidden", "background": "#0b0d12"}},
+		return html.Div(html.Props{Class: "df-dm-clip", Role: "img", Aria: map[string]string{"label": T(locale, "dm.clip_label", nil)}, Style: map[string]string{"position": "absolute", "left": "0", "top": "0", "width": "1920px", "height": "1080px", "overflow": "hidden", "background": "#0b0d12"}},
 			html.Img(html.Props{Class: "df-dm-clip-still", Src: model.StillURL, Alt: "", Style: cloneMediaStyle(mediaStyle, true), Raw: map[string]any{"aria-hidden": "true"}}),
 			html.Video(html.Props{Class: "df-dm-clip-video", Src: model.VideoURL, Style: cloneMediaStyle(mediaStyle, true), Raw: map[string]any{
 				"autoplay": model.Playing, "muted": true, "playsinline": true, "poster": model.StillURL,

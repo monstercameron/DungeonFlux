@@ -16,7 +16,7 @@ func SceneComponent(view *dungeonfluxv1.DMView) router.Component {
 	model := SceneModelFromView(view)
 	locale := localeOrDefault(view.GetLocale())
 	return func(_ router.Attrs) *router.Element {
-		return html.Section(html.Props{Class: "df-dm-scene", Role: "img", Aria: map[string]string{"label": T(locale, "dm.scene_label", nil)}, Style: map[string]string{"position": "absolute", "left": "-50%", "top": "0", "width": "1920px", "height": "1080px", "overflow": "hidden"}},
+		return html.Section(html.Props{Class: "df-dm-scene", Role: "img", Aria: map[string]string{"label": T(locale, "dm.scene_label", nil)}, Style: map[string]string{"position": "absolute", "left": "0", "top": "0", "width": "1920px", "height": "1080px", "overflow": "hidden"}},
 			html.Div(html.Props{Class: "df-dm-scene-stage", Style: sceneStageStyle(model.BackgroundURL)}, sceneLayers(model.Layers)...),
 			sceneVignette(), sceneBrand(model), sceneLocation(model), sceneTitle(model),
 			scenePartyRail(model.Characters, locale), sceneProgressRail(model, locale),

@@ -16,7 +16,7 @@ func CreationComponent(model CreationModel) router.Component {
 	return func(_ router.Attrs) *router.Element {
 		featured := featuredCreationSeat(model)
 		style := creationStyle()
-		style["position"], style["left"], style["top"] = "absolute", "-50%", "0"
+		style["position"], style["left"], style["top"] = "absolute", "0", "0"
 		style["width"], style["height"] = "1920px", "1080px"
 		return html.Section(html.Props{Class: "df-dm-creation", Role: "region", Aria: map[string]string{"label": "Character creation"}, Style: style},
 			creationHeader(model), creationPortraitPanel(featured), creationBuildPanel(featured), creationPhonePanel(featured), creationSeatStrip(model.Seats, featured.Number), creationLockup(featured),
