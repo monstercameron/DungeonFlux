@@ -69,6 +69,11 @@ func TestE2E_DfctlRunThroughLobby(t *testing.T) {
 	for _, seat := range []string{"1", "2"} {
 		sendAct(t, debugClient, debugCtx, seat, "species", "human")
 		sendAct(t, debugClient, debugCtx, seat, "gender", "nonbinary")
+		class := "paladin"
+		if seat == "2" {
+			class = "rogue"
+		}
+		sendAct(t, debugClient, debugCtx, seat, "class", class)
 		sendAct(t, debugClient, debugCtx, seat, "roll_hero", "")
 		if contains(readLegal(t, debugClient, debugCtx, "DF-E2E", seat), "ready") {
 			sendAct(t, debugClient, debugCtx, seat, "ready", "")
