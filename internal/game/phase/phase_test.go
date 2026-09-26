@@ -86,6 +86,30 @@ func TestMachine_rejectsWrongEvent(t *testing.T) {
 	}
 }
 
+func TestMachine_LeaveStartsArrivalCannedLine(t *testing.T) {
+	machine := newMachine(t)
+	for _, event := range []domain.Event{
+		domain.HostCmd{Cmd: vocab.HostStart},
+		domain.HostCmd{Cmd: vocab.HostSkip},
+		domain.HostCmd{Cmd: vocab.HostSkip},
+	} {
+		if _, err := machine.Step(event); err != nil {
+			t.Fatalf("setup event %T: %v", event, err)
+		}
+	}
+	result, err := machine.Step(domain.Act{Seat: 1, Move: vocab.MoveLeave})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if machine.State() != vocab.StateHookEvent || len(result.Effects) != 1 {
+		t.Fatalf("leave state/effects = %q/%#v", machine.State(), result.Effects)
+	}
+	arrival, ok := result.Effects[0].(domain.PlayCanned)
+	if !ok || arrival.UtteranceID != "hook-arrival" || arrival.AssetID != "hook-arrival" {
+		t.Fatalf("arrival effect = %#v", result.Effects[0])
+	}
+}
+
 func newMachine(t *testing.T) Machine {
 	t.Helper()
 	machine, err := New()

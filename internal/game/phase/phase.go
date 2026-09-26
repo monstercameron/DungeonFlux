@@ -304,10 +304,16 @@ func (m *Machine) stepExploration(event domain.Event) (Result, error) {
 		return m.step(eventTalk)
 	case vocab.MoveLeave:
 		m.spotlight = act.Seat
-		if err := m.startHook(); err != nil {
+		started, err := m.startHook()
+		if err != nil {
 			return Result{}, err
 		}
-		return m.step(eventLeave)
+		result, err := m.step(eventLeave)
+		if err != nil {
+			return Result{}, err
+		}
+		result.Effects = append(started, result.Effects...)
+		return result, nil
 	default:
 		return m.unhandled(event)
 	}

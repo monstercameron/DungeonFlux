@@ -168,14 +168,17 @@ func (m *Machine) transition(event vocab.EventKind, effects []domain.Effect) (Re
 	return out, nil
 }
 
-func (m *Machine) startHook() error {
+func (m *Machine) startHook() ([]domain.Effect, error) {
 	var err error
 	m.hook, err = hook.New(hook.Config{ArrivalClip: "hook-arrival", StrangerUtterance: "stranger", StrangerText: "It followed me from the river.", CannedUtterance: "stranger-canned", CannedLine: "canned-stranger"})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = m.hook.Start()
-	return err
+	started, err := m.hook.Start()
+	if err != nil {
+		return nil, err
+	}
+	return started.Effects, nil
 }
 
 func (m *Machine) startCombat() error {

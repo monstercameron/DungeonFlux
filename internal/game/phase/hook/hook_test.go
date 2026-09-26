@@ -14,7 +14,7 @@ func TestMachine_ArrivalClipStartsStrangerAndTriggersCombat(t *testing.T) {
 		t.Fatalf("start=%#v err=%v", result, err)
 	}
 	clip, ok := result.Effects[0].(domain.PlayCanned)
-	if !ok || clip.AssetID != "arrival" {
+	if !ok || clip.AssetID != "arrival" || clip.UtteranceID != "arrival" {
 		t.Fatalf("clip=%#v", result.Effects[0])
 	}
 	result, err = machine.Step(domain.ClipDone{AssetID: "arrival"})
