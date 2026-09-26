@@ -121,6 +121,7 @@ func TestLockManifest_RejectsCanceledContext(t *testing.T) {
 
 func TestLockManifest_RejectsNilContextAndEmptyRoot(t *testing.T) {
 	var nilContext context.Context
+	//lint:ignore SA1012 this test proves LockManifest rejects a nil context
 	if _, err := LockManifest(nilContext, t.TempDir()); err == nil {
 		t.Fatal("nil context accepted")
 	}
