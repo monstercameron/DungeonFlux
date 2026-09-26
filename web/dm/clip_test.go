@@ -23,6 +23,13 @@ func TestClipModelFromView_ReadyClipPreservesPlayback(t *testing.T) {
 	}
 }
 
+func TestClipModelFromView_OpeningClipMarksSubtleOverlay(t *testing.T) {
+	got := ClipModelFromView(&dungeonfluxv1.DMView{Clip: &dungeonfluxv1.Clip{Url: "opening-establishing.webm"}})
+	if !got.Opening {
+		t.Fatalf("opening clip = %#v", got)
+	}
+}
+
 func TestClipModelFromView_LateShotForcesStill(t *testing.T) {
 	got := ClipModelFromView(&dungeonfluxv1.DMView{
 		BackgroundUrl: "tavern.jpg",

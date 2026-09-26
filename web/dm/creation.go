@@ -99,6 +99,22 @@ func creationPickStatus(seat CreationSeat) string {
 	return "Waiting for player"
 }
 
+func speciesArtName(species string) string {
+	return "ui/species_" + strings.ToLower(strings.TrimSpace(species))
+}
+
+func classArtName(className string) string {
+	return "ui/class_" + strings.ToLower(strings.TrimSpace(className))
+}
+
+func creationAssetURL(value string) string {
+	value = strings.TrimSpace(value)
+	if strings.HasPrefix(value, "/assets/preview/") {
+		return ""
+	}
+	return value
+}
+
 // CreationCallout is the temporary additive representation for live picks.
 type CreationCallout struct {
 	Number        int32

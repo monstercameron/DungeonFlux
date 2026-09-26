@@ -1,6 +1,10 @@
 package dm
 
-import dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
+import (
+	"strings"
+
+	dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
+)
 
 // ClipModel is the browser-independent playback choice for a DM clip.
 type ClipModel struct {
@@ -9,6 +13,7 @@ type ClipModel struct {
 	OffsetMS    int64
 	Playing     bool
 	UseFallback bool
+	Opening     bool
 	Locale      string
 }
 
@@ -28,6 +33,7 @@ func ClipModelFromView(view *dungeonfluxv1.DMView) ClipModel {
 		return model
 	}
 	model.VideoURL = clip.GetUrl()
+	model.Opening = strings.Contains(strings.ToLower(clip.GetUrl()), "opening") || strings.Contains(strings.ToLower(clip.GetUrl()), "establishing")
 	model.OffsetMS = nonNegative(clip.GetOffsetMs())
 	model.Playing = clip.GetPlaying()
 	model.UseFallback = clip.GetThen() == "STILL" || view.GetShot().GetFallback()

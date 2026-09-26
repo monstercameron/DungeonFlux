@@ -130,3 +130,10 @@ func TestSceneModelFromView_ResolvesDMSpeakerArt(t *testing.T) {
 		t.Fatalf("DM scene = %#v", got)
 	}
 }
+
+func TestSceneModelFromView_OpeningAddsTitleCaption(t *testing.T) {
+	got := SceneModelFromView(&dungeonfluxv1.DMView{Clip: &dungeonfluxv1.Clip{Url: "opening.webm"}})
+	if !got.Opening || !got.Caption.Visible || got.Caption.Speaker != "Dungeon Master" || got.Caption.Text == "" || !got.ShowTitle {
+		t.Fatalf("opening model = %#v", got)
+	}
+}

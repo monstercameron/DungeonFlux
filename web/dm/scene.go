@@ -41,6 +41,7 @@ type SceneModel struct {
 	FrameURL           string
 	DividerURL         string
 	SpeakerPortraitURL string
+	Opening            bool
 	Title              string
 	Act                string
 	Tagline            string
@@ -71,11 +72,17 @@ func SceneModelFromView(view *dungeonfluxv1.DMView) SceneModel {
 		FrameURL:           ArtURL("ui/panel_frame"),
 		DividerURL:         ArtURL("ui/divider"),
 		SpeakerPortraitURL: speakerPortraitURL(caption.Speaker),
+		Opening:            isOpeningView(view),
 		Title:              SceneTitle(""),
 		Act:                SceneAct(""),
 		Tagline:            SceneTagline(""),
 		Caption:            caption,
 		ShowTitle:          !caption.Visible || isDMSpeaker(caption.Speaker),
+	}
+	if model.Opening && !caption.Visible {
+		model.Caption = SceneCaption{Speaker: "Dungeon Master", Text: openingNarration, Visible: true, Speaking: true}
+		model.SpeakerPortraitURL = speakerPortraitURL(model.Caption.Speaker)
+		model.ShowTitle = true
 	}
 	model.Progress, model.ProgressIndex = sceneProgress(view)
 	speaker := normalizeCaptionText(model.Caption.Speaker)
@@ -108,6 +115,16 @@ func SceneModelFromView(view *dungeonfluxv1.DMView) SceneModel {
 		})
 	}
 	return model
+}
+
+const openingNarration = "Rain drums against the warped roof of the Drowned Lantern, a tavern that smells of salt, smoke, and secrets. Lanterns sway above dark water pooling in the streets outside."
+
+func isOpeningView(view *dungeonfluxv1.DMView) bool {
+	if view == nil || view.GetClip() == nil {
+		return false
+	}
+	value := normalizeCaptionText(view.GetClip().GetUrl())
+	return strings.Contains(value, "opening") || strings.Contains(value, "establishing")
 }
 
 func sceneBackgroundURL(view *dungeonfluxv1.DMView) string {

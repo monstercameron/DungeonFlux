@@ -85,3 +85,21 @@ func TestDecodeCreationCallout(t *testing.T) {
 		})
 	}
 }
+
+func TestCreationArtNamesNormalizeChoice(t *testing.T) {
+	if got := speciesArtName(" Elf "); got != "ui/species_elf" {
+		t.Fatalf("species art name = %q", got)
+	}
+	if got := classArtName(" Rogue "); got != "ui/class_rogue" {
+		t.Fatalf("class art name = %q", got)
+	}
+}
+
+func TestCreationAssetURLRejectsPreviewFixturePaths(t *testing.T) {
+	if got := creationAssetURL(" /assets/preview/hero.webp "); got != "" {
+		t.Fatalf("preview asset url = %q", got)
+	}
+	if got := creationAssetURL("blob:hero"); got != "blob:hero" {
+		t.Fatalf("resolved asset url = %q", got)
+	}
+}
