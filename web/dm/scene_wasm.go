@@ -26,10 +26,13 @@ func SceneComponent(view *dungeonfluxv1.DMView) router.Component {
 }
 
 func sceneStageStyle(backgroundURL string) map[string]string {
-	background := "linear-gradient(180deg, rgba(7,10,16,.16), rgba(5,7,11,.76)), radial-gradient(ellipse at 50% 40%, rgba(42,39,34,.04), rgba(5,7,11,.55) 84%), linear-gradient(180deg, #111722, #0b0d12)"
+	// Layers paint top to bottom: overlays, then the scene art, then the solid
+	// fallback (the art used to come after the opaque fallback and never showed).
+	background := "linear-gradient(180deg, rgba(7,10,16,.16), rgba(5,7,11,.76)), radial-gradient(ellipse at 50% 40%, rgba(42,39,34,.04), rgba(5,7,11,.55) 84%)"
 	if backgroundURL = artSrc(backgroundURL); backgroundURL != "" {
 		background += ", url('" + backgroundURL + "')"
 	}
+	background += ", linear-gradient(180deg, #111722, #0b0d12)"
 	return map[string]string{"position": "absolute", "inset": "0", "background-image": background, "background-size": "cover", "background-position": "center 42%", "filter": "saturate(.92) contrast(1.04)"}
 }
 
@@ -86,7 +89,7 @@ func sceneCharacters(characters []SceneCharacter, locale string) []ui.Node {
 		if name == "" {
 			name = SeatName(locale, "", int(character.PlayerNumber))
 		}
-		portrait := html.Div(html.Props{Class: "df-dm-scene-card-portrait", Style: map[string]string{"height": "180px", "overflow": "hidden", "background": "radial-gradient(circle at 50% 30%,#4a5564,#111722 70%)"}}, html.Img(html.Props{Src: artSrc(character.PortraitURL), Alt: name, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))
+		portrait := html.Div(html.Props{Class: "df-dm-scene-card-portrait", Style: map[string]string{"height": "180px", "overflow": "hidden", "background": "radial-gradient(circle at 50% 30%,#4a5564,#111722 70%)"}}, heroPortrait(character.PortraitURL, character.ClassName, name))
 		nodes = append(nodes, html.Div(html.Props{Class: "df-dm-scene-card", Role: "listitem", Style: map[string]string{"overflow": "hidden", "border": "1px solid rgba(217,164,65,.84)", "border-radius": "9px", "background": "linear-gradient(165deg,rgba(16,20,28,.96),rgba(8,10,15,.94))", "box-shadow": "0 10px 30px rgba(0,0,0,.58), inset 0 0 0 1px rgba(239,230,210,.06)", "color": "#efe6d2"}}, portrait, html.Div(html.Props{Style: map[string]string{"padding": "10px 8px 12px", "text-align": "center", "text-shadow": "0 1px 2px #000"}}, html.Strong(html.Props{Style: map[string]string{"display": "block", "font-family": "Cinzel, Georgia, serif", "font-size": "24px", "line-height": "1.05"}}, ui.Text(name)), html.Small(html.Props{Style: map[string]string{"display": "block", "margin-top": "6px", "color": "#c8bda8", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "17px"}}, ui.Text(character.Class)))))
 	}
 	return nodes
@@ -133,4 +136,20 @@ func boolWeight(active bool) string {
 		return "700"
 	}
 	return "400"
+}
+
+// heroPortrait shows the hero portrait, or while it is missing (fake mode, or
+// still generating) the class art, then the lantern emblem; never an empty img.
+func heroPortrait(portraitURL, className, name string) ui.Node {
+	src := artSrc(portraitURL)
+	if src == "" && className != "" {
+		src = ArtURL("ui/class_" + strings.ToLower(strings.TrimSpace(className)))
+	}
+	if src == "" {
+		src = ArtURL("ui/logo_emblem")
+	}
+	if src == "" {
+		return html.Span(html.Props{Aria: map[string]string{"label": name}, Style: map[string]string{"display": "grid", "place-items": "center", "height": "100%", "color": "#d9a441", "font-size": "40px"}}, ui.Text("✦"))
+	}
+	return html.Img(html.Props{Src: src, Alt: name, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}})
 }
