@@ -191,7 +191,8 @@ func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handle
 	view := state.GetDm()
 	locale := localeOrDefault(view.GetLocale())
 	layers := SelectLayers(state)
-	children := make([]ui.Node, 0, len(layers))
+	children := make([]ui.Node, 1, len(layers)+1)
+	children[0] = themeStyles()
 	for _, layer := range layers {
 		switch layer {
 		case LayerLobby:
@@ -218,7 +219,7 @@ func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handle
 	}
 	children = append(children, html.Button(html.Props{Type: "button", Class: "df-dm-audio-unlock", OnClick: unlock, Style: map[string]string{"position": "absolute", "right": "1rem", "top": "1rem", "z-index": "100"}}, html.Text(AudioUnlock(locale))))
 	stage := html.Div(html.Props{Class: "df-dm-stage", Style: map[string]string{"position": "relative", "width": "100%", "aspect-ratio": "16 / 9", "overflow": "hidden"}}, children...)
-	return html.Main(html.Props{Class: "df-dm-screen", Role: "main", Style: map[string]string{"width": "100%", "max-width": "1920px", "margin": "0 auto", "padding": "0", "box-sizing": "border-box"}}, stage)
+	return html.Main(html.Props{Class: "df-dm-screen " + currentAspectClass(), Role: "main", Style: map[string]string{"width": "100%", "max-width": "1920px", "margin": "0 auto", "padding": "0", "box-sizing": "border-box"}}, stage)
 }
 
 func appendLayer(children []ui.Node, layer Layer, content ui.Node) []ui.Node {
