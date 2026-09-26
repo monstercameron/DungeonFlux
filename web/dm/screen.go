@@ -14,6 +14,8 @@ const (
 	LayerLobby Layer = "lobby"
 	// LayerScene is the layered still scene surface.
 	LayerScene Layer = "scene"
+	// LayerCreation is the live character-building surface.
+	LayerCreation Layer = "creation"
 	// LayerCallout is the DM steering annotation surface.
 	LayerCallout Layer = "callout"
 	// LayerClip is the establishing or cliffhanger clip surface.
@@ -41,7 +43,7 @@ func SelectLayers(state *dungeonfluxv1.ScreenState) []Layer {
 	case "lobby":
 		return []Layer{LayerLobby, LayerMusic}
 	case "creation":
-		return []Layer{LayerScene, LayerMusic}
+		return []Layer{LayerCreation, LayerMusic}
 	case "opening":
 		return []Layer{LayerScene, LayerClip, LayerMusic}
 	case "exploration", "conversation", "check", "resolution":

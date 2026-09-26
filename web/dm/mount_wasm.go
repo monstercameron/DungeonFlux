@@ -200,6 +200,8 @@ func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handle
 			children = appendLayer(children, layer, LobbyComponent(lobby)(router.Attrs{}))
 		case LayerScene:
 			children = appendLayer(children, layer, SceneComponent(view)(router.Attrs{}))
+		case LayerCreation:
+			children = appendLayer(children, layer, CreationComponent(CreationModelFromView(view))(router.Attrs{}))
 		case LayerCallout:
 			children = appendLayer(children, layer, CalloutComponent(CalloutViewFromDMView(view))(router.Attrs{}))
 		case LayerClip:

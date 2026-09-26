@@ -34,6 +34,7 @@ func TestCompose_RendersPhaseLayerStack(t *testing.T) {
 		classes []string
 	}{
 		{"opening", []string{"df-dm-layer-scene", "df-dm-scene-stage", "df-dm-layer-clip"}},
+		{"creation", []string{"df-dm-layer-creation", "df-dm-creation", "choose a species"}},
 		{"hook_event", []string{"df-dm-layer-scene", "df-dm-layer-clip", "df-dm-layer-callout"}},
 		{"cliffhanger", []string{"df-dm-layer-scene", "df-dm-layer-clip"}},
 		{"end", []string{"df-dm-layer-end"}},

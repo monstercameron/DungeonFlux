@@ -13,7 +13,7 @@ func TestSelectLayers_AllPhases(t *testing.T) {
 		want  []Layer
 	}{
 		{"lobby", []Layer{LayerLobby, LayerMusic}},
-		{"creation", []Layer{LayerScene, LayerMusic}},
+		{"creation", []Layer{LayerCreation, LayerMusic}},
 		{"opening", []Layer{LayerScene, LayerClip, LayerMusic}},
 		{"exploration", []Layer{LayerScene, LayerMusic}},
 		{"conversation", []Layer{LayerScene, LayerMusic}},
