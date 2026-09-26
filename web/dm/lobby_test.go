@@ -9,7 +9,7 @@ import (
 
 func TestNewLobbyModel_InitialisesTwoSeats(t *testing.T) {
 	model := NewLobbyModel("ABCD", "https://table.test/join/ABCD")
-	if model.RoomCode != "ABCD" || model.QRURL == "" {
+	if model.RoomCode != "ABCD" || model.QRURL == "" || model.JoinURL != "/p?room=ABCD" {
 		t.Fatalf("model identity = %+v", model)
 	}
 	if model.Seats[0].Number != 1 || model.Seats[1].Number != 2 {
@@ -17,6 +17,19 @@ func TestNewLobbyModel_InitialisesTwoSeats(t *testing.T) {
 	}
 	if model.AudioState == "" {
 		t.Fatal("audio state is empty")
+	}
+}
+
+func TestNewLobbyModel_DefaultsQRAssetAndNormalizesRoom(t *testing.T) {
+	model := NewLobbyModel(" ab cd ", "")
+	if model.RoomCode != "AB CD" || model.QRURL != "/assets/join-room.png" || model.JoinURL != "/p?room=AB+CD" {
+		t.Fatalf("normalized lobby = %+v", model)
+	}
+}
+
+func TestJoinURL_EmptyRoomOmitsEmptyQuery(t *testing.T) {
+	if got := JoinURL(" "); got != "/p" {
+		t.Fatalf("empty join URL = %q", got)
 	}
 }
 

@@ -3,6 +3,8 @@ package dm
 
 import (
 	"errors"
+	"net/url"
+	"strings"
 
 	dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"github.com/monstercameron/DungeonFlux/web/shell/audio"
@@ -20,6 +22,7 @@ type Seat struct {
 type LobbyModel struct {
 	RoomCode     string
 	QRURL        string
+	JoinURL      string
 	OpeningAudio string
 	Seats        [2]Seat
 	AudioState   string
@@ -28,13 +31,31 @@ type LobbyModel struct {
 
 // NewLobbyModel creates a lobby with two empty seats and a join QR URL.
 func NewLobbyModel(roomCode, qrURL string) LobbyModel {
+	roomCode = normalizeRoomCode(roomCode)
+	if qrURL == "" {
+		qrURL = "/assets/join-room.png"
+	}
 	return LobbyModel{
 		RoomCode:   roomCode,
 		QRURL:      qrURL,
+		JoinURL:    JoinURL(roomCode),
 		AudioState: T("en", "dm.audio_waiting", nil),
 		Seats:      [2]Seat{{Number: 1}, {Number: 2}},
 		Locale:     "en",
 	}
+}
+
+func normalizeRoomCode(roomCode string) string {
+	return strings.ToUpper(strings.TrimSpace(roomCode))
+}
+
+// JoinURL returns the relative phone URL for a room code.
+func JoinURL(roomCode string) string {
+	roomCode = normalizeRoomCode(roomCode)
+	if roomCode == "" {
+		return "/p"
+	}
+	return "/p?" + url.Values{"room": []string{roomCode}}.Encode()
 }
 
 // SetLocale settles the render locale for lobby copy.
