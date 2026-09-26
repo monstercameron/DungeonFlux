@@ -36,3 +36,10 @@ artifacts/runtime/buildtime/**/*.mp4 filter=lfs diff=lfs merge=lfs -text
 artifacts/runtime/buildtime/*.mp4 filter=lfs diff=lfs merge=lfs -text
 artifacts/runtime/buildtime/**/*.webm filter=lfs diff=lfs merge=lfs -text
 artifacts/runtime/buildtime/*.webm filter=lfs diff=lfs merge=lfs -text
+# Battle splats (Git LFS)
+artifacts/media/supersplat/**/*.webp filter=lfs diff=lfs merge=lfs -text
+artifacts/media/supersplat/**/*.png filter=lfs diff=lfs merge=lfs -text
+artifacts/media/supersplat/**/*.bin filter=lfs diff=lfs merge=lfs -text
+artifacts/media/supersplat/**/*.json filter=lfs diff=lfs merge=lfs -text
+artifacts/media/supersplat/**/*.sog filter=lfs diff=lfs merge=lfs -text
+artifacts/media/supersplat/**/*.ply filter=lfs diff=lfs merge=lfs -text
