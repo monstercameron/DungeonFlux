@@ -24,6 +24,9 @@ type Player struct {
 	pendingCommands map[Channel]pendingMix
 	scheduler       Scheduler
 	sfxGate         CueGate
+	// lineBase is the AudioContext time each voice line is anchored to;
+	// chunk offsets from the Scheduler are relative to it.
+	lineBase map[string]float64
 }
 
 // PlaySFXURL plays a short manifest-backed effect without treating its asset
@@ -121,9 +124,31 @@ func (p *Player) Play(chunk ScheduledChunk) error {
 	source := p.context.Call("createBufferSource")
 	source.Set("buffer", buffer)
 	source.Call("connect", p.bus(VoiceChannel))
-	when := p.context.Get("currentTime").Float() + chunk.Start.Seconds()
+	// Chunk.Start is an offset from the line's first chunk, so anchor it to a
+	// per-line base time. Adding it to currentTime at each chunk's arrival
+	// spaced 100 ms chunks 200 ms apart: choppy audio at half speed, and the
+	// next phase cut off the end of the line.
+	now := p.context.Get("currentTime").Float()
+	if p.lineBase == nil {
+		p.lineBase = make(map[string]float64)
+	}
+	base, ok := p.lineBase[chunk.UtteranceID]
+	if !ok {
+		base = now
+		p.lineBase[chunk.UtteranceID] = base
+	}
+	when := base + chunk.Start.Seconds()
+	if when < now {
+		// A late chunk (network stall): shift the line so it stays contiguous
+		// instead of stacking the backlog on top of itself.
+		p.lineBase[chunk.UtteranceID] = base + (now - when) + JitterLead.Seconds()
+		when = now + JitterLead.Seconds()
+	}
 	source.Call("start", when)
 	p.sources[chunk.UtteranceID] = append(p.sources[chunk.UtteranceID], source)
+	if chunk.Final {
+		delete(p.lineBase, chunk.UtteranceID)
+	}
 	return nil
 }
 
@@ -234,6 +259,7 @@ func (p *Player) Cancel(utteranceID string) {
 		source.Call("stop")
 	}
 	delete(p.sources, utteranceID)
+	delete(p.lineBase, utteranceID)
 }
 
 func max(left, right int) int {
