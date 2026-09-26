@@ -4,6 +4,7 @@ package dm
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/monstercameron/GoWebComponents/v6/html"
 	"github.com/monstercameron/GoWebComponents/v6/router"
@@ -20,6 +21,7 @@ func DialogueComponent(model DialogueModel) router.Component {
 		return html.Section(html.Props{Class: "df-dm-dialogue", Role: "region", Aria: map[string]string{"label": "Conversation with " + model.NPCName}, Style: dialogueStyle()},
 			dialogueTitlePlate(),
 			dialogueLocation(model.Locale),
+			dialogueFigure(model.NPCName),
 			dialogueCaption(model),
 			dialogueChoices(model.Options),
 		)
@@ -120,4 +122,24 @@ func max(left, right int) int {
 		return left
 	}
 	return right
+}
+
+// dialogueFigure shows the speaking NPC as a large portrait feathered into the
+// scene (the concept frames the NPC across the right of the TV). The portrait
+// art includes its own background, so a radial mask blends it in.
+func dialogueFigure(npcName string) ui.Node {
+	asset := "stranger"
+	if strings.Contains(strings.ToLower(npcName), "vell") {
+		asset = "mother_vell"
+	}
+	url := ArtURL(asset)
+	if url == "" {
+		return html.Div(html.Props{Class: "df-dm-dialogue-figure", Hidden: true})
+	}
+	mask := "radial-gradient(ellipse 50% 52% at 50% 46%, #000 58%, transparent 100%)"
+	return html.Div(html.Props{Class: "df-dm-dialogue-figure", Aria: map[string]string{"hidden": "true"}, Style: map[string]string{
+		"position": "absolute", "right": "150px", "top": "96px", "width": "700px", "height": "700px", "z-index": "7",
+		"background-image": "url('" + url + "')", "background-size": "cover", "background-position": "center 30%",
+		"-webkit-mask-image": mask, "mask-image": mask, "filter": "saturate(1.05) contrast(1.05)",
+	}})
 }

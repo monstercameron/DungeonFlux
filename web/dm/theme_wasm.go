@@ -164,6 +164,7 @@ const dmLobbyFinishCSS = `
 .df-corner-brand-text{color:#e7c27a;font-family:Cinzel,Georgia,serif;font-size:44px;line-height:1}
 .df-corner-brand-subtitle{margin:4px 0 0;color:#e9dcbd;font-family:Cinzel,Georgia,serif;font-size:12.5px;font-weight:600;letter-spacing:.13em;white-space:nowrap;text-shadow:0 2px 4px #000,0 0 10px rgba(0,0,0,.8)}
 .df-dm-layer-scene:has(.df-dm-dialogue) .df-dm-scene-brand,.df-dm-layer-scene:has(.df-dm-dialogue) .df-dm-scene .df-location-title{display:none!important}
+.df-dm-layer-scene:has(.df-dm-dialogue) .df-dm-scene-title{display:none!important}
 `
 
 func themeStyles() ui.Node {
