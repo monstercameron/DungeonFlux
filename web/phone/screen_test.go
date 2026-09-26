@@ -20,6 +20,7 @@ func TestSelectScreen_AllDemoPhases(t *testing.T) {
 		{"hook_event", ScreenSheet},
 		{"combat", ScreenCombat},
 		{"cliffhanger", ScreenSheet},
+		{"end", ScreenSheet},
 		{"unknown", ScreenSheet},
 	}
 	for _, test := range tests {
