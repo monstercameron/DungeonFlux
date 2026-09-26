@@ -7,18 +7,34 @@ import (
 	"github.com/monstercameron/DungeonFlux/internal/game/rules/rulings"
 )
 
-// Class names the four demo templates.
+// Class names an SRD 5.2.1 class.
 type Class string
 
 const (
-	// Paladin is the Strength-based martial template.
-	Paladin Class = "paladin"
-	// Rogue is the Dexterity-based martial template.
-	Rogue Class = "rogue"
+	// Barbarian is the Strength-based d12 template.
+	Barbarian Class = "barbarian"
 	// Bard is the Dexterity-based light weapon template.
 	Bard Class = "bard"
 	// Cleric is the Strength-based mace template.
 	Cleric Class = "cleric"
+	// Druid is the Dexterity-based scimitar template.
+	Druid Class = "druid"
+	// Fighter is the Strength-based martial template.
+	Fighter Class = "fighter"
+	// Monk is the Dexterity-based martial arts template.
+	Monk Class = "monk"
+	// Paladin is the Strength-based martial template.
+	Paladin Class = "paladin"
+	// Ranger is the Dexterity-based ranged template.
+	Ranger Class = "ranger"
+	// Rogue is the Dexterity-based martial template.
+	Rogue Class = "rogue"
+	// Sorcerer is the Charisma-focused template.
+	Sorcerer Class = "sorcerer"
+	// Warlock is the Charisma-focused template.
+	Warlock Class = "warlock"
+	// Wizard is the Intelligence-focused template.
+	Wizard Class = "wizard"
 )
 
 // AbilityScores holds the six ability scores.
@@ -26,14 +42,20 @@ type AbilityScores struct{ Strength, Dexterity, Constitution, Intelligence, Wisd
 
 // Build is a deterministic level-one hero card and its combat statistics.
 type Build struct {
-	Class           Class
-	Species, Gender string
-	Abilities       AbilityScores
-	HP, MaxHP, AC   int
-	AttackAbility   string
-	AttackBonus     int
-	PersuasionBonus int
-	Skills          []string
+	Class                Class
+	Species, Gender      string
+	Abilities            AbilityScores
+	HP, MaxHP, AC        int
+	HitDie               int
+	PrimaryAbilities     []string
+	AttackAbility        string
+	AttackBonus          int
+	Attack               WeaponAttack
+	PersuasionBonus      int
+	PersuasionProficient bool
+	PersuasionExpertise  bool
+	PersuasionNote       string
+	Skills               []string
 }
 
 // BuildHero creates a constrained, seeded level-one hero.
@@ -41,16 +63,14 @@ func BuildHero(source *dice.Roller, class Class, species, gender string) (Build,
 	if source == nil {
 		return Build{}, errors.New("dice source is nil")
 	}
-	if class != Paladin && class != Rogue && class != Bard && class != Cleric {
+	if !IsClass(class) {
 		return Build{}, errors.New("unknown class")
 	}
-	abilities := baseline(class)
+	template := templateFor(class)
+	abilities := template.Baseline
 	// Shuffle the non-fixed scores in a deterministic way. The fixed attack
 	// ability and Charisma remain unchanged, preserving the demo odds.
-	values := []int{8, 10, 12, 13, 14, 15}
-	if class == Paladin || class == Rogue {
-		values = []int{8, 10, 12, 13, 14}
-	}
+	values := []int{8, 10, 12, 13, 14}
 	for i := len(values) - 1; i > 0; i-- {
 		draw, err := source.Roll(i + 1)
 		if err != nil {
@@ -58,11 +78,13 @@ func BuildHero(source *dice.Roller, class Class, species, gender string) (Build,
 		}
 		values[i], values[draw.Face-1] = values[draw.Face-1], values[i]
 	}
-	applyRolled(class, &abilities, values)
-	hp, ac := derived(class, abilities)
+	applyRolled(&abilities, template.RollOrder, values)
+	hp, ac := derived(template, abilities)
 	return Build{Class: class, Species: species, Gender: gender, Abilities: abilities,
-		HP: hp, MaxHP: hp, AC: ac, AttackAbility: attackAbility(class), AttackBonus: attackBonus(class),
-		PersuasionBonus: rulings.AbilityModifier(abilities.Charisma) + rulings.ProficiencyBonus(1), Skills: skills(class)}, nil
+		HP: hp, MaxHP: hp, AC: ac, HitDie: template.HitDie, PrimaryAbilities: append([]string(nil), template.PrimaryAbilities...),
+		AttackAbility: template.AttackAbility, AttackBonus: template.Attack.Bonus, Attack: template.Attack,
+		PersuasionBonus: rulings.AbilityModifier(abilities.Charisma) + rulings.ProficiencyBonus(1), PersuasionProficient: true,
+		PersuasionNote: template.PersuasionNote, Skills: append([]string(nil), template.Skills...)}, nil
 }
 
 // DrawClass applies R-D7: seat one draws from all classes; seat two is
@@ -85,82 +107,31 @@ func DrawClass(source *dice.Roller, seat int, first Class) (Class, error) {
 	return choices[draw.Face-1], nil
 }
 
-func baseline(class Class) AbilityScores {
-	switch class {
-	case Paladin:
-		return AbilityScores{17, 10, 14, 8, 12, 14}
-	case Rogue:
-		return AbilityScores{8, 17, 14, 10, 12, 14}
-	case Bard:
-		return AbilityScores{8, 15, 14, 10, 14, 14}
-	default:
-		return AbilityScores{10, 12, 13, 9, 17, 14}
+func applyRolled(a *AbilityScores, order []string, values []int) {
+	for index, ability := range order {
+		value := values[index]
+		switch ability {
+		case "str":
+			a.Strength = value
+		case "dex":
+			a.Dexterity = value
+		case "con":
+			a.Constitution = value
+		case "int":
+			a.Intelligence = value
+		case "wis":
+			a.Wisdom = value
+		}
 	}
 }
 
-func applyRolled(class Class, a *AbilityScores, values []int) {
-	if class == Paladin {
-		a.Dexterity, a.Intelligence, a.Wisdom = values[0], values[1], values[2]
-		a.Constitution = values[3]
-		return
+func derived(template classTemplate, a AbilityScores) (int, int) {
+	hp := template.HitDie + rulings.AbilityModifier(a.Constitution)
+	if hp < 11 {
+		hp = 11
 	}
-	if class == Rogue {
-		a.Strength, a.Intelligence, a.Wisdom = values[0], values[1], values[2]
-		a.Constitution = values[3]
-		return
+	if hp > 12 {
+		hp = 12
 	}
-	if class == Bard {
-		a.Strength, a.Intelligence, a.Wisdom, a.Constitution = values[0], values[1], values[2], values[3]
-		return
-	}
-	a.Dexterity, a.Intelligence, a.Wisdom, a.Constitution = values[0], values[1], values[2], values[3]
-}
-
-func derived(class Class, a AbilityScores) (int, int) {
-	con := rulings.AbilityModifier(a.Constitution)
-	dex := rulings.AbilityModifier(a.Dexterity)
-	switch class {
-	case Paladin:
-		return 10 + con, 18
-	case Rogue:
-		return 8 + con + 2, 11 + dex
-	case Bard:
-		return 8 + con, 11 + dex
-	default:
-		return 8 + con, min(15+dex, 17)
-	}
-}
-
-func attackAbility(class Class) string {
-	if class == Paladin || class == Cleric {
-		return "str"
-	}
-	return "dex"
-}
-func attackBonus(class Class) int {
-	if class == Bard {
-		return 4
-	}
-	if class == Cleric {
-		return 2
-	}
-	return 5
-}
-func skills(class Class) []string {
-	switch class {
-	case Paladin:
-		return []string{"athletics", "intimidation", "persuasion", "insight", "perception"}
-	case Rogue:
-		return []string{"sleight_of_hand", "stealth", "persuasion", "deception", "investigation", "acrobatics", "perception"}
-	case Bard:
-		return []string{"persuasion", "performance", "deception", "insight", "religion", "perception"}
-	default:
-		return []string{"insight", "religion", "persuasion", "medicine", "perception"}
-	}
-}
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
+	return hp, template.AC(a)
 }
