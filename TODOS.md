@@ -1824,6 +1824,12 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   lane: L-WEB-SPLAT · paths: `web/splat/protocol*.go`, `web/splat/js/voxel*.mjs`, `web/splat/js/grid_overlay.mjs`, `web/splat/js/debug_pick.mjs`, `web/splat/js/battle_scene.mjs`, `web/splat/js/viewer.mjs`, `web/splat/js/df-splat.mjs`, `web/splat/scenes/*.json` · depends: SPLAT-012
   done when: cells remain 5 feet (1.524 metres), voxel floor support and agent clearance determine every candidate cell in the battle area, grid lines follow supported floor heights, antialiasing is enabled, scale and coverage regressions pass, and both scenes are visually inspected with a green lane gate.
   status: done a17301a (scoped gate failures 0; coverage 85.3%; both scenes visually verified with MSAA 4)
+- [ ] SPLAT-014 · concept-art glow shader and distant battle grid
+  why: The developer requests softly glowing grid lines matching the project battlemap concepts and coverage much farther into both scanned scenes.
+  lane: L-WEB-SPLAT · paths: `web/splat/js/grid*.mjs`, `web/splat/js/viewer.mjs`, `web/splat/js/df-splat.mjs`, `web/splat/js/voxel*.mjs`, `web/splat/js/battle_scene.mjs`, `web/splat/scenes/*.json` · depends: SPLAT-013
+  done when: a genuine antialiased line glow shader matches the concept palette and halo, 5-foot cells and voxel exclusion remain valid over substantially larger supported areas, both scenes are visually inspected with usable performance, and the scoped gate passes.
+  status: claimed Codex 2026-09-26
+
 ## 23. dfctl debug CLI
 
 Command-line reads and demo writes for agents and the developer.
@@ -2022,6 +2028,12 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   lane: L-OPS · paths: `scripts/generate-supersplat-colliders.ps1` · depends: OPS-SPLAT-001
   done when: canonical colliders include the main visible paths and surrounding lawn in both scenes, generation defaults reproduce those bounds, provenance and binary sizes are verified, and the lane gate passes.
   status: done 7fd7434 (scoped gate failures 0; canonical binaries and provenance verified)
+- [ ] OPS-SPLAT-003 · extend SuperSplat colliders to distant terrain
+  why: The developer wants the battle grid to extend much farther than the initial main-path collider crops.
+  lane: L-OPS · paths: `scripts/generate-supersplat-colliders.ps1` · depends: OPS-SPLAT-002
+  done when: larger bounded collider regions retain distant supported ground in both scenes, defaults reproduce generation, binary/provenance checks and generator regression pass, and the scoped gate is green.
+  status: claimed Codex 2026-09-26
+
 ## 25. Test server, gates, and checkpoints
 
 Keeping the build honest: per-commit checks, the 30-minute full gate, checkpoints, and e2e tests.
