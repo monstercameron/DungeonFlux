@@ -26,6 +26,9 @@ type CannedExecutor struct {
 	audio  ports.AudioOut
 	mu     sync.Mutex
 	stop   map[domain.UtteranceID]*lineControl
+	// Room reports the room-default locale for per-locale canned audio. A
+	// nil source keeps English. Composition wires it to room state.
+	Room ports.RoomLocale
 }
 
 // NewCannedExecutor creates a canned-line executor.
@@ -47,7 +50,7 @@ func (e *CannedExecutor) PlayCanned(ctx context.Context, effect domain.PlayCanne
 	defer cancel()
 	line := e.track(effect.UtteranceID, cancel)
 	defer e.untrack(effect.UtteranceID, line)
-	reader, err := e.assets.Open(lineCtx, effect.AssetID)
+	reader, err := e.openLocalized(lineCtx, effect.AssetID)
 	if err != nil {
 		if !isCanceled(lineCtx, err) {
 			postLineFailed(ctx, scope, in, effect.UtteranceID, vocab.ErrUnavailable)

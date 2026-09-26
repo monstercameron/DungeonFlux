@@ -14,6 +14,9 @@ import (
 type Transcriber struct {
 	stt       ports.STT
 	assembler *Assembler
+	// Locales resolves per-seat locales for the speech-to-text language
+	// hint. A nil resolver keeps English. Composition wires it to room state.
+	Locales ports.SeatLocales
 }
 
 // NewTranscriber constructs a Transcribe executor over an STT adapter and
@@ -45,10 +48,11 @@ func (e *Transcriber) Execute(ctx context.Context, effect domain.Transcribe, sco
 		return
 	}
 	transcript, err := e.stt.Transcribe(ctx, ports.STTRequest{
-		Meta:     ports.CallMeta{Seat: effect.Seat, UtteranceID: effect.UtteranceID},
+		Meta:     ports.CallMeta{Seat: effect.Seat, UtteranceID: effect.UtteranceID, Locale: e.localeFor(effect.Seat)},
 		Audio:    recording.Audio,
 		MIME:     recording.MIME,
 		Keyterms: append([]string(nil), effect.Keyterms...),
+		Language: sttLanguage(e.localeFor(effect.Seat)),
 	})
 	if err != nil {
 		postSTTError(ctx, inbox, scope, effect.UtteranceID, classifyError(err))

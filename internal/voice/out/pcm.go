@@ -21,6 +21,12 @@ type PCMExecutor struct {
 	audio ports.AudioOut
 	mu    sync.Mutex
 	stop  map[domain.UtteranceID]*lineControl
+	// Room reports the room-default locale for voice selection. A nil
+	// source keeps English. Composition wires it to room state.
+	Room ports.RoomLocale
+	// Voices overrides the TTS voice per locale tag. When a locale has no
+	// entry, the effect voice is used, or the locale default voice.
+	Voices map[string]string
 }
 
 // NewPCMExecutor creates a line executor using tts and audio as its output
@@ -43,8 +49,8 @@ func (e *PCMExecutor) StartLine(ctx context.Context, effect domain.StartLine, sc
 	line := e.track(effect.UtteranceID, cancel)
 	defer e.untrack(effect.UtteranceID, line)
 	stream, err := e.tts.Stream(lineCtx, ports.TTSRequest{
-		Meta:       ports.CallMeta{UtteranceID: effect.UtteranceID},
-		VoiceID:    effect.Voice,
+		Meta:       ports.CallMeta{UtteranceID: effect.UtteranceID, Locale: e.roomLocale()},
+		VoiceID:    e.voiceFor(effect.Voice),
 		SampleRate: defaultSampleRate,
 	}, newTextStream(effect.Input))
 	if err != nil {
