@@ -43,7 +43,7 @@ func SelectLayers(state *dungeonfluxv1.ScreenState) []Layer {
 	case "creation":
 		return []Layer{LayerScene, LayerMusic}
 	case "opening":
-		return []Layer{LayerClip, LayerScene, LayerMusic}
+		return []Layer{LayerScene, LayerClip, LayerMusic}
 	case "exploration", "conversation", "check", "resolution":
 		layers := []Layer{LayerScene, LayerMusic}
 		if phase == "check" || phase == "resolution" {
@@ -51,11 +51,11 @@ func SelectLayers(state *dungeonfluxv1.ScreenState) []Layer {
 		}
 		return layers
 	case "hookevent", "hook_event":
-		return []Layer{LayerClip, LayerScene, LayerCallout, LayerMusic}
+		return []Layer{LayerScene, LayerClip, LayerCallout, LayerMusic}
 	case "combat":
 		return []Layer{LayerCombat, LayerDice, LayerTimer, LayerMusic}
 	case "cliffhanger":
-		return []Layer{LayerClip, LayerScene, LayerMusic}
+		return []Layer{LayerScene, LayerClip, LayerMusic}
 	case "end":
 		return []Layer{LayerEnd, LayerMusic}
 	default:

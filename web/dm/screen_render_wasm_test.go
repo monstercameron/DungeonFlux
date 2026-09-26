@@ -32,9 +32,9 @@ func TestCompose_RendersPhaseLayerStack(t *testing.T) {
 		phase   string
 		classes []string
 	}{
-		{"opening", []string{"df-dm-layer-clip", "df-dm-layer-scene"}},
-		{"hook_event", []string{"df-dm-layer-clip", "df-dm-layer-scene", "df-dm-layer-callout"}},
-		{"cliffhanger", []string{"df-dm-layer-clip", "df-dm-layer-scene"}},
+		{"opening", []string{"df-dm-layer-scene", "df-dm-layer-clip"}},
+		{"hook_event", []string{"df-dm-layer-scene", "df-dm-layer-clip", "df-dm-layer-callout"}},
+		{"cliffhanger", []string{"df-dm-layer-scene", "df-dm-layer-clip"}},
 		{"end", []string{"df-dm-layer-end"}},
 	}
 	for _, test := range tests {
@@ -48,6 +48,18 @@ func TestCompose_RendersPhaseLayerStack(t *testing.T) {
 					t.Fatalf("phase %q markup missing %q: %s", test.phase, class, markup)
 				}
 			}
+			if test.phase != "end" && strings.Index(markup, "df-dm-layer-scene") > strings.Index(markup, "df-dm-layer-clip") {
+				t.Fatalf("scene should be emitted before clip: %s", markup)
+			}
 		})
+	}
+}
+
+func TestLayerStyle_ClipIsAboveSceneAndOverlaysAreSeparated(t *testing.T) {
+	if layerZIndex(LayerClip) <= layerZIndex(LayerScene) {
+		t.Fatalf("clip z-index = %s, scene z-index = %s", layerZIndex(LayerClip), layerZIndex(LayerScene))
+	}
+	if layerStyle(LayerDice)["inset"] == layerStyle(LayerTimer)["inset"] {
+		t.Fatal("dice and timer overlays share the same position")
 	}
 }

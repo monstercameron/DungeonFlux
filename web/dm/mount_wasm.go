@@ -216,9 +216,20 @@ func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handle
 }
 
 func appendLayer(children []ui.Node, layer Layer, content ui.Node) []ui.Node {
-	return append(children, html.Div(html.Props{Class: "df-dm-layer df-dm-layer-" + string(layer), Style: map[string]string{
-		"position": "absolute", "inset": "0", "z-index": layerZIndex(layer),
-	}}, content))
+	return append(children, html.Div(html.Props{Class: "df-dm-layer df-dm-layer-" + string(layer), Style: layerStyle(layer)}, content))
+}
+
+func layerStyle(layer Layer) map[string]string {
+	style := map[string]string{"position": "absolute", "width": "100%", "height": "100%", "z-index": layerZIndex(layer)}
+	switch layer {
+	case LayerDice:
+		style["inset"] = "18% 0 auto"
+	case LayerTimer:
+		style["inset"] = "auto 2rem 2rem auto"
+	default:
+		style["inset"] = "0"
+	}
+	return style
 }
 
 func layerZIndex(layer Layer) string {
@@ -229,12 +240,12 @@ func layerZIndex(layer Layer) string {
 		return "40"
 	case LayerCombat:
 		return "20"
+	case LayerClip:
+		return "20"
 	case LayerEnd:
 		return "50"
 	case LayerScene:
 		return "10"
-	case LayerClip:
-		return "5"
 	default:
 		return "1"
 	}

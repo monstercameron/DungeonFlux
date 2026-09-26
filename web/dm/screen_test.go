@@ -14,14 +14,14 @@ func TestSelectLayers_AllPhases(t *testing.T) {
 	}{
 		{"lobby", []Layer{LayerLobby, LayerMusic}},
 		{"creation", []Layer{LayerScene, LayerMusic}},
-		{"opening", []Layer{LayerClip, LayerScene, LayerMusic}},
+		{"opening", []Layer{LayerScene, LayerClip, LayerMusic}},
 		{"exploration", []Layer{LayerScene, LayerMusic}},
 		{"conversation", []Layer{LayerScene, LayerMusic}},
 		{"check", []Layer{LayerScene, LayerMusic, LayerDice}},
 		{"resolution", []Layer{LayerScene, LayerMusic, LayerDice}},
-		{"hook_event", []Layer{LayerClip, LayerScene, LayerCallout, LayerMusic}},
+		{"hook_event", []Layer{LayerScene, LayerClip, LayerCallout, LayerMusic}},
 		{"combat", []Layer{LayerCombat, LayerDice, LayerTimer, LayerMusic}},
-		{"cliffhanger", []Layer{LayerClip, LayerScene, LayerMusic}},
+		{"cliffhanger", []Layer{LayerScene, LayerClip, LayerMusic}},
 		{"end", []Layer{LayerEnd, LayerMusic}},
 	}
 	for _, test := range tests {
