@@ -1,0 +1,1757 @@
+{
+  "version": 1,
+  "assets": {
+    "CLIFF_TENSION_BED": {
+      "kind": "MUSIC",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "b7def20d5464b95446aad9f06ed112f905087dcfd5262f4d3b1314a4b195dc53",
+          "path": "assets/b7def20d5464b95446aad9f06ed112f905087dcfd5262f4d3b1314a4b195dc53.opus"
+        },
+        {
+          "number": 2,
+          "sha256": "b9994e1fc82d552d7292fe284b4cb1fb34b40e04746bb3d62e90b05727d6ae84",
+          "path": "assets/b9994e1fc82d552d7292fe284b4cb1fb34b40e04746bb3d62e90b05727d6ae84.opus"
+        },
+        {
+          "number": 3,
+          "sha256": "0abb377f77543b5fa0ff1ed00600568578907496a1186cf9a67c83c8d289e150",
+          "path": "assets/0abb377f77543b5fa0ff1ed00600568578907496a1186cf9a67c83c8d289e150.opus"
+        }
+      ],
+      "duration_ms": 24000,
+      "metadata": {
+        "bar_ms": "4000",
+        "bpm": "60",
+        "key": "D phrygian",
+        "loop_end_ms": "0",
+        "loop_start_ms": "57",
+        "lufs": "-20",
+        "model": "music_v2_5",
+        "plan_sha256": "a7cbf49b0755100f55f4b9e0c3c7867cd7243ad6694ebbf38ded9ae0e15d235c",
+        "processed_audio": "true",
+        "seed": "1207705497",
+        "song_id": "",
+        "take": "3"
+      }
+    },
+    "COMBAT_SKIRMISH_LOOP": {
+      "kind": "MUSIC",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "671f3278e352a7631ba98d681b0e91db4f9db48f3d0f63b1e440322f094fd604",
+          "path": "assets/671f3278e352a7631ba98d681b0e91db4f9db48f3d0f63b1e440322f094fd604.opus"
+        },
+        {
+          "number": 2,
+          "sha256": "6027ba155730e2d5756e2b45985cb7cb540faecd34ac56479fa497099e9e9ef5",
+          "path": "assets/6027ba155730e2d5756e2b45985cb7cb540faecd34ac56479fa497099e9e9ef5.opus"
+        },
+        {
+          "number": 3,
+          "sha256": "e19dda4a4071c1d16bfd7ca2d8ab451e2daa3bea072e4483662502cae62af40a",
+          "path": "assets/e19dda4a4071c1d16bfd7ca2d8ab451e2daa3bea072e4483662502cae62af40a.opus"
+        }
+      ]
+    },
+    "CREATION_BED_LOOP": {
+      "kind": "MUSIC",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "fd0c851019f0ef40cc5088a63a2be808b69871b7760b21bf62ddc69f16192039",
+          "path": "assets/fd0c851019f0ef40cc5088a63a2be808b69871b7760b21bf62ddc69f16192039.opus"
+        },
+        {
+          "number": 2,
+          "sha256": "43334ad618415e8c8b64250759ef8276526ce10af5960dc412070b6ec586757c",
+          "path": "assets/43334ad618415e8c8b64250759ef8276526ce10af5960dc412070b6ec586757c.opus"
+        },
+        {
+          "number": 3,
+          "sha256": "925f3d738f3191edfb57fc8e1842beb775772f6ae9a6293a87305817467aab31",
+          "path": "assets/925f3d738f3191edfb57fc8e1842beb775772f6ae9a6293a87305817467aab31.opus"
+        }
+      ]
+    },
+    "END_CARD_THEME": {
+      "kind": "MUSIC",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "d0ef8993f00877950655ce5b520313cda3a11de9f87ed2ec7e4d2195951615b6",
+          "path": "assets/d0ef8993f00877950655ce5b520313cda3a11de9f87ed2ec7e4d2195951615b6.opus"
+        },
+        {
+          "number": 2,
+          "sha256": "8439179b735a2dd705aa0f2d74b55075ab07f62f546000364c068467e34ddde6",
+          "path": "assets/8439179b735a2dd705aa0f2d74b55075ab07f62f546000364c068467e34ddde6.opus"
+        },
+        {
+          "number": 3,
+          "sha256": "6fa007732dd1af2707fbe03e07e73d979d03975b5821ec4597d946d6d1c5bc30",
+          "path": "assets/6fa007732dd1af2707fbe03e07e73d979d03975b5821ec4597d946d6d1c5bc30.opus"
+        }
+      ],
+      "duration_ms": 24000,
+      "metadata": {
+        "bar_ms": "3000",
+        "bpm": "80",
+        "key": "D dorian",
+        "loop_end_ms": "0",
+        "loop_start_ms": "781",
+        "lufs": "-16",
+        "model": "music_v2_5",
+        "plan_sha256": "c39e84224ae6408997e3d5a8e7ce704b5a55407c62d95bd7abc1ec1fa94eb47e",
+        "processed_audio": "true",
+        "seed": "",
+        "song_id": "",
+        "take": "3"
+      }
+    },
+    "OPENING_SWELL": {
+      "kind": "MUSIC",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "04e41bdd327d2cb2fdde790807456c9f0f315d001037745762a87e9567a9530e",
+          "path": "assets/04e41bdd327d2cb2fdde790807456c9f0f315d001037745762a87e9567a9530e.opus"
+        }
+      ]
+    },
+    "STING_COMBAT_START": {
+      "kind": "MUSIC",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "9b6ead2522b272fb03f1ac5b34be16467f3bc660f1ccf473a7d9013f38be54d2",
+          "path": "assets/9b6ead2522b272fb03f1ac5b34be16467f3bc660f1ccf473a7d9013f38be54d2.opus"
+        },
+        {
+          "number": 2,
+          "sha256": "4d7f60f4abb48afb9bc1504bc5db991ef51c11af16c61880d0be314dbf6aafae",
+          "path": "assets/4d7f60f4abb48afb9bc1504bc5db991ef51c11af16c61880d0be314dbf6aafae.opus"
+        },
+        {
+          "number": 3,
+          "sha256": "e487a66389e882b04d7ee7ea519f790b2771a8059172d1f33a37030f9b709775",
+          "path": "assets/e487a66389e882b04d7ee7ea519f790b2771a8059172d1f33a37030f9b709775.opus"
+        }
+      ],
+      "duration_ms": 4000,
+      "metadata": {
+        "bar_ms": "1500",
+        "bpm": "160",
+        "key": "D minor",
+        "loop_end_ms": "0",
+        "loop_start_ms": "0",
+        "lufs": "-16",
+        "model": "music_v2_5",
+        "plan_sha256": "415bc7f7e09ce7f26ab51f8de3830f2183a1e5d8f42eabe189df13a37394f110",
+        "processed_audio": "true",
+        "seed": "44863820",
+        "song_id": "",
+        "take": "3"
+      }
+    },
+    "STING_STRANGER": {
+      "kind": "MUSIC",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "6c54871abd4fa52b4acc58ccc11e4c599b614fc4d50b4a2b4f03fafac922c6f8",
+          "path": "assets/6c54871abd4fa52b4acc58ccc11e4c599b614fc4d50b4a2b4f03fafac922c6f8.opus"
+        },
+        {
+          "number": 2,
+          "sha256": "517f4bcb96eeb2cc713be6780277040317f567aa762d16c3355fb47a94b29206",
+          "path": "assets/517f4bcb96eeb2cc713be6780277040317f567aa762d16c3355fb47a94b29206.opus"
+        },
+        {
+          "number": 3,
+          "sha256": "0fbafbfc9a00d05f39722198d44a38b2217ff3e6a3440605b4d4de89ac3bd886",
+          "path": "assets/0fbafbfc9a00d05f39722198d44a38b2217ff3e6a3440605b4d4de89ac3bd886.opus"
+        }
+      ]
+    },
+    "TAVERN_WARM_LOOP": {
+      "kind": "MUSIC",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "4f1f62c76e4b891d3a5439da39486ec5c40eb09cb0ea282d66f9fe2ff43fc662",
+          "path": "assets/4f1f62c76e4b891d3a5439da39486ec5c40eb09cb0ea282d66f9fe2ff43fc662.opus"
+        },
+        {
+          "number": 2,
+          "sha256": "0b23c1135619611d01e0d01d3eb7ee6e001eb1d468e086bfdf06aa8f7988e6e6",
+          "path": "assets/0b23c1135619611d01e0d01d3eb7ee6e001eb1d468e086bfdf06aa8f7988e6e6.opus"
+        },
+        {
+          "number": 3,
+          "sha256": "6c065dc7bb91e0c5a838b450d25396326e7db8946ad1d2685d6081942e56712b",
+          "path": "assets/6c065dc7bb91e0c5a838b450d25396326e7db8946ad1d2685d6081942e56712b.opus"
+        }
+      ]
+    },
+    "THEME_MAIN": {
+      "kind": "MUSIC",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "c84acad5967ab01aef94088e9d8c9b217944192e49094517e6f2f5f3883d7a2b",
+          "path": "assets/c84acad5967ab01aef94088e9d8c9b217944192e49094517e6f2f5f3883d7a2b.opus"
+        },
+        {
+          "number": 2,
+          "sha256": "eec154bee0783fd913fc455e7c91d47d5c999f29d6045a94e98378fbd9016113",
+          "path": "assets/eec154bee0783fd913fc455e7c91d47d5c999f29d6045a94e98378fbd9016113.opus"
+        },
+        {
+          "number": 3,
+          "sha256": "2057b504c1e9c5928addc82e2b9103f259ec1c57b6ce553d8ca886d0a60de93a",
+          "path": "assets/2057b504c1e9c5928addc82e2b9103f259ec1c57b6ce553d8ca886d0a60de93a.opus"
+        }
+      ]
+    },
+    "ambience_bell_tower_wind": {
+      "kind": "AMBIENCE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "496a912f8a27bdacc53fc8bd95fe9d9857a36b8764b3a2801e09851179feb694",
+          "path": "assets/496a912f8a27bdacc53fc8bd95fe9d9857a36b8764b3a2801e09851179feb694.ogg"
+        }
+      ],
+      "duration_ms": 30000,
+      "contact_ms": 3000,
+      "metadata": {
+        "beat": "stranger",
+        "crossfade_ms": "3000",
+        "loop": "true",
+        "postprocess": "ffmpeg acrossfade+loudnorm",
+        "source": "internal/content.DefaultOneShot",
+        "target_lufs": "-24"
+      }
+    },
+    "ambience_combat_tension": {
+      "kind": "AMBIENCE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "5c76c4d634d6c05c5efc53967a4f2f59513ec294fad6591b7181a38d58c3c0c8",
+          "path": "assets/5c76c4d634d6c05c5efc53967a4f2f59513ec294fad6591b7181a38d58c3c0c8.ogg"
+        }
+      ],
+      "duration_ms": 30000,
+      "contact_ms": 3000,
+      "metadata": {
+        "beat": "combat",
+        "crossfade_ms": "3000",
+        "loop": "true",
+        "postprocess": "ffmpeg acrossfade+loudnorm",
+        "source": "internal/content.DefaultOneShot",
+        "target_lufs": "-24"
+      }
+    },
+    "ambience_dawn": {
+      "kind": "AMBIENCE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "640922752a286ff33e460661d1d2609880ced55588d0247921d23c861a5ab629",
+          "path": "assets/640922752a286ff33e460661d1d2609880ced55588d0247921d23c861a5ab629.ogg"
+        }
+      ],
+      "duration_ms": 30000,
+      "contact_ms": 3000,
+      "metadata": {
+        "beat": "cliffhanger",
+        "crossfade_ms": "3000",
+        "loop": "true",
+        "postprocess": "ffmpeg acrossfade+loudnorm",
+        "source": "internal/content.DefaultOneShot",
+        "target_lufs": "-24"
+      }
+    },
+    "ambience_harbor_night": {
+      "kind": "AMBIENCE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "a02949357d049da65aafd734fea27f9900d7b987164a34b963581afb5406ba4c",
+          "path": "assets/a02949357d049da65aafd734fea27f9900d7b987164a34b963581afb5406ba4c.ogg"
+        }
+      ],
+      "duration_ms": 30000,
+      "contact_ms": 3000,
+      "metadata": {
+        "beat": "conversation",
+        "crossfade_ms": "3000",
+        "loop": "true",
+        "postprocess": "ffmpeg acrossfade+loudnorm",
+        "source": "internal/content.DefaultOneShot",
+        "target_lufs": "-24"
+      }
+    },
+    "ambience_tavern_rain": {
+      "kind": "AMBIENCE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "2012305d2b0389136390fac7b5607c798f601a0f43be640485f32c1021e3d983",
+          "path": "assets/2012305d2b0389136390fac7b5607c798f601a0f43be640485f32c1021e3d983.ogg"
+        }
+      ],
+      "duration_ms": 30000,
+      "contact_ms": 3000,
+      "metadata": {
+        "beat": "opening",
+        "crossfade_ms": "3000",
+        "loop": "true",
+        "postprocess": "ffmpeg acrossfade+loudnorm",
+        "source": "internal/content.DefaultOneShot",
+        "target_lufs": "-24"
+      }
+    },
+    "arrival_door": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "94b2b3b6843735653d788e6b3cc3f5aa2cb155156aa0ffa3d4ea69e179b7633e",
+          "path": "assets/94b2b3b6843735653d788e6b3cc3f5aa2cb155156aa0ffa3d4ea69e179b7633e.png"
+        }
+      ]
+    },
+    "battlefield_tavern_flat": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "40780e2154fcc54b7692d11b5656f15a669ccf9aac82c4f6774bf283ab65fe4e",
+          "path": "assets/40780e2154fcc54b7692d11b5656f15a669ccf9aac82c4f6774bf283ab65fe4e.png"
+        }
+      ]
+    },
+    "canned_cliffhanger_stranger": {
+      "kind": "AUDIO",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "ee056388417e8f93ab7c0f9d20a9c75aec257836e57d98368e4ce5117faafc58",
+          "path": "assets/ee056388417e8f93ab7c0f9d20a9c75aec257836e57d98368e4ce5117faafc58.pcm"
+        }
+      ],
+      "duration_ms": 13049,
+      "metadata": {
+        "channels": "1",
+        "characters": "169",
+        "cost_usd": "0.008450",
+        "format": "pcm_s16le",
+        "normalization": "loudnorm:I=-16:TP=-1.5:LRA=11",
+        "sample_rate": "24000",
+        "voice": "dm"
+      }
+    },
+    "canned_cliffhanger_vell": {
+      "kind": "AUDIO",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "12374e8b865a2ee7eef610cff8879dafc613e5679aac9a68f8c18cf5d5733607",
+          "path": "assets/12374e8b865a2ee7eef610cff8879dafc613e5679aac9a68f8c18cf5d5733607.pcm"
+        }
+      ],
+      "duration_ms": 15232,
+      "metadata": {
+        "channels": "1",
+        "characters": "194",
+        "cost_usd": "0.009700",
+        "format": "pcm_s16le",
+        "normalization": "loudnorm:I=-16:TP=-1.5:LRA=11",
+        "sample_rate": "24000",
+        "voice": "dm"
+      }
+    },
+    "canned_combat_fled": {
+      "kind": "AUDIO",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "c51d2f31418964e158d63b81360e0e15d4729d0004e236e4758fa8dcaa237f29",
+          "path": "assets/c51d2f31418964e158d63b81360e0e15d4729d0004e236e4758fa8dcaa237f29.pcm"
+        }
+      ],
+      "duration_ms": 6966,
+      "metadata": {
+        "channels": "1",
+        "characters": "107",
+        "cost_usd": "0.005350",
+        "format": "pcm_s16le",
+        "normalization": "loudnorm:I=-16:TP=-1.5:LRA=11",
+        "sample_rate": "24000",
+        "voice": "dm"
+      }
+    },
+    "canned_combat_slain_seat1": {
+      "kind": "AUDIO",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "3b9cd88ff998a3d4be8ff6c092202abdd7570eb5ada0fbb058cc74a33508ef1d",
+          "path": "assets/3b9cd88ff998a3d4be8ff6c092202abdd7570eb5ada0fbb058cc74a33508ef1d.pcm"
+        }
+      ],
+      "duration_ms": 5387,
+      "metadata": {
+        "channels": "1",
+        "characters": "88",
+        "cost_usd": "0.004400",
+        "format": "pcm_s16le",
+        "normalization": "loudnorm:I=-16:TP=-1.5:LRA=11",
+        "sample_rate": "24000",
+        "voice": "dm"
+      }
+    },
+    "canned_combat_slain_seat2": {
+      "kind": "AUDIO",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "f70cdf1f4a127bb7cbfa54ee8a56bf10d0f41e5aa802e70da65de04f88973027",
+          "path": "assets/f70cdf1f4a127bb7cbfa54ee8a56bf10d0f41e5aa802e70da65de04f88973027.pcm"
+        }
+      ],
+      "duration_ms": 5526,
+      "metadata": {
+        "channels": "1",
+        "characters": "65",
+        "cost_usd": "0.003250",
+        "format": "pcm_s16le",
+        "normalization": "loudnorm:I=-16:TP=-1.5:LRA=11",
+        "sample_rate": "24000",
+        "voice": "dm"
+      }
+    },
+    "canned_npc_refuse": {
+      "kind": "AUDIO",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "396452e6c8269314388201fdd6316bab139bedfc8873ea2cabccb3090c7f7e4c",
+          "path": "assets/396452e6c8269314388201fdd6316bab139bedfc8873ea2cabccb3090c7f7e4c.pcm"
+        }
+      ],
+      "duration_ms": 5201,
+      "metadata": {
+        "channels": "1",
+        "characters": "96",
+        "cost_usd": "0.004800",
+        "format": "pcm_s16le",
+        "normalization": "loudnorm:I=-16:TP=-1.5:LRA=11",
+        "sample_rate": "24000",
+        "voice": "mother_vell"
+      }
+    },
+    "canned_npc_reply": {
+      "kind": "AUDIO",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "7bca4f30086b2247c371b9202e3ab11e693918ed006ab05aea1ca60429342a4d",
+          "path": "assets/7bca4f30086b2247c371b9202e3ab11e693918ed006ab05aea1ca60429342a4d.pcm"
+        }
+      ],
+      "duration_ms": 5294,
+      "metadata": {
+        "channels": "1",
+        "characters": "101",
+        "cost_usd": "0.005050",
+        "format": "pcm_s16le",
+        "normalization": "loudnorm:I=-16:TP=-1.5:LRA=11",
+        "sample_rate": "24000",
+        "voice": "mother_vell"
+      }
+    },
+    "canned_npc_reveal": {
+      "kind": "AUDIO",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "2a7b337441b80d2fa0531a35f04457b1f1d8a17d4e83ae40b8267d7d3c07d1e6",
+          "path": "assets/2a7b337441b80d2fa0531a35f04457b1f1d8a17d4e83ae40b8267d7d3c07d1e6.pcm"
+        }
+      ],
+      "duration_ms": 7291,
+      "metadata": {
+        "channels": "1",
+        "characters": "118",
+        "cost_usd": "0.005900",
+        "format": "pcm_s16le",
+        "normalization": "loudnorm:I=-16:TP=-1.5:LRA=11",
+        "sample_rate": "24000",
+        "voice": "mother_vell"
+      }
+    },
+    "canned_opening": {
+      "kind": "AUDIO",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "19be821c5cbbfd7df39ac36edcac3812a5ac16a2d78f1397943d98e0f2f96416",
+          "path": "assets/19be821c5cbbfd7df39ac36edcac3812a5ac16a2d78f1397943d98e0f2f96416.pcm"
+        }
+      ],
+      "duration_ms": 11331,
+      "metadata": {
+        "channels": "1",
+        "characters": "189",
+        "cost_usd": "0.009450",
+        "format": "pcm_s16le",
+        "normalization": "loudnorm:I=-16:TP=-1.5:LRA=11",
+        "sample_rate": "24000",
+        "voice": "dm"
+      }
+    },
+    "canned_stranger_found": {
+      "kind": "AUDIO",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "24482522601d03b0ced3cd72aacd98eee12e58dd4a153e2f98b6e7efe49d7b95",
+          "path": "assets/24482522601d03b0ced3cd72aacd98eee12e58dd4a153e2f98b6e7efe49d7b95.pcm"
+        }
+      ],
+      "duration_ms": 6826,
+      "metadata": {
+        "channels": "1",
+        "characters": "131",
+        "cost_usd": "0.006550",
+        "format": "pcm_s16le",
+        "normalization": "loudnorm:I=-16:TP=-1.5:LRA=11",
+        "sample_rate": "24000",
+        "voice": "courier"
+      }
+    },
+    "canned_stranger_relocated": {
+      "kind": "AUDIO",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "00e0d99a89159578771de770db8f838838493bfacff474d25621e8142c5f11db",
+          "path": "assets/00e0d99a89159578771de770db8f838838493bfacff474d25621e8142c5f11db.pcm"
+        }
+      ],
+      "duration_ms": 10309,
+      "metadata": {
+        "channels": "1",
+        "characters": "155",
+        "cost_usd": "0.007750",
+        "format": "pcm_s16le",
+        "normalization": "loudnorm:I=-16:TP=-1.5:LRA=11",
+        "sample_rate": "24000",
+        "voice": "courier"
+      }
+    },
+    "cliff_generic_tower": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "953ab156e4cb08059833aaa32dee204538bd81d497a84aba1b33e605cc3ed093",
+          "path": "assets/953ab156e4cb08059833aaa32dee204538bd81d497a84aba1b33e605cc3ed093.png"
+        }
+      ]
+    },
+    "establishing_tavern": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "8e4e7ea45008d53472f6b1363c49cdc2d5a84716d21cdbfad746131d16ba7949",
+          "path": "assets/8e4e7ea45008d53472f6b1363c49cdc2d5a84716d21cdbfad746131d16ba7949.png"
+        }
+      ]
+    },
+    "mother_vell": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "e9d36f1b11ccbed4c55847d2358a913051f8214b37d96a9e49783ce702515e7d",
+          "path": "assets/e9d36f1b11ccbed4c55847d2358a913051f8214b37d96a9e49783ce702515e7d.png"
+        }
+      ]
+    },
+    "nudge_conversation": {
+      "kind": "AUDIO",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "3869d4fe4157eafeb324f3e7003a85ec92e714e8a7d04475f9cde30c46ca9ad4",
+          "path": "assets/3869d4fe4157eafeb324f3e7003a85ec92e714e8a7d04475f9cde30c46ca9ad4.pcm"
+        }
+      ],
+      "duration_ms": 1346,
+      "metadata": {
+        "channels": "1",
+        "characters": "21",
+        "cost_usd": "0.001050",
+        "format": "pcm_s16le",
+        "name_free": "true",
+        "normalization": "loudnorm:I=-16:TP=-1.5:LRA=11",
+        "sample_rate": "24000",
+        "voice": "mother_vell"
+      }
+    },
+    "nudge_exploration": {
+      "kind": "AUDIO",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "3584e2557d3bfef190f286325a3218c81ea1d292785ed62b72d6d169b9e5aab2",
+          "path": "assets/3584e2557d3bfef190f286325a3218c81ea1d292785ed62b72d6d169b9e5aab2.pcm"
+        }
+      ],
+      "duration_ms": 1346,
+      "metadata": {
+        "channels": "1",
+        "characters": "20",
+        "cost_usd": "0.001000",
+        "format": "pcm_s16le",
+        "name_free": "true",
+        "normalization": "loudnorm:I=-16:TP=-1.5:LRA=11",
+        "sample_rate": "24000",
+        "voice": "dm"
+      }
+    },
+    "sfx_blade_hit": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "fb7ed9d8296612d5734c90cfce1508a216447675d3e130fb47822d95af0c51a8",
+          "path": "assets/fb7ed9d8296612d5734c90cfce1508a216447675d3e130fb47822d95af0c51a8.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "fe3be1cafef0f69017c39dc93d5a1e18649fdd62f264a9b4124137fe30f3ef06",
+          "path": "assets/fe3be1cafef0f69017c39dc93d5a1e18649fdd62f264a9b4124137fe30f3ef06.mp3"
+        }
+      ],
+      "duration_ms": 2000,
+      "metadata": {
+        "measured_lufs": "-15.6",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_check_failure": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "9d3467d861e1f5147deea0e6d9f3aaad95708e785982e7c2a7730cf3f9270d4a",
+          "path": "assets/9d3467d861e1f5147deea0e6d9f3aaad95708e785982e7c2a7730cf3f9270d4a.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "861827fe7cc71b4d0df56190812d0b00e220e501babddeede6ae1a2cfba11139",
+          "path": "assets/861827fe7cc71b4d0df56190812d0b00e220e501babddeede6ae1a2cfba11139.mp3"
+        }
+      ],
+      "duration_ms": 2000,
+      "metadata": {
+        "measured_lufs": "-16.4",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_check_success": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "d0c0c0619ac85ef205a1f8b093d8bb82fc0c0929f7f92155996ed4766d5eeeaa",
+          "path": "assets/d0c0c0619ac85ef205a1f8b093d8bb82fc0c0929f7f92155996ed4766d5eeeaa.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "aef5c5e97968e5a6ae7a0289296425c51b01a502b2c41293bdb2f2a459fe657d",
+          "path": "assets/aef5c5e97968e5a6ae7a0289296425c51b01a502b2c41293bdb2f2a459fe657d.mp3"
+        }
+      ],
+      "duration_ms": 2000,
+      "metadata": {
+        "measured_lufs": "-15.9",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_cliffhanger_hit": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "7984fc49e64b0e35eb8a243b9753ed41759f216c9fc792cb23d052b4ff12bff0",
+          "path": "assets/7984fc49e64b0e35eb8a243b9753ed41759f216c9fc792cb23d052b4ff12bff0.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "20118e2dc562a4f0341c5e5d70ae4fe7fee6cde288a0a4bd936269f1741946d8",
+          "path": "assets/20118e2dc562a4f0341c5e5d70ae4fe7fee6cde288a0a4bd936269f1741946d8.mp3"
+        }
+      ],
+      "duration_ms": 8000,
+      "metadata": {
+        "measured_lufs": "-16.4",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_dagger_stab": {
+      "kind": "SFX",
+      "selected": 2,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "9f9f9aaab8285ea83d9718b160883bc88accb413acb84c85bf27f3ab8fc8a2bc",
+          "path": "assets/9f9f9aaab8285ea83d9718b160883bc88accb413acb84c85bf27f3ab8fc8a2bc.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "cd39c4e985ca7e40bc22a73306772688140d18ed0fbb7d58e40e0996760cc267",
+          "path": "assets/cd39c4e985ca7e40bc22a73306772688140d18ed0fbb7d58e40e0996760cc267.mp3"
+        }
+      ],
+      "duration_ms": 2000,
+      "metadata": {
+        "measured_lufs": "-15.9",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "2",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_dice_roll": {
+      "kind": "SFX",
+      "selected": 2,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "96134c62921ddac653dd59fe537405f589b680f954f9967d4a9504f0b8e5bf45",
+          "path": "assets/96134c62921ddac653dd59fe537405f589b680f954f9967d4a9504f0b8e5bf45.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "1ea773bcf02e633723837c57ab6a5a0a76ad98dee4842a0a1bd5626cde30ae07",
+          "path": "assets/1ea773bcf02e633723837c57ab6a5a0a76ad98dee4842a0a1bd5626cde30ae07.mp3"
+        }
+      ],
+      "duration_ms": 2000,
+      "metadata": {
+        "measured_lufs": "-16.2",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "2",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_door_burst": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "118875649958e2883bd20c753c28797e607fdf9ac3d0e6e30b44225f8b5f6990",
+          "path": "assets/118875649958e2883bd20c753c28797e607fdf9ac3d0e6e30b44225f8b5f6990.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "adac7df51308ce6c733a83d64c7346a40e88814631c12d894a7c6c95262f76f1",
+          "path": "assets/adac7df51308ce6c733a83d64c7346a40e88814631c12d894a7c6c95262f76f1.mp3"
+        }
+      ],
+      "duration_ms": 2000,
+      "metadata": {
+        "measured_lufs": "-16.4",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_hero_lock": {
+      "kind": "SFX",
+      "selected": 2,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "67ac2ebbc735072f448c16352a5ab0e12a03f13153347c8df38bcce5dd0191f9",
+          "path": "assets/67ac2ebbc735072f448c16352a5ab0e12a03f13153347c8df38bcce5dd0191f9.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "309bac5c2d1548d46d00f18624aec2b6afc0e7194df226dc4fc3fef7cc57fab0",
+          "path": "assets/309bac5c2d1548d46d00f18624aec2b6afc0e7194df226dc4fc3fef7cc57fab0.mp3"
+        }
+      ],
+      "duration_ms": 800,
+      "metadata": {
+        "measured_lufs": "-15.9",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "2",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_host_start": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "e6ec59cd0fd3beef1a6f2f4c9456378a1929395842aeb98844eb4eec69d232eb",
+          "path": "assets/e6ec59cd0fd3beef1a6f2f4c9456378a1929395842aeb98844eb4eec69d232eb.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "394def4f60dc356820ce58ff854bc51763de20813d9ccc41566daef0a1cc645c",
+          "path": "assets/394def4f60dc356820ce58ff854bc51763de20813d9ccc41566daef0a1cc645c.mp3"
+        }
+      ],
+      "duration_ms": 1200,
+      "metadata": {
+        "measured_lufs": "-16.4",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_join_tv": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "6d31ab52759f16117c267367ecba6a14413742ff551858a10763773764de2cf7",
+          "path": "assets/6d31ab52759f16117c267367ecba6a14413742ff551858a10763773764de2cf7.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "78bd6aec6ccb6e830669a7402822c7466aeab2500585f788f05aec448fb867c7",
+          "path": "assets/78bd6aec6ccb6e830669a7402822c7466aeab2500585f788f05aec448fb867c7.mp3"
+        }
+      ],
+      "duration_ms": 800,
+      "metadata": {
+        "measured_lufs": "-16.3",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_mace_thud": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "60d7b51a24e2400b4664ea9602b029a8928956250c4db0f55abf3e1be6a3511a",
+          "path": "assets/60d7b51a24e2400b4664ea9602b029a8928956250c4db0f55abf3e1be6a3511a.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "6b5aebc387a95d2bdd342e5ac6ec6d1dac149fd24cdcfb0296cb9d4c69ec1772",
+          "path": "assets/6b5aebc387a95d2bdd342e5ac6ec6d1dac149fd24cdcfb0296cb9d4c69ec1772.mp3"
+        }
+      ],
+      "duration_ms": 2000,
+      "metadata": {
+        "measured_lufs": "-16.1",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_miss_whoosh": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "32763d6ec92a850f1af060c9fcb1387e97cfd2bdadeb27404d117118634227f8",
+          "path": "assets/32763d6ec92a850f1af060c9fcb1387e97cfd2bdadeb27404d117118634227f8.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "b677fbe27bfad04bd1b8ae455715c9b70ad9b78662194e51cf0a177831242362",
+          "path": "assets/b677fbe27bfad04bd1b8ae455715c9b70ad9b78662194e51cf0a177831242362.mp3"
+        }
+      ],
+      "duration_ms": 2000,
+      "metadata": {
+        "measured_lufs": "-15.9",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_phone_confirm": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "47b02da8bb9881898be364d9d28f7e488b86930a29aa6beff351e3040853ff9c",
+          "path": "assets/47b02da8bb9881898be364d9d28f7e488b86930a29aa6beff351e3040853ff9c.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "37cd72c552735be6239f6c878db6a6e23f7c11a16161360d5be22be5f46ac927",
+          "path": "assets/37cd72c552735be6239f6c878db6a6e23f7c11a16161360d5be22be5f46ac927.mp3"
+        }
+      ],
+      "duration_ms": 480,
+      "metadata": {
+        "measured_lufs": "-16.5",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_phone_dice": {
+      "kind": "SFX",
+      "selected": 2,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "68074f02fd45950bab6bd9dae6c4a2e29573dd961d7ac7ba4ce02bd17c909597",
+          "path": "assets/68074f02fd45950bab6bd9dae6c4a2e29573dd961d7ac7ba4ce02bd17c909597.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "5ac165737fa90a4231da2674280ebd6b5317d0d088897aa453090bb6ca41a8ee",
+          "path": "assets/5ac165737fa90a4231da2674280ebd6b5317d0d088897aa453090bb6ca41a8ee.mp3"
+        }
+      ],
+      "duration_ms": 680,
+      "metadata": {
+        "measured_lufs": "-16.0",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "2",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_phone_tick": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "220fd869cda478a3b59aa464d8978a19ccf5c6ef71eea0403126af6951419bc8",
+          "path": "assets/220fd869cda478a3b59aa464d8978a19ccf5c6ef71eea0403126af6951419bc8.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "a205f97b46872b208996cbdb13fcb6a606a19776c65e9c31365037af8bd78b91",
+          "path": "assets/a205f97b46872b208996cbdb13fcb6a606a19776c65e9c31365037af8bd78b91.mp3"
+        }
+      ],
+      "duration_ms": 480,
+      "metadata": {
+        "measured_lufs": "-20.5",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-19"
+      }
+    },
+    "sfx_ready": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "d77d6236f64649910d6ce26cbbbd844a140cb49674a3660a4cf5d7325e60aa19",
+          "path": "assets/d77d6236f64649910d6ce26cbbbd844a140cb49674a3660a4cf5d7325e60aa19.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "3bb77c00cbf561a3093a978ba732e7ac3446eb2495cb099f576956106e60a230",
+          "path": "assets/3bb77c00cbf561a3093a978ba732e7ac3446eb2495cb099f576956106e60a230.mp3"
+        }
+      ],
+      "duration_ms": 480,
+      "metadata": {
+        "measured_lufs": "-16.5",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_roll_reveal": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "3481025d6e66cf5a2e940416af959b5af850e399a5091854e93d39c9f27d2230",
+          "path": "assets/3481025d6e66cf5a2e940416af959b5af850e399a5091854e93d39c9f27d2230.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "dd43ca27cb5b7ca40bc191d500b7515ff38b6b1c04eb28ea66160e9e985fa5ae",
+          "path": "assets/dd43ca27cb5b7ca40bc191d500b7515ff38b6b1c04eb28ea66160e9e985fa5ae.mp3"
+        }
+      ],
+      "duration_ms": 1080,
+      "metadata": {
+        "measured_lufs": "-16.4",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_slam_impact": {
+      "kind": "SFX",
+      "selected": 2,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "724c356de51b5acc301cbb7d0e05c8fcbf2bd9d057e32e185aacba15675297e1",
+          "path": "assets/724c356de51b5acc301cbb7d0e05c8fcbf2bd9d057e32e185aacba15675297e1.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "340470cd958bb3384fa71aad958a3efb86c8fdf6b94c28fa0a1b68045c523530",
+          "path": "assets/340470cd958bb3384fa71aad958a3efb86c8fdf6b94c28fa0a1b68045c523530.mp3"
+        }
+      ],
+      "duration_ms": 2000,
+      "metadata": {
+        "measured_lufs": "-16.2",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "2",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_splash_collapse": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "50d0c79f503fdd2a59cdf5c541f3ceef586af2085c6621c5721676bfc2e7296f",
+          "path": "assets/50d0c79f503fdd2a59cdf5c541f3ceef586af2085c6621c5721676bfc2e7296f.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "e80769c353482377d3cfd6cd0a4989a831976d274ca157a607271719ace54b01",
+          "path": "assets/e80769c353482377d3cfd6cd0a4989a831976d274ca157a607271719ace54b01.mp3"
+        }
+      ],
+      "duration_ms": 2000,
+      "metadata": {
+        "measured_lufs": "-16.4",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_stranger_sting": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "1239614f389ec0140322534aaf4dc74dc1628efebdd6ac1835aaeb7d0be21c0f",
+          "path": "assets/1239614f389ec0140322534aaf4dc74dc1628efebdd6ac1835aaeb7d0be21c0f.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "e27b724498b8c43a5056cfa774071177503975f6da0a6934f59c10ea69a40e1b",
+          "path": "assets/e27b724498b8c43a5056cfa774071177503975f6da0a6934f59c10ea69a40e1b.mp3"
+        }
+      ],
+      "duration_ms": 2000,
+      "metadata": {
+        "measured_lufs": "-16.5",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_sword_slash": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "2185cc2634bfed2ad21e093d872cd4645d81f1735b74bde8a002a3eb80c29e30",
+          "path": "assets/2185cc2634bfed2ad21e093d872cd4645d81f1735b74bde8a002a3eb80c29e30.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "5fc98831aa44e4de4f55cb540b139730318c3e6222aa8e692b8f97384a6ab577",
+          "path": "assets/5fc98831aa44e4de4f55cb540b139730318c3e6222aa8e692b8f97384a6ab577.mp3"
+        }
+      ],
+      "duration_ms": 2000,
+      "metadata": {
+        "measured_lufs": "-15.9",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_tavern_ambience": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "396d656f08b36e79116228683ff086634cf2484e5b879aefe095e305449dfb2b",
+          "path": "assets/396d656f08b36e79116228683ff086634cf2484e5b879aefe095e305449dfb2b.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "aaa165be63522c4732b438c061c119c9e82cf3040a14021ee75ef154bbcf8270",
+          "path": "assets/aaa165be63522c4732b438c061c119c9e82cf3040a14021ee75ef154bbcf8270.mp3"
+        }
+      ],
+      "duration_ms": 10000,
+      "metadata": {
+        "measured_lufs": "-20.2",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-20"
+      }
+    },
+    "sfx_thrall_groan": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "77e7f6acd2f1846aafa0d12b3afaf24ee9edc434d5106c14f65f532b42cab764",
+          "path": "assets/77e7f6acd2f1846aafa0d12b3afaf24ee9edc434d5106c14f65f532b42cab764.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "b94287d7b195685a43eef6ba601ba455358ee507d33b7c67dbb980e16802f424",
+          "path": "assets/b94287d7b195685a43eef6ba601ba455358ee507d33b7c67dbb980e16802f424.mp3"
+        }
+      ],
+      "duration_ms": 2000,
+      "metadata": {
+        "measured_lufs": "-16.4",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_wet_footsteps": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "9134f99b3f2d7cf1e32b19fe70c53a7001888e7814660181833e42d14bf3eb5e",
+          "path": "assets/9134f99b3f2d7cf1e32b19fe70c53a7001888e7814660181833e42d14bf3eb5e.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "44c303035b913bf170597853c8fbb656904d5e41e000786c041e7b83cd6abeb3",
+          "path": "assets/44c303035b913bf170597853c8fbb656904d5e41e000786c041e7b83cd6abeb3.mp3"
+        }
+      ],
+      "duration_ms": 2000,
+      "metadata": {
+        "measured_lufs": "-16.6",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "stranger": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "ecf13c75afb5b6259c5edf2c8dd1b5145aaae1530b48d043ec2286cb9e2dc6b5",
+          "path": "assets/ecf13c75afb5b6259c5edf2c8dd1b5145aaae1530b48d043ec2286cb9e2dc6b5.png"
+        }
+      ]
+    },
+    "ui/banner_callout": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "365af28cd99082ce26bcd528658d7ce652eb82d4e6e40c1b716374de9c232d06",
+          "path": "assets/365af28cd99082ce26bcd528658d7ce652eb82d4e6e40c1b716374de9c232d06.webp"
+        }
+      ]
+    },
+    "ui/button_disabled": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "656ca3dea32ab4ee7e3f2b5f3069d1377e744205ca33d86f84898a797bd4da74",
+          "path": "assets/656ca3dea32ab4ee7e3f2b5f3069d1377e744205ca33d86f84898a797bd4da74.webp"
+        }
+      ]
+    },
+    "ui/button_primary": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "e2d622a64375d9a8c135aa72ad5970dc6a4af254bd20d4ce83c79c4cc15d7df4",
+          "path": "assets/e2d622a64375d9a8c135aa72ad5970dc6a4af254bd20d4ce83c79c4cc15d7df4.webp"
+        }
+      ]
+    },
+    "ui/button_secondary": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "5a863511948d75fdb814af2d2abd21f9db29d101b493fb5bc2fe86c538ee398c",
+          "path": "assets/5a863511948d75fdb814af2d2abd21f9db29d101b493fb5bc2fe86c538ee398c.webp"
+        }
+      ]
+    },
+    "ui/check_backdrop": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "8c9f1abb3e05b99a2950ee7bd5a866b64a7b835fd5a24ebfac86a23837c99b1c",
+          "path": "assets/8c9f1abb3e05b99a2950ee7bd5a866b64a7b835fd5a24ebfac86a23837c99b1c.webp"
+        }
+      ]
+    },
+    "ui/class_bard": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "bdcf5f1a312d540574ff297120ab9367ccc75fc5848de4cba1a2930178df7f8c",
+          "path": "assets/bdcf5f1a312d540574ff297120ab9367ccc75fc5848de4cba1a2930178df7f8c.webp"
+        }
+      ]
+    },
+    "ui/class_cleric": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "3a3a98e8748ba5439b3eb22340cde0bf3c2863cc9e98de3c20883bc5f38481ef",
+          "path": "assets/3a3a98e8748ba5439b3eb22340cde0bf3c2863cc9e98de3c20883bc5f38481ef.webp"
+        }
+      ]
+    },
+    "ui/class_paladin": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "71a343ede367f43b3f657da83f2456b8a7d50647f1da8362d7e609b6125c2fc5",
+          "path": "assets/71a343ede367f43b3f657da83f2456b8a7d50647f1da8362d7e609b6125c2fc5.webp"
+        }
+      ]
+    },
+    "ui/class_rogue": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "999a02f0d2cf8111c3d6892022c19ad1dc05d4eb7ff0a92c18e309779d1fe270",
+          "path": "assets/999a02f0d2cf8111c3d6892022c19ad1dc05d4eb7ff0a92c18e309779d1fe270.webp"
+        }
+      ]
+    },
+    "ui/class_wizard": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "905f57e81ad516d3538f68204b0ab6ecf77f6f79ea5671e03606d3739ec2e63c",
+          "path": "assets/905f57e81ad516d3538f68204b0ab6ecf77f6f79ea5671e03606d3739ec2e63c.webp"
+        }
+      ]
+    },
+    "ui/cliffhanger": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "323e6181dc8845cde1feabb9a568e716999adb863bc3f8d9839dc52c9db67433",
+          "path": "assets/323e6181dc8845cde1feabb9a568e716999adb863bc3f8d9839dc52c9db67433.webp"
+        }
+      ]
+    },
+    "ui/d20": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "e0faefefbe3b229909db1b18b9b8ed4a74fe4382b9862c3f7ccf04b4e097754a",
+          "path": "assets/e0faefefbe3b229909db1b18b9b8ed4a74fe4382b9862c3f7ccf04b4e097754a.webp"
+        }
+      ]
+    },
+    "ui/d20_fail": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "63e616aa8d8419646ba85e7d6b053422cd6a3ec666764494a38636d6df807afe",
+          "path": "assets/63e616aa8d8419646ba85e7d6b053422cd6a3ec666764494a38636d6df807afe.webp"
+        }
+      ]
+    },
+    "ui/d20_success": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "7c62340dfa1c7046746620197cf3e408aecec8e7a1ae052daa92b59e8dddad87",
+          "path": "assets/7c62340dfa1c7046746620197cf3e408aecec8e7a1ae052daa92b59e8dddad87.webp"
+        }
+      ]
+    },
+    "ui/divider": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "93f1c34f82e307bb6b709e4ef970ef5c7cedc87d6545aa27e047214643ddd108",
+          "path": "assets/93f1c34f82e307bb6b709e4ef970ef5c7cedc87d6545aa27e047214643ddd108.webp"
+        }
+      ]
+    },
+    "ui/dm_speaker": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "779399b1150bf6588ec753f964912945a22b923239ad8789e69fa4f71f866fdc",
+          "path": "assets/779399b1150bf6588ec753f964912945a22b923239ad8789e69fa4f71f866fdc.webp"
+        }
+      ]
+    },
+    "ui/end_bg": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "a23161580233bfbaa77380b7d19268fe9c0bec9e747595348507d487b262d576",
+          "path": "assets/a23161580233bfbaa77380b7d19268fe9c0bec9e747595348507d487b262d576.webp"
+        }
+      ]
+    },
+    "ui/icon_attack": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "9c12a044d69a249a1df17fd86b8b870f8acc7b48a83301ae37b056e27eb5f547",
+          "path": "assets/9c12a044d69a249a1df17fd86b8b870f8acc7b48a83301ae37b056e27eb5f547.webp"
+        }
+      ]
+    },
+    "ui/icon_end_turn": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "0be6f1d220ae7093f3d9b05945f2a71b313580b525aa757568f3ced01f9cf306",
+          "path": "assets/0be6f1d220ae7093f3d9b05945f2a71b313580b525aa757568f3ced01f9cf306.webp"
+        }
+      ]
+    },
+    "ui/icon_leave": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "3bce1214aabc8b3554822f18fe0b6a03d4cebff895b83491eca9ab9aea8365b5",
+          "path": "assets/3bce1214aabc8b3554822f18fe0b6a03d4cebff895b83491eca9ab9aea8365b5.webp"
+        }
+      ]
+    },
+    "ui/icon_move": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "cea6bf4bc7119231b6d941e5b5d64b197a423853b2b24b58e60a0d7e860994b1",
+          "path": "assets/cea6bf4bc7119231b6d941e5b5d64b197a423853b2b24b58e60a0d7e860994b1.webp"
+        }
+      ]
+    },
+    "ui/icon_persuade": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "bfc45ac2313084adba5c2b9383b7ae943ed0b66388c3241a862d2e3df00e4cc4",
+          "path": "assets/bfc45ac2313084adba5c2b9383b7ae943ed0b66388c3241a862d2e3df00e4cc4.webp"
+        }
+      ]
+    },
+    "ui/icon_ready": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "2e663cf1f545f86b498301f358e09260682b69193bb985bac66fe0a9279c4f38",
+          "path": "assets/2e663cf1f545f86b498301f358e09260682b69193bb985bac66fe0a9279c4f38.webp"
+        }
+      ]
+    },
+    "ui/icon_step_away": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "d52b55ee809f030fe1c32a78450f57ed2eadca4155758c53020fd7ed2eaf07a6",
+          "path": "assets/d52b55ee809f030fe1c32a78450f57ed2eadca4155758c53020fd7ed2eaf07a6.webp"
+        }
+      ]
+    },
+    "ui/icon_talk": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "57aefb4cd29b0c0386d65e0187e5092f612a9f1c6d33fe8d76d15540de6ff0c8",
+          "path": "assets/57aefb4cd29b0c0386d65e0187e5092f612a9f1c6d33fe8d76d15540de6ff0c8.webp"
+        }
+      ]
+    },
+    "ui/lobby_bg": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "cd02ebe786db7ac8240a36216fb100c364e4bef020759acf96b8c48613de48b7",
+          "path": "assets/cd02ebe786db7ac8240a36216fb100c364e4bef020759acf96b8c48613de48b7.webp"
+        }
+      ]
+    },
+    "ui/logo_emblem": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "87e496bb42a3875b727a4a95737fb090de12278320631446cc8f5c20d40a184c",
+          "path": "assets/87e496bb42a3875b727a4a95737fb090de12278320631446cc8f5c20d40a184c.webp"
+        }
+      ]
+    },
+    "ui/logo_wordmark": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "aeef9a368633b4b7776894b319052cfe952d3040a66c1057445a53ed952e0e6a",
+          "path": "assets/aeef9a368633b4b7776894b319052cfe952d3040a66c1057445a53ed952e0e6a.webp"
+        }
+      ]
+    },
+    "ui/panel_frame": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "fad9bf843b12177e73ff79fa93e24c43f87bd2b28ac5b39fe0cbf439c850f1ee",
+          "path": "assets/fad9bf843b12177e73ff79fa93e24c43f87bd2b28ac5b39fe0cbf439c850f1ee.webp"
+        }
+      ]
+    },
+    "ui/panel_texture": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "07978a15ccd0520da93228710e68b20497011a5fc9ea2c662ec42820a717f411",
+          "path": "assets/07978a15ccd0520da93228710e68b20497011a5fc9ea2c662ec42820a717f411.webp"
+        }
+      ]
+    },
+    "ui/phone_bg": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "27c35ed80a524367f35db0dd9512cb08e2629cbf45f5f519014cf124f2f0321c",
+          "path": "assets/27c35ed80a524367f35db0dd9512cb08e2629cbf45f5f519014cf124f2f0321c.webp"
+        }
+      ]
+    },
+    "ui/qr_frame": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "d310673d610168789581e38cca976d4c6e4c28a4f728a020bdafc6ef335aa5f1",
+          "path": "assets/d310673d610168789581e38cca976d4c6e4c28a4f728a020bdafc6ef335aa5f1.webp"
+        }
+      ]
+    },
+    "ui/species_dragonborn": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "382aadcceb02606e4412d9b03b5995a403498cbb91d4c776d2f90c82e9f8a450",
+          "path": "assets/382aadcceb02606e4412d9b03b5995a403498cbb91d4c776d2f90c82e9f8a450.webp"
+        }
+      ]
+    },
+    "ui/species_dwarf": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "f04962e4729cefb5db0f8b983c53d50527f82d942504ac387155f6db59886f74",
+          "path": "assets/f04962e4729cefb5db0f8b983c53d50527f82d942504ac387155f6db59886f74.webp"
+        }
+      ]
+    },
+    "ui/species_elf": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "bcbc4ca8535385822c24711b7d2781e9ed3774c33b1ab637fa3f01c32b66067e",
+          "path": "assets/bcbc4ca8535385822c24711b7d2781e9ed3774c33b1ab637fa3f01c32b66067e.webp"
+        }
+      ]
+    },
+    "ui/species_gnome": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "bb4d27c867838e1c8acec6029eb534e984f369a5d659f9c1823a46aeb38fe26e",
+          "path": "assets/bb4d27c867838e1c8acec6029eb534e984f369a5d659f9c1823a46aeb38fe26e.webp"
+        }
+      ]
+    },
+    "ui/species_goliath": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "244d9a655a4338f648d91ffb15cbadf5e2f9a7d4c1865d5257398751047a9aba",
+          "path": "assets/244d9a655a4338f648d91ffb15cbadf5e2f9a7d4c1865d5257398751047a9aba.webp"
+        }
+      ]
+    },
+    "ui/species_halfling": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "4b09e14bb9b81eefbccb12886225132f885378a3001b21b1b97e4661290c0698",
+          "path": "assets/4b09e14bb9b81eefbccb12886225132f885378a3001b21b1b97e4661290c0698.webp"
+        }
+      ]
+    },
+    "ui/species_human": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "0944996675f855ea40e0a6d65f5a95cb156c2ddc1ad7188bd47933e58914293b",
+          "path": "assets/0944996675f855ea40e0a6d65f5a95cb156c2ddc1ad7188bd47933e58914293b.webp"
+        }
+      ]
+    },
+    "ui/species_orc": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "55ad7562b950f69e9cd2adcd1c66be2ffe1c592b97d88949c4537683df6533de",
+          "path": "assets/55ad7562b950f69e9cd2adcd1c66be2ffe1c592b97d88949c4537683df6533de.webp"
+        }
+      ]
+    },
+    "ui/species_tiefling": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "e51219a75166e7c260c3b94723640bb34bf76ab379b8152e0a2451f71b0d38f5",
+          "path": "assets/e51219a75166e7c260c3b94723640bb34bf76ab379b8152e0a2451f71b0d38f5.webp"
+        }
+      ]
+    },
+    "ui/status_bloodied": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "ae32408d901ed2f6c1f68dfc7992d1a7219d91b398ffbbd5cd2ad6d5e42bd0dd",
+          "path": "assets/ae32408d901ed2f6c1f68dfc7992d1a7219d91b398ffbbd5cd2ad6d5e42bd0dd.webp"
+        }
+      ]
+    },
+    "ui/status_down": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "e763aca1065ee4242eca55219be2d5038eab7d4354fb2afaa85b8f1bf2d60701",
+          "path": "assets/e763aca1065ee4242eca55219be2d5038eab7d4354fb2afaa85b8f1bf2d60701.webp"
+        }
+      ]
+    },
+    "ui/status_spotlight": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "7608154ce1ebf9ca6e416471d1575b14ad4de608b11958bd5b1cf66e1e4ce893",
+          "path": "assets/7608154ce1ebf9ca6e416471d1575b14ad4de608b11958bd5b1cf66e1e4ce893.webp"
+        }
+      ]
+    },
+    "ui/title_bg": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "62cd40e97a242ea8bdd45cc0575873fffc18b045cf1a0b99cbc54fb56e34315a",
+          "path": "assets/62cd40e97a242ea8bdd45cc0575873fffc18b045cf1a0b99cbc54fb56e34315a.webp"
+        }
+      ]
+    },
+    "ui/title_bg_wide": {
+      "kind": "IMAGE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "e5e48a44421055f79f3d5d28db3e55fdf53aa4e8a9f7bed834002f6c777b995a",
+          "path": "assets/e5e48a44421055f79f3d5d28db3e55fdf53aa4e8a9f7bed834002f6c777b995a.webp"
+        }
+      ]
+    }
+  }
+}

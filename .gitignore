@@ -2,6 +2,10 @@
 artifacts/*
 !artifacts/.gitkeep
 !artifacts/go.mod
+# Build-time generated media (paid to generate) are versioned through Git LFS.
+!artifacts/runtime/
+artifacts/runtime/*
+!artifacts/runtime/buildtime/
 
 # Runtime data if a stray run writes outside artifacts/
 *.db

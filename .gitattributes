@@ -15,3 +15,24 @@
 *.opus binary
 *.wav binary
 *.ps1 text eol=crlf
+# Build-time generated media (Git LFS)
+artifacts/runtime/buildtime/**/*.mp3 filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/*.mp3 filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/**/*.opus filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/*.opus filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/**/*.ogg filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/*.ogg filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/**/*.wav filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/*.wav filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/**/*.pcm filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/*.pcm filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/**/*.png filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/*.png filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/**/*.webp filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/*.webp filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/*.jpg filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/**/*.mp4 filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/*.mp4 filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/**/*.webm filter=lfs diff=lfs merge=lfs -text
+artifacts/runtime/buildtime/*.webm filter=lfs diff=lfs merge=lfs -text
