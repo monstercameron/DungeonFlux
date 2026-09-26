@@ -16,6 +16,10 @@ type WatchHub struct {
 	subs    map[uint64]*watchSubscriber
 	kinds   map[domain.SeatID]df.ClientKind
 	locales map[domain.SeatID]string
+	// latest is the last published view, replayed to each new subscriber so
+	// a client that connects to an idle room still gets its first snapshot.
+	latest    domain.View
+	hasLatest bool
 }
 
 type watchSubscriber struct {
@@ -81,6 +85,9 @@ func (h *WatchHub) Subscribe(ctx context.Context, kind df.ClientKind, seat domai
 	h.next++
 	sub := &watchSubscriber{hub: h, id: h.next, kind: kind, seat: seat, queue: make(chan domain.View, 1), output: make(chan *df.WatchMessage, 1), done: make(chan struct{})}
 	h.subs[sub.id] = sub
+	if h.hasLatest {
+		sub.queue <- h.latest.DeepCopy()
+	}
 	h.mu.Unlock()
 	go sub.send(ctx)
 	return &WatchSubscription{sub: sub}
@@ -91,6 +98,7 @@ func (h *WatchHub) Subscribe(ctx context.Context, kind df.ClientKind, seat domai
 func (h *WatchHub) Publish(view domain.View) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	h.latest, h.hasLatest = view.DeepCopy(), true
 	for _, sub := range h.subs {
 		if sub.closed {
 			continue

@@ -32,6 +32,16 @@ func TestWatchHub_LatestSnapshotWins(t *testing.T) {
 	}
 }
 
+func TestWatchHub_LateSubscriberGetsLatestSnapshot(t *testing.T) {
+	hub := NewWatchHub()
+	hub.Publish(domain.View{Version: 7, Path: vocab.StateLobby})
+	sub := hub.Subscribe(context.Background(), df.ClientKind_CLIENT_KIND_DM, 0)
+	defer sub.Close()
+	if got := receiveWatch(t, sub.Messages()).GetState().GetVersion(); got != 7 {
+		t.Fatalf("late subscriber version = %d, want the replayed 7", got)
+	}
+}
+
 func TestWatchHub_ReattachUsesRememberedKind(t *testing.T) {
 	hub := NewWatchHub()
 	hub.RememberKind(1, df.ClientKind_CLIENT_KIND_PHONE)

@@ -89,11 +89,12 @@ func TestRoom_Post_returnsFalseWhenContextDone(t *testing.T) {
 func TestRoom_StartTimerPostsFiredEventBackThroughStep(t *testing.T) {
 	clk := clock.NewFake(time.Unix(0, 0))
 	engine := &roomEngine{effects: []domain.Effect{domain.StartTimer{Name: "turn", After: time.Second}}}
-	published := make(chan struct{}, 2)
+	published := make(chan struct{}, 3)
 	room := NewRoom(engine, clk, nil, nil, func(domain.View) { published <- struct{}{} })
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	go func() { done <- room.Run(ctx) }()
+	<-published // the start-up snapshot
 	if !room.Post(ctx, domain.Envelope{Event: domain.Join{Seat: 1}}) {
 		t.Fatal("post rejected")
 	}

@@ -160,6 +160,9 @@ func (r *Room) Post(ctx context.Context, env domain.Envelope) bool {
 // the engine and touches the room sequence counter.
 func (r *Room) Run(ctx context.Context) error {
 	defer r.scopes.Close()
+	// Publish the starting view so clients that connect before the first
+	// event (an idle lobby) still receive a snapshot.
+	r.pub(r.eng.View())
 	for {
 		select {
 		case <-ctx.Done():
