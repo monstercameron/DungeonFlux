@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 )
 
@@ -58,7 +60,7 @@ func TestRenderCannedLine_WritesManifestAssetAndHeader(t *testing.T) {
 	if err := RenderCannedLine(context.Background(), server.Client(), server.URL, root, writer, line, 1); err != nil {
 		t.Fatal(err)
 	}
-	if gotPath != "/text-to-speech/dm/stream" || gotVoice != "pcm_24000" {
+	if gotPath != "/text-to-speech/"+resolveVoiceID("dm")+"/stream" || gotVoice != "pcm_24000" {
 		t.Fatalf("unexpected request path/format: %s %s", gotPath, gotVoice)
 	}
 	asset := writer.manifest.Assets[line.ID]
@@ -80,5 +82,44 @@ func TestRenderCannedLine_ReportsHTTPFailure(t *testing.T) {
 	}
 	if err := RenderCannedLine(context.Background(), server.Client(), server.URL, t.TempDir(), writer, CannedLines()[0], 1); err == nil {
 		t.Fatal("accepted failed response")
+	}
+}
+
+func TestNudgeJob_LiveNormalizesAudioAndLocksManifest(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		if r.URL.Query().Get("output_format") != "pcm_24000" {
+			t.Fatalf("output format = %q", r.URL.Query().Get("output_format"))
+		}
+		_, _ = w.Write(bytes.Repeat([]byte{0, 0}, 24000))
+	}))
+	defer server.Close()
+	root := filepath.Join(t.TempDir(), "buildtime")
+	writer, err := NewManifestWriter(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	job := NudgeJob(server.Client(), server.URL, root, 1)
+	if err := job.Run(context.Background(), writer); err != nil {
+		t.Fatal(err)
+	}
+	if requests.Load() != int32(len(NudgeLines())) {
+		t.Fatalf("requests = %d, want %d", requests.Load(), len(NudgeLines()))
+	}
+	for _, line := range NudgeLines() {
+		asset, ok := writer.manifest.Assets[line.ID]
+		if !ok || asset.DurationMS == 0 || asset.Metadata["normalization"] == "" || asset.Metadata["name_free"] != "true" {
+			t.Errorf("manifest[%q] = %#v", line.ID, asset)
+		}
+		if _, err := os.Stat(filepath.Join(root, "audio", line.ID+"-take-1.pcm")); err != nil {
+			t.Errorf("normalized audio %q: %v", line.ID, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(root, "manifest.lock")); !os.IsNotExist(err) {
+		t.Fatalf("manifest lock after job: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "manifest.json")); err != nil {
+		t.Fatalf("manifest after job: %v", err)
 	}
 }

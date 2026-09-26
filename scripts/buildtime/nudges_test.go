@@ -25,7 +25,7 @@ func TestNudgeLines_AreNameFreeAndUseDistinctVoices(t *testing.T) {
 
 func TestRenderNudgeLine_UsesCannedRendererAndAddsMetadata(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/text-to-speech/dm/stream" {
+		if r.URL.Path != "/text-to-speech/"+resolveVoiceID("dm")+"/stream" {
 			t.Fatalf("unexpected path %s", r.URL.Path)
 		}
 		_, _ = w.Write([]byte("nudge"))

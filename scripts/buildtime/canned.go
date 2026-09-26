@@ -7,10 +7,23 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
+	"strings"
 )
+
+const elevenLabsTTSCostPerCharacter = 0.00005
+
+// TTSPlan is the no-network estimate for a fixed audio job.
+type TTSPlan struct {
+	Requests         int
+	Characters       int
+	EstimatedCostUSD float64
+}
 
 // CannedLine is a fixed spoken line rendered before a run starts.
 type CannedLine struct {
@@ -36,6 +49,20 @@ func CannedLines() []CannedLine {
 	}
 }
 
+// CannedTTSPlan returns the request and character estimate for canned lines.
+func CannedTTSPlan() TTSPlan {
+	return planCannedLines(CannedLines())
+}
+
+func planCannedLines(lines []CannedLine) TTSPlan {
+	plan := TTSPlan{Requests: len(lines)}
+	for _, line := range lines {
+		plan.Characters += len([]rune(line.Text))
+	}
+	plan.EstimatedCostUSD = float64(plan.Characters) * elevenLabsTTSCostPerCharacter
+	return plan
+}
+
 // CannedTTSRequest is the ElevenLabs HTTP request for one fixed line.
 type CannedTTSRequest struct {
 	Text    string `json:"text"`
@@ -52,16 +79,71 @@ func BuildCannedTTSRequest(line CannedLine) ([]byte, error) {
 
 // RenderCannedLine requests one line and records its content-addressed take.
 func RenderCannedLine(ctx context.Context, client *http.Client, endpoint, outputDir string, writer *ManifestWriter, line CannedLine, take int) error {
+	_, err := renderCannedLine(ctx, client, endpoint, outputDir, writer, line, take, false)
+	return err
+}
+
+type renderedAudio struct {
+	Path       string
+	DurationMS int64
+	Characters int
+	CostUSD    float64
+}
+
+func renderCannedLine(ctx context.Context, client *http.Client, endpoint, outputDir string, writer *ManifestWriter, line CannedLine, take int, normalize bool) (renderedAudio, error) {
+	var result renderedAudio
 	if client == nil || writer == nil {
-		return errors.New("buildtime: canned renderer requires client and writer")
+		return result, errors.New("buildtime: canned renderer requires client and writer")
 	}
+	if filepath.Base(line.ID) != line.ID || strings.ContainsAny(line.ID, `/\\`) {
+		return result, fmt.Errorf("buildtime: invalid audio id %q", line.ID)
+	}
+	tmpName, data, err := requestCannedPCM(ctx, client, endpoint, outputDir, line)
+	if err != nil {
+		return result, err
+	}
+	defer os.Remove(tmpName)
+	source := tmpName
+	if normalize {
+		source = filepath.Join(outputDir, line.ID+"-take-"+strconv.Itoa(take)+".pcm")
+		if err := normalizePCM(ctx, tmpName, source); err != nil {
+			_ = os.Remove(source)
+			return result, fmt.Errorf("buildtime: normalize canned line %q: %w", line.ID, err)
+		}
+		data, err = os.ReadFile(source)
+		if err != nil {
+			_ = os.Remove(source)
+			return result, fmt.Errorf("buildtime: read normalized line %q: %w", line.ID, err)
+		}
+	}
+	if _, err := writer.AddFile(line.ID, "AUDIO", source, take); err != nil {
+		return result, err
+	}
+	result = renderedAudio{
+		Path:       source,
+		DurationMS: int64(len(data)) * 1000 / (24000 * 2),
+		Characters: len([]rune(line.Text)),
+		CostUSD:    float64(len([]rune(line.Text))) * elevenLabsTTSCostPerCharacter,
+	}
+	if normalize {
+		if err := writer.SetMetadata(line.ID, result.DurationMS, 0, audioMetadata(line, result)); err != nil {
+			return renderedAudio{}, err
+		}
+		logTTSCall(line, result)
+	}
+	return result, nil
+}
+
+func requestCannedPCM(ctx context.Context, client *http.Client, endpoint, outputDir string, line CannedLine) (string, []byte, error) {
 	body, err := BuildCannedTTSRequest(line)
 	if err != nil {
-		return err
+		return "", nil, err
 	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint+"/text-to-speech/"+line.Voice+"/stream?output_format=pcm_24000", bytes.NewReader(body))
+	voice := resolveVoiceID(line.Voice)
+	url := strings.TrimRight(endpoint, "/") + "/text-to-speech/" + voice + "/stream?output_format=pcm_24000"
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return fmt.Errorf("buildtime: create canned request: %w", err)
+		return "", nil, fmt.Errorf("buildtime: create canned request: %w", err)
 	}
 	request.Header.Set("Content-Type", "application/json")
 	if key := os.Getenv("DF_ELEVENLABS_API_KEY"); key != "" {
@@ -69,42 +151,116 @@ func RenderCannedLine(ctx context.Context, client *http.Client, endpoint, output
 	}
 	response, err := client.Do(request)
 	if err != nil {
-		return fmt.Errorf("buildtime: request canned line %q: %w", line.ID, err)
+		return "", nil, fmt.Errorf("buildtime: request canned line %q: %w", line.ID, err)
 	}
 	defer response.Body.Close()
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		return fmt.Errorf("buildtime: canned line %q returned %s", line.ID, response.Status)
+		return "", nil, fmt.Errorf("buildtime: canned line %q returned %s", line.ID, response.Status)
 	}
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
-		return fmt.Errorf("buildtime: create canned output: %w", err)
+		return "", nil, fmt.Errorf("buildtime: create canned output: %w", err)
 	}
 	tmp, err := os.CreateTemp(outputDir, ".canned-*.pcm")
 	if err != nil {
-		return fmt.Errorf("buildtime: create canned temporary file: %w", err)
+		return "", nil, fmt.Errorf("buildtime: create canned temporary file: %w", err)
 	}
 	tmpName := tmp.Name()
-	defer os.Remove(tmpName)
 	if _, err := io.Copy(tmp, response.Body); err != nil {
-		tmp.Close()
-		return fmt.Errorf("buildtime: save canned line %q: %w", line.ID, err)
+		_ = tmp.Close()
+		_ = os.Remove(tmpName)
+		return "", nil, fmt.Errorf("buildtime: save canned line %q: %w", line.ID, err)
 	}
 	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("buildtime: close canned line %q: %w", line.ID, err)
+		_ = os.Remove(tmpName)
+		return "", nil, fmt.Errorf("buildtime: close canned line %q: %w", line.ID, err)
 	}
-	if _, err := writer.AddFile(line.ID, "AUDIO", tmpName, take); err != nil {
-		return err
+	data, err := os.ReadFile(tmpName)
+	if err != nil {
+		_ = os.Remove(tmpName)
+		return "", nil, fmt.Errorf("buildtime: inspect canned line %q: %w", line.ID, err)
 	}
-	return nil
+	if len(data) == 0 {
+		_ = os.Remove(tmpName)
+		return "", nil, fmt.Errorf("buildtime: canned line %q returned empty audio", line.ID)
+	}
+	return tmpName, data, nil
+}
+
+func resolveVoiceID(logical string) string {
+	key := "DF_ELEVENLABS_VOICE_" + strings.ToUpper(strings.ReplaceAll(logical, "-", "_"))
+	if voice := strings.TrimSpace(os.Getenv(key)); voice != "" {
+		return voice
+	}
+	switch logical {
+	case "dm":
+		return "21m00Tcm4TlvDq8ikWAM"
+	case "mother_vell":
+		return "EXAVITQu4vr4xnSDxMaL"
+	case "courier":
+		return "pNInz6obpgDQGcFmaJgB"
+	}
+	return logical
 }
 
 // CannedJob returns a job that renders all fixed non-nudge lines.
 func CannedJob(client *http.Client, endpoint, outputDir string, take int) Job {
 	return Job{Name: "canned-lines", Run: func(ctx context.Context, writer *ManifestWriter) error {
-		for _, line := range CannedLines() {
-			if err := RenderCannedLine(ctx, client, endpoint, filepath.Clean(outputDir), writer, line, take); err != nil {
-				return err
-			}
-		}
-		return nil
+		return withManifestLock(ctx, writer, func(writer *ManifestWriter) error {
+			return renderCannedLinesLive(ctx, client, endpoint, audioOutputDir(outputDir), writer, take)
+		})
 	}}
+}
+
+func renderCannedLinesLive(ctx context.Context, client *http.Client, endpoint, outputDir string, writer *ManifestWriter, take int) error {
+	files := make([]string, 0, len(CannedLines()))
+	for _, line := range CannedLines() {
+		result, err := renderCannedLine(ctx, client, endpoint, outputDir, writer, line, take, true)
+		if err != nil {
+			return err
+		}
+		files = append(files, summaryFile(result, outputDir))
+	}
+	logTTSSummary("canned-lines", files)
+	return nil
+}
+
+func normalizePCM(ctx context.Context, source, destination string) error {
+	command := exec.CommandContext(ctx, "ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "s16le", "-ar", "24000", "-ac", "1", "-i", source, "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-f", "s16le", "-ar", "24000", "-ac", "1", destination)
+	output, err := command.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("ffmpeg loudnorm: %w (%s)", err, strings.TrimSpace(string(output)))
+	}
+	return nil
+}
+
+func audioMetadata(line CannedLine, result renderedAudio) map[string]string {
+	return map[string]string{
+		"voice":         line.Voice,
+		"characters":    strconv.Itoa(result.Characters),
+		"cost_usd":      fmt.Sprintf("%.6f", result.CostUSD),
+		"normalization": "loudnorm:I=-16:TP=-1.5:LRA=11",
+		"sample_rate":   "24000",
+		"channels":      "1",
+		"format":        "pcm_s16le",
+	}
+}
+
+func logTTSCall(line CannedLine, result renderedAudio) {
+	slog.New(slog.NewTextHandler(os.Stderr, nil)).Info("tts_call", "asset", line.ID, "voice", line.Voice, "characters", result.Characters, "duration_ms", result.DurationMS, "cost_usd", result.CostUSD)
+}
+
+func logTTSSummary(job string, files []string) {
+	slog.New(slog.NewTextHandler(os.Stderr, nil)).Info("tts_summary", "job", job, "requests", len(files), "files", strings.Join(files, ", "))
+}
+
+func summaryFile(result renderedAudio, outputDir string) string {
+	return fmt.Sprintf("%s duration_ms=%d characters=%d", filepath.ToSlash(filepath.Join(filepath.Base(outputDir), filepath.Base(result.Path))), result.DurationMS, result.Characters)
+}
+
+func audioOutputDir(root string) string {
+	root = filepath.Clean(root)
+	if strings.EqualFold(filepath.Base(root), "audio") {
+		return root
+	}
+	return filepath.Join(root, "audio")
 }
