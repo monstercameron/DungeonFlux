@@ -85,10 +85,23 @@ func (h *battleStageHandle) mount(stage BattleStageModel) {
 	h.current = stage
 	h.nextSeq = stage.Scene.Seq
 	h.alive = true
+	h.bind(0)
+}
+
+// bind waits for the combat canvas: the mount effect can run before the
+// incoming combat layer is in the DOM, and without a retry the stage never
+// started (it only worked while the component remounted on every snapshot).
+func (h *battleStageHandle) bind(attempt int) {
+	if !h.alive {
+		return
+	}
 	document := js.Global().Get("document")
-	h.canvas = document.Call("getElementById", stage.Init.CanvasID)
+	h.canvas = document.Call("getElementById", h.current.Init.CanvasID)
 	h.fallback = document.Call("getElementById", "df-combat-flat-fallback")
 	if !h.canvas.Truthy() {
+		if attempt < 40 {
+			time.AfterFunc(50*time.Millisecond, func() { h.bind(attempt + 1) })
+		}
 		return
 	}
 	h.setOpacity("0")
