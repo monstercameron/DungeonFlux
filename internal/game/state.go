@@ -22,14 +22,15 @@ type State struct {
 	diceCounter uint64
 	nextD20     int
 	seats       []domain.SeatView
+	lobby       Lobby
 	phase       phase.Machine
 }
 
-func newState(oneShot domain.OneShot, seed []byte) *State {
-	return newDebugState(oneShot, seed, false, "")
+func newState(oneShot domain.OneShot, seed []byte, options ...Option) *State {
+	return newDebugState(oneShot, seed, false, "", options...)
 }
 
-func newDebugState(oneShot domain.OneShot, seed []byte, debug bool, debugStart string) *State {
+func newDebugState(oneShot domain.OneShot, seed []byte, debug bool, debugStart string, options ...Option) *State {
 	seats := []domain.SeatView{
 		{Seat: 1, PlayerNumber: 1},
 		{Seat: 2, PlayerNumber: 2},
@@ -46,7 +47,7 @@ func newDebugState(oneShot domain.OneShot, seed []byte, debug bool, debugStart s
 		_ = dispatcher.Goto(vocab.StateID(debugStart))
 		path = dispatcher.State()
 	}
-	return &State{
+	state := &State{
 		oneShot:    oneShot,
 		seed:       append([]byte(nil), seed...),
 		path:       path,
@@ -55,6 +56,13 @@ func newDebugState(oneShot domain.OneShot, seed []byte, debug bool, debugStart s
 		seats:      seats,
 		phase:      dispatcher,
 	}
+	for _, option := range options {
+		if option != nil {
+			option(state)
+		}
+	}
+	state.lobby.Seats = state.lobbySeats()
+	return state
 }
 
 func (s *State) view() domain.View {
@@ -64,8 +72,37 @@ func (s *State) view() domain.View {
 	view.Path = s.path
 	view.Paused = s.paused
 	view.NextD20 = s.nextD20
-	if view.Seats == nil {
-		view.Seats = append([]domain.SeatView(nil), s.seats...)
-	}
+	view.Seats = mergeSeatViews(view.Seats, s.seats)
 	return view
+}
+
+func (s *State) applyJoin(join domain.Join) bool {
+	for index := range s.seats {
+		if s.seats[index].Seat != join.Seat {
+			continue
+		}
+		s.seats[index].Connected = true
+		s.seats[index].Locale = join.Locale
+		s.lobby.Seats = s.lobbySeats()
+		return true
+	}
+	return false
+}
+
+func mergeSeatViews(current, joined []domain.SeatView) []domain.SeatView {
+	if len(current) == 0 {
+		return append([]domain.SeatView(nil), joined...)
+	}
+	out := append([]domain.SeatView(nil), current...)
+	for index := range out {
+		for _, seat := range joined {
+			if seat.Seat != out[index].Seat {
+				continue
+			}
+			out[index].Connected = seat.Connected
+			out[index].Locale = seat.Locale
+			break
+		}
+	}
+	return out
 }

@@ -26,6 +26,43 @@ func TestNew_InitialState(t *testing.T) {
 	}
 }
 
+func TestStateStep_JoinRetainsSeatAcrossPhases(t *testing.T) {
+	s := New(domain.OneShot{}, []byte{1})
+	out := s.Step(domain.Envelope{Event: domain.Join{Seat: 1, JoinKind: "phone", Locale: "es"}})
+	if out.Ack != nil {
+		t.Fatalf("join without reply should not allocate an ack: %#v", out.Ack)
+	}
+	joined := s.View().Seats[0]
+	if !joined.Connected || joined.Locale != "es" {
+		t.Fatalf("joined seat = %#v", joined)
+	}
+	s.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostStart}})
+	if got := s.View().Seats[0]; !got.Connected || got.Locale != "es" {
+		t.Fatalf("seat metadata was lost after phase transition: %#v", got)
+	}
+}
+
+func TestStateStep_JoinRejectsUnknownSeat(t *testing.T) {
+	s := New(domain.OneShot{}, nil)
+	out := s.Step(domain.Envelope{Event: domain.Join{Seat: 3}})
+	if out.Ack == nil || out.Ack.Accepted || out.Ack.Reason != "invalid_seat" {
+		t.Fatalf("unknown seat ack = %#v", out.Ack)
+	}
+}
+
+func TestNew_WithLobbyRetainsDetachedMetadata(t *testing.T) {
+	lobby := Lobby{RoomCode: "AB12", JoinURL: "https://dm.test/p?room=AB12", QRAsset: "qr-asset"}
+	s := New(domain.OneShot{}, nil, WithLobby(lobby))
+	got := s.Lobby()
+	if got.RoomCode != lobby.RoomCode || got.JoinURL != lobby.JoinURL || got.QRAsset != lobby.QRAsset {
+		t.Fatalf("lobby = %#v", got)
+	}
+	got.Seats[0].Joined = true
+	if s.Lobby().Seats[0].Joined {
+		t.Fatal("lobby seats share backing storage")
+	}
+}
+
 func TestStateStep_RootCommands(t *testing.T) {
 	tests := []struct {
 		name       string

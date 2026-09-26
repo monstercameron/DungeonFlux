@@ -13,14 +13,14 @@ import (
 var _ ports.Engine = (*State)(nil)
 
 // New creates a deterministic game state for one shot and seed.
-func New(oneShot domain.OneShot, seed []byte) *State {
-	return newState(oneShot, seed)
+func New(oneShot domain.OneShot, seed []byte, options ...Option) *State {
+	return newState(oneShot, seed, options...)
 }
 
 // NewWithDebug creates a state with the debug event surface enabled. When
 // debugStart is "combat", the state starts directly in Combat.
-func NewWithDebug(oneShot domain.OneShot, seed []byte, debug bool, debugStart string) *State {
-	return newDebugState(oneShot, seed, debug, debugStart)
+func NewWithDebug(oneShot domain.OneShot, seed []byte, debug bool, debugStart string, options ...Option) *State {
+	return newDebugState(oneShot, seed, debug, debugStart, options...)
 }
 
 // Step applies one envelope and returns data effects. It performs no I/O and
@@ -119,6 +119,12 @@ func (s *State) applyHost(cmd domain.HostCmd, env domain.Envelope) domain.StepOu
 }
 
 func (s *State) applyPhase(env domain.Envelope) domain.StepOut {
+	if join, ok := env.Event.(domain.Join); ok {
+		if !s.applyJoin(join) {
+			return s.rejected("invalid_seat")
+		}
+		return domain.StepOut{Ack: acceptedAck(env)}
+	}
 	out := s.dispatch(env.Event)
 	if out.Ack == nil || out.Ack.Reason == "" {
 		out.Ack = acceptedAck(env)
