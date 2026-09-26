@@ -1603,11 +1603,11 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: all referenced assets of 64bb46d5 are downloaded and hash checked, with a visually inspected camera and grid profile.
   status: done 324c643
 
-- [ ] SPLAT-011 · adversarial scene review and usable battle composition
+- [x] SPLAT-011 · adversarial scene review and usable battle composition
   why: The developer requests wider grid coverage, more flattering camera angles, and an adversarial review of both downloaded battle scenes.
   lane: L-WEB-SPLAT · paths: `web/splat/js/viewer*.mjs`, `web/splat/js/viewer.html`, `web/splat/js/camera_controls.mjs`, `web/splat/js/battle_scene.mjs`, `web/splat/js/df-splat.mjs`, `web/splat/js/grid_overlay.mjs`, `web/splat/js/debug_pick.mjs`, `web/splat/scenes/*.json` · depends: SPLAT-009, SPLAT-010
   done when: review findings are resolved, expanded obstacle-aware grids and camera framing are visually inspected in both scenes, relevant regressions and lane gate pass.
-  status: claimed Codex 2026-09-26
+  status: done d4035b5, b6fa026
 
 - [ ] SPLAT-012 · voxel collider terrain exclusion for battle grids
   why: The developer requests actual voxel occupancy to exclude terrain from the playable battle grid.
