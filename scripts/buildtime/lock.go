@@ -84,3 +84,41 @@ func UnlockManifest(lock *ManifestLock) error {
 	}
 	return nil
 }
+
+func withManifestLock(ctx context.Context, writer *ManifestWriter, run func(*ManifestWriter) error) error {
+	if writer == nil || run == nil {
+		return errors.New("buildtime: manifest job requires writer and function")
+	}
+	lock, err := LockManifest(ctx, writer.root)
+	if err != nil {
+		return err
+	}
+	if err := reloadManifest(writer); err != nil {
+		return finishManifestJob(lock, err)
+	}
+	if err := run(writer); err != nil {
+		return finishManifestJob(lock, err)
+	}
+	if _, err := writer.Write(); err != nil {
+		return finishManifestJob(lock, err)
+	}
+	return UnlockManifest(lock)
+}
+
+func reloadManifest(writer *ManifestWriter) error {
+	loaded, err := NewManifestWriter(writer.root)
+	if err != nil {
+		return err
+	}
+	writer.mu.Lock()
+	writer.manifest = loaded.manifest
+	writer.mu.Unlock()
+	return nil
+}
+
+func finishManifestJob(lock *ManifestLock, jobErr error) error {
+	if unlockErr := UnlockManifest(lock); unlockErr != nil {
+		return fmt.Errorf("%w; unlock manifest: %v", jobErr, unlockErr)
+	}
+	return jobErr
+}
