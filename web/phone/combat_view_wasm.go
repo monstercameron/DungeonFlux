@@ -12,135 +12,150 @@ import (
 	"github.com/monstercameron/GoWebComponents/v6/ui"
 )
 
+// combatStyledScreen renders only the combat content inside PhoneFrame. The
+// frame owns the header and bottom navigation shared by every phone screen.
 func combatStyledScreen(model *CombatModel, locale string, _ ...ui.Node) ui.Node {
 	if locale == "" {
 		locale = "en"
 	}
+	if model == nil {
+		return html.Section(html.Props{Class: "df-phone-combat", Role: "region"}, html.Text("Combat is unavailable."))
+	}
 	refresh := ui.UseState(0)
 	snapshot := model.Snapshot()
 	theme := DefaultPhoneTheme()
-	status := combatStatus(snapshot, locale)
-	return html.Main(html.Props{Class: "df-phone df-phone-frame df-phone-combat", Role: "main", Style: combatPageStyle(theme)},
-		combatHeader(snapshot, locale),
-		html.Section(html.Props{Class: "df-phone-combat-body", Role: "region", Aria: map[string]string{"label": "Combat turn"}},
-			combatIntro(snapshot, status, locale),
-			combatHealth(snapshot, theme, locale),
-			combatTimer(snapshot, theme, locale),
-			combatTarget(snapshot, locale),
-			combatGrid(snapshot, model, refresh, theme, locale),
-			combatActions(snapshot, model, refresh, theme, locale),
-		),
-		combatFooter(snapshot, locale),
+	return html.Section(html.Props{Class: "df-phone-combat", Role: "region", Aria: map[string]string{"label": "Combat"}, Style: combatContentStyle(theme)},
+		combatProfile(snapshot, theme),
+		combatTurnStrip(snapshot, theme),
+		combatStatusPanel(snapshot, locale),
+		combatTarget(snapshot, theme),
+		combatGrid(snapshot, model, refresh, theme),
+		combatActions(snapshot, model, refresh, locale),
 	)
 }
 
-func combatPageStyle(theme PhoneTheme) map[string]string {
-	background := "radial-gradient(circle at 50% -10%, #31303a 0, #171a22 40%, #0f1117 100%)"
-	if url := ArtURL(phoneBackgroundAsset); url != "" {
-		background = "linear-gradient(180deg, rgba(8,10,14,.28), rgba(8,10,14,.88)), url(\"" + url + "\")"
-	}
+func combatContentStyle(theme PhoneTheme) map[string]string {
 	return map[string]string{
-		"box-sizing": "border-box", "width": "100%", "max-width": "390px", "min-height": "100vh",
-		"margin": "0", "padding": "12px 12px calc(12px + env(safe-area-inset-bottom))",
-		"display": "flex", "flex-direction": "column", "gap": "10px", "background": background,
-		"background-size": "cover", "background-position": "center", "color": theme.Parchment,
-		"font-family": "Inter, ui-sans-serif, system-ui, sans-serif", "overflow": "hidden",
+		"display": "flex", "flex-direction": "column", "gap": "10px", "width": "100%", "max-width": "calc(100vw - 28px)", "box-sizing": "border-box", "min-width": "0",
+		"padding-bottom": "10px", "color": theme.Parchment, "font-family": theme.Sans,
 	}
 }
 
-func combatHeader(snapshot CombatSnapshot, locale string) ui.Node {
-	turn := snapshot.TurnLabel
-	if snapshot.Down {
-		turn = combatDownLabel(locale)
+func combatProfile(snapshot CombatSnapshot, theme PhoneTheme) ui.Node {
+	name, role, portraitURL := "Your hero", "Combatant", ""
+	if snapshot.Character != nil {
+		if value := strings.TrimSpace(snapshot.Character.GetName()); value != "" {
+			name = value
+		}
+		if value := strings.TrimSpace(snapshot.Character.GetClassName()); value != "" {
+			role = value
+		}
+		portraitURL = strings.TrimSpace(snapshot.Character.GetPortraitUrl())
 	}
-	return html.Header(html.Props{Class: "df-phone-combat-header", Style: map[string]string{
-		"display": "flex", "align-items": "flex-start", "justify-content": "space-between", "gap": "12px",
-		"padding": "4px 2px 10px", "border-bottom": "1px solid rgba(217,164,65,.28)",
-	}},
-		html.Div(html.Props{},
-			html.Div(html.Props{Style: map[string]string{"font-family": "Georgia, serif", "font-size": "1.65rem", "font-weight": "700", "letter-spacing": "-0.04em", "color": "#f0bb63", "text-shadow": "0 0 14px rgba(217,164,65,.18)"}}, html.Text("DungeonFlux")),
-			html.Div(html.Props{Style: map[string]string{"margin-top": "2px", "font-family": "Georgia, serif", "font-size": ".63rem", "letter-spacing": ".13em", "text-transform": "uppercase", "color": "#a89f8c"}}, html.Text("The Drowned Lantern · Combat")),
-		),
-		html.Div(html.Props{Style: map[string]string{"text-align": "right", "font-size": ".69rem", "font-weight": "700", "letter-spacing": ".08em", "text-transform": "uppercase", "color": combatTurnColor(snapshot)}}, html.Text(turn)),
-	)
+	portrait := combatPortrait(name, portraitURL, theme)
+	status := combatHPState(snapshot)
+	if len(snapshot.Statuses) > 0 {
+		status = strings.Join(snapshot.Statuses, " · ")
+	}
+	return html.Section(html.Props{Class: "df-phone-combat-profile", Style: map[string]string{
+		"display": "flex", "align-items": "center", "gap": "11px", "padding": "10px",
+		"border": "1px solid rgba(217,164,65,.62)", "border-radius": theme.BorderRadius,
+		"background": "linear-gradient(135deg, rgba(37,31,25,.96), rgba(19,23,31,.96))",
+		"box-shadow": "inset 0 0 18px rgba(217,164,65,.08)",
+	}}, portrait, html.Div(html.Props{Style: map[string]string{"min-width": "0", "flex": "1 1 auto"}},
+		html.H1(html.Props{Style: map[string]string{"margin": "0", "font-family": theme.Serif, "font-size": "22px", "line-height": "1.05", "white-space": "nowrap", "overflow": "hidden", "text-overflow": "ellipsis"}}, html.Text(name)),
+		html.P(html.Props{Style: map[string]string{"margin": "3px 0 7px", "color": theme.GoldBright, "font-size": "13px"}}, html.Text(role)),
+		html.Div(html.Props{Style: map[string]string{"display": "flex", "justify-content": "space-between", "gap": "8px", "margin-bottom": "4px", "color": theme.Muted, "font-size": "11px"}}, html.Span(html.Props{}, html.Text("VITALS")), html.Span(html.Props{}, html.Text(status))),
+		HPBar(snapshot.HP, snapshot.HPMax),
+	))
 }
 
-func combatIntro(snapshot CombatSnapshot, status, locale string) ui.Node {
-	label := "Combat"
-	if snapshot.MyTurn && !snapshot.Down {
-		label = CombatTurnTitle(locale)
+func combatPortrait(name, portraitURL string, theme PhoneTheme) ui.Node {
+	style := map[string]string{"width": "66px", "height": "66px", "flex": "0 0 66px", "display": "grid", "place-items": "center", "overflow": "hidden", "border": "1px solid " + theme.GoldBright, "border-radius": "8px", "background": theme.PanelRaised}
+	if portraitURL != "" {
+		return html.Div(html.Props{Style: style}, html.Img(html.Props{Src: portraitURL, Alt: name, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))
 	}
-	return html.Div(html.Props{Class: "df-phone-combat-intro", Style: map[string]string{"display": "flex", "flex-direction": "column", "gap": "3px", "padding": "4px 2px 0"}},
-		html.H1(html.Props{Style: map[string]string{"margin": "0", "font-family": "Georgia, serif", "font-size": "clamp(1.8rem, 8vw, 2.25rem)", "line-height": "1.05", "letter-spacing": "-.03em", "color": "#efe6d2"}}, html.Text(label)),
-		html.P(html.Props{Role: "status", Aria: map[string]string{"live": "polite"}, Style: map[string]string{"margin": "0", "min-height": "1.35em", "color": "#bdb4a2", "font-size": ".9rem", "line-height": "1.35"}}, html.Text(status)),
-	)
+	return html.Div(html.Props{Role: "img", Aria: map[string]string{"label": name}, Style: style}, html.Text(combatInitials(name)))
 }
 
-func combatHealth(snapshot CombatSnapshot, theme PhoneTheme, locale string) ui.Node {
-	percent := combatPercent(int64(snapshot.HP), int64(snapshot.HPMax))
-	label := SheetHP(locale, snapshot.HP, snapshot.HPMax)
-	barColor := theme.Teal
-	if snapshot.Down || combatHPState(snapshot) == "BLOODIED" {
-		barColor = theme.Blood
+func combatInitials(value string) string {
+	for _, r := range strings.TrimSpace(value) {
+		return string(r)
 	}
-	return html.Section(html.Props{Class: "df-phone-combat-card df-phone-combat-health", Aria: map[string]string{"label": label}, Style: combatCardStyle(theme)},
-		html.Div(html.Props{Style: combatCardHeadStyle()}, html.Span(html.Props{Style: combatLabelStyle()}, html.Text("YOUR VITALS")), html.Strong(html.Props{Style: map[string]string{"font-family": "Georgia, serif", "font-size": "1.1rem", "color": "#f3ead7"}}, html.Text(label))),
-		combatBar(percent, barColor, label),
-		html.Div(html.Props{Style: map[string]string{"display": "flex", "justify-content": "space-between", "margin-top": "6px", "font-size": ".72rem", "color": "#a89f8c"}},
-			html.Span(html.Props{}, html.Text("HP")), html.Span(html.Props{}, html.Text(combatHPState(snapshot)))),
-	)
+	return "?"
 }
 
-func combatTimer(snapshot CombatSnapshot, theme PhoneTheme, locale string) ui.Node {
+func combatTurnStrip(snapshot CombatSnapshot, theme PhoneTheme) ui.Node {
 	percent := combatPercent(snapshot.TimerRemaining, snapshot.TimerTotal)
-	if snapshot.TimerTotal <= 0 {
-		percent = 0
-	}
-	label := snapshot.TimerLabel
-	if label == "" {
-		label = "—"
-	}
 	caption := "TURN TIMER"
 	if snapshot.TimerFrozen {
-		caption = "TURN TIMER · PAUSED"
+		caption += " - PAUSED"
 	}
-	return html.Section(html.Props{Class: "df-phone-combat-card df-phone-combat-timer", Aria: map[string]string{"label": caption}, Style: combatCardStyle(theme)},
-		html.Div(html.Props{Style: combatCardHeadStyle()}, html.Span(html.Props{Style: combatLabelStyle()}, html.Text(caption)), html.Strong(html.Props{Style: map[string]string{"font-family": "Georgia, serif", "font-size": "1.2rem", "color": "#e2ad4e"}}, html.Text(label))),
+	turn := snapshot.TurnLabel
+	if turn == "" {
+		turn = "Combat"
+	}
+	return html.Section(html.Props{Class: "df-phone-combat-turn", Aria: map[string]string{"label": caption}, Style: combatCardStyle(theme)},
+		html.Div(html.Props{Style: combatCardHeadStyle()}, html.Div(html.Props{}, html.Span(html.Props{Style: combatLabelStyle()}, html.Text(caption)), html.P(html.Props{Style: map[string]string{"margin": "3px 0 0", "font-family": theme.Serif, "font-size": "20px", "color": theme.Parchment}}, html.Text(turn))), html.Strong(html.Props{Style: map[string]string{"font-family": theme.Serif, "font-size": "20px", "color": theme.GoldBright}}, html.Text(combatTimerText(snapshot)))),
 		combatBar(percent, theme.Gold, caption),
 	)
 }
 
-func combatTarget(snapshot CombatSnapshot, locale string) ui.Node {
-	if snapshot.Attack == nil {
-		return html.Div(html.Props{Class: "df-phone-combat-target", Style: map[string]string{"display": "none"}}, html.Text(""))
+func combatTimerText(snapshot CombatSnapshot) string {
+	if snapshot.TimerLabel != "" {
+		return snapshot.TimerLabel
 	}
-	preview := combatAttackPreview(snapshot.Attack.Preview)
-	return html.Section(html.Props{Class: "df-phone-combat-target", Style: map[string]string{"display": "flex", "align-items": "center", "gap": "12px", "padding": "11px 13px", "border": "1px solid rgba(217,164,65,.34)", "border-radius": "12px", "background": "linear-gradient(135deg,rgba(39,30,24,.92),rgba(22,25,32,.94))"}},
-		combatIcon("ui/icon_attack", "†", "", "36px"),
-		html.Div(html.Props{Style: map[string]string{"min-width": "0", "display": "flex", "flex-direction": "column", "gap": "2px"}},
-			html.Span(html.Props{Style: map[string]string{"font-size": ".68rem", "letter-spacing": ".1em", "text-transform": "uppercase", "color": "#a89f8c"}}, html.Text("Target")),
-			html.Strong(html.Props{Style: map[string]string{"font-family": "Georgia, serif", "font-size": "1.08rem", "color": "#efe6d2", "white-space": "nowrap", "overflow": "hidden", "text-overflow": "ellipsis"}}, html.Text(combatTargetLabel(snapshot.Attack))),
-			html.Small(html.Props{Style: map[string]string{"color": "#d9a441", "font-size": ".78rem"}}, html.Text(preview)),
-		),
-	)
+	return "-"
 }
 
-func combatGrid(snapshot CombatSnapshot, model *CombatModel, refresh ui.State[int], theme PhoneTheme, locale string) ui.Node {
-	if len(snapshot.Grid) == 0 {
-		return html.Div(html.Props{Class: "df-phone-combat-grid-empty", Style: map[string]string{"display": "none"}}, html.Text(""))
+func combatStatusPanel(snapshot CombatSnapshot, locale string) ui.Node {
+	if snapshot.Down {
+		return ResultBanner(ResultBannerModel{Message: combatDownLabel(locale)})
+	}
+	message := combatStatus(snapshot, locale)
+	if !snapshot.MyTurn {
+		return NarrationCard("Combat", message, "")
+	}
+	theme := DefaultPhoneTheme()
+	return html.P(html.Props{Class: "df-phone-combat-status", Role: "status", Aria: map[string]string{"live": "polite"}, Style: map[string]string{
+		"margin": "0", "padding": "8px 12px", "border-left": "2px solid " + theme.Gold,
+		"color": theme.Muted, "font-family": theme.Serif, "font-size": "16px", "font-style": "italic",
+	}}, html.Text(message))
+}
+
+func combatTarget(snapshot CombatSnapshot, theme PhoneTheme) ui.Node {
+	if snapshot.Attack == nil {
+		return nil
+	}
+	preview := combatAttackPreview(snapshot.Attack.Preview)
+	children := []ui.Node{choiceIcon(combatIconName("ui/icon_attack", "⚔")), html.Div(html.Props{Style: map[string]string{"min-width": "0", "flex": "1 1 auto"}},
+		html.Small(html.Props{Style: map[string]string{"display": "block", "color": theme.Muted, "font-family": theme.Sans, "font-size": "11px", "letter-spacing": ".1em", "text-transform": "uppercase"}}, html.Text("Target")),
+		html.Strong(html.Props{Style: map[string]string{"display": "block", "margin-top": "2px", "color": theme.Parchment, "font-family": theme.Serif, "font-size": "19px", "white-space": "nowrap", "overflow": "hidden", "text-overflow": "ellipsis"}}, html.Text(combatTargetLabel(snapshot.Attack))),
+	)}
+	if preview != "" {
+		children = append(children, html.Small(html.Props{Style: map[string]string{"max-width": "112px", "margin-left": "auto", "overflow": "hidden", "color": theme.GoldBright, "font-size": "11px", "text-align": "right", "text-overflow": "ellipsis", "white-space": "nowrap"}}, html.Text(preview)))
+	}
+	return html.Section(html.Props{Class: "df-phone-combat-target", Aria: map[string]string{"label": "Current target"}, Style: map[string]string{
+		"display": "flex", "align-items": "center", "gap": "10px", "padding": "9px 11px", "border": "1px solid rgba(217,164,65,.4)",
+		"border-radius": theme.BorderRadius, "background": "rgba(20,24,31,.92)",
+	}}, children...)
+}
+
+func combatGrid(snapshot CombatSnapshot, model *CombatModel, refresh ui.State[int], theme PhoneTheme) ui.Node {
+	if !snapshot.CanAct || snapshot.Down || len(snapshot.Grid) == 0 {
+		return nil
 	}
 	cols := int32(1)
 	if snapshot.MiniGrid != nil && snapshot.MiniGrid.GetCols() > 0 {
 		cols = snapshot.MiniGrid.GetCols()
 	}
-	style := map[string]string{"display": "grid", "grid-template-columns": "repeat(" + strconv.FormatInt(int64(cols), 10) + ", 1fr)", "gap": "5px", "padding": "10px", "border": "1px solid rgba(217,164,65,.24)", "border-radius": theme.BorderRadius, "background": "rgba(9,12,18,.74)"}
+	style := map[string]string{"display": "grid", "grid-template-columns": "repeat(" + strconv.FormatInt(int64(cols), 10) + ", 1fr)", "gap": "4px", "padding": "8px", "border": "1px solid rgba(168,159,140,.3)", "border-radius": theme.BorderRadius, "background": "rgba(9,12,18,.78)"}
 	cells := make([]ui.Node, 0, len(snapshot.Grid))
 	for _, cell := range snapshot.Grid {
-		item := cell
-		cells = append(cells, combatGridCell(item, model, refresh, snapshot.CanAct, theme))
+		cells = append(cells, combatGridCell(cell, model, refresh, snapshot.CanAct, theme))
 	}
 	return html.Section(html.Props{Class: "df-phone-combat-grid-wrap", Aria: map[string]string{"label": "Movement grid"}},
-		html.Div(html.Props{Style: map[string]string{"display": "flex", "align-items": "center", "gap": "8px", "margin": "0 2px 7px"}}, combatIcon("ui/icon_move", "◇", "", "28px"), html.Span(html.Props{Style: combatLabelStyle()}, html.Text("MOVE · "+strconv.FormatInt(int64(snapshot.MoveLeftCells), 10)+" CELLS"))),
+		html.Div(html.Props{Style: map[string]string{"display": "flex", "align-items": "center", "gap": "7px", "margin": "0 2px 6px"}}, choiceIcon(combatIconName("ui/icon_move", "◇")), html.Span(html.Props{Style: combatLabelStyle()}, html.Text("MOVE - "+strconv.FormatInt(int64(snapshot.MoveLeftCells), 10)+" CELLS"))),
 		html.Div(html.Props{Class: "df-phone-combat-grid", Style: style}, cells...),
 	)
 }
@@ -157,74 +172,101 @@ func combatGridCell(cell CombatCell, model *CombatModel, refresh ui.State[int], 
 	return html.Button(props, html.Text(combatCellGlyph(cell)))
 }
 
-func combatActions(snapshot CombatSnapshot, model *CombatModel, refresh ui.State[int], theme PhoneTheme, locale string) ui.Node {
-	attack := combatMove(snapshot.Moves, "attack")
-	end := combatMove(snapshot.Moves, "end_turn")
-	actions := make([]ui.Node, 0, 2)
-	if attack != nil {
-		actions = append(actions, combatActionButton(model, refresh, attack, theme, "ui/icon_attack", "†", combatAttackLabel(attack, locale)))
+func combatActions(snapshot CombatSnapshot, model *CombatModel, refresh ui.State[int], locale string) ui.Node {
+	items := make([]ui.Node, 0, len(snapshot.Moves))
+	for _, move := range snapshot.Moves {
+		if move != nil {
+			items = append(items, combatMoveChoice(model, refresh, move, locale))
+		}
 	}
-	if end != nil {
-		actions = append(actions, combatActionButton(model, refresh, end, theme, "ui/icon_end_turn", "◈", end.GetLabel()))
+	if len(items) == 0 {
+		if snapshot.Down {
+			return nil
+		}
+		return html.Section(html.Props{Class: "df-phone-combat-actions", Aria: map[string]string{"label": "Combat status"}, Style: map[string]string{"display": "grid", "gap": "8px"}}, NarrationCard("Combat", combatStatus(snapshot, locale), ""))
 	}
-	if len(actions) == 0 {
-		actions = append(actions, html.Div(html.Props{Style: map[string]string{"padding": "14px", "border": "1px solid rgba(168,159,140,.25)", "border-radius": theme.BorderRadius, "color": "#a89f8c", "text-align": "center"}}, html.Text(combatWaitingFor(snapshot.MyTurn, snapshot.Down))))
-	}
-	return html.Section(html.Props{Class: "df-phone-combat-actions", Aria: map[string]string{"label": "Combat actions"}, Style: map[string]string{"display": "flex", "flex-direction": "column", "gap": "9px", "margin-top": "auto"}}, actions...)
+	return html.Section(html.Props{Class: "df-phone-combat-actions", Aria: map[string]string{"label": "Combat actions"}, Style: map[string]string{"display": "grid", "gap": "8px"}}, items...)
 }
 
-func combatActionButton(model *CombatModel, refresh ui.State[int], move *df.Move, theme PhoneTheme, asset, fallback, label string) ui.Node {
-	click := ui.UseEvent(func() {
+func combatMoveChoice(model *CombatModel, refresh ui.State[int], move *df.Move, locale string) ui.Node {
+	label := move.GetLabel()
+	if move.GetMoveId() == "attack" {
+		label = combatAttackLabel(move, locale)
+	}
+	row := ChoiceRowModel{ID: move.GetMoveId(), Label: label, Reason: MoveReason(MoveSnapshot{Enabled: move.GetEnabled(), Reason: move.GetReason()}), Icon: combatMoveIcon(move.GetMoveId()), Enabled: move.GetEnabled(), Highlighted: move.GetMoveId() == "attack" && move.GetEnabled()}
+	tap := ui.UseEvent(func() {
 		go func() { model.ApplyAct(<-model.Tap(context.Background(), move)); refresh.Set(refresh.Get() + 1) }()
 	})
-	background := "linear-gradient(135deg,#3a2b1a,#211a15)"
-	if !move.GetEnabled() {
-		background = "linear-gradient(135deg,#252831,#191b22)"
+	choice := combatChoiceRow(row, tap)
+	preview := combatAttackPreview(move.GetPreview())
+	if preview == "" {
+		return choice
 	}
-	style := map[string]string{"box-sizing": "border-box", "width": "100%", "min-height": theme.TouchTarget, "display": "flex", "align-items": "center", "gap": "12px", "padding": "12px 14px", "border": "1px solid rgba(217,164,65,.7)", "border-radius": theme.BorderRadius, "background": background, "color": "#f1e6d1", "font-family": "Inter, ui-sans-serif, system-ui, sans-serif", "font-size": "1rem", "font-weight": "700", "text-align": "left", "box-shadow": "0 6px 18px rgba(0,0,0,.24)", "touch-action": "manipulation"}
-	if !move.GetEnabled() {
-		style["border-color"] = "rgba(168,159,140,.28)"
-		style["color"] = "#777b87"
-	}
-	children := []ui.Node{combatIcon(asset, fallback, "", "40px"), html.Span(html.Props{Style: map[string]string{"display": "flex", "flex-direction": "column", "gap": "3px"}}, html.Span(html.Props{}, html.Text(label)), combatMovePreview(move))}
-	return html.Button(html.Props{Type: "button", Class: "df-phone-combat-action", OnClick: click, Disabled: !move.GetEnabled(), Aria: map[string]string{"label": combatActionAria(move, label)}, Style: style}, children...)
+	theme := DefaultPhoneTheme()
+	return html.Div(html.Props{Style: map[string]string{"display": "grid", "gap": "3px"}}, choice, html.Small(html.Props{Style: map[string]string{"margin-left": "46px", "color": theme.GoldBright, "font-size": "12px"}}, html.Text(preview)))
 }
 
-func combatFooter(snapshot CombatSnapshot, locale string) ui.Node {
-	items := []string{"Character", "Journal", "Play", "Map", "Menu"}
-	active := 2
-	buttons := make([]ui.Node, 0, len(items))
-	for index, item := range items {
-		color := "#8e8e8b"
-		if index == active {
-			color = "#e4b357"
-		}
-		buttons = append(buttons, html.Div(html.Props{Style: map[string]string{"flex": "1", "display": "flex", "flex-direction": "column", "align-items": "center", "gap": "3px", "color": color, "font-size": ".62rem", "letter-spacing": ".02em"}}, html.Span(html.Props{Style: map[string]string{"font-size": "1.08rem", "line-height": "1"}}, html.Text(combatFooterGlyph(index))), html.Span(html.Props{}, html.Text(item))))
+func combatChoiceRow(row ChoiceRowModel, tap ui.Handler) ui.Node {
+	theme := DefaultPhoneTheme()
+	style := map[string]string{
+		"width": "100%", "min-height": "52px", "box-sizing": "border-box", "display": "flex",
+		"align-items": "center", "gap": "12px", "padding": "10px 14px", "border-radius": "10px",
+		"border": "1px solid rgba(168,159,140,.48)", "background": "rgba(23,26,35,.9)",
+		"color": theme.Parchment, "font-family": theme.Serif, "font-size": "17px", "text-align": "left",
+		"line-height": "1.18", "touch-action": "manipulation", "transition": "border-color " + theme.Transition,
 	}
-	return html.Footer(html.Props{Class: "df-phone-combat-footer", Style: map[string]string{"display": "flex", "align-items": "center", "gap": "3px", "padding": "10px 2px 2px", "border-top": "1px solid rgba(217,164,65,.22)"}}, buttons...)
+	if row.Highlighted {
+		style["border"] = "1px solid " + theme.GoldBright
+		style["box-shadow"] = "inset 0 0 14px rgba(217,164,65,.16), 0 0 12px rgba(217,164,65,.12)"
+	}
+	if !row.Enabled {
+		style["color"] = theme.Muted
+		style["opacity"] = ".66"
+	}
+	children := []ui.Node{choiceIcon(row.Icon)}
+	text := html.Span(html.Props{Style: map[string]string{"min-width": "0", "display": "flex", "flex-direction": "column", "gap": "3px"}}, html.Text(row.Label))
+	if reason := ChoiceRowReason(row); !row.Enabled && reason != "" {
+		text = html.Span(html.Props{Style: map[string]string{"min-width": "0", "display": "flex", "flex-direction": "column", "gap": "3px"}}, html.Text(row.Label), html.Small(html.Props{Style: map[string]string{"font-family": theme.Sans, "font-size": "11px", "color": theme.Muted}}, html.Text(reason)))
+	}
+	children = append(children, text)
+	return html.Button(html.Props{Type: "button", Class: choiceClass(row), Disabled: !row.Enabled, OnClick: tap, Aria: map[string]string{"label": choiceLabel(row)}, Style: style}, children...)
+}
+
+func combatMoveIcon(moveID string) string {
+	asset := moveArtAsset(moveID)
+	fallback := "•"
+	switch moveID {
+	case "attack":
+		fallback = "⚔"
+	case "move":
+		fallback = "◇"
+	case "end_turn":
+		fallback = "◈"
+	}
+	return combatIconName(asset, fallback)
+}
+
+func combatIconName(asset, fallback string) string {
+	if asset != "" && ArtURL(asset) != "" {
+		return asset
+	}
+	return fallback
 }
 
 func combatBar(percent int32, color, label string) ui.Node {
-	return html.Div(html.Props{Role: "progressbar", Aria: map[string]string{"label": label, "valuenow": strconv.FormatInt(int64(percent), 10), "valuemin": "0", "valuemax": "100"}, Style: map[string]string{"height": "8px", "overflow": "hidden", "border-radius": "99px", "background": "rgba(255,255,255,.1)", "box-shadow": "inset 0 1px 3px rgba(0,0,0,.55)"}}, html.Div(html.Props{Style: map[string]string{"width": strconv.FormatInt(int64(percent), 10) + "%", "height": "100%", "border-radius": "inherit", "background": color, "box-shadow": "0 0 12px " + color, "transition": "width 180ms ease-out"}}))
-}
-
-func combatIcon(asset, fallback, alt, size string) ui.Node {
-	if url := ArtURL(asset); url != "" {
-		return html.Img(html.Props{Src: url, Alt: alt, Aria: map[string]string{"hidden": "true"}, Style: map[string]string{"width": size, "height": size, "flex": "0 0 " + size, "object-fit": "contain"}})
-	}
-	return html.Span(html.Props{Aria: map[string]string{"hidden": "true"}, Style: map[string]string{"width": size, "height": size, "flex": "0 0 " + size, "display": "grid", "place-items": "center", "border": "1px solid rgba(217,164,65,.6)", "border-radius": "50%", "color": "#e2ad4e", "font-family": "Georgia, serif", "font-size": "1.35rem"}}, html.Text(fallback))
+	return html.Div(html.Props{Role: "progressbar", Aria: map[string]string{"label": label, "valuenow": strconv.FormatInt(int64(percent), 10), "valuemin": "0", "valuemax": "100"}, Style: map[string]string{"height": "8px", "overflow": "hidden", "border-radius": "99px", "background": "rgba(255,255,255,.1)", "box-shadow": "inset 0 1px 3px rgba(0,0,0,.55)"}}, html.Div(html.Props{Style: map[string]string{"width": strconv.FormatInt(int64(percent), 10) + "%", "height": "100%", "border-radius": "inherit", "background": color, "box-shadow": "0 0 12px " + color}}))
 }
 
 func combatCardStyle(theme PhoneTheme) map[string]string {
-	return map[string]string{"padding": "12px 13px", "border": "1px solid rgba(217,164,65,.3)", "border-radius": theme.BorderRadius, "background": "linear-gradient(135deg,rgba(31,27,25,.94),rgba(20,24,31,.94))", "box-shadow": "0 7px 18px rgba(0,0,0,.22)"}
+	return map[string]string{"padding": "10px 12px", "border": "1px solid rgba(217,164,65,.34)", "border-radius": theme.BorderRadius, "background": "rgba(19,23,31,.9)", "box-shadow": "inset 0 0 18px rgba(217,164,65,.04)"}
 }
 
 func combatCardHeadStyle() map[string]string {
-	return map[string]string{"display": "flex", "align-items": "center", "justify-content": "space-between", "gap": "8px", "margin-bottom": "8px"}
+	return map[string]string{"display": "flex", "align-items": "center", "justify-content": "space-between", "gap": "8px", "margin-bottom": "7px"}
 }
 
 func combatLabelStyle() map[string]string {
-	return map[string]string{"font-size": ".68rem", "font-weight": "700", "letter-spacing": ".13em", "color": "#a89f8c"}
+	return map[string]string{"font-size": "11px", "font-weight": "700", "letter-spacing": ".12em", "color": DefaultPhoneTheme().Muted}
 }
 
 func combatPercent(value, max int64) int32 {
@@ -262,19 +304,9 @@ func combatStatus(snapshot CombatSnapshot, locale string) string {
 
 func combatDownLabel(locale string) string {
 	if strings.HasPrefix(strings.ToLower(locale), "es") {
-		return "Estás derribado — los demás continúan"
+		return "Estas derribado - los demas continuan"
 	}
-	return "You're down — the others fight on"
-}
-
-func combatTurnColor(snapshot CombatSnapshot) string {
-	if snapshot.Down {
-		return "#d76a61"
-	}
-	if snapshot.MyTurn {
-		return "#e2ad4e"
-	}
-	return "#a89f8c"
+	return "You're down - the others fight on"
 }
 
 func combatTargetLabel(attack *CombatAttack) string {
@@ -284,35 +316,21 @@ func combatTargetLabel(attack *CombatAttack) string {
 	return attack.Label
 }
 
-func combatMove(moves []*df.Move, id string) *df.Move {
-	for _, move := range moves {
-		if move != nil && move.GetMoveId() == id {
-			return move
-		}
-	}
-	return nil
-}
-
 func combatAttackLabel(move *df.Move, locale string) string {
 	if move == nil || strings.TrimSpace(move.GetLabel()) == "" {
+		if strings.HasPrefix(strings.ToLower(locale), "es") {
+			return "Atacar al ahogado"
+		}
 		return "Attack the drowned thrall"
 	}
 	return move.GetLabel()
-}
-
-func combatMovePreview(move *df.Move) ui.Node {
-	preview := combatAttackPreview(move.GetPreview())
-	if preview == "" {
-		return html.Small(html.Props{Style: map[string]string{"font-size": ".75rem", "font-weight": "500", "color": "#a89f8c"}}, html.Text(MoveReason(MoveSnapshot{Enabled: move.GetEnabled(), Reason: move.GetReason()})))
-	}
-	return html.Small(html.Props{Style: map[string]string{"font-size": ".75rem", "font-weight": "500", "color": "#d9a441"}}, html.Text(preview))
 }
 
 func combatAttackPreview(preview *df.MovePreview) string {
 	if preview == nil {
 		return ""
 	}
-	parts := make([]string, 0, 3)
+	parts := make([]string, 0, 4)
 	if preview.GetModifier() != 0 {
 		parts = append(parts, signedNumber(preview.GetModifier())+" to hit")
 	}
@@ -332,13 +350,6 @@ func combatAttackPreview(preview *df.MovePreview) string {
 	return strings.Join(parts, " · ")
 }
 
-func combatActionAria(move *df.Move, label string) string {
-	if move.GetEnabled() {
-		return label
-	}
-	return label + ". " + MoveReason(MoveSnapshot{Enabled: false, Reason: move.GetReason()})
-}
-
 func combatCellLabel(cell CombatCell) string {
 	if cell.Me {
 		return "Your position"
@@ -354,45 +365,33 @@ func combatCellLabel(cell CombatCell) string {
 
 func combatCellGlyph(cell CombatCell) string {
 	if cell.Me {
-		return "●"
+		return "*"
 	}
 	if cell.Thrall {
-		return "✦"
+		return "X"
 	}
 	if cell.Reachable {
-		return "·"
+		return "."
 	}
 	return ""
 }
 
 func combatCellStyle(cell CombatCell, clickable bool, theme PhoneTheme) map[string]string {
-	background := "rgba(34,39,48,.78)"
-	border := "1px solid rgba(168,159,140,.18)"
-	color := "#545a64"
+	background, border, color := "rgba(34,39,48,.78)", "1px solid rgba(168,159,140,.18)", "#545a64"
 	if cell.Walkable {
 		background = "rgba(44,49,57,.88)"
 	}
 	if cell.Reachable {
-		background = "rgba(58,163,154,.17)"
-		border = "1px solid rgba(58,163,154,.65)"
-		color = theme.Teal
+		background, border, color = "rgba(58,163,154,.17)", "1px solid rgba(58,163,154,.65)", theme.Teal
 	}
 	if cell.Me {
-		background = "rgba(217,164,65,.23)"
-		border = "1px solid rgba(217,164,65,.9)"
-		color = "#f1c46c"
+		background, border, color = "rgba(217,164,65,.23)", "1px solid rgba(217,164,65,.9)", theme.GoldBright
 	}
 	if cell.Thrall {
-		background = "rgba(179,55,47,.28)"
-		border = "1px solid rgba(210,92,82,.9)"
-		color = "#e99486"
+		background, border, color = "rgba(179,55,47,.28)", "1px solid rgba(210,92,82,.9)", "#e99486"
 	}
 	if !clickable && cell.Reachable && !cell.Me && !cell.Thrall {
 		color = "#548c87"
 	}
-	return map[string]string{"min-height": "42px", "padding": "0", "border": border, "border-radius": "8px", "background": background, "color": color, "font-size": "1.1rem", "font-weight": "700", "touch-action": "manipulation"}
-}
-
-func combatFooterGlyph(index int) string {
-	return []string{"♙", "▤", "●", "⌖", "☰"}[index]
+	return map[string]string{"min-height": "42px", "padding": "0", "border": border, "border-radius": "8px", "background": background, "color": color, "font-size": "18px", "font-weight": "700", "touch-action": "manipulation"}
 }

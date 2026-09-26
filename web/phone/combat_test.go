@@ -13,12 +13,13 @@ func TestCombatModel_ProjectsTimerGridMovesAndCopies(t *testing.T) {
 	model := NewCombatModel(fake, " seat-2 ")
 	state := &df.ScreenState{View: &df.ScreenState_Phone{Phone: &df.PhoneView{
 		StatusText: "Your turn", TurnTimer: &df.Timer{RemainingMs: 6000, TotalMs: 10000, Frozen: true},
-		Moves: []*df.Move{{MoveId: "attack", Enabled: true, TargetId: "thrall"}},
+		Character: &df.Character{Name: "Astra Vale", ClassName: "Rogue", PortraitUrl: "/assets/astra.png"},
+		Moves:     []*df.Move{{MoveId: "attack", Enabled: true, TargetId: "thrall"}},
 		Combat: &df.CombatView{TokenId: "pc-2", Hp: 8, HpMax: 10, Statuses: []string{"bloodied"}, MyTurn: true, MoveLeftCells: 3, ContactInMs: 1200,
 			MiniGrid: &df.MiniGrid{Cols: 2, Rows: 2, Walkable: []*df.Cell{{C: 0, R: 0}, {C: 1, R: 0}}, Reachable: []*df.Cell{{C: 1, R: 0}}, Me: &df.Cell{C: 0, R: 0}, Thrall: &df.Cell{C: 1, R: 1}}},
 	}}}
 	got := model.ApplyScreenState(state)
-	if got.TokenID != "pc-2" || !got.MyTurn || got.TimerRemaining != 6000 || !got.TimerFrozen || got.StatusText != "Your turn" || got.TimerLabel != "6s · paused" || got.TurnLabel != "Your turn" || !got.CanAct {
+	if got.TokenID != "pc-2" || got.Character.GetName() != "Astra Vale" || got.Character.GetClassName() != "Rogue" || !got.MyTurn || got.TimerRemaining != 6000 || !got.TimerFrozen || got.StatusText != "Your turn" || got.TimerLabel != "6s · paused" || got.TurnLabel != "Your turn" || !got.CanAct {
 		t.Fatalf("combat snapshot = %+v", got)
 	}
 	if len(got.Grid) != 4 || !got.Grid[0].Walkable || !got.Grid[1].Reachable || !got.Grid[0].Me || !got.Grid[3].Thrall {

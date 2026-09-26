@@ -13,6 +13,7 @@ import (
 // CombatSnapshot is the render-safe state of the phone combat controls.
 type CombatSnapshot struct {
 	TokenID        string
+	Character      *df.Character
 	HP             int32
 	HPMax          int32
 	Statuses       []string
@@ -72,6 +73,7 @@ func (m *CombatModel) Snapshot() CombatSnapshot {
 	}
 	state := m.state
 	state.Statuses = append([]string(nil), state.Statuses...)
+	state.Character = cloneMessage(state.Character)
 	state.MiniGrid = cloneMessage(state.MiniGrid)
 	state.Moves = cloneMoves(state.Moves)
 	state.Attack = cloneAttack(state.Attack)
@@ -100,6 +102,7 @@ func (m *CombatModel) ApplyScreenState(state *df.ScreenState) CombatSnapshot {
 		return m.Snapshot()
 	}
 	m.state.TokenID = combat.GetTokenId()
+	m.state.Character = cloneMessage(phone.GetCharacter())
 	m.state.HP, m.state.HPMax = combat.GetHp(), combat.GetHpMax()
 	m.state.Statuses = append([]string(nil), combat.GetStatuses()...)
 	m.state.MyTurn, m.state.MoveLeftCells = combat.GetMyTurn(), combat.GetMoveLeftCells()
