@@ -11,8 +11,22 @@ import (
 
 func main() {
 	parseRouter := router.NewHistoryRouter(router.RouterOptions{DefaultRoute: string(RouteDM)})
-	registerRoutes(parseRouter, newBootClient())
+	client := newBootClient()
+	if client == nil {
+		registerBootErrorRoutes(parseRouter)
+	} else {
+		registerRoutes(parseRouter, client)
+	}
 	parseRouter.Mount("#app")
+	select {}
+}
+
+func registerBootErrorRoutes(parseRouter *router.Router) {
+	locale := NewLocaleModel(BrowserLocales())
+	errorRoute := unavailable(locale.T("phone.client_unavail", nil))
+	parseRouter.Register(string(RouteDM), errorRoute)
+	parseRouter.Register(string(RoutePhone), errorRoute)
+	parseRouter.Register(string(RouteHost), errorRoute)
 }
 
 func newBootClient() *Client {
