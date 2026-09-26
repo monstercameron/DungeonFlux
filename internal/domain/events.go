@@ -9,8 +9,8 @@ type HostCmd struct {
 	Seconds int           `json:"seconds,omitempty"`
 }
 type Join struct {
-	Seat SeatID `json:"seat"`
-	Kind string `json:"kind"`
+	Seat     SeatID `json:"seat"`
+	JoinKind string `json:"kind"`
 }
 type Act struct {
 	Seat   SeatID       `json:"seat"`
