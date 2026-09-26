@@ -2022,6 +2022,12 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: both maps have visually reviewed establishing/tactical/action camera presets with readable legal stand-ins, preserved grid registration and image quality, screenshots, camera regression checks, scoped gate, devlog and one atomic commit.
   status: DONE Codex; reviewed both maps at establishing/tactical/action angles with legal stand-ins; tactical pitches 35.99/35.63 degrees; camera-only regression and gate-20260926-180522 pass; screenshots and devlog retained
 
+- [x] SPLAT-026 - document camera scouting with computer use and image review
+  why: The developer requests a devlog about using computer use and the image modality to find favorable battle camera angles.
+  lane: L-WEB-SPLAT - paths: `docs/devlog.html` - depends: SPLAT-025
+  done when: a factual process entry explains the browser-and-screenshot review loop, scene-specific decisions, quality checks and limits; scoped gate passes and the documentation todo is committed separately.
+  status: DONE Codex; factual 219-word process entry added; markup/anchor/link checks and gate-20260926-180832 pass; committed separately
+
 ## 23. dfctl debug CLI
 
 Command-line reads and demo writes for agents and the developer.
