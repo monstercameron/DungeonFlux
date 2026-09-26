@@ -613,6 +613,12 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   done when: PhoneView carries the seat's character (species, gender, class, build stats, flavor, portrait URL, locked), legal moves with display labels and disabled reasons from content, and phase status; projection tests; live check in the browser: roll shows the build card, Ready locks, and both phones advance to the opening.
   status: open (launch after INT-001: same projection files)
 
+- [ ] INT-003 · simulated game runs itself in fake mode on a live server
+  why: Live play-through stalls in opening: with fake adapters and no canned audio assets, PlayCanned never posts line_done, nothing logs effect execution, and the opening never advances; later phases will hit the same class of gap.
+  lane: ORCH (integration) · block: 8–11 · paths: `internal/voice/out/**`, `internal/llmexec/**`, `internal/media/**`, `internal/wire/execs*.go`, `internal/wire/adapters*.go`, `internal/wire/fake*.go`, `internal/wire/sim_test.go` · depends: BASE-016, E2E-004
+  done when: in fake mode every line/canned/prerender/media effect completes with plausible fake durations (line_first_audio then line_done after about 1-2 s; missing assets fall back to fake PCM or silence instead of stalling) and each effect execution logs one Info record; a new wire test starts the real server with config/fake.json, joins two phones through SessionService, drives creation with phone Acts, then plays to End using only phone Acts/Says and host commands (no debug shortcuts except dice force), asserting each phase; the same run works live on port 18170 with dfctl watching.
+  status: claimed luna
+
 ## 8. Engine phases (one package each)
 
 Each phase is a separate subpackage with its own table, registered into the top table.
