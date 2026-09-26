@@ -29,11 +29,13 @@ type DiceSnapshot struct {
 	Modifier  int32
 	DC        int32
 	D20       int32
-	Outcome   string
-	Phase     DicePhase
-	CanRoll   bool
-	Error     string
-	Locale    string
+	// Total is the authoritative d20 plus modifier when a result is available.
+	Total   int32
+	Outcome string
+	Phase   DicePhase
+	CanRoll bool
+	Error   string
+	Locale  string
 }
 
 // DiceModel owns the persuasion roll action and its projected state.
@@ -102,6 +104,9 @@ func (m *DiceModel) ApplyScreenState(state *df.ScreenState) DiceSnapshot {
 	}
 	phone := state.GetPhone()
 	if phone == nil {
+		if dice := screenDice(state); dice != nil {
+			m.applyDice(dice)
+		}
 		return m.Snapshot()
 	}
 	m.state.Locale = phoneLocale(phone)
@@ -117,15 +122,46 @@ func (m *DiceModel) ApplyScreenState(state *df.ScreenState) DiceSnapshot {
 		break
 	}
 	phase := strings.ToLower(state.GetPhase())
+	if dice := screenDice(state); dice != nil {
+		m.applyDice(dice)
+	}
 	if strings.Contains(phase, "resolution") {
 		m.state.Phase, m.state.CanRoll = DiceResolved, false
-		m.state.Outcome = phone.GetStatusText()
+		if m.state.Outcome == "" {
+			m.state.Outcome = phone.GetStatusText()
+		}
 		return m.Snapshot()
 	}
 	if strings.Contains(phase, "check") && m.state.Phase != DiceRolling {
 		m.state.Phase = DiceOffered
 	}
 	return m.Snapshot()
+}
+
+func screenDice(state *df.ScreenState) *df.Dice {
+	if state == nil || state.GetDm() == nil {
+		return nil
+	}
+	return state.GetDm().GetDice()
+}
+
+func (m *DiceModel) applyDice(dice *df.Dice) {
+	if dice == nil {
+		return
+	}
+	m.state.D20, m.state.Modifier, m.state.DC = dice.GetD20(), dice.GetModifier(), dice.GetDc()
+	m.state.Total = m.state.D20 + m.state.Modifier
+	if dice.GetDamage() == nil {
+		m.state.Outcome = dice.GetOutcome()
+	}
+	switch dice.GetState() {
+	case df.DiceState_DICE_STATE_OFFERED:
+		m.state.Phase = DiceOffered
+	case df.DiceState_DICE_STATE_ROLLING:
+		m.state.Phase = DiceRolling
+	case df.DiceState_DICE_STATE_RESOLVED:
+		m.state.Phase = DiceResolved
+	}
 }
 
 // DiceFace returns the large face glyph for a phone dice card.

@@ -59,6 +59,17 @@ func TestDiceModel_PreservesStateWithoutPhone(t *testing.T) {
 	}
 }
 
+func TestDiceModel_ProjectsDiceDetailsWhenWireProvidesDMView(t *testing.T) {
+	model := NewDiceModel(&actFake{}, "token")
+	state := &df.ScreenState{Phase: "resolution", View: &df.ScreenState_Dm{Dm: &df.DMView{Dice: &df.Dice{
+		State: df.DiceState_DICE_STATE_RESOLVED, D20: 17, Modifier: 4, Dc: 10, Outcome: "success",
+	}}}}
+	got := model.ApplyScreenState(state)
+	if got.Phase != DiceResolved || got.D20 != 17 || got.Total != 21 || got.Outcome != "success" {
+		t.Fatalf("wire dice snapshot = %+v", got)
+	}
+}
+
 func TestDiceFace_UsesPhaseAndValidD20(t *testing.T) {
 	tests := []struct {
 		name, want string
