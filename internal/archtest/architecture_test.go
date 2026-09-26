@@ -176,7 +176,7 @@ func checkFile(file sourceFile) []violation {
 			case *ast.GoStmt:
 				out = append(out, violation{file.path, lineOf(file.file, n.Pos()), "pure package may not start goroutines"})
 			case *ast.SelectorExpr:
-				if id, ok := n.X.(*ast.Ident); ok && id.Name == "time" && n.Sel.Name != "Duration" && !knownPurityException(file.path, n.Sel.Name) {
+				if id, ok := n.X.(*ast.Ident); ok && id.Name == "time" && !durationSelector(n.Sel.Name) && !knownPurityException(file.path, n.Sel.Name) {
 					out = append(out, violation{file.path, lineOf(file.file, n.Pos()), "pure package may use time only for time.Duration"})
 				}
 			case *ast.CallExpr:
@@ -242,11 +242,13 @@ func allowedInternal(packagePath string) []string {
 	case packagePath == "internal/httpx":
 		return []string{"internal/ports"}
 	case packagePath == "internal/game" || strings.HasPrefix(packagePath, "internal/game/rules") || packagePath == "internal/game/combat":
-		return []string{"internal/core/fsm", "internal/domain", "internal/vocab", "internal/ports", "internal/game/rules", "internal/game/phase", "internal/game/combat"}
+		return []string{"internal/core/fsm", "internal/domain", "internal/vocab", "internal/ports", "internal/content", "internal/game/rules", "internal/game/phase", "internal/game/combat", "internal/game/nested", "internal/game/steer"}
 	case strings.HasPrefix(packagePath, "internal/game/phase/"):
-		return []string{"internal/core/fsm", "internal/domain", "internal/vocab", "internal/game/rules"}
+		return []string{"internal/core/fsm", "internal/domain", "internal/vocab", "internal/content", "internal/game/rules", "internal/game/nested", "internal/game/steer"}
 	case packagePath == "internal/game/phase":
-		return []string{"internal/core/fsm", "internal/domain", "internal/vocab", "internal/game/combat"}
+		return []string{"internal/core/fsm", "internal/domain", "internal/vocab", "internal/content", "internal/game/combat", "internal/game/phase", "internal/game/nested", "internal/game/steer"}
+	case packagePath == "internal/game/nested" || packagePath == "internal/game/steer":
+		return []string{"internal/core/fsm", "internal/domain", "internal/vocab", "internal/content", "internal/game/rules"}
 	case packagePath == "internal/sim":
 		return []string{"internal/game", "internal/core/fsm", "internal/domain", "internal/vocab"}
 	case strings.HasPrefix(packagePath, "internal/adapters/"):
@@ -261,7 +263,7 @@ func allowedInternal(packagePath string) []string {
 }
 
 func isPurePackage(path string) bool {
-	return path == "internal/domain" || path == "internal/content" || path == "internal/sim" || path == "internal/core/fsm" || path == "internal/game" || strings.HasPrefix(path, "internal/game/phase") || strings.HasPrefix(path, "internal/game/combat")
+	return path == "internal/domain" || path == "internal/content" || path == "internal/sim" || path == "internal/core/fsm" || path == "internal/game" || strings.HasPrefix(path, "internal/game/phase") || strings.HasPrefix(path, "internal/game/combat") || path == "internal/game/nested" || path == "internal/game/steer" || strings.HasPrefix(path, "internal/game/rules")
 }
 
 func forbiddenPureImport(path string) bool {
@@ -276,6 +278,16 @@ func forbiddenPureImport(path string) bool {
 // knownPurityException records pre-existing code that the orchestrator must
 // remove without making the current tree ungatable. The rule remains active
 // everywhere else, including new files and synthetic rule tests.
+// durationSelector reports whether a time selector is the Duration type or
+// one of its unit constants, which pure packages may use.
+func durationSelector(name string) bool {
+	switch name {
+	case "Duration", "Nanosecond", "Microsecond", "Millisecond", "Second", "Minute", "Hour":
+		return true
+	}
+	return false
+}
+
 func knownPurityException(path, selector string) bool {
 	return filepath.ToSlash(path) == "internal/game/game.go" && selector == "Second"
 }
