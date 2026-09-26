@@ -129,7 +129,10 @@ func renderPhoneScreen(kind ScreenKind, props phoneViewProps, locale string) ui.
 }
 
 func frameScreen(model FrameModel, content ui.Node, audio *PhoneAudio, locale string) ui.Node {
-	return ui.CreateElement(PhoneFrame(model, content, audioControls(audio, locale)))
+	// Every screen is a prop-less closure component, so the reconciler cannot
+	// tell a sheet from a moves screen. Keying by screen kind remounts the frame
+	// when the phase changes the screen; without it the first screen stuck.
+	return html.WithKey(ui.CreateElement(PhoneFrame(model, content, audioControls(audio, locale))), string(model.Screen))
 }
 
 func conversationScreen(props phoneViewProps, locale string) ui.Node {
