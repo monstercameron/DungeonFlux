@@ -319,7 +319,7 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   why: Phones join by scanning a QR on the DM screen, so start-up writes the join URL QR PNG as an asset and prints the room code.
   lane: ORCH · block: 5–8 · paths: `internal/wire/qr*.go`, `internal/wire/wire.go` · depends: BASE-010
   done when: rsc.io/qr PNG stored under the asset store and referenced by the lobby View; test decodes nothing but checks PNG header and URL.
-  status: claimed luna
+  status: committed 7ee1b0e
 
 ## 4. State-machine core
 
@@ -521,7 +521,7 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: Phase packages landed but the thin dispatcher never routes to them, and creation used a local PortraitSlot because archtest blocked nested (fixed in BASE-014).
   lane: L-ENG · block: 5–8 · paths: `internal/game/phase/*.go`, `internal/game/phase/creation/**`, `internal/game/phase/opening/**`, `internal/game/phase/conversation/**`, `internal/game/phase/check/**`, `internal/game/phase/resolution/**`, `internal/game/phase/hook/**`, `internal/game/phase/cliffhanger/**` · depends: ENG-002, PH-CRE-002, PH-OPEN-002, PH-CONV-002, PH-HOOK-001, PH-CLIFF-001
   done when: a Step test drives Lobby → Creation → Opening → Conversation → Check → Resolution → HookEvent (combat stubbed) → Cliffhanger → End through the dispatcher; lane-local stand-ins replaced by internal/game/nested types; walk/basic still passes.
-  status: claimed luna
+  status: committed 8a7a976
 
 ## 8. Engine phases (one package each)
 
@@ -677,7 +677,7 @@ Deterministic virtual-time simulation of whole runs.
   why: Story paths cover conversation, check success and failure, resolution, and the hook.
   lane: L-ENG · block: 8–11 · paths: `internal/sim/walk/story/**` · depends: PH-HOOK-001
   done when: All story paths end within 5 simulated minutes, ≤ 3 entries per state.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed b5dee1e
 
 - [x] SIM-005 · walk/voice paths
   why: Voice paths cover PTT, STT failure, typed fallback, and interrupted NPC lines.
@@ -1127,7 +1127,7 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   why: Players pick species and gender and see their rolled build.
   lane: L-WEB-PHONE · block: 5–8 · paths: `web/phone/create*.go` · depends: WEB-003, PH-CRE-001
   done when: Pick → pc_locked; build card shown.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 02ea3cd
 
 - [ ] PHONE-002 · web/phone character sheet
   why: The phone is the player sheet: stats, HP, conditions, portrait.
@@ -1179,19 +1179,19 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   why: Scenes are layered stills with the characters, driven by SceneView.
   lane: L-WEB-DM · block: 5–8 · paths: `web/dm/scene*.go` · depends: DM-001
   done when: Scene renders from View.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 2c3a9af
 
 - [ ] DM-003 · web/dm clip playback with still fallback
   why: Video clips play at key moments and fall back to animated stills when late.
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/clip*.go` · depends: DM-002
   done when: Fallback shown when the clip is missing.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 - [ ] DM-004 · web/dm dice, callouts, and timer bar
   why: The TV shows dice rolls, check callouts, and the turn timer.
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/dice*.go`, `web/dm/callout*.go` · depends: DM-002
   done when: Renders from DiceView and TimerView.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 - [ ] DM-005 · web/dm music player
   why: The DM tab plays the music cues with bar-aligned crossfades.
@@ -1287,7 +1287,7 @@ Command-line reads and demo writes for agents and the developer.
   why: state, view, legal, scopes, assets, events, logs, clients, costs let agents check the game without a browser.
   lane: L-OPS · block: 5–8 · paths: `cmd/dfctl/read*.go` · depends: DFCTL-001, API-011
   done when: Each verb against a fake DebugService.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 9073be3
 
 - [x] DFCTL-003 · dfctl demo write verbs
   why: send, act, say, dice force d20=N, and reset drive the game through engine events.
