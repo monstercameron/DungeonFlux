@@ -12,18 +12,48 @@ import (
 	"github.com/monstercameron/GoWebComponents/v6/ui"
 )
 
-// CombatComponent renders the FLAT battlefield with its projected grid,
-// readable party rail, enemy card, turn timer, and action bar.
-func CombatComponent(view *dungeonfluxv1.DMView) router.Component {
-	model := CombatModelFromView(view)
+// CombatComponent renders the battle stage with its HUD and FLAT fallback.
+func CombatComponent(view *dungeonfluxv1.DMView, sequence ...uint64) router.Component {
+	version := uint64(1)
+	if len(sequence) > 0 && sequence[0] > 0 {
+		version = sequence[0]
+	}
+	model := CombatModelFromViewAt(view, version)
+	stage := BattleStageFromView(view, version)
 	locale := localeOrDefault(view.GetLocale())
 	return func(_ router.Attrs) *router.Element {
-		children := []ui.Node{
-			combatGrid(model.Segments), combatHighlights(model.Highlights),
-			combatVignette(), combatPartyRail(model),
-			combatEnemyCard(model), combatTimer(model.Timer), combatTopTitle(locale, model), combatActionBar(),
+		handleRef := ui.UseRef((*battleStageHandle)(nil))
+		ui.UseEffect(func() func() {
+			if !stage.Enabled {
+				return nil
+			}
+			handle := newBattleStageHandle()
+			handleRef.Set(handle)
+			handle.mount(stage)
+			return func() {
+				handle.dispose()
+				handleRef.Set(nil)
+			}
+		}, stage.Init.SceneURL)
+		ui.UseEffect(func() func() {
+			if handle := handleRef.Get(); handle != nil {
+				handle.apply(stage)
+			}
+			return nil
+		}, stage.Scene.Seq, stage.Scene.Visible, stage.Scene.Camera.FocusTokenID, stageSnapshotKey(stage))
+		children := make([]ui.Node, 0, 4)
+		if stage.Enabled {
+			children = append(children, html.Canvas(html.Props{ID: stage.Init.CanvasID, Class: "df-dm-combat-splat", Width: "1920", Height: "1080", Style: map[string]string{"position": "absolute", "inset": "0", "width": "100%", "height": "100%", "opacity": "0", "transition": "opacity 1s ease", "z-index": "0", "pointer-events": "none"}}))
 		}
-		children = append(children, combatTokens(model.Tokens)...)
+		fallback := []ui.Node{combatGrid(model.Segments), combatHighlights(model.Highlights)}
+		fallback = append(fallback, combatTokens(model.Tokens)...)
+		if stage.Enabled {
+			children = append(children, html.Div(html.Props{ID: "df-combat-flat-fallback", Style: map[string]string{"position": "absolute", "inset": "0", "z-index": "1", "opacity": "1", "transition": "opacity 180ms ease", "pointer-events": "none"}}, fallback...))
+		} else if !model.UseSplat {
+			children = append(children, fallback...)
+		}
+		hud := []ui.Node{combatVignette(), combatPartyRail(model), combatEnemyCard(model), combatTimer(model.Timer), combatTopTitle(locale, model), combatActionBar()}
+		children = append(children, html.Div(html.Props{Style: map[string]string{"position": "absolute", "inset": "0", "z-index": "2", "pointer-events": "none"}}, hud...))
 		return html.Section(html.Props{Class: "df-dm-combat", Role: "img", Aria: map[string]string{"label": T(locale, "dm.combat_label", nil)}, Style: map[string]string{"position": "relative", "width": "100%", "height": "100%", "overflow": "hidden"}},
 			html.Div(html.Props{Class: "df-dm-combat-stage", Style: combatStageStyle(model)}, children...),
 		)

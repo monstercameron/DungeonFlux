@@ -40,7 +40,7 @@
     "live_pc_loops": false,
     "live_video": false,
     "sequence_mode": false,
-    "splat": false,
+    "splat": true,
     "music": false,
     "budget_enforce": false
   },

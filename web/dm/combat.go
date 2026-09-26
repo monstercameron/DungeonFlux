@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
+	"github.com/monstercameron/DungeonFlux/web/splat"
 )
 
 // CombatPoint is a pixel coordinate in the FLAT battlefield image.
@@ -50,6 +51,7 @@ type CombatTurn struct {
 type CombatModel struct {
 	ImageURL   string
 	Visible    bool
+	UseSplat   bool
 	Segments   []CombatSegment
 	Highlights []CombatPoint
 	Tokens     []CombatToken
@@ -60,8 +62,13 @@ type CombatModel struct {
 }
 
 // CombatModelFromView projects a DM combat view into browser-owned data.
-// FLAT is intentionally the only mode rendered by this package.
 func CombatModelFromView(view *dungeonfluxv1.DMView) CombatModel {
+	return CombatModelFromViewAt(view, 1)
+}
+
+// CombatModelFromViewAt projects a DM view and gives the splat snapshot a
+// stable sequence number for idempotent browser updates.
+func CombatModelFromViewAt(view *dungeonfluxv1.DMView, sequence uint64) CombatModel {
 	if view == nil {
 		return CombatModel{}
 	}
@@ -73,6 +80,12 @@ func CombatModelFromView(view *dungeonfluxv1.DMView) CombatModel {
 	}
 	battlefield := view.GetBattlefield()
 	if battlefield == nil {
+		model.Visible, model.UseSplat = true, true
+		stage := BattleStageFromView(view, sequence)
+		model.Tokens = projectedSplatTokens(view, sequence)
+		if len(view.GetTokens()) > 0 || len(view.GetHighlights()) > 0 {
+			applyFlatFallback(&model, view, stage.Init.Grid)
+		}
 		return model
 	}
 	model.Visible = battlefield.GetVisible()
@@ -87,8 +100,96 @@ func CombatModelFromView(view *dungeonfluxv1.DMView) CombatModel {
 		model.Segments = projectedGrid(battlefield.GetGrid(), quad)
 		model.Tokens = projectedTokens(view.GetTokens(), battlefield.GetGrid(), quad, view.GetBuildCards())
 		model.Highlights = projectedHighlights(view.GetHighlights(), battlefield.GetGrid(), quad)
+	} else {
+		model.UseSplat = true
+		model.Tokens = projectedSplatTokens(view, sequence)
+		applyFlatFallback(&model, view, BattleStageFromView(view, sequence).Init.Grid)
 	}
 	return model
+}
+
+func applyFlatFallback(model *CombatModel, view *dungeonfluxv1.DMView, stageGrid splat.Grid) {
+	grid := view.GetBattlefield().GetGrid()
+	if grid == nil {
+		grid = protoGrid(stageGrid)
+	}
+	quad := defaultFloorQuad
+	if battlefield := view.GetBattlefield(); battlefield != nil && battlefield.GetFlat() != nil && len(battlefield.GetFlat().GetFloorQuadPx()) >= 8 {
+		quad = battlefield.GetFlat().GetFloorQuadPx()
+	}
+	model.Segments = projectedGrid(grid, quad)
+	model.Highlights = projectedHighlights(view.GetHighlights(), grid, quad)
+	if view.GetBattlefield() == nil {
+		if tokens := projectedTokens(view.GetTokens(), grid, quad, view.GetBuildCards()); len(tokens) > 0 {
+			model.Tokens = tokens
+		}
+	} else if !strings.EqualFold(view.GetBattlefield().GetMode(), "SPLAT") {
+		if tokens := projectedTokens(view.GetTokens(), grid, quad, view.GetBuildCards()); len(tokens) > 0 {
+			model.Tokens = tokens
+		}
+	}
+}
+
+func protoGrid(grid splat.Grid) *dungeonfluxv1.Grid {
+	result := &dungeonfluxv1.Grid{Cols: int32(grid.Cols), Rows: int32(grid.Rows), CellM: float32(grid.CellM)}
+	for _, index := range grid.Walkable {
+		result.Walkable = append(result.Walkable, &dungeonfluxv1.Cell{C: int32(index % grid.Cols), R: int32(index / grid.Cols)})
+	}
+	return result
+}
+
+func projectedSplatTokens(view *dungeonfluxv1.DMView, sequence uint64) []CombatToken {
+	stage := BattleStageFromView(view, sequence)
+	if !stage.Enabled {
+		return nil
+	}
+	result := make([]CombatToken, 0, len(stage.Scene.Tokens))
+	for _, token := range stage.Scene.Tokens {
+		if !splat.IsWalkable(stage.Init.Grid, token.Cell) {
+			continue
+		}
+		result = append(result, CombatToken{ID: token.ID, Name: token.Name, Portrait: token.Portrait, HP: tokenHP(view, token.ID), HPMax: tokenMaxHP(view, token.ID), Active: tokenActive(view, token.ID), Statuses: append([]string(nil), token.Statuses...), Class: tokenClassByStageID(view, token.ID), CellColumn: int32(token.Cell[0]), CellRow: int32(token.Cell[1])})
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
+func tokenHP(view *dungeonfluxv1.DMView, id string) int32 {
+	for index, token := range view.GetTokens() {
+		if token != nil && stageTokenID(token, index) == id {
+			return token.GetHp()
+		}
+	}
+	return 0
+}
+
+func tokenMaxHP(view *dungeonfluxv1.DMView, id string) int32 {
+	for index, token := range view.GetTokens() {
+		if token != nil && stageTokenID(token, index) == id {
+			return token.GetHpMax()
+		}
+	}
+	return 0
+}
+
+func tokenActive(view *dungeonfluxv1.DMView, id string) bool {
+	for index, token := range view.GetTokens() {
+		if token != nil && stageTokenID(token, index) == id {
+			return token.GetActive()
+		}
+	}
+	return false
+}
+
+func tokenClassByStageID(view *dungeonfluxv1.DMView, id string) string {
+	for index, token := range view.GetTokens() {
+		if token != nil && stageTokenID(token, index) == id {
+			return tokenClass(token, view.GetBuildCards())
+		}
+	}
+	return ""
 }
 
 func projectedTurnOrder(entries []*dungeonfluxv1.TurnOrderEntry) []CombatTurn {

@@ -32,27 +32,9 @@ func DefaultOneShot() OneShot {
 				{ID: "cliffhanger", Text: "The tower bell tolls midnight, every lantern dies, and whoever rang it knows the heroes' names."},
 			},
 			Encounter: domain.Encounter{
-				Enemy:   domain.Creature{ID: "thrall", Name: "Drowned Thrall", HP: 12, MaxHP: 12, AC: 8, Cell: domain.Cell{C: 6, R: 3}},
-				Trigger: "after_stranger_line",
-				Battlefield: domain.Battlefield{
-					Mode:     "FLAT",
-					SceneURL: "battlefield_tavern_splat",
-					LiteURL:  "battlefield_tavern_lite",
-					Grid: domain.Grid{Origin: [2]float64{0, 0}, CellM: 1.524, Cols: 8, Rows: 6, Walkable: []bool{
-						true, true, true, true, true, true, true, true,
-						true, true, true, true, true, true, true, true,
-						true, true, false, false, false, true, true, true,
-						true, true, true, true, true, true, true, true,
-						true, true, false, false, true, true, true, true,
-						true, true, true, true, true, true, true, true}},
-					Spawns: []domain.Spawn{
-						{Seat: 1, Cell: domain.Cell{C: 1, R: 4}},
-						{Seat: 2, Cell: domain.Cell{C: 1, R: 5}},
-						{Entity: "thrall", Cell: domain.Cell{C: 6, R: 3}},
-					},
-					Door: domain.Cell{C: 0, R: 3},
-					Flat: domain.FlatBattlefield{ImageURL: "battlefield_tavern_flat"},
-				},
+				Enemy:       domain.Creature{ID: "thrall", Name: "Drowned Thrall", HP: 12, MaxHP: 12, AC: 8, Cell: domain.Cell{C: 6, R: 0}},
+				Trigger:     "after_stranger_line",
+				Battlefield: woodedPathBattlefield(),
 				Loops: map[string]domain.Asset{
 					"idle":   {ID: "thrall_loop_idle", Kind: string(vocab.AssetVideo)},
 					"attack": {ID: "thrall_loop_attack", Kind: string(vocab.AssetVideo)},
@@ -75,6 +57,8 @@ func defaultCatalogue() []domain.Asset {
 		kind vocab.AssetKind
 	}{
 		{"battlefield_tavern_splat", vocab.AssetSplat}, {"battlefield_tavern_lite", vocab.AssetSplat},
+		{"/splat/scenes/64bb46d5.json", vocab.AssetSplat},
+		{"cb2fddd6", vocab.AssetSplat},
 		{"battlefield_tavern_flat", vocab.AssetImage}, {"thrall_loop_idle", vocab.AssetVideo},
 		{"thrall_loop_attack", vocab.AssetVideo}, {"thrall_loop_hit", vocab.AssetVideo}, {"thrall_loop_fall", vocab.AssetVideo},
 		{"THEME_MAIN", vocab.AssetMusic}, {"COMBAT_SKIRMISH_LOOP", vocab.AssetMusic},
@@ -135,7 +119,7 @@ func (s OneShot) Validate() error {
 }
 
 func validateBattlefield(field domain.Battlefield) error {
-	if field.Mode != "FLAT" || field.Grid.Cols <= 0 || field.Grid.Rows <= 0 || len(field.Grid.Walkable) != field.Grid.Cols*field.Grid.Rows {
+	if (field.Mode != "FLAT" && field.Mode != "SPLAT") || field.Grid.Cols <= 0 || field.Grid.Rows <= 0 || len(field.Grid.Walkable) != field.Grid.Cols*field.Grid.Rows {
 		return fmt.Errorf("battlefield grid is invalid")
 	}
 	if field.Grid.CellM <= 0 {

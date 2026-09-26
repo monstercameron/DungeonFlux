@@ -12,7 +12,9 @@ const ROLE_ALIASES = Object.freeze({
 
 /** Returns the stable visual role for a token kind. */
 export function roleForToken(token) {
-  return ROLE_ALIASES[String(token?.kind ?? "").trim().toLowerCase()] ?? "npc";
+  const kind = String(token?.kind ?? "").trim().toLowerCase();
+  if (kind.startsWith("pc-") || kind.startsWith("player-") || kind.startsWith("hero-")) return "player";
+  return ROLE_ALIASES[kind] ?? "npc";
 }
 
 function heightOf(token) {

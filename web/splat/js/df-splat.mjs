@@ -1,4 +1,4 @@
-import { createBattleRuntime } from "./battle_runtime.mjs";
+import { createBattleViewer } from "./battle_viewer.mjs";
 
 const listeners = new Set();
 let runtime = null;
@@ -14,7 +14,7 @@ function send(raw) {
     if (message.device && message.device !== "webgl2") { emit({ type: "error", code: "WEBGL_UNAVAILABLE", detail: `unsupported device: ${message.device}` }); return; }
     try {
       const canvas = document.getElementById(message.canvas_id); if (!canvas) throw new Error(`canvas not found: ${message.canvas_id}`);
-      runtime?.dispose(); runtime = null; bridgeRuntime(createBattleRuntime({ canvas, layout: "fullscreen", reducedMotion: message.reduced_motion }));
+      runtime?.dispose(); runtime = null; bridgeRuntime(createBattleViewer({ canvas, controls: false, cameraControls: false, layout: "fullscreen", reducedMotion: message.reduced_motion }));
       void runtime.load(message.profile ?? message.scene ?? message).catch(() => {});
     } catch (error) { emit({ type: "error", code: "WEBGL_UNAVAILABLE", detail: String(error?.message ?? error) }); }
     return;

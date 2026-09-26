@@ -31,3 +31,33 @@ func TestCameraPresets_hasCombatAndFallbackViews(t *testing.T) {
 		t.Fatalf("CameraPresets() = %#v", got)
 	}
 }
+
+func TestWoodedPathGridMatchesColliderCells(t *testing.T) {
+	grid := WoodedPathGrid()
+	if grid.Cols != 16 || grid.Rows != 10 || len(grid.Walkable) != 78 {
+		t.Fatalf("unexpected wooded path grid: %#v", grid)
+	}
+	for _, cell := range []Cell{{2, 0}, {3, 0}, {6, 0}, {12, 9}} {
+		if !IsWalkable(grid, cell) {
+			t.Fatalf("cell %v should be walkable", cell)
+		}
+	}
+}
+
+func TestGridFromSupportedCellsAndPath(t *testing.T) {
+	grid := GridFromSupportedCells(3, 2, []Cell{{0, 0}, {1, 0}, {1, 1}, {2, 1}, {2, 2}})
+	if len(grid.Walkable) != 4 || !IsWalkable(grid, Cell{2, 1}) || IsWalkable(grid, Cell{2, 0}) {
+		t.Fatalf("supported cells were not normalized: %#v", grid.Walkable)
+	}
+	path, ok := Path(grid, Cell{0, 0}, Cell{2, 1})
+	if !ok || len(path) != 4 || path[0] != (Cell{0, 0}) || path[len(path)-1] != (Cell{2, 1}) {
+		t.Fatalf("unexpected path: %v, %v", path, ok)
+	}
+	distance, ok := Distance(grid, Cell{0, 0}, Cell{2, 1})
+	if !ok || distance != 3 {
+		t.Fatalf("unexpected distance: %d, %v", distance, ok)
+	}
+	if _, ok := Path(grid, Cell{0, 0}, Cell{2, 0}); ok {
+		t.Fatal("path should reject a blocked destination")
+	}
+}

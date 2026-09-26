@@ -37,6 +37,12 @@ func TestMountWeb_ServesPagesAndWasm(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(wasm, "wasm_exec.js"), []byte("js"), 0o600); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.MkdirAll(filepath.Join(root, "web", "splat", "scenes"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "web", "splat", "scenes", "64bb46d5.json"), []byte("scene"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	mux := http.NewServeMux()
 	if err := mountWeb(mux, config.Config{Server: config.ServerConfig{DataDir: filepath.Join(root, "runtime")}}); err != nil {
 		t.Fatal(err)
@@ -54,6 +60,10 @@ func TestMountWeb_ServesPagesAndWasm(t *testing.T) {
 	res = request(mux, "/wasm_exec.js", "")
 	if res.Code != http.StatusOK || !strings.HasPrefix(res.Header().Get("Content-Type"), "text/javascript") || res.Header().Get("Cache-Control") != "no-cache" || res.Header().Get("ETag") == "" {
 		t.Fatalf("loader = %d %q", res.Code, res.Header().Get("Content-Type"))
+	}
+	res = request(mux, "/splat/scenes/64bb46d5.json", "")
+	if res.Code != http.StatusOK || res.Body.String() != "scene" {
+		t.Fatalf("splat scene = %d %q", res.Code, res.Body.String())
 	}
 	for _, path := range []string{"/dm", "/p", "/host"} {
 		res := request(mux, path, "")

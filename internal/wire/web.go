@@ -35,6 +35,7 @@ func mountWeb(mux *http.ServeMux, cfg config.Config) error {
 	mux.HandleFunc("/wasm_exec.js", fileHandler(filepath.Join(wasmRoot, "wasm_exec.js"), "text/javascript; charset=utf-8"))
 	mux.Handle("/splat/js/", staticHandler(filepath.Join(root, "splat", "js")))
 	mux.Handle("/splat/vendor/", staticHandler(filepath.Join(root, "splat", "vendor")))
+	mux.Handle("/splat/scenes/", staticHandler(filepath.Join(root, "splat", "scenes")))
 	mux.HandleFunc("/assets/", assetHandler(filepath.Join(cfg.Server.DataDir, "assets")))
 	return nil
 }
