@@ -54,3 +54,18 @@ func TestCommandForToggle_setsOnFlag(t *testing.T) {
 		t.Fatalf("command = %+v", command)
 	}
 }
+
+func TestLinksFor_buildsCopyableTesterURLs(t *testing.T) {
+	got := linksFor("https://dm.example/", "host token")
+	want := testerLinks{DM: "https://dm.example/dm?t=host+token", Phone: "https://dm.example/p?t=host+token", Host: "https://dm.example/host?t=host+token"}
+	if got != want {
+		t.Fatalf("linksFor() = %+v, want %+v", got, want)
+	}
+}
+
+func TestLinksFor_allowsTokenlessLocalLinks(t *testing.T) {
+	got := linksFor("http://localhost:18146", "")
+	if got.DM != "http://localhost:18146/dm" || got.Phone != "http://localhost:18146/p" || got.Host != "http://localhost:18146/host" {
+		t.Fatalf("linksFor() = %+v", got)
+	}
+}

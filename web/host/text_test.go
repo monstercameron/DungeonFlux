@@ -57,6 +57,15 @@ func TestHostText_ActionLabelsAndLines(t *testing.T) {
 	}
 }
 
+func TestHostText_TesterLinkLabels(t *testing.T) {
+	if TesterLinksTitle("en") != "Tester links" || CopyLinkLabel("en") != "Copy" {
+		t.Fatal("english tester labels changed")
+	}
+	if TesterLinksTitle("es") != "Enlaces de prueba" || CopyLinkLabel("es") != "Copiar" {
+		t.Fatal("spanish tester labels changed")
+	}
+}
+
 func TestRoomLocaleSelector_SettleAndOptions(t *testing.T) {
 	selector := NewRoomLocaleSelector("es")
 	if selector.Selected != "es" {

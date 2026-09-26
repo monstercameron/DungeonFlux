@@ -123,3 +123,19 @@ func ReadyLine(locale string) string { return T(locale, "host.ready", nil) }
 
 // RoomLocaleLabel returns the localized room-language selector caption.
 func RoomLocaleLabel(locale string) string { return T(locale, "ui.host.room_lang", nil) }
+
+// TesterLinksTitle labels the copyable links used during a rehearsal.
+func TesterLinksTitle(locale string) string {
+	if localeOrDefault(locale) == "es" {
+		return "Enlaces de prueba"
+	}
+	return "Tester links"
+}
+
+// CopyLinkLabel labels a copy action.
+func CopyLinkLabel(locale string) string {
+	if localeOrDefault(locale) == "es" {
+		return "Copiar"
+	}
+	return "Copy"
+}

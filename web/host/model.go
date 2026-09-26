@@ -1,6 +1,11 @@
 package host
 
-import df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
+import (
+	"net/url"
+	"strings"
+
+	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
+)
 
 type hostAction struct {
 	Label   string
@@ -45,6 +50,21 @@ type hostSnapshot struct {
 	Locale     string
 	RoomLocale string
 	Selector   RoomLocaleSelector
+}
+
+type testerLinks struct {
+	DM    string
+	Phone string
+	Host  string
+}
+
+func linksFor(origin, token string) testerLinks {
+	base := strings.TrimRight(origin, "/")
+	query := ""
+	if token != "" {
+		query = "?t=" + url.QueryEscape(token)
+	}
+	return testerLinks{DM: base + "/dm" + query, Phone: base + "/p" + query, Host: base + "/host" + query}
 }
 
 func snapshotFromState(state *df.ScreenState) hostSnapshot {
