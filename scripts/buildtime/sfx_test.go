@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -38,8 +40,22 @@ func TestBuildSFXRequest_EncodesPrompt(t *testing.T) {
 	if err := json.Unmarshal(data, &request); err != nil || request.Text == "" {
 		t.Fatalf("invalid request: %v %#v", err, request)
 	}
+	if request.ModelID != "eleven_text_to_sound_v2" || request.DurationSeconds != 2 {
+		t.Fatalf("unexpected request settings: %#v", request)
+	}
+	ambience, err := BuildSFXRequest(SFXAssets()[4])
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ambienceRequest SFXRequest
+	if err := json.Unmarshal(ambience, &ambienceRequest); err != nil || !ambienceRequest.Loop {
+		t.Fatalf("ambience loop was not encoded: %v %#v", err, ambienceRequest)
+	}
 	if _, err := BuildSFXRequest(SFXAsset{ID: "bad", Prompt: "sound", LUFS: 0}); err == nil {
 		t.Fatal("accepted non-negative loudness")
+	}
+	if _, err := BuildSFXRequest(SFXAsset{ID: "bad", Prompt: "sound", LUFS: -16, DurationSeconds: 31}); err == nil {
+		t.Fatal("accepted invalid duration")
 	}
 }
 
@@ -69,5 +85,142 @@ func TestRenderSFX_StoresAssetAndNormalizationMetadata(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join(manifestRoot, stored.Takes[0].Path))
 	if err != nil || string(data) != "effect" {
 		t.Fatalf("stored effect mismatch: %v %q", err, data)
+	}
+}
+
+type fakeSFXProcessor struct {
+	stats SFXMediaStats
+}
+
+func (p fakeSFXProcessor) Normalize(_ context.Context, source, destination string, target int) (SFXMediaStats, error) {
+	data, err := os.ReadFile(source)
+	if err != nil {
+		return SFXMediaStats{}, err
+	}
+	if err := os.WriteFile(destination, append([]byte("normalized:"), data...), 0o644); err != nil {
+		return SFXMediaStats{}, err
+	}
+	stats := p.stats
+	stats.IntegratedLUFS = float64(target)
+	return stats, nil
+}
+
+func TestRenderSFXWithProcessor_RegistersNormalizedTake(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/sound-generation" {
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+		_, _ = io.WriteString(w, "raw-effect")
+	}))
+	defer server.Close()
+	root := t.TempDir()
+	writer, err := NewManifestWriter(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	asset := SFXAssets()[0]
+	stats, err := RenderSFXWithProcessor(context.Background(), server.Client(), server.URL, filepath.Join(root, "sfx"), writer, asset, 2, fakeSFXProcessor{stats: SFXMediaStats{DurationSeconds: 2.1, IntegratedLUFS: -16.2}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.DurationSeconds != 2.1 || writer.manifest.Assets[asset.ID].DurationMS != 2100 {
+		t.Fatalf("unexpected stats or metadata: %#v %#v", stats, writer.manifest.Assets[asset.ID])
+	}
+	stored := writer.manifest.Assets[asset.ID].Takes[0]
+	data, err := os.ReadFile(filepath.Join(root, stored.Path))
+	if err != nil || !strings.Contains(string(data), "normalized:raw-effect") {
+		t.Fatalf("normalized asset mismatch: %v %q", err, data)
+	}
+}
+
+func TestPlanSFX_AccountsForTwoTakes(t *testing.T) {
+	plan, err := PlanSFX(SFXAssets(), 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Requests != 32 || plan.EstimatedSeconds != 92 || plan.EstimatedCostUSD <= 0 {
+		t.Fatalf("unexpected plan: %#v", plan)
+	}
+	if _, err := PlanSFX(SFXAssets(), 4); err == nil {
+		t.Fatal("accepted more than three takes")
+	}
+}
+
+func TestRunSFXBuild_SelectsBestTakeAndReleasesLock(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, "raw-effect")
+	}))
+	defer server.Close()
+	root := t.TempDir()
+	processor := fakeSFXProcessor{stats: SFXMediaStats{DurationSeconds: 2, IntegratedLUFS: -16}}
+	var log strings.Builder
+	summary, err := RunSFXBuild(context.Background(), SFXBuildOptions{Client: server.Client(), Endpoint: server.URL, Root: root, Takes: 1, Processor: processor, Log: &log})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Requests != len(SFXAssets()) || summary.Selected != len(SFXAssets()) {
+		t.Fatalf("unexpected summary: %#v", summary)
+	}
+	if _, err := os.Stat(filepath.Join(root, "manifest.lock")); !os.IsNotExist(err) {
+		t.Fatalf("manifest lock remains: %v", err)
+	}
+	if !strings.Contains(log.String(), "sfx_summary requests=16") {
+		t.Fatalf("summary log missing: %s", log.String())
+	}
+}
+
+func TestSFXBuild_RejectsInvalidInputsAndHonorsCancelledLockWait(t *testing.T) {
+	if _, err := RunSFXBuild(context.Background(), SFXBuildOptions{}); err == nil {
+		t.Fatal("accepted empty build options")
+	}
+	root := t.TempDir()
+	lockPath := filepath.Join(root, "manifest.lock")
+	if err := os.WriteFile(lockPath, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := acquireSFXManifestLock(ctx, root); err == nil {
+		t.Fatal("accepted cancelled lock wait")
+	}
+	if err := os.Remove(lockPath); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSFXBuild_RejectsBadStatsAndHTTPErrors(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, "raw-effect")
+	}))
+	defer server.Close()
+	root := t.TempDir()
+	writer, err := NewManifestWriter(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bad := fakeSFXProcessor{stats: SFXMediaStats{DurationSeconds: 0.1, IntegratedLUFS: -16}}
+	if _, err := RenderSFXWithProcessor(context.Background(), server.Client(), server.URL, filepath.Join(root, "sfx"), writer, SFXAssets()[0], 1, bad); err == nil {
+		t.Fatal("accepted an effect with invalid duration")
+	}
+	errorServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer errorServer.Close()
+	if _, err := requestSFX(context.Background(), errorServer.Client(), errorServer.URL, root, SFXAssets()[0]); err == nil {
+		t.Fatal("accepted unauthorized SFX response")
+	}
+	if _, err := PlanSFX([]SFXAsset{{ID: "bad", Prompt: ""}}, 2); err == nil {
+		t.Fatal("accepted an invalid SFX plan")
+	}
+}
+
+func TestSFXBuild_RejectsCostCapBeforeNetwork(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("cost cap should reject before making a request")
+	}))
+	defer server.Close()
+	_, err := RunSFXBuild(context.Background(), SFXBuildOptions{Client: server.Client(), Endpoint: server.URL, Root: t.TempDir(), Takes: 3, MaxCostUSD: 0.001})
+	if err == nil {
+		t.Fatal("accepted a plan over the cost cap")
 	}
 }
