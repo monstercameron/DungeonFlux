@@ -33,17 +33,19 @@ type SeatView struct {
 // SelectScreen maps every demo phase to the phone screen that owns its actions.
 func SelectScreen(view SeatView) ScreenKind {
 	phase := strings.ToLower(strings.TrimSpace(view.Phase))
-	switch {
-	case strings.Contains(phase, "lobby"), strings.Contains(phase, "exploration"):
+	switch phase {
+	case "lobby", "exploration":
 		return ScreenMoves
-	case strings.Contains(phase, "creation"):
+	case "creation":
 		return ScreenCreate
-	case strings.Contains(phase, "check"):
+	case "check":
 		return ScreenDice
-	case strings.Contains(phase, "combat"):
+	case "combat":
 		return ScreenCombat
-	case strings.Contains(phase, "conversation"):
+	case "conversation":
 		return ScreenConversation
+	case "opening", "resolution", "hook_event", "cliffhanger", "end":
+		return ScreenSheet
 	default:
 		if view.Phone != nil {
 			if view.Phone.GetCombat() != nil {

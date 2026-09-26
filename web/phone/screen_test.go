@@ -43,3 +43,13 @@ func TestSelectScreen_UsesSeatViewState(t *testing.T) {
 		t.Fatalf("sheet screen = %q", got)
 	}
 }
+
+func TestSelectScreen_EndIgnoresStaleSeatControls(t *testing.T) {
+	view := SeatView{Phase: "end", Phone: &df.PhoneView{
+		Moves:  []*df.Move{{MoveId: "attack", Enabled: true}},
+		Combat: &df.CombatView{MyTurn: true},
+	}}
+	if got := SelectScreen(view); got != ScreenSheet {
+		t.Fatalf("end screen = %q, want %q", got, ScreenSheet)
+	}
+}
