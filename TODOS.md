@@ -551,7 +551,7 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: E2E-003 stalls in creation because internal/game.State, the engine wire runs, never uses internal/game/phase.Machine: its Step accepts only host commands and debug reset, rejects Act, Say, timer, line, STT, LLM, and asset events, and LegalMoves knows only the lobby; the phase stack is exercised only by its own tests.
   lane: L-ENG · block: 8–11 · paths: `internal/game/game.go`, `internal/game/state*.go`, `internal/game/legal*.go`, `internal/game/view*.go`, `internal/game/phase/*.go` · depends: ENG-014, COMBAT-008, ENG-011
   done when: game.State owns a phase.Machine and routes every domain event to it (creation species/gender/roll_hero/ready Acts, PCLocked, TimerFired, LineDone, Transcribed, Interpreted, asset and prerender events, combat Acts); effects from phase packages are returned from Step; LegalMoves and View come from the active phase with reasons; host and debug handling keep working; a Step test and internal/wire E2E-003 drive lobby to End on fakes without skipping; walk tests and archtest stay green.
-  status: claimed luna
+  status: committed 4e07943
 
 - [ ] ENG-016 · creation legal moves reflect built and locked seats
   why: After roll_hero a seat still lists species and gender as legal, and after ready it still lists species, gender, and ready; the phone would offer moves the engine rejects.
