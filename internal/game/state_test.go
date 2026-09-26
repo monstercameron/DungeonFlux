@@ -68,6 +68,7 @@ func startCreation(t *testing.T, state *State, seat domain.SeatID) {
 	for _, event := range []domain.Event{
 		domain.Act{Seat: seat, Move: vocab.MoveSpecies, Arg: "human"},
 		domain.Act{Seat: seat, Move: vocab.MoveGender, Arg: "female"},
+		domain.Act{Seat: seat, Move: vocab.MoveClass, Arg: "paladin"},
 		domain.Act{Seat: seat, Move: vocab.MoveRollHero},
 	} {
 		if out := state.Step(domain.Envelope{Event: event}); out.Ack != nil && !out.Ack.Accepted {
@@ -223,10 +224,12 @@ func TestStateStep_DelegatesCreationAndStoryToEnd(t *testing.T) {
 		domain.HostCmd{Cmd: vocab.HostStart},
 		domain.Act{Seat: 1, Move: vocab.MoveSpecies, Arg: "human"},
 		domain.Act{Seat: 1, Move: vocab.MoveGender, Arg: "nonbinary"},
+		domain.Act{Seat: 1, Move: vocab.MoveClass, Arg: "paladin"},
 		domain.Act{Seat: 1, Move: vocab.MoveRollHero},
 		domain.Act{Seat: 1, Move: vocab.MoveReady},
 		domain.Act{Seat: 2, Move: vocab.MoveSpecies, Arg: "elf"},
 		domain.Act{Seat: 2, Move: vocab.MoveGender, Arg: "female"},
+		domain.Act{Seat: 2, Move: vocab.MoveClass, Arg: "rogue"},
 		domain.Act{Seat: 2, Move: vocab.MoveRollHero},
 		domain.Act{Seat: 2, Move: vocab.MoveReady},
 		domain.LineDone{UtteranceID: "opening"},
@@ -239,7 +242,7 @@ func TestStateStep_DelegatesCreationAndStoryToEnd(t *testing.T) {
 		domain.HostCmd{Cmd: vocab.HostSkip},
 		domain.LineDone{UtteranceID: "cliffhanger"},
 	}
-	want := []vocab.StateID{vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateOpening, vocab.StateExploration, vocab.StateConversation, vocab.StateCheck, vocab.StateResolution, vocab.StateExploration, vocab.StateHookEvent, vocab.StateCombat, vocab.StateCliffhanger, vocab.StateEnd}
+	want := []vocab.StateID{vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateOpening, vocab.StateExploration, vocab.StateConversation, vocab.StateCheck, vocab.StateResolution, vocab.StateExploration, vocab.StateHookEvent, vocab.StateCombat, vocab.StateCliffhanger, vocab.StateEnd}
 	for index, event := range steps {
 		s.Step(domain.Envelope{Event: event})
 		if got := s.View().Path; got != want[index] {
