@@ -15,9 +15,23 @@ import (
 // HostServer handles authenticated host controls for the configured room.
 type HostServer struct {
 	df.UnimplementedHostServiceServer
-	inbox     ports.Inbox
-	engine    ports.Engine
-	hostToken string
+	inbox       ports.Inbox
+	engine      ports.Engine
+	hostToken   string
+	roomLocales RoomLocales
+}
+
+// RoomLocales applies room-default locale changes from host commands.
+type RoomLocales interface {
+	SetRoomLocale(locale string) string
+}
+
+// SetRoomLocales attaches the room-locale sink used by room-locale commands.
+func (s *HostServer) SetRoomLocales(sink RoomLocales) {
+	if s == nil {
+		return
+	}
+	s.roomLocales = sink
 }
 
 // NewHostServer creates a host command service backed by the room inbox.
@@ -52,6 +66,13 @@ func (s *HostServer) Command(ctx context.Context, request *df.HostCommand) (*df.
 	if request.GetHostToken() == "" || request.GetHostToken() != s.hostToken {
 		return nil, status.Error(codes.PermissionDenied, "host token is invalid")
 	}
+	if request.GetCommand() == df.HostCommandKind_HOST_COMMAND_KIND_ROOM_LOCALE {
+		tag := settleHostLocale(request.GetLocale())
+		if s.roomLocales != nil {
+			tag = s.roomLocales.SetRoomLocale(tag)
+		}
+		return &df.HostAck{Ok: true}, nil
+	}
 	command, ok := hostCommand(request.GetCommand())
 	if !ok {
 		return nil, status.Error(codes.InvalidArgument, "host command is unsupported")
@@ -76,6 +97,24 @@ func (s *HostServer) post(ctx context.Context, event domain.HostCmd) (domain.Ack
 		return domain.Ack{}, status.Error(codes.ResourceExhausted, "room inbox is full")
 	}
 	return domain.Ack{Accepted: true}, nil
+}
+
+func settleHostLocale(requested string) string {
+	tag := ""
+	for i := 0; i < len(requested); i++ {
+		c := requested[i]
+		if c == '-' || c == '_' || c == ' ' {
+			break
+		}
+		if c >= 'A' && c <= 'Z' {
+			c += 'a' - 'A'
+		}
+		tag += string([]byte{c})
+	}
+	if tag == "en" || tag == "es" {
+		return tag
+	}
+	return "en"
 }
 
 func hostCommand(command df.HostCommandKind) (vocab.HostCmd, bool) {

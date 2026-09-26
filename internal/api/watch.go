@@ -11,10 +11,11 @@ import (
 // WatchHub distributes complete projected snapshots to connected clients.
 // Each subscriber has one sender goroutine and a one-item latest-value queue.
 type WatchHub struct {
-	mu    sync.Mutex
-	next  uint64
-	subs  map[uint64]*watchSubscriber
-	kinds map[domain.SeatID]df.ClientKind
+	mu      sync.Mutex
+	next    uint64
+	subs    map[uint64]*watchSubscriber
+	kinds   map[domain.SeatID]df.ClientKind
+	locales map[domain.SeatID]string
 }
 
 type watchSubscriber struct {
@@ -30,7 +31,31 @@ type watchSubscriber struct {
 
 // NewWatchHub creates an empty snapshot hub.
 func NewWatchHub() *WatchHub {
-	return &WatchHub{subs: make(map[uint64]*watchSubscriber), kinds: make(map[domain.SeatID]df.ClientKind)}
+	return &WatchHub{subs: make(map[uint64]*watchSubscriber), kinds: make(map[domain.SeatID]df.ClientKind), locales: make(map[domain.SeatID]string)}
+}
+
+// RememberLocale records the settled locale for a seat. Views published
+// afterwards are projected in that locale for the seat's subscribers.
+func (h *WatchHub) RememberLocale(seat domain.SeatID, locale string) {
+	tag := locale
+	if tag == "" {
+		tag = "en"
+	}
+	h.mu.Lock()
+	if h.locales == nil {
+		h.locales = make(map[domain.SeatID]string)
+	}
+	h.locales[seat] = tag
+	h.mu.Unlock()
+}
+
+func (h *WatchHub) localeFor(seat domain.SeatID) string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if tag, ok := h.locales[seat]; ok && tag != "" {
+		return tag
+	}
+	return "en"
 }
 
 // RememberKind records the authenticated kind associated with a seat. A
@@ -108,7 +133,7 @@ func (s *watchSubscriber) send(ctx context.Context) {
 			if !ok {
 				return
 			}
-			message := &df.WatchMessage{Message: &df.WatchMessage_State{State: Project(view, s.kind, s.seat)}}
+			message := &df.WatchMessage{Message: &df.WatchMessage_State{State: ProjectLocalized(view, s.kind, s.seat, s.hub.localeFor(s.seat))}}
 			select {
 			case s.output <- message:
 			default:

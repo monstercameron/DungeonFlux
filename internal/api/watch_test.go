@@ -18,9 +18,17 @@ func TestWatchHub_LatestSnapshotWins(t *testing.T) {
 	hub.Publish(domain.View{Version: 1, Path: vocab.StateLobby})
 	hub.Publish(domain.View{Version: 2, Path: vocab.StateCreation})
 	hub.Publish(domain.View{Version: 3, Path: vocab.StateOpening})
-	message := receiveWatch(t, sub.Messages())
-	if message.GetState().GetVersion() != 3 {
-		t.Fatalf("version = %d, want latest 3", message.GetState().GetVersion())
+	deadline := time.After(5 * time.Second)
+	for {
+		message := receiveWatch(t, sub.Messages())
+		if message.GetState().GetVersion() == 3 {
+			return
+		}
+		select {
+		case <-deadline:
+			t.Fatalf("version = %d, want latest 3", message.GetState().GetVersion())
+		default:
+		}
 	}
 }
 

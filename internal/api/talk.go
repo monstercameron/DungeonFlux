@@ -20,6 +20,7 @@ type TalkSession struct {
 	Seat        domain.SeatID
 	UtteranceID domain.UtteranceID
 	MIME        string
+	Locale      string
 }
 
 // TalkChunk is one immutable recorded-media chunk from a Talk stream.
@@ -80,7 +81,7 @@ func (s *TalkServer) Talk(stream df.VoiceService_TalkServer) error {
 	if !ok {
 		return status.Error(codes.PermissionDenied, "seat token is invalid")
 	}
-	session := TalkSession{Seat: seat.id, UtteranceID: newUtteranceID(), MIME: start.GetMimeType()}
+	session := TalkSession{Seat: seat.id, UtteranceID: newUtteranceID(), MIME: start.GetMimeType(), Locale: s.session.LocaleFor(start.GetSeatToken())}
 	if err := s.sink.Start(stream.Context(), session); err != nil {
 		return talkSinkError(err)
 	}
