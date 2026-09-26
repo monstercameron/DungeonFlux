@@ -70,7 +70,16 @@ func (a *PhoneAudio) installTapListener() {
 	}
 	a.tapInstalled = true
 	callback := js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
-		if len(args) == 0 || a.player == nil {
+		if len(args) == 0 {
+			return nil
+		}
+		// Any tap is a user gesture, so it may start Web Audio. Waiting for the
+		// small "Enable sound" pill meant players never heard their tap, join,
+		// ready or dice sounds (or their seat's voice and SFX stream).
+		if a.player == nil && a.service != nil {
+			_ = a.UnlockAudio(context.Background())
+		}
+		if a.player == nil {
 			return nil
 		}
 		target := args[0]
