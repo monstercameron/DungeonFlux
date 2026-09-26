@@ -291,6 +291,12 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   done when: phase packages may import nested, steer, content, and rules; nested, steer, and rules are checked as pure; time unit constants are allowed; archtest green.
   status: done a702cd0
 
+- [ ] BASE-015 · archtest lets the composition roots import adapters and fakes
+  why: BASE-011 wiring failed archtest because internal/wire and cmd/server were limited to the default import list, which omits internal/adapters and internal/fakes; composition roots must be able to import every module package.
+  lane: ORCH · block: 5–8 · paths: `internal/archtest/**` · depends: BASE-014
+  done when: internal/wire and cmd/server may import any module package except archtest; runtime and other packages still may not import adapters; archtest green.
+  status: committed 25b960e
+
 - [x] BASE-007 · internal/wire skeleton and cmd/server skeleton
   why: The server binary must start from hour 1 with fakes, flags (-config, -port, -data-dir, -seed), and graceful shutdown.
   lane: ORCH · block: 1–5 · paths: `internal/wire/**`, `cmd/server/**` · depends: BASE-002, BASE-005
@@ -319,7 +325,7 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   why: Effects need executors (voice out/in, llmexec, media) bound to fake or live adapters, model chains, and the budget, chosen by config with keys from env vars.
   lane: ORCH · block: 5–8 · paths: `internal/wire/exec*.go`, `internal/wire/adapters*.go`, `internal/wire/wire.go` · depends: BASE-010, VOUT-003, VIN-003, LLM-009, MEDIA-007, LLM-007
   done when: with config/fake.json every effect kind the engine emits has a registered executor (test enumerates vocab effect kinds); live config builds adapters only when keys exist, else fails fast naming the missing env var.
-  status: claimed luna (retry after RT-009 efc65c8)
+  status: committed 3a0494a
 
 - [ ] BASE-012 · lobby QR code and room code at start-up
   why: Phones join by scanning a QR on the DM screen, so start-up writes the join URL QR PNG as an asset and prints the room code.
@@ -701,7 +707,7 @@ Deterministic virtual-time simulation of whole runs.
   why: The whole demo must walk from lobby to end, including combat outcomes, in sim.
   lane: L-ENG · block: 11–14 · paths: `internal/sim/walk/full/**` · depends: COMBAT-008
   done when: Combat paths 26–34, 37 pass in sim at hour 14.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 1ae061e
 
 ## 11. Storage
 
@@ -1313,7 +1319,7 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   why: Nav authoring (OPS-007) and fps checks need the splat, grid, presets, and pick mode on a page without running the whole game.
   lane: L-WEB-SPLAT · block: 8–11 · paths: `web/splat/js/viewer*.html`, `web/splat/js/viewer*.mjs` · depends: SPLAT-003, SPLAT-005, SPLAT-006
   done when: opening the viewer with ?src=<.ply or .sog>&debug loads the splat, shows the 8×6 grid and camera presets, logs p5 fps, and exports picked cells as JSON.
-  status: claimed developer-codex
+  status: committed c0a4c8a
 
 ## 23. dfctl debug CLI
 
@@ -1453,7 +1459,7 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   why: The developer ruled that only .ply and .sog files matter; OPS-006 requests SPZ from Marble and OPS-017 converts SPZ to PLY, which is surface the demo does not need.
   lane: L-OPS · block: 1–5 · paths: `scripts/buildtime/splat*.go`, `scripts/buildtime/spz/**` · depends: OPS-006
   done when: the Marble job requests and downloads .ply (and .sog when the API offers it) directly; SPZ request flags, SPZ URL fields, and scripts/buildtime/spz are removed; the manifest records only .ply/.sog assets with metric_scale_factor and ground_plane_offset; 100k decimation, if needed, operates on PLY.
-  status: claimed luna
+  status: committed 0b2fb50
 
 ## 25. Test server, gates, and checkpoints
 
