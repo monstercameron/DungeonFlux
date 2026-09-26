@@ -52,7 +52,9 @@ func TestArchitecture_ImportRules(t *testing.T) {
 		{"phase child rejects sibling", "internal/game/phase/check", modulePath + "internal/game/phase/opening", false},
 		{"adapter rejects runtime", "internal/adapters/image/openai", modulePath + "internal/runtime", false},
 		{"web phone allows js", "web/phone", "syscall/js", true},
-		{"web host rejects js", "web/host", "syscall/js", false},
+		{"web host allows js", "web/host", "syscall/js", true},
+		{"web dm uses shell audio", "web/dm", "github.com/monstercameron/DungeonFlux/web/shell/audio", true},
+		{"web phone rejects runtime", "web/phone", "github.com/monstercameron/DungeonFlux/internal/runtime", false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -159,7 +161,7 @@ func checkFile(file sourceFile) []violation {
 			out = append(out, violation{file.path, 0, fmt.Sprintf("package %s may not import %s", file.packagePath, path)})
 		}
 		if path == "syscall/js" && !jsAllowed(file.packagePath) {
-			out = append(out, violation{file.path, 0, "syscall/js is allowed only in web/splat, web/shell, web/dm, and web/phone"})
+			out = append(out, violation{file.path, 0, "syscall/js is allowed only in web/splat, web/shell, web/dm, web/phone, and web/host"})
 		}
 		if path == "log" && !isCommandOrTest(file.path) {
 			out = append(out, violation{file.path, 0, "stdlib log is forbidden outside cmd and tests"})
@@ -251,6 +253,8 @@ func allowedInternal(packagePath string) []string {
 		return []string{"internal/ports", "internal/domain", "internal/vocab", "internal/clock", "internal/httpx"}
 	case packagePath == "internal/config":
 		return nil
+	case strings.HasPrefix(packagePath, "web/"):
+		return []string{"gen", "internal/domain", "internal/vocab", "web/shell", "web/splat"}
 	default:
 		return []string{"internal/vocab", "internal/domain", "internal/ports", "internal/clock", "internal/config", "internal/wire", "internal/logx", "internal/httpx", "internal/runtime", "internal/content", "internal/game", "internal/core/fsm", "internal/api", "internal/media", "internal/modelchain", "internal/budget", "internal/llmexec", "internal/voice", "internal/store", "internal/replay", "gen", "scripts"}
 	}
@@ -277,7 +281,7 @@ func knownPurityException(path, selector string) bool {
 }
 
 func jsAllowed(path string) bool {
-	return path == "web/splat" || path == "web/shell" || path == "web/dm" || path == "web/phone" || strings.HasPrefix(path, "web/shell/") || strings.HasPrefix(path, "web/dm/") || strings.HasPrefix(path, "web/phone/") || strings.HasPrefix(path, "scripts/")
+	return path == "web/splat" || path == "web/shell" || path == "web/dm" || path == "web/phone" || path == "web/host" || strings.HasPrefix(path, "web/shell/") || strings.HasPrefix(path, "web/dm/") || strings.HasPrefix(path, "web/phone/") || strings.HasPrefix(path, "web/host/") || strings.HasPrefix(path, "scripts/")
 }
 
 func isCommandOrTest(path string) bool {
