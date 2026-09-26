@@ -519,6 +519,12 @@ The fixed one-shot: NPCs, beats, prompts, schemas, canned lines, the tavern nav 
   done when: class has label_key and reason keys in en and es; go test ./internal/sim/... ./internal/wire passes; I18N-011 parity passes.
   status: committed 76b633a
 
+- [ ] CONT-013 · audio logical names match the generated build-time audio
+  why: The server logs build-time asset missing for music_theme_drowned_lantern, music_combat_thrall, canned_slain_by_seat1 and others: content and cue names differ from the names the OPS-022..026 jobs registered (THEME_MAIN, COMBAT_SKIRMISH_LOOP, ...), so no music or canned audio plays.
+  lane: L-CONTENT · block: 11–14 · paths: `internal/content/**`, `scripts/buildtime/register*.go` · depends: OPS-026, ENG-024
+  done when: every audio name the content and cues reference resolves in artifacts/runtime/buildtime/manifest.json (aliases allowed); a test fails on unresolved names; start-up logs no missing-audio warnings for generated cues.
+  status: claimed luna
+
 ## 7. Engine: root, phase dispatcher, and nested flows
 
 The pure deterministic engine `Step(state, envelope) → effects`. The top table is thin; each phase is its own package so lanes can build phases in parallel.
