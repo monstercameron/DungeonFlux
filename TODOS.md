@@ -1263,6 +1263,12 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   done when: /dm?preview=<name> and /p?preview=<name> render the screen from a named fixture supplied by web/dm and web/phone preview registries (DM-009, PHONE-010); /preview lists every fixture as links; no gRPC connection is made in preview mode.
   status: claimed luna
 
+- [ ] WEB-013 · Phone join screen: room code entry, QR deep link, name, errors
+  why: Joining must work first try from a QR scan or typed code, with clear errors for wrong codes and a full room.
+  lane: L-WEB-SHELL · block: 8–11 · paths: `web/shell/join*.go` · depends: WEB-012, WEB-011, WEB-012
+  done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
+  status: claimed luna
+
 ## 19. Phone
 
 The player's controller: character creation, sheet, legal moves, push-to-talk, combat taps.
@@ -1327,6 +1333,48 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   done when: an exported registry of named SeatView fixtures covers join, species/gender pick, rolled build card, sheet, legal moves with greyed reasons, push-to-talk idle/recording/sending, typed input, dice offered/rolled, combat my-turn/waiting, down, end; each renders through the real phone screen; native tests validate fixtures.
   status: claimed luna
 
+- [ ] PHONE-011 · Phone creation: species and gender pickers, roll, build card
+  why: Character creation is the first phone interaction and must be fast and delightful on a 390 px screen.
+  lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/create*.go` · depends: PHONE-010, WEB-011, WEB-012
+  done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
+  status: claimed luna
+
+- [ ] PHONE-012 · Phone sheet: portrait, stats, HP, conditions
+  why: The phone is the player sheet; it must be glanceable and readable.
+  lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/sheet*.go` · depends: PHONE-011, WEB-011, WEB-012
+  done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
+  status: claimed luna
+
+- [ ] PHONE-013 · Phone legal moves: big buttons, greyed with reasons
+  why: Players never ask what they can do; moves must be large, clear, and explain why some are unavailable.
+  lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/moves*.go` · depends: PHONE-012, WEB-011, WEB-012
+  done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
+  status: claimed luna
+
+- [ ] PHONE-014 · Phone talk: hold-to-talk button states and typed fallback
+  why: Talking to NPCs is the core loop; the PTT button needs clear idle/recording/sending/error states and a typed fallback that works over plain HTTP.
+  lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/ptt*.go`, `web/phone/typed*.go` · depends: PHONE-013, WEB-011, WEB-012
+  done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
+  status: claimed luna
+
+- [ ] PHONE-015 · Phone dice: offered, roll tap, result
+  why: The persuasion roll from the phone must feel physical and show the outcome.
+  lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/dice*.go` · depends: PHONE-014, WEB-011, WEB-012
+  done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
+  status: claimed luna
+
+- [ ] PHONE-016 · Phone combat: my-turn controls, targets, timer, waiting state
+  why: In combat the phone must make the player's turn obvious and the actions one tap away.
+  lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/combat*.go` · depends: PHONE-015, WEB-011, WEB-012
+  done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
+  status: claimed luna
+
+- [ ] PHONE-017 · Phone frame: layout, theme tokens, screen transitions, connection status
+  why: One consistent phone frame (header with name and connection state, bottom action area, tokens, transitions) ties the screens together.
+  lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/screen*.go`, `web/phone/theme*.go`, `web/phone/text*.go` · depends: PHONE-016, WEB-011, WEB-012
+  done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
+  status: claimed luna
+
 ## 20. DM screen
 
 The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
@@ -1385,6 +1433,48 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   done when: an exported registry of named domain View / ScreenState fixtures covers lobby (QR, seats), creation, opening, exploration, conversation (speaking NPC), check (dice rolling and result), resolution, hook, combat FLAT (grid, tokens, turn timer), cliffhanger, end card; each renders through the real DM screen; native tests validate fixtures.
   status: claimed luna
 
+- [ ] DM-010 · DM lobby: title, room code, QR, join URL, seat cards
+  why: The TV lobby is the first thing players see; it must show the room code, a large scannable QR, the join URL, and live seat cards as phones join.
+  lane: L-WEB-DM · block: 8–11 · paths: `web/dm/lobby*.go` · depends: DM-009, WEB-011, WEB-012
+  done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
+  status: claimed luna
+
+- [ ] DM-011 · DM scene: still, lower-third narration captions, speaking NPC
+  why: Most of the demo is a scene with narration and NPC speech; captions must be large, paced, and show who speaks.
+  lane: L-WEB-DM · block: 8–11 · paths: `web/dm/scene*.go`, `web/dm/text*.go` · depends: DM-010, WEB-011, WEB-012
+  done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
+  status: claimed luna
+
+- [ ] DM-012 · DM check: persuasion callout, dice roll animation, result banner
+  why: The dice moment is the demo climax on the TV; roll, DC, modifiers, and success/fail must read instantly.
+  lane: L-WEB-DM · block: 8–11 · paths: `web/dm/dice*.go`, `web/dm/callout*.go` · depends: DM-011, WEB-011, WEB-012
+  done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
+  status: claimed luna
+
+- [ ] DM-013 · DM combat FLAT: grid, tokens, HP, initiative, turn timer
+  why: When the splat is off, combat must still read clearly on the TV: whose turn, HP, positions, timer.
+  lane: L-WEB-DM · block: 8–11 · paths: `web/dm/combat*.go` · depends: DM-012, WEB-011, WEB-012
+  done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
+  status: claimed luna
+
+- [ ] DM-014 · DM cliffhanger and end card with attribution
+  why: The demo ends here; it must land with a strong cliffhanger still, caption, and the SRD attribution end card.
+  lane: L-WEB-DM · block: 8–11 · paths: `web/dm/end*.go` · depends: DM-013, WEB-011, WEB-012
+  done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
+  status: claimed luna
+
+- [ ] DM-015 · DM clip playback and music indicator
+  why: Clips must play full-frame with a still fallback, and music state should be subtly visible for the operator.
+  lane: L-WEB-DM · block: 8–11 · paths: `web/dm/clip*.go`, `web/dm/music*.go` · depends: DM-014, WEB-011, WEB-012
+  done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
+  status: claimed luna
+
+- [ ] DM-016 · DM screen frame: layout, theme tokens, phase transitions
+  why: One consistent frame (safe areas, fonts, color tokens, transitions between layers) makes every DM state look like one game.
+  lane: L-WEB-DM · block: 8–11 · paths: `web/dm/screen*.go`, `web/dm/theme*.go` · depends: DM-015, WEB-011, WEB-012
+  done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
+  status: claimed luna
+
 ## 21. Host
 
 The operator page: Start, Pause, Skip, Reset, Force d20, and debug panel.
@@ -1400,6 +1490,12 @@ The operator page: Start, Pause, Skip, Reset, Force d20, and debug panel.
   lane: L-WEB-HOST · block: 14–17 · paths: `web/host/**` · depends: HOST-001
   done when: Shows HostView and log_tail; flags toggle.; gate green (≥ 70% coverage where applicable)
   status: committed 4fde439
+
+- [ ] HOST-003 · Host page usability: big controls, run status, tester links
+  why: The operator needs Start/Pause/Skip/Reset/Force d20 as big safe buttons, run status, and copyable DM/phone links for testers.
+  lane: L-WEB-HOST · block: 8–11 · paths: `web/host/**` · depends: HOST-002, WEB-011, WEB-012
+  done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
+  status: claimed luna
 
 ## 22. Splat battlefield
 
