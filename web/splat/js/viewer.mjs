@@ -1,5 +1,5 @@
 import * as pc from "../vendor/playcanvas.mjs";
-import { createGridOverlay } from "./grid_overlay.mjs";
+import { applyBattleTransform, createBattleGrid, createSplatEntity, loadBattleProfile, loadSplatBundle } from "./battle_scene.mjs";
 import { applyCameraPreset, cameraPresetNames } from "./grid_camera.mjs";
 import { cellsJSON, installDebugPickMode } from "./debug_pick.mjs";
 
@@ -16,13 +16,16 @@ const statusNode = document.querySelector("#status");
 const presetsNode = document.querySelector("#presets");
 const gridButton = document.querySelector("#grid-toggle");
 const exportButton = document.querySelector("#export-picks");
+const lodNode = document.querySelector("#lod-selector");
 
 let app;
 let camera;
 let gridEntity;
 let pickMode;
 let gridVisible = true;
+let baseStatus = "";
 function setStatus(message, kind = "info") {
+  baseStatus = message;
   statusNode.textContent = message;
   statusNode.dataset.kind = kind;
 }
@@ -62,24 +65,22 @@ function createViewerCamera() {
   applyCameraPreset(camera, "TACTICAL");
 }
 
-function addSplat(source) {
-  return new Promise((resolve, reject) => {
-    const asset = new pc.Asset("viewer-splat", "gsplat", { url: source });
-    asset.once("load", () => resolve(asset));
-    asset.once("error", (error) => reject(error instanceof Error ? error : new Error(String(error))));
-    app.assets.add(asset);
-    app.assets.load(asset);
-  });
-}
-
-function addPresetButtons() {
-  for (const name of cameraPresetNames()) {
+function addPresetButtons(profile = null) {
+  const names = [...new Set([...cameraPresetNames(), ...Object.keys(profile?.cameras ?? {})])];
+  for (const name of names) {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = name;
     button.dataset.preset = name;
     button.addEventListener("click", () => {
-      applyCameraPreset(camera, name);
+      const definition = profile?.cameras?.[name];
+      if (definition) {
+        const position = definition.position ?? [0, 7, 10];
+        const target = definition.target ?? definition.look_at ?? [0, 0, 0];
+        camera.setPosition(...position);
+        camera.lookAt(...target);
+        if (camera.camera) camera.camera.fov = Number(definition.fov ?? 35);
+      } else applyCameraPreset(camera, name);
       for (const item of presetsNode.children) item.setAttribute("aria-pressed", String(item === button));
     });
     presetsNode.append(button);
@@ -117,7 +118,7 @@ const fpsReporter = createFPSReporter({
   logger: (p5) => {
     console.log(`[splat viewer] p5 fps: ${p5.toFixed(1)}`);
     if (statusNode.dataset.kind !== "error") {
-      statusNode.textContent = `${statusNode.textContent.split("\n")[0]}\np5 fps: ${p5.toFixed(1)}`;
+      statusNode.textContent = `${baseStatus}\np5 fps: ${p5.toFixed(1)}`;
     }
   },
 });
@@ -136,38 +137,101 @@ function installControls() {
   exportButton.addEventListener("click", () => pickMode?.download());
 }
 
-async function start() {
-  const source = querySource();
-  if (!source) {
-    setStatus("Missing source. Open with ?src=scene.ply&debug.", "error");
-    return;
+function addLODOptions(profile, levelCount) {
+  if (!lodNode) return;
+  lodNode.replaceChildren();
+  const automatic = document.createElement("option");
+  automatic.value = "auto";
+  automatic.textContent = "Auto (stream)";
+  lodNode.append(automatic);
+  const last = Math.max(0, levelCount - 1);
+  const min = Math.max(0, Math.min(last, Number(profile?.lod_min ?? profile?.lod?.min ?? 0)));
+  const max = Math.max(min, Math.min(last, Number(profile?.lod_max ?? profile?.lod?.max ?? last)));
+  for (let level = min; level <= max; level += 1) {
+    const option = document.createElement("option");
+    option.value = String(level);
+    option.textContent = `LOD ${level}`;
+    lodNode.append(option);
   }
-  if (!/\.(?:ply|sog)(?:$|[?#])/i.test(source)) {
-    setStatus("Source must be a .ply or .sog asset.", "error");
-    return;
+  lodNode.disabled = max === min;
+  if (profile?.lod !== undefined) lodNode.value = String(Math.max(min, Math.min(max, Number(profile.lod))));
+}
+
+function applyLOD(level) {
+  if (!gridEntity?.splatEntity?.gsplat) return;
+  const profile = gridEntity.profile;
+  const min = Number(profile?.lod_min ?? profile?.lod?.min ?? 0);
+  const manifestMax = Math.max(0, Number(gridEntity.lodLevels || 1) - 1);
+  const max = Math.max(0, Number(profile?.lod_max ?? profile?.lod?.max ?? manifestMax));
+  const component = gridEntity.splatEntity.gsplat;
+  component.lodRangeMin = level === "auto" ? min : Number(level);
+  component.lodRangeMax = level === "auto" ? max : Number(level);
+  setStatus(`${gridEntity.sourceLabel}\nLOD manifest loaded; chunks stream on demand (resident chunks vary with the camera).`);
+}
+
+function setupViewer(profile) {
+  configureApp();
+  createViewerCamera();
+  addPresetButtons(profile);
+  const initialCamera = profile?.cameras?.TACTICAL;
+  if (initialCamera) {
+    camera.setPosition(...(initialCamera.position ?? [0, 7, 10]));
+    camera.lookAt(...(initialCamera.target ?? initialCamera.look_at ?? [0, 0, 0]));
+    if (camera.camera) camera.camera.fov = Number(initialCamera.fov ?? 35);
   }
-  setStatus(`Loading ${source}\n8×6 grid ready; debug picks: ${new URLSearchParams(window.location.search).has("debug") ? "on" : "off"}`);
-  try {
-    configureApp();
-    createViewerCamera();
-    addPresetButtons();
-    installControls();
-    app.on("postrender", recordFPS);
-    app.start();
-    const asset = await addSplat(source);
-    const scene = new pc.Entity("df-viewer-splat");
-    scene.addComponent("gsplat", { asset, layers: [WORLD_LAYER] });
-    app.root.addChild(scene);
-    gridEntity = createGridOverlay(pc, app, GRID, { layers: [WORLD_LAYER], name: "df-viewer-grid" });
+  installControls();
+  lodNode?.addEventListener("change", () => applyLOD(lodNode.value));
+  app.on("postrender", recordFPS);
+  app.start();
+}
+
+function profileSourceLabel(profile, source) {
+  const sourceInfo = profile?.source;
+  if (!sourceInfo) return `Loaded ${source}`;
+  const details = [sourceInfo.title, sourceInfo.author, sourceInfo.license].filter(Boolean).join(" · ");
+  return details ? `Loaded ${source}\n${details}` : `Loaded ${source}`;
+}
+
+async function attachViewer(profile, source, bundle) {
+    const levels = Math.max(1, Number(bundle.asset.resource?.octree?.lodLevels ?? 1));
+    addLODOptions(profile, levels);
+    const defaultLOD = profile?.lod === undefined ? 0 : Math.max(0, Math.min(levels - 1, Number(profile.lod)));
+    const scene = createSplatEntity(pc, app, bundle, { layers: [WORLD_LAYER], lodRangeMin: defaultLOD, lodRangeMax: defaultLOD, name: "df-viewer-splat" });
+    const battleGrid = createBattleGrid(pc, app, profile?.grid ?? GRID, { name: "df-viewer-grid", lineWidth: 0.04, opacity: 0.85 });
+    gridEntity = battleGrid.entity;
+    gridEntity.lodLevels = Number(bundle.asset.resource?.octree?.lodLevels ?? 0);
+    if (profile?.transform) {
+      applyBattleTransform(scene, profile.transform);
+    }
+    if (battleGrid.layer?.id !== undefined && !camera.camera.layers.includes(battleGrid.layer.id)) camera.camera.layers = [...camera.camera.layers, battleGrid.layer.id];
+    gridEntity.splatEntity = scene;
+    gridEntity.profile = profile;
+    gridEntity.sourceLabel = profileSourceLabel(profile, source);
     pickMode = installDebugPickMode({
       camera: camera.camera,
       canvas,
-      grid: GRID,
+      grid: profile?.grid ?? GRID,
       onPick: ({ c, r, selected, walkable }) => {
-        setStatus(`Loaded ${source}\n8×6 grid · picked (${c}, ${r}) ${selected ? "on" : "off"}\n${cellsJSON(walkable)}`);
+        setStatus(`${gridEntity.sourceLabel}\n8×6 grid · picked (${c}, ${r}) ${selected ? "on" : "off"}\n${cellsJSON(walkable)}`);
       },
     });
-    setStatus(`Loaded ${source}\n8×6 grid · ${pickMode.enabled ? "debug picking enabled" : "add &debug to pick cells"}`);
+    setStatus(`${gridEntity.sourceLabel}\n8×6 grid · ${pickMode.enabled ? "debug picking enabled" : "add &debug to pick cells"}${bundle.streaming ? "\nLOD manifest loaded; chunks stream on demand." : ""}`);
+}
+
+async function start() {
+  let profile;
+  try { profile = await loadBattleProfile(window.location.search, window.location.href); }
+  catch (error) { setStatus(error?.message ?? String(error), "error"); return; }
+  const source = profile?.scene_url ?? querySource();
+  if (!source) { setStatus("Missing source. Open with ?src=scene.ply or ?battle={...}.", "error"); return; }
+  if (!/(?:\.(?:ply|sog)|\/(?:meta|lod-meta)\.json)(?:$|[?#])/i.test(source)) {
+    setStatus("Source must be a .ply or .sog asset (or an LOD manifest).", "error"); return;
+  }
+  setStatus(`Loading ${source}\n8×6 grid ready; debug picks: ${new URLSearchParams(window.location.search).has("debug") ? "on" : "off"}`);
+  try {
+    setupViewer(profile);
+    const bundle = await loadSplatBundle(pc, app, profile ?? source, { lodMetaURL: profile?.lod_meta_url, metaURL: profile?.meta_url });
+    await attachViewer(profile, source, bundle);
   } catch (error) {
     setStatus(`Splat load failed: ${error?.message ?? error}`, "error");
     console.error("[splat viewer] load failed", error);

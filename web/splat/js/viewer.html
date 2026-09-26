@@ -21,6 +21,7 @@
     #status { margin: 0 10px; padding: 7px 10px; color: #b7c8dc; white-space: pre-wrap; }
     #status[data-kind="error"] { color: #ffaaa8; border-color: #a24e5b; }
     .label { color: #7f9bb7; margin-right: 3px; }
+    select { border: 1px solid #526981; border-radius: 5px; padding: 6px 9px; color: #eaf2ff; background: #162538; font: inherit; }
     .spacer { flex: 1 1 10px; }
   </style>
 </head>
@@ -30,6 +31,10 @@
     <div id="toolbar">
       <span class="label">Camera</span>
       <span id="presets"></span>
+      <label class="label" for="lod-selector">LOD</label>
+      <select id="lod-selector" aria-label="Splat level of detail" disabled>
+        <option value="auto">Auto (stream)</option>
+      </select>
       <span class="spacer"></span>
       <button id="grid-toggle" type="button" aria-pressed="true">Grid</button>
       <button id="export-picks" type="button">Export picks</button>

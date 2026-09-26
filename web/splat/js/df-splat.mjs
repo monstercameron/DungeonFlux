@@ -1,4 +1,5 @@
 import * as pc from "../vendor/playcanvas.mjs";
+import { createBattleGrid, createSplatEntity, loadSplatBundle } from "./battle_scene.mjs";
 
 const VERSION = 1;
 const WORLD_LAYER = pc.LAYERID_WORLD;
@@ -94,7 +95,8 @@ function applyTransform(entity, transform = {}) {
     Number(translate[1]) + offsetY,
     Number(translate[2]),
   );
-  entity.setLocalEulerAngles(0, rotation, 0);
+  const current = entity.getLocalEulerAngles?.() ?? { z: 0 };
+  entity.setLocalEulerAngles(0, rotation, Number(current.z ?? 0));
 }
 
 function applyCameraDefinition(camera, definition = DEFAULT_CAMERA) {
@@ -111,23 +113,14 @@ function getCameraDefinition(cameras, preset) {
   return cameras?.[preset] ?? cameras?.TACTICAL ?? DEFAULT_CAMERA;
 }
 
-function addSplatAsset(app, url, name) {
-  return new Promise((resolve, reject) => {
-    const asset = new pc.Asset(name, "gsplat", { url });
-    const fail = (error) => {
-      app.assets.remove(asset);
-      reject(error instanceof Error ? error : new Error(String(error ?? "load failed")));
-    };
-    asset.once("load", () => resolve(asset));
-    asset.once("error", fail);
-    app.assets.add(asset);
-    app.assets.load(asset);
-  });
-}
-
 function splatCount(asset) {
   const data = asset?.resource?.gsplatData ?? asset?.resource;
   return Number(data?.numSplats ?? data?.numPoints ?? data?.count ?? 0);
+}
+
+function releaseAsset(app, asset) {
+  if (!asset) return;
+  try { app?.assets?.remove?.(asset); } finally { asset.unload?.(); }
 }
 
 function percentile(values, fraction) {
@@ -138,6 +131,13 @@ function percentile(values, fraction) {
 
 function recordFrame(runtimeState) {
   const now = performance.now();
+  if (document.hidden) {
+    runtimeState.lastFrameAt = now;
+    runtimeState.lastStatsAt = now;
+    runtimeState.fpsSamples = [];
+    runtimeState.lowFpsSince = 0;
+    return;
+  }
   if (runtimeState.lastFrameAt > 0) {
     const elapsed = now - runtimeState.lastFrameAt;
     if (elapsed > 0) runtimeState.fpsSamples.push(1000 / elapsed);
@@ -154,15 +154,6 @@ function recordFrame(runtimeState) {
   } else {
     runtimeState.lowFpsSince = 0;
   }
-}
-
-async function loadSplat(app, url, transform) {
-  const asset = await addSplatAsset(app, url, "df-splat-scene");
-  const entity = new pc.Entity("df-splat-scene");
-  entity.addComponent("gsplat", { asset, layers: [WORLD_LAYER] });
-  applyTransform(entity, transform);
-  app.root.addChild(entity);
-  return { asset, entity };
 }
 
 function setVisible(canvas, visible) {
@@ -190,10 +181,42 @@ function dispose() {
   if (!runtime) return;
   const old = runtime;
   runtime = null;
+  old.destroyed = true;
   old.canvas.style.opacity = "0";
   old.canvas.replaceWith(old.canvas.cloneNode(true));
   old.app.destroy();
   emit({ type: "disposed" });
+}
+
+function createRuntimeState(app, camera, message) {
+  return {
+    app, camera, canvas: null, cameras: message.cameras ?? {},
+    sceneSequence: 0, paused: false, cameraPreset: "TACTICAL", liteURL: message.lite_url,
+    liteTried: false, lowFpsReported: false, replacing: false, transform: message.transform,
+    lastFrameAt: 0, lastStatsAt: performance.now(), lowFpsSince: 0, fpsSamples: [], destroyed: false,
+  };
+}
+
+function attachScene(state, message, bundle) {
+  const { app, camera } = state;
+  const entity = createSplatEntity(pc, app, bundle, {
+    layers: [WORLD_LAYER], lodRangeMin: Number(message.lod_range_min ?? 0),
+    lodRangeMax: Number(message.lod_range_max ?? 99), name: "df-splat-scene",
+  });
+  applyTransform(entity, message.transform);
+  let grid = null;
+  if (message.grid) {
+    grid = createBattleGrid(pc, app, message.grid, {
+      name: "df-battle-grid", lineWidth: 0.04, opacity: 0.85,
+    });
+    if (grid.layer?.id !== undefined && !camera.camera.layers.includes(grid.layer.id)) {
+      camera.camera.layers = [...camera.camera.layers, grid.layer.id];
+    }
+  }
+  state.splat = { asset: bundle.asset, entity };
+  state.grid = grid;
+  state.streaming = bundle.streaming;
+  applyCamera(state, { preset: "TACTICAL" });
 }
 
 async function initialize(message) {
@@ -203,48 +226,50 @@ async function initialize(message) {
     return;
   }
   let canvas;
+  let state = null;
   try {
     canvas = resolveCanvas(message.canvas_id);
     configureCanvas(canvas);
     const app = createApplication(canvas);
     const camera = createCamera(app, getCameraDefinition(message.cameras, "TACTICAL"));
-    runtime = {
-      app,
-      canvas,
-      camera,
-      cameras: message.cameras ?? {},
-      sceneSequence: 0,
-      paused: false,
-      cameraPreset: "TACTICAL",
-      liteURL: message.lite_url,
-      liteTried: false,
-      lowFpsReported: false,
-      replacing: false,
-      transform: message.transform,
-      lastFrameAt: 0,
-      lastStatsAt: performance.now(),
-      lowFpsSince: 0,
-      fpsSamples: [],
-    };
+    state = createRuntimeState(app, camera, message);
+    state.canvas = canvas;
+    runtime = state;
     app.on("error", (detail) => errorMessage("CONTEXT_LOST", detail));
     app.on("postrender", () => {
       if (runtime?.app === app) recordFrame(runtime);
     });
     app.start();
-    const scene = await loadSplat(app, message.scene_url, message.transform);
-    if (runtime?.app !== app) return;
-    runtime.splat = scene;
-    applyCamera(runtime, { preset: "TACTICAL" });
+    const bundle = await loadSplatBundle(pc, app, message.scene_url, {
+      lodMetaURL: message.lod_meta_url,
+      metaURL: message.meta_url,
+    });
+    if (runtime !== state) {
+      if (!state.destroyed) {
+        state.destroyed = true;
+        app.destroy();
+      }
+      return;
+    }
+    attachScene(state, message, bundle);
     emit({
       type: "ready",
       fps: 0,
-      gaussians: splatCount(scene.asset),
+      gaussians: splatCount(bundle.asset),
       device: "webgl2",
+      streaming: bundle.streaming,
+      status: bundle.streaming ? "manifest loaded; chunks stream on demand" : "scene loaded",
     });
   } catch (error) {
-    if (runtime?.app) runtime.app.destroy();
-    runtime = null;
-    errorMessage(canvas ? "LOAD_FAILED" : "WEBGL_UNAVAILABLE", error);
+    const active = state && runtime === state;
+    if (active) {
+      runtime.app.destroy();
+      runtime = null;
+    } else if (state?.app && !state.destroyed) {
+      state.destroyed = true;
+      state.app.destroy();
+    }
+    if (active || !state) errorMessage(canvas ? "LOAD_FAILED" : "WEBGL_UNAVAILABLE", error);
   }
 }
 
@@ -258,14 +283,19 @@ async function downgradeForFps(runtimeState) {
   runtimeState.replacing = true;
   runtimeState.liteTried = true;
   try {
-    const replacement = await loadSplat(
-      runtimeState.app,
-      runtimeState.liteURL,
-      runtimeState.transform,
-    );
-    if (runtime !== runtimeState) return;
+    const bundle = await loadSplatBundle(pc, runtimeState.app, runtimeState.liteURL);
+    if (runtime !== runtimeState) {
+      releaseAsset(runtimeState.app, bundle.asset);
+      return;
+    }
+    const replacementEntity = createSplatEntity(pc, runtimeState.app, bundle, {
+      layers: [WORLD_LAYER],
+      name: "df-splat-scene-lite",
+    });
+    applyTransform(replacementEntity, runtimeState.transform);
+    const replacement = { asset: bundle.asset, entity: replacementEntity };
     runtimeState.splat.entity.destroy();
-    runtimeState.app.assets.remove(runtimeState.splat.asset);
+    releaseAsset(runtimeState.app, runtimeState.splat.asset);
     runtimeState.splat = replacement;
     runtimeState.lowFpsSince = 0;
     runtimeState.fpsSamples = [];
@@ -276,7 +306,7 @@ async function downgradeForFps(runtimeState) {
       device: "webgl2",
     });
   } catch (error) {
-    errorMessage("LOAD_FAILED", error);
+    if (runtime === runtimeState) errorMessage("LOAD_FAILED", error);
   } finally {
     runtimeState.replacing = false;
   }
