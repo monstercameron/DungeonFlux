@@ -1033,6 +1033,12 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   done when: AssetService has Get (server stream of chunks by logical name or sha256, with content type and size) and Manifest (logical names to sha, type, size for preloading); the server reads the asset store; wire loads every manifest entry (including ui/*) into the store at start and registers the service on the tunnel; HTTP /assets stays only as a debug fallback; bufconn tests; a Go client fetches ui/title_bg from a live server.
   status: open (launch after INT-002: gen/)
 
+- [ ] INT-005 · player names and lobby metadata reach the TV
+  why: Live test after INT-001: the TV shows Joined seats but as Player 1/2, the room code as "/p", and a broken QR, because JoinRequest has no player name field and wire never passes room code, join URL, and QR URL into the engine's lobby View.
+  lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/common.proto`, `gen/**`, `internal/api/session*.go`, `internal/api/project*.go`, `internal/wire/lobby*.go`, `internal/wire/wire.go`, `web/shell/join*.go` · depends: INT-002, ENG-017, ENG-018, BASE-021
+  done when: JoinRequest gains player_name; the phone sends it; session posts it in domain.Join; wire passes lobby data (room code, LAN join URL, QR URL) to the engine via ENG-017's option; projection fills DMView.lobby; live check: TV shows Aria and Bram, the real room code, the join URL, and a QR image that loads.
+  status: open (launch after INT-002)
+
 ## 14. LLM layer
 
 SchemaFlux for OpenAI-dialect links, Gemini and Haiku adapters, model chains, budget, and the executors that turn effects into model calls.
