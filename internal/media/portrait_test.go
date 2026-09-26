@@ -3,7 +3,6 @@ package media
 import (
 	"context"
 	"errors"
-	"io"
 	"testing"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
@@ -74,8 +73,3 @@ func TestFailureKind_ContextAndCallErrors(t *testing.T) {
 		t.Fatal(got)
 	}
 }
-
-type testStream struct{}
-
-func (testStream) Recv() (ports.ImageEvent, error) { return ports.ImageEvent{}, io.EOF }
-func (testStream) Close() error                    { return nil }
