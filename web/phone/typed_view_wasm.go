@@ -29,9 +29,12 @@ func TypedInputScreen(model *TypedInputModel) router.Component {
 		}
 		return html.Main(html.Props{Class: "df-phone df-phone-typed"},
 			html.Label(html.Props{For: "typed-message"}, html.Text(TypedLabel(locale))),
-			html.Input(html.Props{ID: "typed-message", Value: snapshot.Text, Placeholder: TypedHint(locale), OnInput: change, AutoFocus: snapshot.Open}),
-			html.Button(html.Props{Type: "button", OnClick: send, Disabled: snapshot.Sending}, html.Text(TypedSend(locale))),
-			html.P(html.Props{Role: "status"}, html.Text(errorOrStatus(snapshot))),
+			html.Input(html.Props{ID: "typed-message", Class: "df-phone-typed-input", Value: snapshot.Text, Placeholder: TypedHint(locale), OnInput: change, AutoFocus: snapshot.Open, Disabled: snapshot.Sending, MaxLength: typedInputLimit, Aria: map[string]string{"describedby": "typed-message-status", "label": TypedLabel(locale)}}),
+			html.Div(html.Props{Class: "df-phone-typed-actions"},
+				html.Span(html.Props{Class: "df-phone-typed-count", Aria: map[string]string{"live": "polite"}}, html.Textf("%d/%d", snapshot.Characters, typedInputLimit)),
+				html.Button(html.Props{Type: "button", Class: "df-phone-typed-send", OnClick: send, Disabled: !snapshot.CanSubmit}, html.Text(TypedSend(locale))),
+			),
+			html.P(html.Props{ID: "typed-message-status", Role: "status", Class: "df-phone-typed-status"}, html.Text(errorOrStatus(snapshot))),
 		)
 	}
 }

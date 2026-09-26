@@ -31,9 +31,25 @@ const (
 	PTTRecording PTTState = "recording"
 	// PTTStopping means the recorder stopped and queued chunks are draining.
 	PTTStopping PTTState = "stopping"
+	// PTTTranscribing means the server is turning the completed recording into text.
+	PTTTranscribing PTTState = "transcribing"
 	// PTTFailed means the recording could not be sent.
 	PTTFailed PTTState = "failed"
 )
+
+// PTTControlSnapshot is the stable presentation state for a hold-to-talk control.
+// It is deliberately independent of browser APIs so native tests can exercise
+// every button state without a WebAssembly runtime.
+type PTTControlSnapshot struct {
+	State          PTTState
+	PrimaryLabel   string
+	SecondaryLabel string
+	StatusText     string
+	ErrorText      string
+	CanStart       bool
+	CanStop        bool
+	ShowFallback   bool
+}
 
 // PTTModel owns one recording and uploads chunks in sequence.
 type PTTModel struct {
@@ -65,6 +81,38 @@ func (m *PTTModel) State() (PTTState, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.state, m.err
+}
+
+// ControlSnapshot projects the recorder lifecycle into labels and affordances.
+// A failed recorder keeps the fallback visible so a microphone problem never
+// prevents the player from continuing the conversation.
+func (m *PTTModel) ControlSnapshot(locale string) PTTControlSnapshot {
+	state, err := m.State()
+	if locale == "" {
+		locale = "en"
+	}
+	snapshot := PTTControlSnapshot{
+		State:          state,
+		PrimaryLabel:   PTTStart(locale),
+		SecondaryLabel: PTTStop(locale),
+		CanStart:       state == PTTIdle || state == PTTFailed,
+		CanStop:        state == PTTRecording,
+		ShowFallback:   state == PTTFailed,
+	}
+	switch state {
+	case PTTRecording:
+		snapshot.StatusText = T(locale, "ui.ptt.recording", nil)
+	case PTTStopping, PTTTranscribing:
+		snapshot.StatusText = T(locale, "ptt.finishing", nil)
+	case PTTFailed:
+		snapshot.StatusText = T(locale, "ui.ptt.failed", nil)
+		if err != nil {
+			snapshot.ErrorText = err.Error()
+		}
+	default:
+		snapshot.StatusText = PTTReady(locale)
+	}
+	return snapshot
 }
 
 // Start opens Talk and sends TalkStart before the browser recorder starts.

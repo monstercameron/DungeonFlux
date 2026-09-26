@@ -92,6 +92,33 @@ func TestPTTModel_StartSendError(t *testing.T) {
 	}
 }
 
+func TestPTTModel_ControlSnapshotStates(t *testing.T) {
+	model := NewPTTModel(nil, "seat", 1)
+	if got := model.ControlSnapshot(""); !got.CanStart || got.CanStop || got.ShowFallback || got.StatusText != PTTReady("en") {
+		t.Fatalf("idle snapshot = %+v", got)
+	}
+	model.fail(errors.New("permission denied"))
+	got := model.ControlSnapshot("en")
+	if !got.CanStart || got.CanStop || !got.ShowFallback || got.ErrorText != "permission denied" {
+		t.Fatalf("failed snapshot = %+v", got)
+	}
+	model.mu.Lock()
+	model.state = PTTRecording
+	model.err = nil
+	model.mu.Unlock()
+	got = model.ControlSnapshot("es")
+	if got.CanStart || !got.CanStop || got.ShowFallback || got.StatusText != T("es", "ui.ptt.recording", nil) {
+		t.Fatalf("recording snapshot = %+v", got)
+	}
+	model.mu.Lock()
+	model.state = PTTTranscribing
+	model.mu.Unlock()
+	got = model.ControlSnapshot("en")
+	if got.CanStart || got.CanStop || got.ShowFallback || got.StatusText != T("en", "ptt.finishing", nil) {
+		t.Fatalf("transcribing snapshot = %+v", got)
+	}
+}
+
 type talkFake struct {
 	requests    []*df.TalkRequest
 	openErr     error

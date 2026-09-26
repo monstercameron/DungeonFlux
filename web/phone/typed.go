@@ -32,6 +32,8 @@ type TypedInputSnapshot struct {
 	Open        bool
 	Sending     bool
 	Locale      string
+	Characters  int
+	CanSubmit   bool
 }
 
 // TypedInputModel owns the fallback text box and Say request construction.
@@ -72,7 +74,10 @@ func (m *TypedInputModel) Snapshot() TypedInputSnapshot {
 	if m == nil {
 		return TypedInputSnapshot{Error: "typed input is unavailable"}
 	}
-	return m.state
+	snapshot := m.state
+	snapshot.Characters = utf8.RuneCountInString(snapshot.Text)
+	snapshot.CanSubmit = snapshot.Open && !snapshot.Sending && strings.TrimSpace(snapshot.Text) != "" && snapshot.Characters <= typedInputLimit
+	return snapshot
 }
 
 // SetText records text from the phone input without sending it.
@@ -85,6 +90,7 @@ func (m *TypedInputModel) SetText(text string) error {
 	}
 	m.state.Text = text
 	m.state.Error = ""
+	m.state.Open = true
 	return nil
 }
 
@@ -95,6 +101,16 @@ func (m *TypedInputModel) OpenFallback() TypedInputSnapshot {
 	}
 	m.state.Open = true
 	m.state.StatusText = T(m.renderLocale(), "ui.ptt.failed", nil)
+	m.state.Error = ""
+	return m.Snapshot()
+}
+
+// CloseFallback hides the typed input after speech becomes available again.
+func (m *TypedInputModel) CloseFallback() TypedInputSnapshot {
+	if m == nil {
+		return TypedInputSnapshot{Error: "typed input is unavailable"}
+	}
+	m.state.Open = false
 	m.state.Error = ""
 	return m.Snapshot()
 }

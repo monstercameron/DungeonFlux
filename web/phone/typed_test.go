@@ -61,6 +61,25 @@ func TestTypedInputModel_NilAndFallbackStates(t *testing.T) {
 	}
 }
 
+func TestTypedInputModel_SnapshotCountsAndClosesFallback(t *testing.T) {
+	model := NewTypedInputModel(&sayFake{}, "seat")
+	if got := model.Snapshot(); got.Characters != 0 || got.CanSubmit {
+		t.Fatalf("initial snapshot = %+v", got)
+	}
+	model.OpenFallback()
+	if err := model.SetText("  écho  "); err != nil {
+		t.Fatal(err)
+	}
+	got := model.Snapshot()
+	if got.Characters != 8 || !got.CanSubmit || !got.Open {
+		t.Fatalf("typed snapshot = %+v", got)
+	}
+	got = model.CloseFallback()
+	if got.Open || got.CanSubmit || got.Error != "" {
+		t.Fatalf("closed snapshot = %+v", got)
+	}
+}
+
 type sayFake struct {
 	request *df.SayRequest
 	result  SayResult
