@@ -25,8 +25,17 @@ type HUDPartyMember struct {
 type HUDAction struct {
 	ID      string
 	Label   string
+	Icon    string
+	Hotkey  string
 	Enabled bool
+	Primary bool
 	Reason  string
+}
+
+// HUDChecklistItem is one optional objective checkpoint shown on the TV.
+type HUDChecklistItem struct {
+	Label string
+	Done  bool
 }
 
 // HUDModel contains the exploration-only overlay projected from a DM snapshot.
@@ -36,7 +45,13 @@ type HUDModel struct {
 	Party            []HUDPartyMember
 	Objective        string
 	ObjectiveVisible bool
+	Checklist        []HUDChecklistItem
 	Actions          []HUDAction
+	NarrationSpeaker string
+	NarrationText    string
+	Location         string
+	Act              string
+	MinimapURL       string
 }
 
 // HUDModelFromState projects the exploration HUD without mutating the wire view.
@@ -54,7 +69,11 @@ func HUDModelFromState(state *dungeonfluxv1.ScreenState) HUDModel {
 		Party:         projectHUDParty(view, spotlight),
 		Objective:     projectHUDObjective(view),
 		Actions:       projectHUDActions(spotlight),
+		Location:      "The Drowned Lantern",
+		Act:           "Act I · The Tavern",
+		MinimapURL:    ArtURL("battlefield_flat"),
 	}
+	model.NarrationSpeaker, model.NarrationText = projectHUDNarration(view)
 	model.ObjectiveVisible = model.Objective != ""
 	return model
 }
@@ -129,9 +148,27 @@ func projectHUDActions(spotlight int32) []HUDAction {
 		reason = "Waiting for the spotlight"
 	}
 	return []HUDAction{
-		{ID: "talk_vell", Label: "Talk to Mother Vell", Enabled: active, Reason: reason},
-		{ID: "leave", Label: "Leave", Enabled: active, Reason: reason},
+		{ID: "talk_vell", Label: "Talk", Icon: "✦", Hotkey: "1", Enabled: active, Primary: true, Reason: reason},
+		{ID: "leave", Label: "Leave", Icon: "↗", Hotkey: "2", Enabled: active, Reason: reason},
 	}
+}
+
+func projectHUDNarration(view *dungeonfluxv1.DMView) (string, string) {
+	if view == nil {
+		return "", ""
+	}
+	narration := view.GetNarration()
+	if narration != nil && strings.TrimSpace(narration.GetTextSoFar()) != "" {
+		speaker := strings.TrimSpace(narration.GetSpeaker())
+		if speaker == "" {
+			speaker = "Dungeon Master"
+		}
+		return speaker, strings.TrimSpace(narration.GetTextSoFar())
+	}
+	if subtitle := view.GetSubtitle(); subtitle != nil && strings.TrimSpace(subtitle.GetText()) != "" {
+		return "Dungeon Master", strings.TrimSpace(subtitle.GetText())
+	}
+	return "", ""
 }
 
 func classCrestArt(className string) string {

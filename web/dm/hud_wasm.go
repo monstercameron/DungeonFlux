@@ -11,24 +11,46 @@ import (
 	"github.com/monstercameron/GoWebComponents/v6/ui"
 )
 
-// ExplorationHUDComponent renders the TV exploration overlay from a snapshot.
+// ExplorationHUDComponent renders the exploration overlay on the fixed TV
+// canvas. Geometry is intentionally expressed in design-canvas pixels so the
+// 1920x1080 composition remains stable at 16:9 and ultrawide viewports.
 func ExplorationHUDComponent(state *dungeonfluxv1.ScreenState) router.Component {
 	model := HUDModelFromState(state)
 	return func(_ router.Attrs) *router.Element {
-		return html.Section(html.Props{Class: "df-dm-exploration-hud", Role: "region", Aria: map[string]string{"label": "Exploration HUD"}, Hidden: !model.Visible, Style: hudStyle()},
-			hudParty(model.Party),
-			hudObjective(model),
-			hudActions(model),
-		)
+		return html.Section(html.Props{
+			Class: "df-dm-exploration-hud", Role: "region",
+			Aria: map[string]string{"label": "Exploration HUD"}, Hidden: !model.Visible,
+			Style: hudRootStyle(),
+		}, hudTitlePlate(), hudParty(model.Party), hudLocation(model), hudObjective(model),
+			hudNarration(model), hudActions(model), hudMinimap(model), hudFooter(model))
 	}
 }
 
-func hudStyle() map[string]string {
+func hudRootStyle() map[string]string {
 	return map[string]string{
-		"position": "relative", "width": "100%", "height": "100%", "color": "#efe6d2",
-		"font-family": "Arial, sans-serif", "pointer-events": "none",
-		"text-shadow": "0 2px 4px rgba(0,0,0,.72)",
+		"position": "absolute", "inset": "0", "width": "1920px", "height": "1080px",
+		"color": "#efe6d2", "font-family": "Inter, Arial, sans-serif", "pointer-events": "none",
+		"text-shadow": "0 2px 5px rgba(0,0,0,.78)", "z-index": "60",
 	}
+}
+
+func hudTitlePlate() ui.Node {
+	wordmark := ArtURL("ui/logo_wordmark")
+	var mark ui.Node
+	if wordmark != "" {
+		mark = html.Img(html.Props{Src: wordmark, Alt: "DungeonFlux", Style: map[string]string{
+			"display": "block", "width": "390px", "height": "58px", "object-fit": "contain", "object-position": "left center",
+		}})
+	} else {
+		mark = html.H1(html.Props{Style: map[string]string{
+			"margin": "0", "color": "#e7c27a", "font-family": "Cinzel, Georgia, serif", "font-size": "48px", "font-weight": "500", "line-height": "1",
+		}}, ui.Text("DungeonFlux"))
+	}
+	return html.Header(html.Props{Class: "df-title-plate", Style: map[string]string{
+		"position": "absolute", "left": "30px", "top": "20px", "width": "410px", "height": "92px", "text-align": "left",
+	}}, mark, html.P(html.Props{Class: "df-title-plate-subtitle", Style: map[string]string{
+		"margin": "7px 0 0", "font-size": "13px", "letter-spacing": ".12em", "text-align": "left",
+	}}, ui.Text("AI DUNGEON MASTER FOR FIFTH-EDITION FANTASY")))
 }
 
 func hudParty(party []HUDPartyMember) ui.Node {
@@ -37,27 +59,137 @@ func hudParty(party []HUDPartyMember) ui.Node {
 		children = append(children, hudPartyCard(member))
 	}
 	return html.Div(html.Props{Class: "df-dm-hud-party", Role: "list", Aria: map[string]string{"label": "Party"}, Style: map[string]string{
-		"position": "absolute", "left": "1.5%", "top": "11%", "width": "23%", "display": "grid", "gap": ".8rem",
+		"position": "absolute", "left": "30px", "top": "135px", "width": "300px", "display": "grid", "gap": "10px",
 	}}, children...)
 }
 
 func hudPartyCard(member HUDPartyMember) ui.Node {
-	border := "rgba(217,164,65,.42)"
+	border := "rgba(184,137,58,.72)"
+	shadow := "inset 0 0 18px rgba(0,0,0,.32)"
 	if member.Spotlight {
-		border = "#d9a441"
+		border = "#e7c27a"
+		shadow = "0 0 24px rgba(217,164,65,.35), inset 0 0 18px rgba(217,164,65,.1)"
 	}
-	portrait := hudPortrait(member)
-	crest := hudCrest(member)
-	copy := html.Div(html.Props{Style: map[string]string{"min-width": "0", "flex": "1"}},
-		html.Strong(html.Props{Style: map[string]string{"display": "block", "overflow": "hidden", "color": "#efe6d2", "font-family": "Georgia, serif", "font-size": "clamp(1rem, 1.45vw, 1.75rem)", "line-height": "1.05", "text-overflow": "ellipsis", "white-space": "nowrap"}}, ui.Text(nameOrSeat(member))),
-		html.Span(html.Props{Style: map[string]string{"display": "block", "margin-top": ".28rem", "color": "#a89f8c", "font-size": "clamp(.72rem, .9vw, 1.05rem)", "letter-spacing": ".08em", "text-transform": "uppercase"}}, ui.Text(classOrHero(member))),
-		hudHP(member),
+	portraitStyle := map[string]string{
+		"width": "92px", "height": "92px", "flex": "0 0 92px", "object-fit": "cover", "border": "2px solid " + border,
+		"border-radius": "7px", "background": "radial-gradient(circle at 50% 25%,#4d5964,#111722 68%)",
+	}
+	var portrait ui.Node
+	if member.PortraitURL != "" {
+		portrait = html.Img(html.Props{Src: member.PortraitURL, Alt: nameOrSeat(member), Style: portraitStyle})
+	} else {
+		portrait = html.Div(html.Props{Aria: map[string]string{"label": nameOrSeat(member) + " portrait placeholder"}, Style: portraitStyle},
+			html.Span(html.Props{Style: map[string]string{"display": "block", "padding-top": "25px", "color": "#d9a441", "font-size": "28px", "text-align": "center"}}, ui.Text("✦")))
+	}
+	return html.Article(html.Props{Class: "df-dm-hud-party-card", Role: "listitem", Style: map[string]string{
+		"display": "flex", "align-items": "center", "gap": "12px", "height": "100px", "padding": "4px", "border": "1px solid " + border,
+		"border-radius": "10px", "background": "linear-gradient(90deg,rgba(10,12,17,.96),rgba(20,23,30,.82))", "box-shadow": shadow,
+	}}, portrait, hudPartyCopy(member))
+}
+
+func hudPartyCopy(member HUDPartyMember) ui.Node {
+	return html.Div(html.Props{Style: map[string]string{"min-width": "0", "flex": "1", "padding-right": "6px"}},
+		html.Strong(html.Props{Style: map[string]string{
+			"display": "block", "overflow": "hidden", "color": "#efe6d2", "font-family": "Cinzel, Georgia, serif", "font-size": "24px", "line-height": "1.05", "text-overflow": "ellipsis", "white-space": "nowrap",
+		}}, ui.Text(nameOrSeat(member))),
+		html.Span(html.Props{Style: map[string]string{
+			"display": "block", "margin-top": "4px", "overflow": "hidden", "color": "#a89f8c", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "17px", "text-overflow": "ellipsis", "white-space": "nowrap",
+		}}, ui.Text(classOrHero(member))), hudHP(member))
+}
+
+func hudHP(member HUDPartyMember) ui.Node {
+	if !member.HPKnown {
+		return html.Span(html.Props{Style: map[string]string{"display": "block", "margin-top": "5px", "color": "#a89f8c", "font-size": "14px"}}, ui.Text("HP unavailable"))
+	}
+	return html.Div(html.Props{Style: map[string]string{"margin-top": "5px"}},
+		html.Span(html.Props{Style: map[string]string{"display": "block", "color": "#a89f8c", "font-size": "14px"}}, ui.Text("HP "+strconv.Itoa(int(member.HP))+"/"+strconv.Itoa(int(member.HPMax)))),
+		html.Div(html.Props{Aria: map[string]string{"label": "Hit points"}, Style: map[string]string{"width": "120px", "height": "7px", "margin-top": "3px", "overflow": "hidden", "border-radius": "99px", "background": "rgba(239,230,210,.2)"}},
+			html.Div(html.Props{Style: map[string]string{"width": strconv.Itoa(member.HPPercent) + "%", "height": "100%", "background": hpColor(member.HPPercent), "border-radius": "inherit"}})),
 	)
-	return html.Div(html.Props{Class: "df-dm-hud-party-card", Role: "listitem", Style: map[string]string{
-		"display": "flex", "align-items": "center", "gap": ".65rem", "min-height": "clamp(4.3rem, 8vh, 6.5rem)",
-		"padding": ".45rem .65rem .45rem .45rem", "border": "1px solid " + border, "border-radius": "10px",
-		"background": "linear-gradient(90deg, rgba(10,12,17,.96), rgba(20,23,30,.78))", "box-shadow": spotlightShadow(member.Spotlight),
-	}}, portrait, copy, crest)
+}
+
+func hudLocation(model HUDModel) ui.Node {
+	return html.Div(html.Props{Class: "df-location-title", Style: map[string]string{
+		"position": "absolute", "right": "30px", "top": "25px", "width": "290px", "text-align": "right",
+	}}, LocationTitle(model.Location, model.Act))
+}
+
+func hudObjective(model HUDModel) ui.Node {
+	if !model.ObjectiveVisible {
+		return html.Section(html.Props{Hidden: true})
+	}
+	items := []ui.Node{html.Div(html.Props{Style: map[string]string{"display": "flex", "gap": "10px", "align-items": "flex-start", "margin-top": "2px"}},
+		html.Span(html.Props{Style: map[string]string{"color": "#d9a441", "font-size": "22px", "line-height": "1"}}, ui.Text("◇")),
+		html.P(html.Props{Style: map[string]string{"margin": "0", "color": "#efe6d2", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "24px", "line-height": "1.12"}}, ui.Text(model.Objective)))}
+	for _, item := range model.Checklist {
+		color := "#a89f8c"
+		mark := "○"
+		if item.Done {
+			color, mark = "#3aa39a", "●"
+		}
+		items = append(items, html.Div(html.Props{Style: map[string]string{"display": "flex", "gap": "10px", "align-items": "center", "margin-top": "11px", "color": color, "font-size": "18px"}},
+			html.Span(html.Props{Style: map[string]string{"font-size": "20px"}}, ui.Text(mark)), html.Span(html.Props{}, ui.Text(item.Label))))
+	}
+	return hudPanel("Current Objective", map[string]string{
+		"position": "absolute", "right": "30px", "top": "125px", "width": "330px", "min-height": "275px", "padding": "22px 22px 18px",
+	}, items...)
+}
+
+func hudNarration(model HUDModel) ui.Node {
+	if model.NarrationText == "" {
+		return html.Section(html.Props{Hidden: true})
+	}
+	portraitURL := ArtURL("ui/dm_speaker")
+	portraitStyle := map[string]string{"width": "118px", "height": "118px", "flex": "0 0 118px", "border": "2px solid #d9a441", "border-radius": "50%", "object-fit": "cover", "background": "radial-gradient(circle at 50% 35%,#293241,#07090d 70%)"}
+	var portrait ui.Node = html.Div(html.Props{Style: portraitStyle}, html.Span(html.Props{Style: map[string]string{"display": "block", "padding-top": "36px", "color": "#d9a441", "font-size": "40px", "text-align": "center"}}, ui.Text("✦")))
+	if portraitURL != "" {
+		portrait = html.Img(html.Props{Src: portraitURL, Alt: "Dungeon Master", Style: portraitStyle})
+	}
+	return hudPanel("", map[string]string{
+		"position": "absolute", "left": "25px", "bottom": "90px", "width": "745px", "height": "165px", "padding": "20px 24px",
+		"display": "flex", "align-items": "center", "gap": "20px",
+	}, portrait, html.Div(html.Props{Style: map[string]string{"min-width": "0", "flex": "1"}},
+		html.Strong(html.Props{Style: map[string]string{"display": "block", "color": "#e7c27a", "font-family": "Cinzel, Georgia, serif", "font-size": "25px", "font-weight": "500"}}, ui.Text(model.NarrationSpeaker)),
+		html.Div(html.Props{Style: map[string]string{"height": "1px", "margin": "8px 0 10px", "background": "linear-gradient(90deg,#d9a441,transparent)"}}),
+		html.P(html.Props{Style: map[string]string{"margin": "0", "color": "#efe6d2", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "24px", "font-style": "italic", "line-height": "1.2"}}, ui.Text(model.NarrationText)),
+	))
+}
+
+func hudActions(model HUDModel) ui.Node {
+	items := make([]ui.Node, 0, len(model.Actions))
+	for _, action := range model.Actions {
+		items = append(items, ActionButton(ActionButtonModel{
+			Icon: action.Icon, Label: action.Label, Hotkey: action.Hotkey, Primary: action.Primary,
+			Enabled: action.Enabled, Reason: action.Reason,
+		}))
+	}
+	return html.Div(html.Props{Class: "df-dm-hud-actions", Role: "list", Aria: map[string]string{"label": "Legal actions"}, Style: map[string]string{
+		"position": "absolute", "left": "945px", "bottom": "90px", "width": "755px", "height": "135px", "display": "flex", "align-items": "flex-start", "justify-content": "center", "gap": "18px",
+	}}, items...)
+}
+
+func hudMinimap(model HUDModel) ui.Node {
+	style := map[string]string{"position": "absolute", "right": "30px", "top": "590px", "width": "240px", "height": "240px", "overflow": "hidden", "border": "2px solid #b8893a", "border-radius": "50%", "background": "radial-gradient(circle,#263746,#0b1018 72%)", "box-shadow": "0 0 0 7px rgba(12,18,28,.76),0 10px 25px rgba(0,0,0,.55)"}
+	if model.MinimapURL != "" {
+		style["background-image"] = "linear-gradient(rgba(7,12,18,.2),rgba(7,12,18,.45)),url('" + model.MinimapURL + "')"
+		style["background-size"] = "cover"
+		style["background-position"] = "center"
+	}
+	return html.Div(html.Props{Class: "df-dm-hud-minimap", Role: "img", Aria: map[string]string{"label": "Exploration minimap"}, Style: style},
+		html.Span(html.Props{Style: map[string]string{"position": "absolute", "left": "50%", "top": "50%", "color": "#e7c27a", "font-size": "28px", "transform": "translate(-50%,-50%)"}}, ui.Text("◆")))
+}
+
+func hudFooter(model HUDModel) ui.Node {
+	return html.Div(html.Props{Style: map[string]string{"position": "absolute", "right": "30px", "bottom": "28px", "color": "#a89f8c", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "17px", "letter-spacing": ".04em"}}, ui.Text("Session: "+model.Location))
+}
+
+func hudPanel(title string, style map[string]string, children ...ui.Node) ui.Node {
+	content := make([]ui.Node, 0, len(children)+1)
+	if title != "" {
+		content = append(content, html.H2(html.Props{Class: "df-ornate-panel-title", Style: map[string]string{"margin": "0 0 18px", "font-size": "19px"}}, ui.Text(title)))
+	}
+	content = append(content, children...)
+	return html.Section(html.Props{Class: "df-ornate-panel", Role: "region", Style: style}, content...)
 }
 
 func nameOrSeat(member HUDPartyMember) string {
@@ -74,46 +206,6 @@ func classOrHero(member HUDPartyMember) string {
 	return "Hero"
 }
 
-func hudPortrait(member HUDPartyMember) ui.Node {
-	style := map[string]string{"width": "clamp(3rem, 5vw, 5.4rem)", "height": "clamp(3rem, 5vw, 5.4rem)", "flex": "0 0 auto", "object-fit": "cover", "border": "1px solid rgba(217,164,65,.7)", "border-radius": "7px"}
-	if member.PortraitURL != "" {
-		return html.Img(html.Props{Src: member.PortraitURL, Alt: nameOrSeat(member), Style: style})
-	}
-	style["background"] = "radial-gradient(circle at 50% 25%, #4d5964, #111722 68%)"
-	return html.Div(html.Props{Aria: map[string]string{"label": nameOrSeat(member) + " portrait placeholder"}, Style: style})
-}
-
-func hudCrest(member HUDPartyMember) ui.Node {
-	crestURL := ArtURL(member.CrestArt)
-	style := map[string]string{"width": "clamp(2rem, 3.2vw, 3.6rem)", "height": "clamp(2rem, 3.2vw, 3.6rem)", "flex": "0 0 auto", "object-fit": "contain", "opacity": ".94"}
-	if crestURL != "" {
-		return html.Img(html.Props{Src: crestURL, Alt: classOrHero(member) + " crest", Style: style})
-	}
-	style["border"] = "1px solid rgba(217,164,65,.75)"
-	style["border-radius"] = "50%"
-	style["background"] = "radial-gradient(circle, rgba(217,164,65,.4), rgba(15,17,23,.7) 62%)"
-	return html.Div(html.Props{Aria: map[string]string{"label": classOrHero(member) + " crest placeholder"}, Style: style})
-}
-
-func hudHP(member HUDPartyMember) ui.Node {
-	if !member.HPKnown {
-		return html.Span(html.Props{Style: map[string]string{"display": "block", "margin-top": ".3rem", "color": "#a89f8c", "font-size": "clamp(.65rem, .8vw, .9rem)"}}, ui.Text("HP unavailable"))
-	}
-	return html.Div(html.Props{Style: map[string]string{"margin-top": ".35rem"}},
-		html.Span(html.Props{Style: map[string]string{"display": "block", "color": "#a89f8c", "font-size": "clamp(.65rem, .8vw, .9rem)"}}, ui.Text("HP "+strconv.Itoa(int(member.HP))+"/"+strconv.Itoa(int(member.HPMax)))),
-		html.Div(html.Props{Aria: map[string]string{"label": "Hit points"}, Style: map[string]string{"height": ".32rem", "margin-top": ".2rem", "overflow": "hidden", "border-radius": "99px", "background": "rgba(239,230,210,.2)"}},
-			html.Div(html.Props{Style: map[string]string{"width": strconv.Itoa(member.HPPercent) + "%", "height": "100%", "background": hpColor(member.HPPercent), "border-radius": "inherit"}}),
-		),
-	)
-}
-
-func spotlightShadow(spotlight bool) string {
-	if spotlight {
-		return "0 0 24px rgba(217,164,65,.34), inset 0 0 18px rgba(217,164,65,.08)"
-	}
-	return "inset 0 0 18px rgba(0,0,0,.25)"
-}
-
 func hpColor(percent int) string {
 	if percent <= 25 {
 		return "#b3372f"
@@ -122,40 +214,4 @@ func hpColor(percent int) string {
 		return "#d28c39"
 	}
 	return "#3aa39a"
-}
-
-func hudObjective(model HUDModel) ui.Node {
-	content := []ui.Node{html.Strong(html.Props{Style: map[string]string{"display": "block", "color": "#d9a441", "font-family": "Georgia, serif", "font-size": "clamp(.85rem, 1.05vw, 1.25rem)", "letter-spacing": ".06em", "text-transform": "uppercase"}}, ui.Text("Current objective"))}
-	if model.ObjectiveVisible {
-		content = append(content, html.P(html.Props{Style: map[string]string{"margin": ".7rem 0 0", "color": "#efe6d2", "font-family": "Georgia, serif", "font-size": "clamp(1rem, 1.45vw, 1.8rem)", "line-height": "1.2"}}, ui.Text(model.Objective)))
-	}
-	return html.Div(html.Props{Class: "df-dm-hud-objective", Hidden: !model.ObjectiveVisible, Style: map[string]string{
-		"position": "absolute", "top": "11%", "right": "2.5%", "width": "clamp(15rem, 24vw, 28rem)", "box-sizing": "border-box",
-		"padding": "1rem 1.15rem 1.2rem", "border": "1px solid rgba(217,164,65,.7)", "border-radius": "10px",
-		"background": "linear-gradient(135deg, rgba(10,12,17,.96), rgba(25,27,33,.86))", "box-shadow": "0 12px 28px rgba(0,0,0,.42), inset 0 0 18px rgba(217,164,65,.05)",
-	}}, content...)
-}
-
-func hudActions(model HUDModel) ui.Node {
-	items := make([]ui.Node, 0, len(model.Actions))
-	for index, action := range model.Actions {
-		items = append(items, html.Div(html.Props{Class: "df-dm-hud-action", Role: "listitem", Style: actionStyle(action.Enabled)},
-			html.Span(html.Props{Style: map[string]string{"display": "block", "color": "#d9a441", "font-size": "clamp(.62rem, .75vw, .9rem)", "letter-spacing": ".16em"}}, ui.Text(strconv.Itoa(index+1))),
-			html.Strong(html.Props{Style: map[string]string{"display": "block", "margin-top": ".18rem", "color": "#efe6d2", "font-family": "Georgia, serif", "font-size": "clamp(.85rem, 1.2vw, 1.35rem)"}}, ui.Text(action.Label)),
-			html.Small(html.Props{Hidden: action.Enabled, Style: map[string]string{"display": "block", "margin-top": ".25rem", "color": "#a89f8c", "font-size": "clamp(.6rem, .7vw, .8rem)"}}, ui.Text(action.Reason)),
-		))
-	}
-	return html.Div(html.Props{Class: "df-dm-hud-actions", Role: "list", Aria: map[string]string{"label": "Legal actions"}, Style: map[string]string{
-		"position": "absolute", "left": "29%", "right": "14%", "bottom": "5.5%", "display": "flex", "justify-content": "center", "gap": "clamp(.5rem, 1vw, 1rem)",
-	}}, items...)
-}
-
-func actionStyle(enabled bool) map[string]string {
-	background := "rgba(13,16,22,.88)"
-	border := "rgba(217,164,65,.52)"
-	if !enabled {
-		background = "rgba(13,16,22,.64)"
-		border = "rgba(168,159,140,.3)"
-	}
-	return map[string]string{"min-width": "clamp(10rem, 14vw, 17rem)", "padding": ".7rem 1rem .8rem", "border": "1px solid " + border, "border-radius": "9px", "background": background, "box-shadow": "0 8px 20px rgba(0,0,0,.38)", "text-align": "center"}
 }

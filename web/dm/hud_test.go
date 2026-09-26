@@ -51,7 +51,7 @@ func TestHUDModelFromState_ProjectsPartySpotlightHPAndObjective(t *testing.T) {
 	if !reflect.DeepEqual(got.Party, wantParty) {
 		t.Fatalf("party = %#v, want %#v", got.Party, wantParty)
 	}
-	if got.Actions[0].Label != "Talk to Mother Vell" || !got.Actions[0].Enabled || !got.Actions[1].Enabled {
+	if got.Actions[0].Label != "Talk" || got.Actions[0].Hotkey != "1" || !got.Actions[0].Primary || !got.Actions[0].Enabled || !got.Actions[1].Enabled {
 		t.Fatalf("actions = %#v", got.Actions)
 	}
 }
@@ -94,5 +94,25 @@ func TestHUDHelpers_ClampHPAndNormalizeClassArt(t *testing.T) {
 	}
 	if got := classCrestArt(""); got != "" {
 		t.Fatalf("empty class crest = %q", got)
+	}
+}
+
+func TestHUDModelFromState_ProjectsNarrationAndFallbackSpeaker(t *testing.T) {
+	state := &dungeonfluxv1.ScreenState{
+		Phase: "exploration",
+		View: &dungeonfluxv1.ScreenState_Dm{Dm: &dungeonfluxv1.DMView{
+			Narration: &dungeonfluxv1.Narration{TextSoFar: "Cold water laps at the broken stones."},
+		}},
+	}
+	got := HUDModelFromState(state)
+	if got.NarrationSpeaker != "Dungeon Master" || got.NarrationText == "" {
+		t.Fatalf("narration = %#v", got)
+	}
+
+	state.GetDm().Narration = nil
+	state.GetDm().Subtitle = &dungeonfluxv1.Subtitle{Text: "The bell tolls below."}
+	got = HUDModelFromState(state)
+	if got.NarrationSpeaker != "Dungeon Master" || got.NarrationText != "The bell tolls below." {
+		t.Fatalf("subtitle fallback = %#v", got)
 	}
 }
