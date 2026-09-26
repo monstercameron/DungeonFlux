@@ -168,3 +168,27 @@ func requestWithETag(handler http.Handler, path, encoding, etag string) *httptes
 	handler.ServeHTTP(res, req)
 	return res
 }
+
+func TestLoopbackTokenRedirect(t *testing.T) {
+	next := func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }
+	handler := loopbackTokenRedirect("token", "dm-secret", next)
+	cases := []struct {
+		name, remote, target string
+		want                 int
+		location             string
+	}{
+		{"loopback without token", "127.0.0.1:5000", "/dm", http.StatusFound, "/dm?token=dm-secret"},
+		{"ipv6 loopback", "[::1]:5000", "/dm", http.StatusFound, "/dm?token=dm-secret"},
+		{"loopback with token", "127.0.0.1:5000", "/dm?token=x", http.StatusOK, ""},
+		{"lan device", "192.168.1.40:5000", "/dm", http.StatusOK, ""},
+	}
+	for _, tc := range cases {
+		request := httptest.NewRequest(http.MethodGet, tc.target, nil)
+		request.RemoteAddr = tc.remote
+		recorder := httptest.NewRecorder()
+		handler(recorder, request)
+		if recorder.Code != tc.want || recorder.Header().Get("Location") != tc.location {
+			t.Fatalf("%s: code %d location %q, want %d %q", tc.name, recorder.Code, recorder.Header().Get("Location"), tc.want, tc.location)
+		}
+	}
+}

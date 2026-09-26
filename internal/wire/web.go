@@ -3,6 +3,7 @@ package wire
 import (
 	"fmt"
 	"io/fs"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -25,10 +26,10 @@ func mountWeb(mux *http.ServeMux, cfg config.Config) error {
 		return fmt.Errorf("resolve wasm root: %w", err)
 	}
 	staticRoot := filepath.Join(root, "shell", "static")
-	mux.HandleFunc("/dm", pageHandler(staticRoot))
+	mux.HandleFunc("/dm", loopbackTokenRedirect("token", cfg.Server.DMToken, pageHandler(staticRoot)))
 	mux.HandleFunc("/p", pageHandler(staticRoot))
 	mux.HandleFunc("/p/", pageHandler(staticRoot))
-	mux.HandleFunc("/host", pageHandler(staticRoot))
+	mux.HandleFunc("/host", loopbackTokenRedirect("t", cfg.Server.HostToken, pageHandler(staticRoot)))
 	mux.HandleFunc("/about", pageHandler(staticRoot))
 	mux.HandleFunc("/app/dungeonflux.wasm", wasmHandler(filepath.Join(wasmRoot, "dungeonflux.wasm")))
 	mux.HandleFunc("/wasm_exec.js", fileHandler(filepath.Join(wasmRoot, "wasm_exec.js"), "text/javascript; charset=utf-8"))
@@ -36,6 +37,33 @@ func mountWeb(mux *http.ServeMux, cfg config.Config) error {
 	mux.Handle("/splat/vendor/", staticHandler(filepath.Join(root, "splat", "vendor")))
 	mux.HandleFunc("/assets/", assetHandler(filepath.Join(cfg.Server.DataDir, "assets")))
 	return nil
+}
+
+// loopbackTokenRedirect sends a tokenless /dm or /host request from the host
+// machine itself to the tokenized URL. The TV and host console run on the
+// server's machine, so opening localhost:<port>/dm just works; requests from
+// other devices still need the link with its token.
+func loopbackTokenRedirect(param, token string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if token != "" && r.URL.Query().Get(param) == "" && isLoopbackRequest(r) && r.Method == http.MethodGet {
+			query := r.URL.Query()
+			query.Set(param, token)
+			target := *r.URL
+			target.RawQuery = query.Encode()
+			http.Redirect(w, r, target.RequestURI(), http.StatusFound)
+			return
+		}
+		next(w, r)
+	}
+}
+
+func isLoopbackRequest(r *http.Request) bool {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		host = r.RemoteAddr
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 func pageHandler(root string) http.HandlerFunc {

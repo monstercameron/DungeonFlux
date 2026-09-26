@@ -232,7 +232,9 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", health)
 	mux.Handle("/grpc", apiServer.Handler())
-	if err := mountWeb(mux, cfg); err != nil {
+	webCfg := cfg
+	webCfg.Server.DMToken, webCfg.Server.HostToken = dmToken, hostToken
+	if err := mountWeb(mux, webCfg); err != nil {
 		cancel()
 		_ = store.Close()
 		_ = logFile.Close()
