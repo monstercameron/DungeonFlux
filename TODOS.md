@@ -899,6 +899,12 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: E2E-002 skips path 12 because a Watch reattach is rejected with "client kind is required", and path 21 because a second DM Listen does not replace the older stream.
   lane: L-API · block: 8–11 · paths: `internal/api/watch*.go`, `internal/api/listen*.go` · depends: API-004, API-005, E2E-002
   done when: a reattaching client can resume its Watch with its seat token (kind remembered from Join); a newer DM Listen stream closes the older one cleanly; E2E paths 12 and 21 run instead of skipping.
+  status: committed 2fc50f1 (session caller and staticcheck follow in API-015)
+
+- [ ] API-015 · session wires Watch reattach and fixes the unused locale field
+  why: API-014 added Watch reattach but its caller in session.go was outside its paths, and staticcheck fails the internal/api gate on an unused locale field (U1000) in session.go.
+  lane: L-API · block: 8–11 · paths: `internal/api/session*.go` · depends: API-014
+  done when: a reattaching client resumes its Watch through the session path; the locale field is either used (stored on the seat for I18N-004) or removed; staticcheck clean on internal/api; E2E path 12 runs instead of skipping.
   status: claimed luna
 
 ## 14. LLM layer
@@ -1217,7 +1223,7 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   why: The phone screens (create, sheet, moves, PTT, typed, dice, combat) landed as separate views; nothing switches between them by phase and seat state.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/screen*.go`, `web/phone/mount*.go` · depends: PHONE-001, PHONE-002, PHONE-003, PHONE-005, PHONE-006, PHONE-007, WEB-008
   done when: a pure screen-selection function maps SeatView to the active screen with table tests for every phase; the /p route mounted by the shell renders it; GOOS=js GOARCH=wasm build passes.
-  status: claimed developer-codex
+  status: committed ac3df52
 
 ## 20. DM screen
 
@@ -1611,7 +1617,7 @@ Everything needed to run the 3-minute demo live.
   why: STAGE-007 needs a repeatable check that per-run cost stays near $0.62 and totals stay within the §0.14 budget.
   lane: ORCH (delegated) · block: 14–17 · paths: `scripts/costcheck.ps1` · depends: DFCTL-002, LLM-007
   done when: the script reads dfctl costs JSON lines (or a saved file), sums per vendor and per run, compares to §0.14 caps, exits non-zero over budget; tested on sample JSON under artifacts/tmp.
-  status: claimed developer-codex
+  status: committed 1e9af28
 
 ## 27. Localization (i18n)
 
