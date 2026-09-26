@@ -54,8 +54,9 @@ func installBrowserAssets(ctx context.Context, client *Client) *AssetLoader {
 		return nil
 	}
 	loader := NewBrowserAssetLoader(dungeonfluxv1.NewAssetServiceClient(client.conn))
-	dm.SetArtSource(loader)
-	phone.SetArtSource(loader)
+	lazy := newLazyArtSource(ctx, loader, scheduleAssetRouteRefresh)
+	dm.SetArtSource(lazy)
+	phone.SetArtSource(lazy)
 	loader.Preload(ctx, func(progress AssetProgress) {
 		if progress.Err != nil {
 			logBrowserAssetError(progress.Err)

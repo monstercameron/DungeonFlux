@@ -13,6 +13,8 @@ html,body,#app{margin:0;min-width:0;min-height:100%;background:#0f1117}
 .df-dm-cover{position:absolute;inset:0;z-index:0;pointer-events:none;background-color:#0f1117;background-position:center;background-size:cover;filter:saturate(.96) contrast(1.03)}
 .df-dm-canvas{position:absolute;left:50%;top:50%;width:1920px!important;height:1080px!important;transform:translate(-50%,-50%) scale(var(--df-scale,0.5));transform-origin:center center;overflow:hidden;z-index:1}
 .df-dm-canvas>.df-dm-stage{position:absolute;inset:0;width:1920px!important;height:1080px!important}
+.df-dm-canvas>.df-dm-stage{background:transparent!important;border:0!important;box-shadow:none!important}
+.df-lobby-panel>.df-ornate-panel{box-sizing:border-box;height:100%;width:100%}
 .df-ornate-panel{position:relative;overflow:hidden;border:1px solid #b8893a;border-radius:12px;background:rgba(12,18,28,.82);box-shadow:0 14px 38px rgba(0,0,0,.48),inset 0 0 0 1px rgba(12,12,16,.78),inset 0 0 28px rgba(184,137,58,.07);color:#efe6d2}
 .df-ornate-panel:before,.df-ornate-panel:after{position:absolute;width:18px;height:18px;color:#d9a441;content:"✦";font-family:Georgia,serif;font-size:14px;line-height:18px;pointer-events:none}.df-ornate-panel:before{left:7px;top:4px}.df-ornate-panel:after{right:7px;bottom:4px}
 .df-ornate-panel-title{margin:0 0 18px;color:#e7c27a;font-family:Cinzel,'Cormorant Garamond',Georgia,serif;font-size:19px;font-weight:500;letter-spacing:.14em;line-height:1;text-transform:uppercase}
