@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/monstercameron/DungeonFlux/internal/config"
+	"github.com/monstercameron/DungeonFlux/internal/content"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/llmexec"
 	"github.com/monstercameron/DungeonFlux/internal/media"
@@ -77,6 +78,7 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 	canned := voiceout.NewCannedExecutor(assets, audio)
 	interpret := llmexec.NewInterpretExecutor(llmexec.InterpretConfig{LLM: set.llm})
 	npcReply := llmexec.NewNPCReplyExecutor(set.llm)
+	opening := llmexec.NewOpeningExecutor(set.llm)
 	composeSource := assets.Read
 	if fakeMode {
 		composeSource = func(ctx context.Context, id domain.AssetID) ([]byte, error) {
@@ -98,12 +100,16 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 	runtime.Handle(runner, loggedExecutor(cfg.logger, transcriber.Execute))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, interpret.Execute))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, llmexec.NewCharacterFlavorExecutor(set.llm).Execute))
+	cast := content.DefaultOneShot().NPCs
 	runtime.Handle(runner, loggedExecutor(cfg.logger, func(ctx context.Context, effect domain.StartLine, scope domain.Scope, in ports.Inbox) {
+		effect = castVoice(cast, effect)
 		switch effect.Role {
 		case vocab.RoleNPCReply:
 			speakGenerated(npcReply.Execute, pcm.StartLine)(ctx, effect, scope, in)
-		case vocab.RoleOpening, vocab.RoleCliffhanger:
-			cannedWhenEmpty(pcm.StartLine)(ctx, effect, scope, in)
+		case vocab.RoleOpening:
+			cannedWhenEmpty(speakGenerated(opening.Execute, pcm.StartLine))(ctx, effect, scope, in)
+		case vocab.RoleCliffhanger:
+			scriptedCliffhanger(pcm.StartLine)(ctx, effect, scope, in)
 		default:
 			pcm.StartLine(ctx, effect, scope, in)
 		}

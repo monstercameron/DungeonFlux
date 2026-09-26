@@ -49,6 +49,8 @@ func Step(state State, input Event) (Result, error) {
 	switch event := input.Event.(type) {
 	case domain.Transcribed:
 		result.transcribed(event)
+	case domain.Say:
+		result.typed(event)
 	case domain.Interpreted:
 		result.interpreted(event)
 	case domain.InterpretFailed:
@@ -82,16 +84,33 @@ func (r *Result) transcribed(event domain.Transcribed) {
 	})
 }
 
+// typed enters a typed line (SessionService.Say) at the transcript stage, as
+// plan §0.9 stage 0 requires: it skips capture and STT and is interpreted like
+// speech. Only the seat in the conversation may speak; other seats are ignored.
+func (r *Result) typed(event domain.Say) {
+	if r.State.Seat != 0 && event.Seat != r.State.Seat {
+		return
+	}
+	text := strings.TrimSpace(event.Text)
+	if text == "" {
+		return
+	}
+	r.transcribed(domain.Transcribed{UtteranceID: event.UtteranceID, Text: text})
+}
+
 func (r *Result) interpreted(event domain.Interpreted) {
 	if !r.acceptUtterance(event.UtteranceID) {
 		return
 	}
 	text := strings.TrimSpace(event.CleanText)
-	if event.InterpretationKind == InterpretationMove && event.Move != "" {
+	// The interpret schema's enum is upper case ("DIALOGUE", "MOVE"), so the
+	// kind is compared without case.
+	kind := strings.ToLower(strings.TrimSpace(event.InterpretationKind))
+	if kind == InterpretationMove && event.Move != "" {
 		r.emitMove(event.Move)
 		return
 	}
-	if event.InterpretationKind != "" && event.InterpretationKind != InterpretationDialogue {
+	if kind != "" && kind != InterpretationDialogue {
 		return
 	}
 	if text == "" {

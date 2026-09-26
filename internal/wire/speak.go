@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/monstercameron/DungeonFlux/internal/content"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/ports"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
@@ -64,6 +65,33 @@ func (g *generatedLineInbox) Post(ctx context.Context, env domain.Envelope) bool
 		}
 	}
 	return g.in.Post(ctx, env)
+}
+
+// cliffhangerPlaceholder is the stand-in narration the cliffhanger phase sends
+// until the pre-rendered cliffhanger variant is passed to its StartLine.
+const cliffhangerPlaceholder = "The road continues."
+
+// scriptedCliffhanger replaces the cliffhanger stand-in with the scripted
+// Mother Vell cliffhanger (plan §0.7), so live TTS speaks the real ending
+// instead of the stand-in, and fake TTS still plays its recording by role.
+// The line's canned fallback asset ("canned-cliffhanger") is not in the
+// build-time manifest, so failing the line would end the show in silence.
+// Real narration text is spoken as usual.
+func scriptedCliffhanger(speak lineExecutor) lineExecutor {
+	return func(ctx context.Context, effect domain.StartLine, scope domain.Scope, in ports.Inbox) {
+		if text := strings.TrimSpace(effect.Input); text == "" || text == cliffhangerPlaceholder {
+			line, ok := content.CannedLineByID(content.CannedCliffhangerNPCID)
+			if !ok {
+				in.Post(ctx, domain.Envelope{Scope: scope, Event: domain.LineFailed{UtteranceID: effect.UtteranceID, FailureKind: vocab.ErrUnavailable}})
+				return
+			}
+			effect.Input = line.Text
+			if strings.TrimSpace(effect.Voice) == "" {
+				effect.Voice = line.Voice
+			}
+		}
+		speak(ctx, effect, scope, in)
+	}
 }
 
 // cannedWhenEmpty fails a line that arrives without text so its phase falls
