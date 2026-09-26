@@ -172,8 +172,10 @@ $p = Start-Process go -ArgumentList 'run','./cmd/server','-config','config/fake.
   -RedirectStandardOutput artifacts\logs\L-API\out.log -RedirectStandardError artifacts\logs\L-API\err.log -PassThru
 Stop-Process -Id $p.Id
 
-# Race gate (ORCH, WSL2; no race detector on windows/arm64)
-wsl -d Ubuntu-24.04 -- bash -lc "cd /mnt/c/Users/mreca/Desktop/DungeonFlux && go test -race ./internal/runtime/... ./internal/api/... ./internal/voice/..."
+# Race gate: not run locally (no race detector on windows/arm64, and no WSL).
+# The GitHub Actions job on ubuntu-latest runs it on every push to main:
+#   go test -race ./internal/runtime/... ./internal/api/... ./internal/voice/...
+# ORCH reads the result with: gh run list --workflow race.yml --limit 1
 ```
 `cmd/server` flags (plan §0.18.5): `-config <file>`, `-port <lane port>`, `-data-dir artifacts/runtime/<LANE>`, and `-seed <hex>` (stage and rehearsal only). Always pass your own port and data dir; never run on 8443 or under `artifacts/runtime/human/` or `show/`. Note that `go run` starts a child process, so stop it by the PID tree you launched, never by image name.
 

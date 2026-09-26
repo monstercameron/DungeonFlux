@@ -23,6 +23,9 @@ Build todos (hours 0–24) are generated from plan §0.18.9 (lane table and bloc
 - [x] PLAN-011 · AGENTS.md: 70% unit-test coverage per touched package in every lane gate, fast-test rules, exclusions
   lane: ORCH · paths: AGENTS.md, TODOS.md
   status: done d187597
+- [x] PLAN-016 · Drop the local WSL race gate; race tests run in GitHub Actions (ubuntu-latest) on push
+  lane: ORCH · paths: AGENTS.md, TODOS.md
+  status: done (this commit)
 - [x] PLAN-015 · Add four art-reference concepts (flooded hall, dock combat, tavern conversation, harbor at night) to assets/concept and docs/assets
   lane: ORCH · paths: assets/concept/*, docs/assets/*, TODOS.md
   status: done (this commit)
