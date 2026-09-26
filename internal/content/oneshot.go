@@ -61,8 +61,8 @@ func DefaultOneShot() OneShot {
 				},
 			},
 			Music: domain.MusicCatalogue{Tracks: []domain.MusicTrack{
-				{ID: "theme_drowned_lantern", Asset: "music_theme_drowned_lantern", LoopStartMS: 1200, LoopEndMS: 48100, BPM: 72, Level: 0.55, Duck: 0.18},
-				{ID: "combat_thrall", Asset: "music_combat_thrall", LoopStartMS: 800, LoopEndMS: 36200, BPM: 160, Level: 0.62, Duck: 0.16},
+				{ID: "THEME_MAIN", Asset: "THEME_MAIN", LoopStartMS: 1200, LoopEndMS: 48100, BPM: 80, Level: 0.6, Duck: 0.18},
+				{ID: "COMBAT_SKIRMISH_LOOP", Asset: "COMBAT_SKIRMISH_LOOP", LoopStartMS: 800, LoopEndMS: 36200, BPM: 160, Level: 0.5, Duck: 0.16},
 			}},
 		},
 		Catalogue: defaultCatalogue(),
@@ -77,7 +77,7 @@ func defaultCatalogue() []domain.Asset {
 		{"battlefield_tavern_splat", vocab.AssetSplat}, {"battlefield_tavern_lite", vocab.AssetSplat},
 		{"battlefield_tavern_flat", vocab.AssetImage}, {"thrall_loop_idle", vocab.AssetVideo},
 		{"thrall_loop_attack", vocab.AssetVideo}, {"thrall_loop_hit", vocab.AssetVideo}, {"thrall_loop_fall", vocab.AssetVideo},
-		{"music_theme_drowned_lantern", vocab.AssetMusic}, {"music_combat_thrall", vocab.AssetMusic},
+		{"THEME_MAIN", vocab.AssetMusic}, {"COMBAT_SKIRMISH_LOOP", vocab.AssetMusic},
 		{"establishing_tavern", vocab.AssetVideo}, {"arrival_door", vocab.AssetVideo},
 	}
 	assets := make([]domain.Asset, 0, len(ids))

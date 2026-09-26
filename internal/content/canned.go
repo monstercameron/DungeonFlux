@@ -25,13 +25,13 @@ const (
 	// CannedStrangerRelocatedID identifies the relocated-clue stranger line.
 	CannedStrangerRelocatedID = "canned_stranger_relocated"
 	// CannedCliffhangerNPCID identifies the Mother Vell cliffhanger recording.
-	CannedCliffhangerNPCID = "canned_cliffhanger_npc"
+	CannedCliffhangerNPCID = "canned_cliffhanger_vell"
 	// CannedCliffhangerStrangerID identifies the courier cliffhanger recording.
 	CannedCliffhangerStrangerID = "canned_cliffhanger_stranger"
 	// CannedSlainBySeat1ID identifies the seat-one combat victory recording.
-	CannedSlainBySeat1ID = "canned_slain_by_seat1"
+	CannedSlainBySeat1ID = "canned_combat_slain_seat1"
 	// CannedSlainBySeat2ID identifies the seat-two combat victory recording.
-	CannedSlainBySeat2ID = "canned_slain_by_seat2"
+	CannedSlainBySeat2ID = "canned_combat_slain_seat2"
 	// CannedFledID identifies the combat flee recording.
 	CannedFledID = "canned_fled"
 	// CannedExplorationNudgeID identifies the exploration turn nudge.

@@ -56,6 +56,35 @@ func TestRegisterScannedStills_SkipsMissingAndKeepsExistingTake(t *testing.T) {
 	}
 }
 
+func TestRegisterScannedStills_RegistersGeneratedAudioNames(t *testing.T) {
+	root := t.TempDir()
+	wants := []scannedAudio{audioRegistry[0], audioRegistry[12]}
+	for _, asset := range wants {
+		directory := filepath.Join(root, asset.directory)
+		if err := os.MkdirAll(directory, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		suffix := "_take1.opus"
+		if asset.directory == "audio" {
+			suffix = "-take-1.pcm"
+		}
+		if err := os.WriteFile(filepath.Join(directory, asset.logical+suffix), []byte(asset.logical), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	path, err := RegisterScannedStills(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest := readTestManifest(t, path)
+	for _, want := range wants {
+		asset, ok := manifest.Assets[want.logical]
+		if !ok || asset.Kind != want.kind || asset.Selected != 1 || len(asset.Takes) != 1 {
+			t.Errorf("manifest[%q] = %#v", want.logical, asset)
+		}
+	}
+}
+
 func TestRunRegister_RequiresScan(t *testing.T) {
 	if err := runRegister([]string{"--root", t.TempDir()}); err == nil {
 		t.Fatal("runRegister accepted missing --scan")
