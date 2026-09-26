@@ -2,7 +2,7 @@ import * as pc from "../vendor/playcanvas.mjs";
 import { createBattleGrid, createSplatEntity, loadSplatBundle } from "./battle_scene.mjs";
 import { createCinematicEffects } from "./cinematic_effects.mjs";
 import { installCapturedSkyExclusion, installGraySkybox } from "./gray_skybox.mjs";
-
+import { applyColorGrade, isKnownTheme } from "./color_grade.mjs";
 const VERSION = 1;
 const WORLD_LAYER = pc.LAYERID_WORLD;
 const DEFAULT_CAMERA = {
@@ -10,10 +10,8 @@ const DEFAULT_CAMERA = {
   target: [0, 1, 0],
   fov: 35,
 };
-
 const listeners = new Set();
 let runtime = null;
-
 function emit(message) {
   const payload = { v: VERSION, ...message };
   for (const listener of listeners) {
@@ -27,11 +25,9 @@ function emit(message) {
     }
   }
 }
-
 function errorMessage(code, detail) {
   emit({ type: "error", code, detail: String(detail ?? code) });
 }
-
 function asVector(value, fallback) {
   return Array.isArray(value) && value.length >= 3 ? value : fallback;
 }
@@ -208,6 +204,7 @@ function createRuntimeState(app, camera, message) {
     liteTried: false, lowFpsReported: false, replacing: false, transform: message.transform,
     skyFloorY: Number(message.voxel_collider_options?.floor_y ?? message.voxel_collider?.floor_y ?? 0),
     lastFrameAt: 0, lastStatsAt: performance.now(), lowFpsSince: 0, fpsSamples: [], destroyed: false,
+    colorGrade: message.color_grade ?? null, effectsEnabled: true,
   };
 }
 
@@ -218,6 +215,7 @@ function attachScene(state, message, bundle) {
     lodRangeMax: Number(message.lod_range_max ?? 99), name: "df-splat-scene",
   });
   installCapturedSkyExclusion(entity, bundle.collider, { floorY: state.skyFloorY });
+  applyColorGrade(entity, state.colorGrade, state.effectsEnabled);
   applyTransform(entity, message.transform);
   let grid = null;
   const activeGrid = bundle.grid ?? message.grid;
@@ -325,6 +323,7 @@ async function downgradeForFps(runtimeState) {
       name: "df-splat-scene-lite",
     });
     installCapturedSkyExclusion(replacementEntity, bundle.collider ?? runtimeState.capturedSkyCollider, { floorY: runtimeState.skyFloorY });
+    applyColorGrade(replacementEntity, runtimeState.colorGrade, runtimeState.effectsEnabled);
     applyTransform(replacementEntity, runtimeState.transform);
     const replacement = { asset: bundle.asset, entity: replacementEntity };
     runtimeState.splat.entity.destroy();
@@ -373,7 +372,15 @@ function send(raw) {
       }
       break;
     case "effects":
-      runtime?.effects?.send(message);
+      if (runtime) {
+        if (message.color_grade?.theme && !isKnownTheme(message.color_grade.theme)) break;
+        const accepted = runtime.effects?.send(message);
+        if (accepted) {
+          if (message.color_grade && typeof message.color_grade === "object") runtime.colorGrade = message.color_grade;
+          if (message.enabled !== undefined) runtime.effectsEnabled = Boolean(message.enabled);
+          if (message.color_grade || message.enabled !== undefined) applyColorGrade(runtime.splat?.entity, runtime.colorGrade, runtime.effectsEnabled);
+        }
+      }
       break;
     case "dispose":
       dispose();

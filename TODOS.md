@@ -1974,6 +1974,12 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: a neutral gray cubemap surrounds both scenes in the viewer and game runtime, captured sky outliers are excluded without removing walkable terrain, camera skybox layers and resource cleanup are correct, upward camera views and cinematic effects are visually checked, and the scoped gate passes.
   status: completed Codex; neutral cubemap, captured-sky filtering, both-scene GPU review and gate failures 0 green 2026-09-26
 
+- [x] SPLAT-017 · concept-derived theme color grades
+  why: The developer requests color grades for the themes based on the project concept images.
+  lane: L-WEB-SPLAT · paths: `web/splat/js/color_grade.mjs`, `web/splat/js/theme_grades.mjs`, `web/splat/js/gray_skybox.mjs`, `web/splat/js/df-splat.mjs`, `web/splat/js/viewer.mjs`, `web/splat/js/viewer.html`, `web/splat/protocol.go`, `web/splat/protocol_test.go`, `web/splat/scenes/cb2fddd6.json`, `web/splat/scenes/64bb46d5.json` · depends: SPLAT-016
+  done when: all ten battlemap themes have documented reference palettes and bounded GPU color grades, neutral/strength controls and typed runtime commands work, gray sky and grid remain readable, both scenes pass visual review, regressions and the lane gate pass.
+  status: done Codex · gate failures 0 · web/splat coverage 85.4% · GPU viewer/runtime verified
+
 ## 23. dfctl debug CLI
 
 Command-line reads and demo writes for agents and the developer.

@@ -39,6 +39,10 @@
       <select id="lod-selector" aria-label="Splat level of detail" disabled>
         <option value="auto">Auto (stream)</option>
       </select>
+      <label class="label" for="theme-grade">Theme</label>
+      <select id="theme-grade" aria-label="Color grade theme"><option value="neutral">Neutral</option></select>
+      <label class="label" for="grade-strength">Grade</label>
+      <input id="grade-strength" type="range" min="0" max="1" step="0.05" value="0.7" aria-label="Color grade strength">
       <span class="spacer"></span>
       <button id="grid-toggle" type="button" aria-pressed="true">Grid</button>
       <button id="tilt-toggle" type="button" aria-pressed="false">Tilt</button>

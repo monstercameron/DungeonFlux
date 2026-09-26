@@ -29,6 +29,13 @@ type CameraDef struct {
 	Far      float64    `json:"far,omitempty"`
 }
 
+// ColorGrade selects a bounded runtime color treatment for the battlefield.
+type ColorGrade struct {
+	Theme    string  `json:"theme"`
+	Strength float64 `json:"strength"`
+	Enabled  *bool   `json:"enabled,omitempty"`
+}
+
 // VoxelCollider describes an explicit terrain occupancy resource and agent envelope.
 type VoxelCollider struct {
 	URL            string     `json:"url"`
@@ -53,6 +60,7 @@ type Init struct {
 	Grid          Grid                 `json:"grid"`
 	Cameras       map[string]CameraDef `json:"cameras"`
 	VoxelCollider *VoxelCollider       `json:"voxel_collider,omitempty"`
+	ColorGrade    *ColorGrade          `json:"color_grade,omitempty"`
 	ReducedMotion bool                 `json:"reduced_motion,omitempty"`
 	Device        string               `json:"device"`
 }
@@ -113,13 +121,14 @@ type Pan struct {
 
 // Effects controls cinematic battlefield presentation with sequence deduplication.
 type Effects struct {
-	Seq           uint64     `json:"seq"`
-	ReducedMotion *bool      `json:"reduced_motion,omitempty"`
-	Enabled       *bool      `json:"enabled,omitempty"`
-	TiltShift     *TiltShift `json:"tilt_shift,omitempty"`
-	Shake         *Shake     `json:"shake,omitempty"`
-	Pan           *Pan       `json:"pan,omitempty"`
-	Stop          bool       `json:"stop,omitempty"`
+	Seq           uint64      `json:"seq"`
+	ReducedMotion *bool       `json:"reduced_motion,omitempty"`
+	Enabled       *bool       `json:"enabled,omitempty"`
+	TiltShift     *TiltShift  `json:"tilt_shift,omitempty"`
+	Shake         *Shake      `json:"shake,omitempty"`
+	Pan           *Pan        `json:"pan,omitempty"`
+	ColorGrade    *ColorGrade `json:"color_grade,omitempty"`
+	Stop          bool        `json:"stop,omitempty"`
 }
 
 // Scene is an idempotent full battlefield snapshot.

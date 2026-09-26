@@ -1,6 +1,8 @@
 package splat
 
 import (
+	"encoding/json"
+	"math"
 	"strings"
 	"testing"
 )
@@ -65,6 +67,70 @@ func TestEnvelope_effectsUsesSnakeCaseAndOptionalFields(t *testing.T) {
 	}
 	if strings.Contains(string(mustEnvelope(t, "effects", Effects{Seq: 5})), "tilt_shift") {
 		t.Fatal("omitted tilt shift serialized")
+	}
+}
+
+func TestEnvelope_colorGradeWireCases(t *testing.T) {
+	disabled := false
+	cases := []struct {
+		name  string
+		kind  string
+		value any
+		want  []string
+		miss  []string
+	}{
+		{name: "init zero strength disabled", kind: "init", value: Init{ColorGrade: &ColorGrade{Theme: "tavern", Strength: 0, Enabled: &disabled}}, want: []string{`"color_grade"`, `"theme":"tavern"`, `"strength":0`, `"enabled":false`}},
+		{name: "effects zero strength disabled", kind: "effects", value: Effects{Seq: 7, ColorGrade: &ColorGrade{Theme: "neutral", Strength: 0, Enabled: &disabled}}, want: []string{`"seq":7`, `"color_grade"`, `"theme":"neutral"`, `"strength":0`, `"enabled":false`}},
+		{name: "omitted", kind: "effects", value: Effects{Seq: 8}, miss: []string{"color_grade"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			text := string(mustEnvelope(t, tc.kind, tc.value))
+			for _, want := range tc.want {
+				if !strings.Contains(text, want) {
+					t.Fatalf("envelope %s does not contain %s", text, want)
+				}
+			}
+			for _, miss := range tc.miss {
+				if strings.Contains(text, miss) {
+					t.Fatalf("envelope %s unexpectedly contains %s", text, miss)
+				}
+			}
+		})
+	}
+}
+
+func TestEnvelope_colorGradeRoundTrip(t *testing.T) {
+	enabled := true
+	initRaw := mustEnvelope(t, "init", Init{ColorGrade: &ColorGrade{Theme: "harbor", Strength: 0.75, Enabled: &enabled}})
+	var initWire struct {
+		ColorGrade *ColorGrade `json:"color_grade"`
+	}
+	if err := json.Unmarshal(initRaw, &initWire); err != nil {
+		t.Fatal(err)
+	}
+	if initWire.ColorGrade == nil || initWire.ColorGrade.Theme != "harbor" || initWire.ColorGrade.Strength != 0.75 || initWire.ColorGrade.Enabled == nil || !*initWire.ColorGrade.Enabled {
+		t.Fatalf("init color grade = %+v", initWire.ColorGrade)
+	}
+	effectsRaw := mustEnvelope(t, "effects", Effects{ColorGrade: &ColorGrade{Theme: "neutral", Strength: 0.25}})
+	var effectsWire struct {
+		ColorGrade *ColorGrade `json:"color_grade"`
+	}
+	if err := json.Unmarshal(effectsRaw, &effectsWire); err != nil {
+		t.Fatal(err)
+	}
+	if effectsWire.ColorGrade == nil || effectsWire.ColorGrade.Theme != "neutral" || effectsWire.ColorGrade.Strength != 0.25 {
+		t.Fatalf("effects color grade = %+v", effectsWire.ColorGrade)
+	}
+}
+
+func TestEnvelope_colorGradeRejectsNonFiniteStrength(t *testing.T) {
+	for _, strength := range []float64{math.NaN(), math.Inf(1), math.Inf(-1)} {
+		t.Run("nonfinite", func(t *testing.T) {
+			if _, err := envelope("effects", Effects{ColorGrade: &ColorGrade{Theme: "neutral", Strength: strength}}); err == nil {
+				t.Fatalf("strength %v unexpectedly encoded", strength)
+			}
+		})
 	}
 }
 

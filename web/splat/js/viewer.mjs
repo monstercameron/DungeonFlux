@@ -2,6 +2,8 @@ import * as pc from "../vendor/playcanvas.mjs";
 import { applyBattleTransform, createBattleGrid, createSplatEntity, loadBattleProfile, loadSplatBundle } from "./battle_scene.mjs";
 import { createCinematicEffects } from "./cinematic_effects.mjs";
 import { installCapturedSkyExclusion, installGraySkybox } from "./gray_skybox.mjs";
+import { applyColorGrade as applySplatColorGrade } from "./color_grade.mjs";
+import { THEMES } from "./theme_grades.mjs";
 import { installOrbitControls } from "./camera_controls.mjs";
 import { applyCameraPreset, cameraPreset, cameraPresetNames } from "./grid_camera.mjs";
 import { cellsJSON, installDebugPickMode } from "./debug_pick.mjs";
@@ -27,6 +29,9 @@ const shakeButton = document.querySelector("#shake-effect");
 const panButton = document.querySelector("#pan-effect");
 const stopButton = document.querySelector("#stop-effects");
 const strengthNode = document.querySelector("#effect-strength");
+const themeNode = document.querySelector("#theme-grade");
+const gradeStrengthNode = document.querySelector("#grade-strength");
+let activeGrade = { theme: "neutral", strength: 0 };
 
 let app;
 let camera;
@@ -197,10 +202,13 @@ function installControls() {
     const strength = Number(strengthNode?.value ?? 1);
     cinematic?.send({ seq: ++effectSeq, enabled: true, tilt_shift: { enabled, center: 0.5, band: 0.3, falloff: 0.35, blur_px: enabled ? 2 * strength : 0 } });
   });
-  strengthNode?.addEventListener("input", () => {
-    if (tiltButton?.getAttribute("aria-pressed") !== "true") return;
-    cinematic?.send({ seq: ++effectSeq, enabled: true, tilt_shift: { enabled: true, center: 0.5, band: 0.3, falloff: 0.35, blur_px: 2 * Number(strengthNode.value) } });
+  gradeStrengthNode?.addEventListener("input", () => {
+    applyViewerGrade({ theme: themeNode?.value ?? activeGrade.theme, strength: Number(gradeStrengthNode.value), enabled: (themeNode?.value ?? activeGrade.theme) !== "neutral" });
   });
+  strengthNode?.addEventListener("input", () => {
+    if (tiltButton?.getAttribute("aria-pressed") === "true") cinematic?.send({ seq: ++effectSeq, enabled: true, tilt_shift: { enabled: true, center: 0.5, band: 0.3, falloff: 0.35, blur_px: 2 * Number(strengthNode.value) } });
+  });
+  themeNode?.addEventListener("change", () => applyViewerGrade({ theme: themeNode.value, strength: THEMES[themeNode.value].strength, enabled: themeNode.value !== "neutral" }));
   shakeButton?.addEventListener("click", () => cinematic?.send({ seq: ++effectSeq, enabled: true, shake: { amplitude_px: 8, duration_ms: 200 } }));
   panButton?.addEventListener("click", () => {
     const wide = panButton.dataset.wide !== "true";
@@ -209,6 +217,14 @@ function installControls() {
     cinematic?.send({ seq: ++effectSeq, enabled: true, pan: { preset: wide ? "SURVEY" : "TACTICAL", duration_ms: 2500 } });
   });
   stopButton?.addEventListener("click", () => { const pose = cinematic?.stop(); if (pose?.target) orbitControls?.setTarget(pose.target); });
+}
+
+function applyViewerGrade(config = {}) {
+  const theme = typeof config.theme === "string" && Object.hasOwn(THEMES, config.theme) ? config.theme : "neutral";
+  activeGrade = { theme, strength: Number(config.strength ?? THEMES[theme].strength ?? 0) };
+  if (gridEntity?.splatEntity) applySplatColorGrade(gridEntity.splatEntity, { theme, strength: activeGrade.strength }, config.enabled !== false);
+  if (themeNode) themeNode.value = theme;
+  if (gradeStrengthNode) gradeStrengthNode.value = String(activeGrade.strength);
 }
 
 function addLODOptions(profile, levelCount) {
@@ -263,6 +279,9 @@ function setupViewer(profile) {
   lodNode?.addEventListener("change", () => applyLOD(lodNode.value));
   app.on("postrender", recordFPS);
   app.start();
+  if (themeNode) {
+    themeNode.replaceChildren(...Object.entries(THEMES).map(([value, grade]) => { const option = document.createElement("option"); option.value = value; option.textContent = grade.label; return option; }));
+  }
 }
 
 function profileSourceLabel(profile, source) {
@@ -289,6 +308,7 @@ async function attachViewer(profile, source, bundle) {
     if (battleGrid.depthLayer?.id !== undefined && !camera.camera.layers.includes(battleGrid.depthLayer.id)) camera.camera.layers = [...camera.camera.layers, battleGrid.depthLayer.id];
     gridEntity.splatEntity = scene;
     gridEntity.profile = { ...(profile ?? {}), grid: activeGrid };
+    applyViewerGrade(profile?.color_grade ?? activeGrade);
     gridEntity.sourceLabel = profileSourceLabel(profile, source);
     if (sourceInfoNode) {
       const info = profile?.source ?? {};

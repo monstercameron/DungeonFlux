@@ -226,5 +226,10 @@
     "manifest": "https://d28zzqy0iyovbz.cloudfront.net/64bb46d5/v1/lod-meta.json",
     "license": "https://creativecommons.org/licenses/by/4.0/"
   },
-  "registration_note": "Path and adjacent clearing preview uses automatic collider candidates with terrain-height support on 1.524m logical cells. Physical scan units remain approximate; generated 0.2m occupancy is not a surveyed navigation mesh."
+  "registration_note": "Path and adjacent clearing preview uses automatic collider candidates with terrain-height support on 1.524m logical cells. Physical scan units remain approximate; generated 0.2m occupancy is not a surveyed navigation mesh.",
+  "color_grade": {
+    "theme": "forest",
+    "strength": 0.7,
+    "enabled": true
+  }
 }
