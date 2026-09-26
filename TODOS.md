@@ -955,6 +955,12 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   done when: the second DM Listen (same DM token) closes the first stream with a clear status; the skip in TestE2E_Path21_LatestDMListenReplacesOlderStream is removed and the test passes.
   status: committed 6cdf5f7
 
+- [ ] API-018 · allow same-origin browsers without per-port config
+  why: config/fake.json allows only http://localhost:18101, so the laptop on :8443 and phones on http://192.168.1.27:8443 are refused by the tunnel's origin check; human testing needs any same-origin page to connect.
+  lane: L-API · block: 8–11 · paths: `internal/api/server*.go`, `internal/api/origin*.go`, `config/fake.json` · depends: API-001
+  done when: a request whose Origin host:port equals the request Host is always allowed; configured extra origins still work; cross-origin requests from other hosts are still refused; tests cover localhost, LAN IP, and a foreign origin.
+  status: claimed luna
+
 ## 14. LLM layer
 
 SchemaFlux for OpenAI-dialect links, Gemini and Haiku adapters, model chains, budget, and the executors that turn effects into model calls.
@@ -1225,6 +1231,12 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   why: In the browser the WASM app panics at start-up (GWC-RUNTIME-PANIC-STARTUP: RenderTo target #app not found) because web/shell/static/index.html only has <p id=status>, so /dm, /p, and /host never render; the shell also uses the deprecated router GoRegisterRoute.
   lane: L-WEB-SHELL · block: 8–11 · paths: `web/shell/static/index.html`, `web/shell/compose*.go`, `web/shell/boot*.go` · depends: WEB-007, WEB-008
   done when: index.html contains the #app container (loading text inside it, replaced on mount); compose uses router.Register; after scripts/buildweb.ps1, loading /dm, /p, and /host on a lane server shows no console errors and renders each screen (verify headless with node or a Go test that checks index.html contains the mount id).
+  status: claimed luna
+
+- [ ] WEB-010 · WASM main stays alive after mounting
+  why: In the browser the Go program exits right after router Mount ("Go program has already exited" on the first callback) because web/shell main does not block, so no screen ever renders.
+  lane: L-WEB-SHELL · block: 8–11 · paths: `web/shell/boot_wasm.go` · depends: WEB-008
+  done when: main blocks forever after Mount (select {}); newBootClient failure renders a visible error screen instead of a nil client; after scripts/buildweb.ps1, /dm, /p, and /host render with no console errors on a lane server.
   status: claimed luna
 
 ## 19. Phone
@@ -1701,77 +1713,77 @@ Everything needed to run the 3-minute demo live.
 
 Server and client localization. Decisions (ORCH best guess, 2026-09-26): the server sends message keys plus arguments, never display strings; one pure Go catalog package (`internal/i18n`, JSON catalogs embedded at compile time) is shared by the server and the WASM client; each seat carries a BCP 47 locale, so phones in one room can differ while the DM screen uses the room locale; LLM text, STT, and TTS take the locale of the seat or room they serve. The demo ships `en`; `es` is the second locale that proves the path. Fallback order is exact locale, then base language, then `en`, and a missing key renders the key itself and logs one Warn.
 
-- [ ] I18N-001 · internal/i18n catalog, lookup, and plural rules
+- [x] I18N-001 · internal/i18n catalog, lookup, and plural rules
   why: Server and client need one pure, allocation-light catalog with locale negotiation, fallback, argument substitution, and CLDR one/other plural selection for en and es.
   lane: ORCH (delegated) · block: 14–17 · paths: `internal/i18n/**` · depends: CON-001
   done when: Lookup(locale, key, args) returns formatted text with fallback exact → base → en; Negotiate(Accept-Language or navigator.language list) picks a supported locale; plural rules tested; package passes archtest purity and builds for GOOS=js GOARCH=wasm; ≥ 70% coverage.
-  status: open
+  status: done 421cbb1
 
-- [ ] I18N-002 · locale in the contracts: Seat, Join, room, and View
+- [x] I18N-002 · locale in the contracts: Seat, Join, room, and View
   why: The engine and API must know each seat's locale and the room's DM-screen locale, and views must carry message keys and args instead of display strings.
   lane: ORCH · block: 14–17 · paths: `internal/domain/locale*.go`, `proto/dungeonflux/v1/*.proto`, `gen/**` · depends: I18N-001, CON-005, CON-009
   done when: domain.Locale type; Seat.Locale and room locale; JoinRequest.locale; View text fields gain a Msg{Key, Args} form alongside existing strings; buf lint and generate pass; round-trip tests.
-  status: open
+  status: done 4100e30
 
-- [ ] I18N-003 · English catalog extracted from content and moves
+- [x] I18N-003 · English catalog extracted from content and moves
   why: Canned lines, legal-move labels and reasons, callouts, host labels, and the end card must come from catalog keys so they can be translated.
   lane: L-CONTENT · block: 14–17 · paths: `internal/i18n/catalog/en.json`, `internal/content/i18n*.go` · depends: I18N-001, CONT-003, CONT-008
   done when: every user-visible string in internal/content resolves through a key present in en.json; a test fails on any content string without a key.
-  status: open
+  status: done 47977ad
 
-- [ ] I18N-004 · server resolves locale per seat and localizes views
+- [x] I18N-004 · server resolves locale per seat and localizes views
   why: The API must negotiate each client's locale on Join (explicit choice, then Accept-Language), store it on the seat, and project Msg keys for that seat.
   lane: L-API · block: 14–17 · paths: `internal/api/locale*.go` · depends: I18N-002, API-002, API-008
   done when: Join records the negotiated locale; the Watch projection for a seat carries its locale; a test with an es seat and an en DM screen gets the right locales per stream.
-  status: open
+  status: done fbbaf99
 
-- [ ] I18N-005 · web/shell/i18n client: locale detection, switcher, and t()
+- [x] I18N-005 · web/shell/i18n client: locale detection, switcher, and t()
   why: The WASM client needs the shared catalog, locale detection (?lang, saved choice, navigator.language), a language switcher, and a t() helper for Msg values.
   lane: L-WEB-SHELL · block: 14–17 · paths: `web/shell/i18n/**` · depends: I18N-001, WEB-008
   done when: t(Msg) renders from the catalog; locale persists per device; switching re-renders without reload; native tests cover detection order and fallback.
-  status: open
+  status: done 89ce1aa
 
-- [ ] I18N-006 · phone screens use t()
+- [x] I18N-006 · phone screens use t()
   why: Every phone string (creation, sheet, moves, PTT, typed input, dice, combat) must render through the catalog.
   lane: L-WEB-PHONE · block: 17–20 · paths: `web/phone/i18n*.go`, `web/phone/*.go` (string sites only) · depends: I18N-005, PHONE-009
   done when: no user-visible string literal remains in web/phone view code (I18N-011 lint passes for web/phone); es renders on a phone.
-  status: open
+  status: done 04295ab
 
-- [ ] I18N-007 · DM and host screens use t()
+- [x] I18N-007 · DM and host screens use t()
   why: The TV screen (lobby, callouts, timer, end card, attribution) and the host page must render through the catalog in the room locale.
   lane: L-WEB-DM · block: 17–20 · paths: `web/dm/i18n*.go`, `web/dm/*.go` (string sites only), `web/host/i18n*.go` · depends: I18N-005, DM-008, HOST-002
   done when: no user-visible string literal remains in web/dm or web/host view code; the host page has a room-locale selector.
-  status: open
+  status: done e10be83
 
-- [ ] I18N-008 · LLM prompts and schemas are locale-aware
+- [x] I18N-008 · LLM prompts and schemas are locale-aware
   why: NPC replies, opening narration, flavor, cliffhanger, and pre-rendered lines must be generated in the seat's or room's language, and interpret must accept transcripts in that language.
   lane: L-LLM · block: 17–20 · paths: `internal/content/prompts/locale*.go`, `internal/llmexec/locale*.go` · depends: I18N-002, CONT-002, LLM-008, LLM-009, LLM-010, LLM-011
   done when: every prompt template takes a locale and states the output language; the cache key includes the locale; fixture tests for en and es; interpret maps es transcripts to the same move_ids.
-  status: open
+  status: done 92b05ec
 
-- [ ] I18N-009 · voice in and out per locale
+- [x] I18N-009 · voice in and out per locale
   why: STT needs a language hint and TTS needs a voice and model that speak the locale; canned audio needs per-locale renders.
   lane: L-VOUT · block: 17–20 · paths: `internal/voice/out/locale*.go`, `internal/voice/in/locale*.go`, `config/voices*.json` · depends: I18N-002, VIN-003, VOUT-004
   done when: Scribe requests carry language_code; TTS picks a per-locale voice from config with fallback to en; canned lines resolve per-locale assets with en fallback; tests with fakes.
-  status: open
+  status: done 2c00133
 
-- [ ] I18N-010 · Spanish catalog and per-locale build-time canned audio job
+- [x] I18N-010 · Spanish catalog and per-locale build-time canned audio job
   why: A second locale proves the whole path; its canned lines and nudges need rendered audio like en.
   lane: L-OPS · block: 17–20 · paths: `internal/i18n/catalog/es.json`, `scripts/buildtime/canned_locale*.go` · depends: I18N-003, OPS-010
   done when: es.json has every en key (I18N-011 parity test); the canned job renders per locale with --dry-run tested (no paid run in the todo).
-  status: open
+  status: done 729bce4
 
-- [ ] I18N-011 · catalog parity and hard-coded string lint
+- [x] I18N-011 · catalog parity and hard-coded string lint
   why: Missing keys and new hard-coded strings are the usual way localization rots; a test must catch both.
   lane: ORCH (delegated) · block: 17–20 · paths: `internal/archtest/i18n*.go` · depends: I18N-003, I18N-005
   done when: a test fails when a catalog lacks a key present in en.json, when a key is unused, or when web view code or content adds a user-visible string literal outside an allowlist; runs in the lane gate.
-  status: open
+  status: done 6c77238
 
-- [ ] I18N-012 · dfctl and walk tests exercise a non-English room
+- [x] I18N-012 · dfctl and walk tests exercise a non-English room
   why: A full run with es seats catches locale bugs in the engine-to-client path before a live demo does.
   lane: L-ENG · block: 17–20 · paths: `internal/sim/walk/locale/**` · depends: I18N-004, I18N-008, SIM-007
   done when: a walk path joins an es phone and an en DM screen and asserts per-seat Msg locales through End with fakes.
-  status: open
+  status: done dbef7da
 
 ## 28. Backlog (post-hour-17, only if idle)
 
