@@ -9,6 +9,7 @@ func TestPreviews_CoverEveryPhoneState(t *testing.T) {
 		"ptt-recording": ScreenConversation, "ptt-sending": ScreenConversation, "typed-input": ScreenConversation,
 		"dice-offered": ScreenDice, "dice-rolled": ScreenDice, "combat-my-turn": ScreenCombat,
 		"combat-waiting": ScreenCombat, "down": ScreenCombat, "end": ScreenSheet,
+		"combat-move": ScreenCombat, "combat-watch": ScreenCombat,
 	}
 	got := Previews()
 	if len(got) != len(want) {

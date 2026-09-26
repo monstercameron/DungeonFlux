@@ -119,6 +119,8 @@ const (
 	MoveMove MoveID = "move"
 	// MoveEndTurn ends a combat turn.
 	MoveEndTurn MoveID = "end_turn"
+	// MoveDash spends the action to double movement and walk to a cell (R-D8).
+	MoveDash MoveID = "dash"
 	// StatusBloodied marks a bloodied combatant.
 	StatusBloodied StatusID = "bloodied"
 	// StatusDown marks a downed combatant.

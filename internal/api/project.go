@@ -191,6 +191,7 @@ func projectPhone(view domain.View, seat domain.SeatID) *df.PhoneView {
 	}
 	if view.Combat != nil {
 		out.Combat = projectPhoneCombat(*view.Combat)
+		out.Combat = projectPhoneCombatMap(out.Combat, view, seat)
 	}
 	return out
 }

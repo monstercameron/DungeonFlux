@@ -57,6 +57,7 @@ type Machine struct {
 	paused, conversationDone, strictCreation bool
 	timersEnabled, defaultTimersEnabled      bool
 	lobbyAudioSent                           bool
+	moveUIOff                                bool
 	oneShot                                  domain.OneShot
 	seats                                    []domain.SeatView
 	spotlight                                domain.SeatID

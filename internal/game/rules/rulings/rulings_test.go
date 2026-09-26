@@ -60,7 +60,7 @@ func TestRulingsValidationAndModifiers(t *testing.T) {
 
 func TestDemoRulingsExposeCombatSurface(t *testing.T) {
 	rows := DemoRulings()
-	if len(rows) != 4 || rows[0].ID != RulingD4 || rows[1].ID != RulingD5 || rows[2].ID != Ruling09 || rows[3].ID != RulingClassTemplate {
+	if len(rows) != 5 || rows[0].ID != RulingD4 || rows[1].ID != RulingD5 || rows[2].ID != Ruling09 || rows[3].ID != RulingClassTemplate || rows[4].ID != RulingD8 {
 		t.Fatalf("rulings=%#v", rows)
 	}
 	for _, row := range rows {

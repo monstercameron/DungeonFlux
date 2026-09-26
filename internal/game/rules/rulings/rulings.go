@@ -14,6 +14,8 @@ const (
 	RulingD4 Ruling = "R-D4"
 	// RulingD5 identifies the Rogue Sneak Attack rule.
 	RulingD5 Ruling = "R-D5"
+	// RulingD8 identifies the Dash movement rule for the phone combat map.
+	RulingD8 Ruling = "R-D8"
 	// Ruling09 identifies critical damage dice doubling.
 	Ruling09 Ruling = "R-09"
 	// RulingClassTemplate identifies the all-class demo template adjustment.
@@ -34,6 +36,7 @@ func DemoRulings() []DemoRuling {
 		{ID: RulingD5, Text: "A Rogue adds 1d6 when the other PC is adjacent and the target is not Down."},
 		{ID: Ruling09, Text: "A natural 20 doubles every damage die, including Sneak Attack."},
 		{ID: RulingClassTemplate, Text: "The twelve-class demo fixes Persuasion proficiency and keeps HP in the 11-12 combat band."},
+		{ID: RulingD8, Text: "Dash (SRD 5.2.1): the action doubles the turn's movement from 6 to 12 cells along the engine path, and the turn ends when the walk has played, with no attack. A plain move of up to 6 cells keeps the action, so an attack may follow it (R-D3)."},
 	}
 }
 

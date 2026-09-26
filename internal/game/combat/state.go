@@ -41,6 +41,9 @@ type TokenPresentation struct {
 	Path    []Cell
 	Anim    string
 	AnimSeq uint64
+	// StepMS is the walk pace in milliseconds per path cell; zero means the
+	// default WalkStepMS. A Dash walks faster (DashStepMS, R-D8).
+	StepMS int64
 }
 
 // CameraPresentation describes the engine-selected combat camera.
@@ -94,6 +97,10 @@ type Participant struct {
 	AC         int
 	Conditions []rules.Condition
 	ActionUsed bool
+	// Moved counts the cells walked this turn (R-D3, R-D8).
+	Moved int
+	// Dashed records that the Dash action spent this turn's action (R-D8).
+	Dashed bool
 }
 
 // IsDown reports whether the participant is unable to take a turn.
@@ -249,5 +256,6 @@ func validateConfig(config Config) error {
 func (s *State) resetAction() {
 	for i := range s.PCs {
 		s.PCs[i].ActionUsed = s.PCs[i].IsDown()
+		s.PCs[i].Moved, s.PCs[i].Dashed = 0, false
 	}
 }

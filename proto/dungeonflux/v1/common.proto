@@ -172,11 +172,32 @@ message Token {
   string anim = 11;
   uint64 anim_seq = 12;
   map<string, string> clips = 13;
+  // step_ms is the walk pace per path cell; 0 means 250 ms. A Dash walks
+  // faster (anim "dash", R-D8).
+  int32 step_ms = 14;
 }
 message Highlight { Cell cell = 1; string kind = 2; repeated Cell cells = 3; }
 message TurnOrderEntry { string token_id = 1; string name = 2; string portrait_url = 3; int32 hp = 4; int32 hp_max = 5; bool active = 6; bool done = 7; }
 message CombatView { string token_id = 1; int32 hp = 2; int32 hp_max = 3; repeated string statuses = 4; bool my_turn = 5; int32 move_left_cells = 6; MiniGrid mini_grid = 7; int64 contact_in_ms = 8; }
-message MiniGrid { int32 cols = 1; int32 rows = 2; repeated Cell walkable = 3; repeated Cell reachable = 4; Cell me = 5; Cell thrall = 6; }
+message MiniGrid {
+  int32 cols = 1; int32 rows = 2; repeated Cell walkable = 3; repeated Cell reachable = 4; Cell me = 5; Cell thrall = 6;
+  // The top-down combat map (R-D3, R-D8): every token, the dash-only cells,
+  // and the engine path to each reachable cell. Reach is empty for the
+  // watching seat. The phone never pathfinds.
+  repeated MapToken tokens = 7;
+  repeated Cell dash_reachable = 8;
+  repeated ReachPath paths = 9;
+  string me_token_id = 10;
+  bool can_dash = 11;
+  int32 walk_step_ms = 12;
+  int32 dash_step_ms = 13;
+}
+message MapToken {
+  string token_id = 1; string name = 2; string kind = 3; Cell cell = 4; int32 hp = 5; int32 hp_max = 6;
+  bool me = 7; bool enemy = 8; bool down = 9; bool active = 10; string portrait_url = 11; int32 seat = 12;
+  repeated Cell path = 13; string anim = 14; uint64 anim_seq = 15; int32 step_ms = 16;
+}
+message ReachPath { Cell cell = 1; repeated Cell path = 2; bool dash = 3; }
 
 message DMView {
   string background_url = 1;

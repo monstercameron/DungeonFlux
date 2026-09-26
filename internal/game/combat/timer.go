@@ -99,7 +99,7 @@ func (s State) TurnTimerAction() (AutoAction, error) {
 		return AutoEndTurn, nil
 	}
 	if s.Thrall.HP > 0 {
-		if _, _, reachable := s.approach(pc.Position, maxCombatMove); reachable {
+		if _, _, reachable := s.approach(pc, s.moveLeft(pc)); reachable {
 			return AutoAttack, nil
 		}
 	}

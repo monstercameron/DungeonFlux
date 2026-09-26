@@ -24,14 +24,36 @@ func combatStyledScreen(model *CombatModel, locale string, _ ...ui.Node) ui.Node
 	refresh := ui.UseState(0)
 	snapshot := model.Snapshot()
 	theme := DefaultPhoneTheme()
-	return html.Section(html.Props{Class: "df-phone-combat", Role: "region", Aria: map[string]string{"label": "Combat"}, Style: combatContentStyle(theme)},
+	if snapshot.CanAct && model.MapOpen() {
+		return html.Section(html.Props{Key: "combat-map", Class: "df-phone-combat is-map", Role: "region", Aria: map[string]string{"label": "Combat"}, Style: combatContentStyle(theme)},
+			ui.CreateElement(combatMapPanel, combatMapProps{model: model, refresh: refresh, revision: refresh.Get(), timer: combatMapTimer(snapshot), percent: combatPercent(snapshot.TimerRemaining, snapshot.TimerTotal)}),
+		)
+	}
+	return html.Section(html.Props{Key: "combat-list", Class: "df-phone-combat", Role: "region", Aria: map[string]string{"label": "Combat"}, Style: combatContentStyle(theme)},
 		combatProfile(snapshot, theme),
 		combatTurnStrip(snapshot, theme),
 		combatStatusPanel(snapshot, locale),
 		combatTarget(snapshot, theme),
-		combatGrid(snapshot, model, refresh, theme),
+		combatWatchMap(snapshot, model, refresh),
 		combatActions(snapshot, model, refresh, locale),
 	)
+}
+
+// combatMapTimer is the compact turn timer of map mode; empty when turn
+// timers are off.
+func combatMapTimer(snapshot CombatSnapshot) string {
+	if snapshot.TimerTotal <= 0 {
+		return ""
+	}
+	return combatTimerText(snapshot)
+}
+
+// combatWatchMap shows the waiting seat the same battlefield read-only.
+func combatWatchMap(snapshot CombatSnapshot, model *CombatModel, refresh ui.State[int]) ui.Node {
+	if snapshot.CanAct || snapshot.MiniGrid == nil || len(snapshot.MiniGrid.GetTokens()) == 0 {
+		return nil
+	}
+	return ui.CreateElement(combatMapPanel, combatMapProps{model: model, refresh: refresh, revision: refresh.Get(), watching: true})
 }
 
 func combatContentStyle(theme PhoneTheme) map[string]string {
@@ -141,37 +163,6 @@ func combatTarget(snapshot CombatSnapshot, theme PhoneTheme) ui.Node {
 	}}, children...)
 }
 
-func combatGrid(snapshot CombatSnapshot, model *CombatModel, refresh ui.State[int], theme PhoneTheme) ui.Node {
-	if !snapshot.CanAct || snapshot.Down || len(snapshot.Grid) == 0 {
-		return nil
-	}
-	cols := int32(1)
-	if snapshot.MiniGrid != nil && snapshot.MiniGrid.GetCols() > 0 {
-		cols = snapshot.MiniGrid.GetCols()
-	}
-	style := map[string]string{"display": "grid", "grid-template-columns": "repeat(" + strconv.FormatInt(int64(cols), 10) + ", 1fr)", "gap": "4px", "padding": "8px", "border": "1px solid rgba(168,159,140,.3)", "border-radius": theme.BorderRadius, "background": "rgba(9,12,18,.78)"}
-	cells := make([]ui.Node, 0, len(snapshot.Grid))
-	for _, cell := range snapshot.Grid {
-		cells = append(cells, combatGridCell(cell, model, refresh, snapshot.CanAct, theme))
-	}
-	return html.Section(html.Props{Class: "df-phone-combat-grid-wrap", Aria: map[string]string{"label": "Movement grid"}},
-		html.Div(html.Props{Style: map[string]string{"display": "flex", "align-items": "center", "gap": "7px", "margin": "0 2px 6px"}}, choiceIcon(combatIconName("ui/icon_move", "◇")), html.Span(html.Props{Style: combatLabelStyle()}, html.Text("MOVE - "+strconv.FormatInt(int64(snapshot.MoveLeftCells), 10)+" CELLS"))),
-		html.Div(html.Props{Class: "df-phone-combat-grid", Style: style}, cells...),
-	)
-}
-
-func combatGridCell(cell CombatCell, model *CombatModel, refresh ui.State[int], canAct bool, theme PhoneTheme) ui.Node {
-	clickable := canAct && cell.Reachable && !cell.Me && !cell.Thrall
-	props := html.Props{Type: "button", Class: "df-phone-combat-cell", Disabled: !clickable, Aria: map[string]string{"label": combatCellLabel(cell)}, Style: combatCellStyle(cell, clickable, theme)}
-	if clickable {
-		selected := df.Cell{C: cell.Column, R: cell.Row}
-		props.OnClick = ui.UseEvent(func() {
-			go func() { model.ApplyAct(<-model.Move(context.Background(), &selected)); refresh.Set(refresh.Get() + 1) }()
-		})
-	}
-	return html.Button(props, html.Text(combatCellGlyph(cell)))
-}
-
 func combatActions(snapshot CombatSnapshot, model *CombatModel, refresh ui.State[int], locale string) ui.Node {
 	items := make([]ui.Node, 0, len(snapshot.Moves))
 	for _, move := range snapshot.Moves {
@@ -195,6 +186,11 @@ func combatMoveChoice(model *CombatModel, refresh ui.State[int], move *df.Move, 
 	}
 	row := ChoiceRowModel{ID: move.GetMoveId(), Label: label, Reason: MoveReason(MoveSnapshot{Enabled: move.GetEnabled(), Reason: move.GetReason()}), Icon: combatMoveIcon(move.GetMoveId()), Enabled: move.GetEnabled(), Highlighted: move.GetMoveId() == "attack" && move.GetEnabled()}
 	tap := ui.UseEvent(func() {
+		if move.GetMoveId() == "move" && len(model.Snapshot().MiniGrid.GetPaths()) > 0 {
+			model.OpenMap()
+			refresh.Set(refresh.Get() + 1)
+			return
+		}
 		go func() { model.ApplyAct(<-model.Tap(context.Background(), move)); refresh.Set(refresh.Get() + 1) }()
 	})
 	choice := combatChoiceRow(row, tap)
@@ -348,50 +344,4 @@ func combatAttackPreview(preview *df.MovePreview) string {
 		parts = append(parts, damageText)
 	}
 	return strings.Join(parts, " · ")
-}
-
-func combatCellLabel(cell CombatCell) string {
-	if cell.Me {
-		return "Your position"
-	}
-	if cell.Thrall {
-		return "Drowned thrall"
-	}
-	if cell.Reachable {
-		return "Move to reachable cell"
-	}
-	return "Blocked cell"
-}
-
-func combatCellGlyph(cell CombatCell) string {
-	if cell.Me {
-		return "*"
-	}
-	if cell.Thrall {
-		return "X"
-	}
-	if cell.Reachable {
-		return "."
-	}
-	return ""
-}
-
-func combatCellStyle(cell CombatCell, clickable bool, theme PhoneTheme) map[string]string {
-	background, border, color := "rgba(34,39,48,.78)", "1px solid rgba(168,159,140,.18)", "#545a64"
-	if cell.Walkable {
-		background = "rgba(44,49,57,.88)"
-	}
-	if cell.Reachable {
-		background, border, color = "rgba(58,163,154,.17)", "1px solid rgba(58,163,154,.65)", theme.Teal
-	}
-	if cell.Me {
-		background, border, color = "rgba(217,164,65,.23)", "1px solid rgba(217,164,65,.9)", theme.GoldBright
-	}
-	if cell.Thrall {
-		background, border, color = "rgba(179,55,47,.28)", "1px solid rgba(210,92,82,.9)", "#e99486"
-	}
-	if !clickable && cell.Reachable && !cell.Me && !cell.Thrall {
-		color = "#548c87"
-	}
-	return map[string]string{"min-height": "42px", "padding": "0", "border": border, "border-radius": "8px", "background": background, "color": color, "font-size": "18px", "font-weight": "700", "touch-action": "manipulation"}
 }

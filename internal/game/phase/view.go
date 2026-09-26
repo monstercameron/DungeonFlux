@@ -26,6 +26,7 @@ func (m Machine) View() domain.View {
 	if m.State() == vocab.StateCombat {
 		view.Combat = m.combatView()
 		view.Battlefield = m.combatBattlefieldView(*view.Combat)
+		m.decorateCombatMap(&view)
 	}
 	return view
 }
@@ -81,7 +82,7 @@ func (m Machine) combatMoves(seat domain.SeatID, card domain.SeatView) []domain.
 		attack.Reason = "The drowned thrall is defeated"
 	}
 	end := move(vocab.MoveEndTurn, "End turn", active && alive, waiting)
-	return []domain.MoveView{moveView, attack, end}
+	return m.withCombatMoveUI(seat, []domain.MoveView{moveView, attack, end})
 }
 
 func (m Machine) combatView() *domain.CombatView {
@@ -213,57 +214,15 @@ func moveLabel(id vocab.MoveID) string {
 }
 
 func reachableOptions(state combat.State, seat domain.SeatID) []domain.OptionView {
-	if seat < 1 || seat > 2 {
-		return nil
-	}
-	participant := state.PCs[seat-1]
 	options := make([]domain.OptionView, 0)
-	for row := 0; row < state.Grid.Rows; row++ {
-		for column := 0; column < state.Grid.Cols; column++ {
-			cell := combat.Cell{X: column, Y: row}
-			if cell == participant.Position || !state.Grid.IsWalkable(cell) || !reachable(state.Grid, participant.Position, cell, 6) {
-				continue
-			}
-			id := fmt.Sprintf("%d,%d", column, row)
-			options = append(options, domain.OptionView{ID: id, Label: fmt.Sprintf("(%d, %d)", column, row)})
-		}
-	}
-	return options
-}
-
-func reachable(grid combat.Grid, start, goal combat.Cell, limit int) bool {
-	if !grid.IsWalkable(start) || !grid.IsWalkable(goal) || limit < 0 {
-		return false
-	}
-	if start == goal {
-		return true
-	}
-	type node struct {
-		cell  combat.Cell
-		steps int
-	}
-	queue := []node{{cell: start}}
-	visited := map[combat.Cell]bool{start: true}
-	directions := [][2]int{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}}
-	for len(queue) > 0 {
-		current := queue[0]
-		queue = queue[1:]
-		if current.steps >= limit {
+	for _, entry := range state.ReachFor(int(seat)).Cells {
+		if entry.Dash {
 			continue
 		}
-		for _, direction := range directions {
-			next := combat.Cell{X: current.cell.X + direction[0], Y: current.cell.Y + direction[1]}
-			if visited[next] || !grid.IsWalkable(next) {
-				continue
-			}
-			if next == goal {
-				return true
-			}
-			visited[next] = true
-			queue = append(queue, node{cell: next, steps: current.steps + 1})
-		}
+		column, row := entry.Cell.X, entry.Cell.Y
+		options = append(options, domain.OptionView{ID: fmt.Sprintf("%d,%d", column, row), Label: fmt.Sprintf("(%d, %d)", column, row)})
 	}
-	return false
+	return options
 }
 
 func seatFrom(seats []domain.SeatView, wanted domain.SeatID) (domain.SeatView, bool) {

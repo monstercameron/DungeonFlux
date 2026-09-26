@@ -45,6 +45,9 @@ func (m *Machine) stepHook(event domain.Event) (Result, error) {
 }
 
 func (m *Machine) stepCombat(event domain.Event) (Result, error) {
+	if result, handled, err := m.stepCombatDash(event); handled {
+		return result, err
+	}
 	if action, ok := event.(domain.Act); ok {
 		effects, err := m.applyCombatAction(action)
 		if err != nil {
@@ -67,9 +70,8 @@ func (m *Machine) stepCombat(event domain.Event) (Result, error) {
 }
 
 func (m *Machine) applyCombatAction(action domain.Act) ([]domain.Effect, error) {
-	if action.Move == vocab.MoveMove {
-		_, err := m.combat.Move(combat.Cell{X: action.Cell.C, Y: action.Cell.R})
-		return nil, err
+	if effects, handled, err := m.applyCombatMove(action); handled {
+		return effects, err
 	}
 	if action.Move == vocab.MoveAttack {
 		result, err := m.combat.Attack(m.combatDice, string(action.Target))
@@ -183,7 +185,7 @@ func (m *Machine) startHook() ([]domain.Effect, error) {
 
 func (m *Machine) startCombat() error {
 	var err error
-	m.combat, err = combat.New(combatConfig())
+	m.combat, err = combat.New(contentCombatConfig(m.oneShot.Encounter.Battlefield))
 	if err != nil {
 		return err
 	}

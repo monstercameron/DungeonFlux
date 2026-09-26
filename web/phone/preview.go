@@ -25,6 +25,8 @@ func Previews() []PhonePreview {
 		preview("dice-rolled", "check", dicePhone("Rolling d20…", false, "persuade")),
 		preview("combat-my-turn", "combat", combatPhone(true, "Your turn — strike the thrall.")),
 		preview("combat-waiting", "combat", combatPhone(false, "The thrall is moving.")),
+		preview("combat-move", "combat", combatMapPhone(true)),
+		preview("combat-watch", "combat", combatMapPhone(false)),
 		preview("down", "combat", downPhone()),
 		preview("end", "end", endPhone()),
 	}

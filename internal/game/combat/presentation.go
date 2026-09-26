@@ -24,6 +24,16 @@ func (s *State) setAction(token, anim string, path []Cell) {
 	visual.Path = append([]Cell(nil), path...)
 	visual.Anim = anim
 	visual.AnimSeq++
+	visual.StepMS = 0
+	s.Presentation.Tokens[token] = visual
+}
+
+func (s *State) setStepMS(token string, stepMS int64) {
+	visual, ok := s.Presentation.Tokens[token]
+	if !ok {
+		return
+	}
+	visual.StepMS = stepMS
 	s.Presentation.Tokens[token] = visual
 }
 
@@ -59,15 +69,9 @@ func (s *State) setShake(amplitude float64, durationMS int64) {
 
 func (s *State) setReachHighlights(participant Participant) {
 	cells := make([]Cell, 0)
-	for row := 0; row < s.Grid.Rows; row++ {
-		for column := 0; column < s.Grid.Cols; column++ {
-			cell := Cell{X: column, Y: row}
-			if cell == participant.Position || !s.Grid.IsWalkable(cell) {
-				continue
-			}
-			if _, ok := shortestPath(s.Grid, participant.Position, cell, maxCombatMove); ok {
-				cells = append(cells, cell)
-			}
+	for _, entry := range s.reach(participant).Cells {
+		if !entry.Dash {
+			cells = append(cells, entry.Cell)
 		}
 	}
 	s.Presentation.Highlights = []Highlight{{Kind: "reach", Cells: cells}}

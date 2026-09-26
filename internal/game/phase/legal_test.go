@@ -72,7 +72,7 @@ func TestLegalMoveViews_CombatHasReachableMoveTargetsAndSeatTwoTurn(t *testing.T
 		t.Fatal(err)
 	}
 	moves := machine.LegalMoveViews(1)
-	if len(moves) != 3 || moves[0].ID != vocab.MoveMove || !moves[0].Enabled || len(moves[0].Options) != 15 {
+	if len(moves) != 3 || moves[0].ID != vocab.MoveMove || !moves[0].Enabled || len(moves[0].Options) != 13 { // 16 cells minus the three occupied ones
 		t.Fatalf("seat 1 combat moves = %#v", moves)
 	}
 	if moves[1].ID != vocab.MoveAttack || moves[1].TargetID != "thrall" || moves[2].ID != vocab.MoveEndTurn {

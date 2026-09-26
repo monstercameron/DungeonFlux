@@ -3,6 +3,7 @@ package combat
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/monstercameron/DungeonFlux/internal/game/rules"
 	"github.com/monstercameron/DungeonFlux/internal/game/rules/dice"
@@ -33,16 +34,19 @@ func (s *State) Move(cell Cell) (MoveResult, error) {
 	if !ok || pc.IsDown() {
 		return MoveResult{}, errors.New("no active player turn")
 	}
-	path, ok := shortestPath(s.Grid, pc.Position, cell, maxCombatMove)
-	if !ok {
+	target, ok := s.reach(pc).Lookup(cell)
+	if !ok || target.Dash {
 		return MoveResult{}, fmt.Errorf("cell %v is not reachable", cell)
 	}
+	path := target.Path
 	pc.Position = cell
+	pc.Moved += len(path)
 	if err := s.SetParticipant(pc); err != nil {
 		return MoveResult{}, err
 	}
 	s.clearPaths()
 	s.setAction(pc.ID, "walk", path)
+	s.setStepMS(pc.ID, WalkStepMS)
 	s.setReachHighlights(pc)
 	return MoveResult{Seat: pc.Seat, Path: path}, nil
 }
@@ -63,11 +67,12 @@ func (s *State) Attack(source *dice.Roller, target string) (AttackResult, error)
 	if target != s.Thrall.ID || s.Thrall.HP <= 0 {
 		return AttackResult{}, errors.New("target is not an alive thrall")
 	}
-	path, destination, ok := s.approach(pc.Position, maxCombatMove)
+	path, destination, ok := s.approach(pc, s.moveLeft(pc))
 	if !ok {
 		return AttackResult{}, errors.New("thrall is out of attack range")
 	}
 	pc.Position = destination
+	pc.Moved += len(path)
 	outcome, err := weaponAttack(source, pc, s.Thrall)
 	if err != nil {
 		return AttackResult{}, err
@@ -123,11 +128,12 @@ func (s *State) Bell() error {
 	return nil
 }
 
-func (s State) approach(start Cell, limit int) ([]Cell, Cell, bool) {
+func (s State) approach(pc Participant, limit int) ([]Cell, Cell, bool) {
+	start, grid := pc.Position, s.movementGrid(pc)
 	bestPath := []Cell(nil)
 	bestCell := Cell{}
 	for _, cell := range neighbors(s.ThrallCell()) {
-		path, ok := shortestPath(s.Grid, start, cell, limit)
+		path, ok := shortestPath(grid, start, cell, limit)
 		if !ok || (bestPath != nil && len(path) >= len(bestPath)) {
 			continue
 		}
@@ -140,13 +146,21 @@ func (s State) approach(start Cell, limit int) ([]Cell, Cell, bool) {
 func (s State) ThrallCell() Cell { return s.ThrallPosition }
 
 func weaponAttack(source *dice.Roller, pc Participant, thrall rules.CreatureState) (rules.AttackOutcome, error) {
-	notation, bonus, damageType := weapon(pc.Build.Class)
+	notation, bonus, damageType := buildWeapon(pc.Build)
 	outcome, err := rules.Attack(source, fmt.Sprintf("attack-%d", pc.Seat), pc.ID, thrall.ID,
 		pc.Build.AttackBonus, thrall.AC, notation, bonus, damageType, thrall.HP, 0)
 	if err != nil || !outcome.Hit {
 		return outcome, err
 	}
 	return outcome, nil
+}
+
+func buildWeapon(build rules.Build) (string, int, string) {
+	if build.Attack.Dice != "" {
+		notation := strings.SplitN(build.Attack.Dice, "+", 2)[0]
+		return notation, build.Attack.Bonus, build.Attack.DamageType
+	}
+	return weapon(build.Class)
 }
 
 func (s State) sneakEligible(pc Participant) bool {

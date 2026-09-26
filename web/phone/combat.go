@@ -56,9 +56,10 @@ type CombatCell struct {
 
 // CombatModel owns combat controls and Act request construction.
 type CombatModel struct {
-	client ActClient
-	state  CombatSnapshot
-	seat   string
+	client   ActClient
+	state    CombatSnapshot
+	seat     string
+	mapState combatMapState
 }
 
 // NewCombatModel creates a phone combat model for one seat.
@@ -97,6 +98,7 @@ func (m *CombatModel) ApplyScreenState(state *df.ScreenState) CombatSnapshot {
 	m.state.TimerLabel = combatTimerLabel(m.state.TimerRemaining, m.state.TimerFrozen)
 	combat := phone.GetCombat()
 	if combat == nil {
+		m.mapState.applyMap(nil, false, m.mapState.nowMS())
 		m.state = CombatSnapshot{StatusText: phone.GetStatusText(), Moves: cloneMoves(phone.GetMoves()), Locale: phoneLocale(phone)}
 		m.state.TimerRemaining, m.state.TimerTotal, m.state.TimerFrozen = timerState(phone.GetTurnTimer())
 		return m.Snapshot()
@@ -114,6 +116,7 @@ func (m *CombatModel) ApplyScreenState(state *df.ScreenState) CombatSnapshot {
 	m.state.WaitingFor = combatWaitingFor(m.state.MyTurn, m.state.Down)
 	m.state.Attack = attackSummary(m.state.Moves)
 	m.state.Grid = projectCombatGrid(m.state.MiniGrid)
+	m.mapState.applyMap(m.state.MiniGrid, m.state.CanAct, m.mapState.nowMS())
 	m.state.Error = ""
 	return m.Snapshot()
 }

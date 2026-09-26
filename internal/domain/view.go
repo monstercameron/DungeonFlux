@@ -77,6 +77,8 @@ type SeatView struct {
 	TurnTimer    TimerView
 	StatusText   string
 	StatusMsg    LocalizedMessage
+	// CombatMap is the seat's top-down combat movement map (combat only).
+	CombatMap *CombatMapView
 }
 type MoveView struct {
 	ID       vocab.MoveID
@@ -137,6 +139,9 @@ type TokenView struct {
 	Status     string
 	HP, HPMax  int
 	Active     bool
+	// StepMS is the walk pace per path cell; zero means 250 ms (a Dash is
+	// faster, R-D8).
+	StepMS int64
 }
 type HighlightView struct {
 	Kind  string
