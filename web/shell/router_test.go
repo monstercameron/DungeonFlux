@@ -12,7 +12,7 @@ func TestRouteForPath(t *testing.T) {
 		{name: "root defaults to dm", path: "/", want: RouteDM},
 		{name: "phone trailing slash", path: "/p/", want: RoutePhone},
 		{name: "host query", path: "/host?debug=1", want: RouteHost},
-		{name: "unknown", path: "/about", want: RouteNotFound},
+		{name: "about", path: "/about", want: RouteAbout},
 		{name: "empty", path: "", want: RouteNotFound},
 	}
 	for _, test := range tests {

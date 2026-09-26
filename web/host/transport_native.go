@@ -1,6 +1,6 @@
 //go:build !js || !wasm
 
-package main
+package host
 
 import (
 	"google.golang.org/grpc"

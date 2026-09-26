@@ -1,4 +1,4 @@
-package main
+package host
 
 import (
 	"context"
@@ -44,10 +44,6 @@ func TestTransportDialOption_returnsOption(t *testing.T) {
 	if transportDialOption("endpoint") == nil {
 		t.Fatal("transportDialOption() returned nil")
 	}
-}
-
-func TestNativeMain_isCallable(t *testing.T) {
-	main()
 }
 
 type fakeHostCommandClient struct {

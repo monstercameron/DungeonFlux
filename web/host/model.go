@@ -1,4 +1,4 @@
-package main
+package host
 
 import df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 

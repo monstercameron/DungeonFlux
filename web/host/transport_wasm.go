@@ -1,6 +1,6 @@
 //go:build js && wasm
 
-package main
+package host
 
 import (
 	"github.com/monstercameron/GoGRPCBridge/pkg/wasm/dialer"

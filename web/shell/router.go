@@ -33,6 +33,8 @@ func RouteForPath(path string) Route {
 		return RoutePhone
 	case string(RouteHost):
 		return RouteHost
+	case string(RouteAbout):
+		return RouteAbout
 	default:
 		return RouteNotFound
 	}
