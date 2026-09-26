@@ -9,6 +9,8 @@ import (
 	"strconv"
 )
 
+const srdAttributionURL = "https://www.dndbeyond.com/srd"
+
 // EndScreen renders the outcome, final character state, thanks, and attribution.
 func EndScreen(model *EndModel) router.Component {
 	return func(_ router.Attrs) *router.Element {

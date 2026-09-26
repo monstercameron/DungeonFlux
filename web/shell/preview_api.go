@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/url"
 	"sort"
 	"strings"
 )
@@ -23,6 +24,15 @@ type PreviewRegistry interface {
 type PreviewCatalog struct {
 	dm    PreviewRegistry
 	phone PreviewRegistry
+}
+
+func previewNameFromSearch(search string) string {
+	search = strings.TrimPrefix(strings.TrimSpace(search), "?")
+	values, err := url.ParseQuery(search)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(values.Get("preview"))
 }
 
 // NewPreviewCatalog creates a catalog from the two client registries.

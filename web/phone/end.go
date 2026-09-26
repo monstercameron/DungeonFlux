@@ -2,8 +2,6 @@ package phone
 
 import df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 
-const srdAttributionURL = "https://www.dndbeyond.com/srd"
-
 // EndSnapshot is the immutable final state shown on the player's end card.
 type EndSnapshot struct {
 	Name        string

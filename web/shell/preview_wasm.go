@@ -106,11 +106,7 @@ func previewName() string {
 	if !location.Truthy() {
 		return ""
 	}
-	values, err := url.ParseQuery(location.Get("search").String())
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(values.Get("preview"))
+	return previewNameFromSearch(location.Get("search").String())
 }
 
 func previewIndex(catalog PreviewCatalog) *router.Element {

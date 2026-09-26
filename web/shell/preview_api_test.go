@@ -28,3 +28,23 @@ func TestPreviewCatalog_NilRegistriesAreSafe(t *testing.T) {
 		t.Fatalf("nil catalog fixtures = %#v, want nil", got)
 	}
 }
+
+func TestPreviewNameFromSearch_ParsesBrowserSearch(t *testing.T) {
+	tests := []struct {
+		name   string
+		search string
+		want   string
+	}{
+		{name: "browser leading question mark", search: "?preview=combat-my-turn", want: "combat-my-turn"},
+		{name: "query without question mark", search: "preview=creation-pick", want: "creation-pick"},
+		{name: "escaped fixture name", search: "?preview=typed-input%20ready", want: "typed-input ready"},
+		{name: "missing preview", search: "?room=demo", want: ""},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := previewNameFromSearch(test.search); got != test.want {
+				t.Fatalf("previewNameFromSearch(%q) = %q, want %q", test.search, got, test.want)
+			}
+		})
+	}
+}
