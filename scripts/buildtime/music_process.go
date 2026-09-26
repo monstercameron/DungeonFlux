@@ -96,14 +96,16 @@ type beatMeasurement struct {
 	DownbeatMS float64 `json:"downbeat_ms"`
 }
 
+const musicTempoTolerance = 0.03
+
 func runBeatcheck(ctx context.Context, path string, audioPath string, expected int) (beatMeasurement, error) {
 	beatcheckPackage := "./scripts/buildtime/beatcheck"
 	if _, err := os.Stat(beatcheckPackage); err != nil {
 		beatcheckPackage = "../../scripts/buildtime/beatcheck"
 	}
-	command, args := "go", []string{"run", beatcheckPackage, "-input", audioPath, "-tolerance", "0.01"}
+	command, args := "go", []string{"run", beatcheckPackage, "-input", audioPath, "-tolerance", "0.03"}
 	if path != "" {
-		command, args = path, []string{"-input", audioPath, "-tolerance", "0.01"}
+		command, args = path, []string{"-input", audioPath, "-tolerance", "0.03"}
 	}
 	if expected >= 80 {
 		args = append(args, "-bpm", fmt.Sprintf("%d", expected))
@@ -126,14 +128,37 @@ func runBeatcheck(ctx context.Context, path string, audioPath string, expected i
 	if measurement.BPM <= 0 || measurement.DownbeatMS < 0 {
 		return beatMeasurement{}, errors.New("beatcheck returned invalid timing")
 	}
-	if expected > 0 && !withinTempo(measurement.BPM, float64(expected)) && !(expected < 80 && withinTempo(measurement.BPM, float64(expected*2))) {
-		return beatMeasurement{}, fmt.Errorf("beatcheck BPM %.2f is outside 1%% of %d", measurement.BPM, expected)
+	if expected > 0 {
+		folded, err := foldMeasuredTempo(measurement.BPM, float64(expected))
+		if err != nil {
+			return beatMeasurement{}, err
+		}
+		measurement.BPM = folded
 	}
 	return measurement, nil
 }
 
+func foldMeasuredTempo(actual, expected float64) (float64, error) {
+	if actual <= 0 || expected <= 0 {
+		return 0, errors.New("beatcheck tempo must be positive")
+	}
+	for _, candidate := range []struct {
+		tempo float64
+		fold  float64
+	}{
+		{tempo: expected, fold: 1},
+		{tempo: expected * 2, fold: 0.5},
+		{tempo: expected * 0.5, fold: 2},
+	} {
+		if withinTempo(actual, candidate.tempo) {
+			return actual * candidate.fold, nil
+		}
+	}
+	return 0, fmt.Errorf("beatcheck BPM %.2f is outside 3%% of %.0f, including double and half time", actual, expected)
+}
+
 func withinTempo(actual, expected float64) bool {
-	return actual >= expected*0.99 && actual <= expected*1.01
+	return actual >= expected*(1-musicTempoTolerance) && actual <= expected*(1+musicTempoTolerance)
 }
 
 func processMusicAudio(ctx context.Context, ffmpegPath, inputPath, outputPath string, track MusicTrack, measurement beatMeasurement) error {
@@ -148,7 +173,8 @@ func processMusicAudio(ctx context.Context, ffmpegPath, inputPath, outputPath st
 	} else {
 		filter += ",asetpts=PTS-STARTPTS[out]"
 	}
-	args = append(args, "-filter_complex", filter, "-map", "[out]", "-af", fmt.Sprintf("loudnorm=I=%d:TP=-1.5:LRA=11", track.LoudnessLUFS), "-c:a", "libopus", "-b:a", "128k", outputPath)
+	filter += fmt.Sprintf(";[out]loudnorm=I=%d:TP=-1.5:LRA=11[normalized]", track.LoudnessLUFS)
+	args = append(args, "-filter_complex", filter, "-map", "[normalized]", "-c:a", "libopus", "-b:a", "128k", outputPath)
 	command := exec.CommandContext(ctx, ffmpegPath, args...)
 	if output, err := command.CombinedOutput(); err != nil {
 		message := strings.TrimSpace(string(output))

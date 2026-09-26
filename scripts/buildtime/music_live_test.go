@@ -23,7 +23,10 @@ func TestLiveMusicJob(t *testing.T) {
 	if endpoint == "" {
 		endpoint = "https://api.elevenlabs.io/v1"
 	}
-	root := "artifacts/runtime/buildtime"
+	root, err := filepath.Abs(filepath.Join("..", "..", "artifacts", "runtime", "buildtime"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	writer, err := NewManifestWriter(root)
 	if err != nil {
 		t.Fatal(err)

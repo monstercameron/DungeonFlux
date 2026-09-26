@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"time"
 )
 
 // MusicJob returns the live job for the complete three-take music catalogue.
@@ -43,42 +42,34 @@ func runMusic(ctx context.Context, client *http.Client, endpoint, outputDir stri
 	if err := ensureMusicDirectory(musicDir); err != nil {
 		return err
 	}
-	return withMusicManifestLock(ctx, writer, func() error {
-		fresh, err := NewManifestWriter(writer.root)
-		if err != nil {
-			return err
-		}
-		writer.mu.Lock()
-		writer.manifest = fresh.manifest
-		writer.mu.Unlock()
+	return withManifestLock(ctx, writer, func(writer *ManifestWriter) error {
 		costs := &musicCostLog{path: resolveCostPath(musicDir, options.CostLogPath)}
 		tracks := MusicTracks()
-		themeID, err := renderTheme(ctx, client, endpoint, musicDir, options, tracks[0], costs, writer)
-		if err != nil {
-			return err
+		themeID, themeErr := renderTheme(ctx, client, endpoint, musicDir, options, tracks[0], costs, writer)
+		if themeID == "" {
+			_, writeErr := writer.Write()
+			return errors.Join(themeErr, writeErr)
 		}
-		if err := renderMusicTracks(ctx, client, endpoint, musicDir, options, themeID, tracks[1:], costs, writer); err != nil {
-			return err
-		}
-		if _, err := writer.Write(); err != nil {
-			return err
-		}
-		return nil
+		trackErr := renderMusicTracks(ctx, client, endpoint, musicDir, options, themeID, tracks[1:], costs, writer)
+		_, writeErr := writer.Write()
+		return errors.Join(themeErr, trackErr, writeErr)
 	})
 }
 
 func renderTheme(ctx context.Context, client *http.Client, endpoint, outputDir string, options MusicOptions, track MusicTrack, costs *musicCostLog, writer *ManifestWriter) (string, error) {
 	var themeID string
+	var failures []error
 	for takeNumber := 1; takeNumber <= options.Takes; takeNumber++ {
 		id, err := renderMusicTakeWithRetry(ctx, client, endpoint, outputDir, options, "", track, takeNumber, costs, writer)
 		if err != nil {
-			return "", err
+			failures = append(failures, err)
+			continue
 		}
 		if id != "" {
 			themeID = id
 		}
 	}
-	return themeID, nil
+	return themeID, errors.Join(failures...)
 }
 
 func renderMusicTracks(ctx context.Context, client *http.Client, endpoint, outputDir string, options MusicOptions, themeID string, tracks []MusicTrack, costs *musicCostLog, writer *ManifestWriter) error {
@@ -233,37 +224,4 @@ func (log *musicCostLog) reserve(track MusicTrack) bool {
 	}
 	log.spentUSD += cost
 	return true
-}
-
-func withMusicManifestLock(ctx context.Context, writer *ManifestWriter, fn func() error) error {
-	if writer == nil || fn == nil {
-		return errors.New("buildtime: manifest lock requires writer and function")
-	}
-	lockPath := filepath.Join(writer.root, "manifest.lock")
-	if err := os.MkdirAll(writer.root, 0o755); err != nil {
-		return err
-	}
-	deadline := time.NewTimer(60 * time.Second)
-	defer deadline.Stop()
-	for {
-		lock, err := os.OpenFile(lockPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
-		if err == nil {
-			_ = lock.Close()
-			defer os.Remove(lockPath)
-			return fn()
-		}
-		if !errors.Is(err, os.ErrExist) {
-			return fmt.Errorf("buildtime: create manifest lock: %w", err)
-		}
-		timer := time.NewTimer(250 * time.Millisecond)
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			return ctx.Err()
-		case <-deadline.C:
-			timer.Stop()
-			return errors.New("buildtime: manifest lock timeout")
-		case <-timer.C:
-		}
-	}
 }

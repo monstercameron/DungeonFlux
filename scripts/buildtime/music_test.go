@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 )
@@ -94,6 +96,79 @@ func TestMusicDryRun_ReportsThreeTakesAndBudget(t *testing.T) {
 	var output bytes.Buffer
 	if err := PrintMusicPlan(&output, options); err != nil || output.Len() == 0 {
 		t.Fatalf("dry-run output: %v %q", err, output.String())
+	}
+}
+
+func TestFoldMeasuredTempo_FoldsTempoFamily(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		measured float64
+		want     float64
+	}{
+		{name: "target", measured: 80, want: 80},
+		{name: "double", measured: 160, want: 80},
+		{name: "half", measured: 40, want: 80},
+		{name: "within tolerance", measured: 82.2, want: 82.2},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := foldMeasuredTempo(tc.measured, 80)
+			if err != nil {
+				t.Fatalf("foldMeasuredTempo: %v", err)
+			}
+			if got != tc.want {
+				t.Fatalf("got %.2f, want %.2f", got, tc.want)
+			}
+		})
+	}
+	for _, tc := range []struct {
+		name     string
+		measured float64
+		expected float64
+	}{
+		{name: "too fast", measured: 90, expected: 80},
+		{name: "zero measured", measured: 0, expected: 80},
+		{name: "zero target", measured: 80, expected: 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := foldMeasuredTempo(tc.measured, tc.expected); err == nil {
+				t.Fatal("foldMeasuredTempo accepted invalid tempo")
+			}
+		})
+	}
+}
+
+func TestProcessMusicAudio_UsesOneFilterGraph(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		loop bool
+	}{
+		{name: "loop", loop: true},
+		{name: "one-shot", loop: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			capture := filepath.Join(dir, "args.txt")
+			ffmpeg := filepath.Join(dir, "ffmpeg.cmd")
+			script := fmt.Sprintf("@echo %%* > \"%s\"\n", capture)
+			if err := os.WriteFile(ffmpeg, []byte(script), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			track := MusicTrack{BPM: 80, DurationMS: 96000, LoudnessLUFS: -20, Loop: tc.loop}
+			if err := processMusicAudio(context.Background(), ffmpeg, "input.mp3", "output.opus", track, beatMeasurement{DownbeatMS: 125}); err != nil {
+				t.Fatal(err)
+			}
+			data, err := os.ReadFile(capture)
+			if err != nil {
+				t.Fatal(err)
+			}
+			args := string(data)
+			if !strings.Contains(args, "-filter_complex") || !strings.Contains(args, "[normalized]") || strings.Contains(args, "-af") {
+				t.Fatalf("unexpected ffmpeg args: %q", args)
+			}
+			if tc.loop != strings.Contains(args, "acrossfade") {
+				t.Fatalf("loop filter mismatch: %q", args)
+			}
+		})
 	}
 }
 

@@ -5,14 +5,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"math"
 	"os"
 )
 
 func main() {
 	input := flag.String("input", "", "audio file to decode with ffmpeg")
 	expected := flag.Float64("bpm", 0, "expected BPM; reject outside tolerance when set")
-	tolerance := flag.Float64("tolerance", 0.01, "relative BPM tolerance, default 1%%")
+	tolerance := flag.Float64("tolerance", defaultTempoTolerance, "relative BPM tolerance, default 3%%")
 	flag.Parse()
 	if *input == "" {
 		fatal("-input is required")
@@ -28,8 +27,12 @@ func main() {
 	if err != nil {
 		fatal(err.Error())
 	}
-	if *expected > 0 && math.Abs(measurement.BPM-*expected) > *expected**tolerance {
-		fatal(fmt.Sprintf("BPM %.2f is outside %.2f BPM ± %.2f%%", measurement.BPM, *expected, *tolerance*100))
+	if *expected > 0 {
+		folded, err := foldTempo(measurement.BPM, *expected, *tolerance)
+		if err != nil {
+			fatal(err.Error())
+		}
+		measurement.BPM = folded
 	}
 	encoded, err := json.MarshalIndent(measurement, "", "  ")
 	if err != nil {

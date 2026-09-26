@@ -26,6 +26,51 @@ func TestAnalyzePCM_ClickTracks(t *testing.T) {
 	}
 }
 
+func TestAnalyzePCM_ClickTracksWithTempoFolding(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		target   float64
+		measured float64
+	}{
+		{name: "double-time", target: 80, measured: 160},
+		{name: "half-time", target: 80, measured: 40},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := AnalyzePCM(clickTrack(tc.measured, 16000, 12, 0.125), 16000)
+			if err != nil {
+				t.Fatalf("AnalyzePCM: %v", err)
+			}
+			folded, err := foldTempo(result.BPM, tc.target, defaultTempoTolerance)
+			if err != nil {
+				t.Fatalf("foldTempo: %v (measured %.2f)", err, result.BPM)
+			}
+			if math.Abs(folded-tc.target) > tc.target*0.005 {
+				t.Fatalf("folded BPM = %.2f, want %.2f", folded, tc.target)
+			}
+		})
+	}
+}
+
+func TestFoldTempo_RejectsOutOfFamily(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		measured  float64
+		target    float64
+		tolerance float64
+	}{
+		{name: "out-of-family", measured: 90, target: 80, tolerance: defaultTempoTolerance},
+		{name: "zero-measured", measured: 0, target: 80, tolerance: defaultTempoTolerance},
+		{name: "zero-target", measured: 80, target: 0, tolerance: defaultTempoTolerance},
+		{name: "zero-tolerance", measured: 80, target: 80, tolerance: 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := foldTempo(tc.measured, tc.target, tc.tolerance); err == nil {
+				t.Fatal("foldTempo accepted invalid tempo")
+			}
+		})
+	}
+}
+
 func TestAnalyzePCM_RejectsShortAndSilentAudio(t *testing.T) {
 	for name, samples := range map[string][]int16{
 		"short":  make([]int16, 10),

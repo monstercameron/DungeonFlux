@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"sort"
 )
@@ -10,9 +11,11 @@ const (
 	defaultSampleRate = 16000
 	frameSize         = 256
 	hopSize           = 64
-	minBPM            = 80.0
+	minBPM            = 30.0
 	maxBPM            = 170.0
 )
+
+const defaultTempoTolerance = 0.03
 
 var errNoOnsets = errors.New("no regular onsets found")
 
@@ -50,6 +53,28 @@ func AnalyzePCM(samples []int16, sampleRate int) (Measurement, error) {
 		Onsets:     len(onsets),
 		Confidence: confidence,
 	}, nil
+}
+
+func foldTempo(measured, target, tolerance float64) (float64, error) {
+	if measured <= 0 || target <= 0 {
+		return 0, errors.New("tempo must be positive")
+	}
+	if tolerance <= 0 {
+		return 0, errors.New("tempo tolerance must be positive")
+	}
+	for _, candidate := range []struct {
+		tempo float64
+		fold  float64
+	}{
+		{tempo: target, fold: 1},
+		{tempo: target * 2, fold: 0.5},
+		{tempo: target * 0.5, fold: 2},
+	} {
+		if math.Abs(measured-candidate.tempo) <= candidate.tempo*tolerance {
+			return measured * candidate.fold, nil
+		}
+	}
+	return 0, fmt.Errorf("BPM %.2f is outside %.2f BPM ± %.2f%%, including double and half time", measured, target, tolerance*100)
 }
 
 func refineOnsets(samples []int16, onsets []int, sampleRate int) []int {
