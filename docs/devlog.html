@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="discovery" id="e-20260926-elevenlabs-audio-costs">
+  <div class="entry-head"><time datetime="2026-09-26T12:05-04:00">Sep 26, 2026</time><span class="kind">Discovery</span><span class="who">ORCH</span></div>
+  <h2 class="entry-title"><a href="#e-20260926-elevenlabs-audio-costs">What the build-time audio cost: about $6.55 of ElevenLabs, mostly music retries</a></h2>
+  <p>The first live ElevenLabs pre-generation used estimates computed from list prices by each job (not the billed invoice). Canned voice lines and nudges (OPS-022): 13 TTS requests, 1,454 characters, about $0.07. Sound effects (OPS-023): 32 requests, 92 seconds of audio, about $0.18, 16 best takes kept. Ambience (OPS-024): 7 requests, 210 seconds, five loops kept; at the SFX rate of about $0.002 per second that is roughly $0.42. Music was the expensive part: the first run (OPS-025) spent about $1.62 on six music_v2_5 tracks that beatcheck then rejected at twice the requested tempo, plus four requests refused with HTTP 422 over seed range; after beatcheck learned to fold double and half tempo (OPS-026), 32 more music requests produced 1,702 seconds for $4.26 and 16 accepted takes across five cues, logged per request in artifacts/runtime/buildtime/music/costs.jsonl. Seven cues still fail the tempo check. Lesson: validate the checker on a few takes before generating a full catalogue, because each 108-second music request costs about $0.27.</p>
+</li>
 
       <li class="entry" data-kind="process" id="e-20260926-tracked-worker-launches">
         <div class="entry-head"><time datetime="2026-09-26T11:30-04:00">Sep 26, 2026, 11:30 AM</time><span class="kind">Process</span><span class="who">ORCH</span></div>
