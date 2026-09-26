@@ -24,7 +24,7 @@ func PhoneFrame(model FrameModel, content ui.Node, action ui.Node) router.Compon
 		header := phoneFrameHeader(model, statusClass, status)
 		body := html.Section(html.Props{Class: "df-phone-frame-content", Role: "region", Aria: map[string]string{"label": model.Title}, Style: map[string]string{"flex": "1 1 auto", "min-height": "0", "overflow": "auto", "padding": "12px 14px 18px"}}, content)
 		footer := html.Footer(html.Props{Class: "df-phone-action", Style: map[string]string{"min-height": theme.TouchTarget}}, action, phoneTabBar(model))
-		return html.Main(html.Props{Class: "df-phone df-phone-frame", Style: phoneFrameStyle(theme)}, header, body, footer)
+		return html.Main(html.Props{Class: "df-phone df-phone-frame", Style: phoneFrameStyle(theme)}, phoneFinishStyle(), header, body, footer)
 	}
 }
 

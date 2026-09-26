@@ -5,6 +5,7 @@ package main
 import (
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"syscall/js"
 
 	dmclient "github.com/monstercameron/DungeonFlux/web/dm"
@@ -35,9 +36,9 @@ func (dmPreviewRegistry) PreviewFixtures() []PreviewFixture {
 
 func (dmPreviewRegistry) Preview(name string) router.Component {
 	return func(_ router.Attrs) *router.Element {
-		return ui.CreateElement(func(_ struct{}) ui.Node {
+		return ui.CreateElement(func(_ previewRender) ui.Node {
 			return dmclient.RenderPreview(name, "", nil)
-		})
+		}, previewRender{n: previewRenders.Add(1)})
 	}
 }
 
@@ -54,15 +55,21 @@ func (phonePreviewRegistry) PreviewFixtures() []PreviewFixture {
 
 func (phonePreviewRegistry) Preview(name string) router.Component {
 	return func(_ router.Attrs) *router.Element {
-		return ui.CreateElement(func(_ struct{}) ui.Node {
+		return ui.CreateElement(func(_ previewRender) ui.Node {
 			node, ok := phoneclient.RenderPreview(name)
 			if !ok {
 				return html.P(html.Props{Role: "alert"}, html.Text("Preview unavailable"))
 			}
 			return node
-		})
+		}, previewRender{n: previewRenders.Add(1)})
 	}
 }
+
+// previewRender changes on every route render so the art-loaded refresh
+// re-renders the fixture; equal props would let the reconciler skip it.
+type previewRender struct{ n uint64 }
+
+var previewRenders atomic.Uint64
 
 func dmPreviews() PreviewRenderer { return dmPreviewRegistry{} }
 
@@ -106,7 +113,17 @@ func previewName() string {
 	if !location.Truthy() {
 		return ""
 	}
-	return previewNameFromSearch(location.Get("search").String())
+	if name := previewNameFromSearch(location.Get("search").String()); name != "" {
+		return name
+	}
+	// The router drops the query when it normalises the path; the boot copy
+	// in sessionStorage keeps the fixture for the rest of this page load.
+	if storage := js.Global().Get("sessionStorage"); storage.Truthy() {
+		if saved := storage.Call("getItem", "df-preview"); saved.Truthy() {
+			return saved.String()
+		}
+	}
+	return ""
 }
 
 func previewIndex(catalog PreviewCatalog) *router.Element {

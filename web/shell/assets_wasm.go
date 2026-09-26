@@ -103,6 +103,7 @@ func scheduleAssetRouteRefresh() {
 	var callback js.Func
 	callback = js.FuncOf(func(js.Value, []js.Value) interface{} {
 		defer func() { callback.Release() }()
+		phone.ArtChanged()
 		path := router.GetCurrentPath()
 		if path == "" {
 			path = string(RouteDM)

@@ -175,8 +175,8 @@ func sheetEmptyPanel(locale, title, message string) ui.Node {
 
 func sheetPortrait(state SheetSnapshot) ui.Node {
 	style := map[string]string{"width": "112px", "height": "112px", "overflow": "hidden", "display": "grid", "place-items": "center", "border": "1px solid #d9a441", "border-radius": "8px", "background": "linear-gradient(135deg, #2b2525, #121923)", "color": "#e7c27a", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "35px"}
-	if strings.TrimSpace(state.PortraitURL) != "" {
-		return html.Div(html.Props{Class: "df-phone-portrait", Style: style}, html.Img(html.Props{Src: state.PortraitURL, Alt: state.Name, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))
+	if src := portraitSrc(state.PortraitURL); src != "" {
+		return html.Div(html.Props{Class: "df-phone-portrait", Style: style}, html.Img(html.Props{Src: src, Alt: state.Name, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))
 	}
 	if url := ArtURL(speciesArtAsset(state.Species)); url != "" {
 		return html.Div(html.Props{Class: "df-phone-portrait", Style: style}, html.Img(html.Props{Src: url, Alt: state.Species, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))

@@ -119,3 +119,24 @@ func artButtonStyle(asset, fallback string) map[string]string {
 	}
 	return style
 }
+
+// artRevision counts art arrivals. The phone screens are prop-less closure
+// components that the reconciler never re-renders from the parent, so the
+// frame key carries this revision and remounts the screen with the new URLs.
+var artRevision atomic.Uint64
+
+// ArtChanged records that more art has loaded; the shell calls it before it
+// re-navigates the route.
+func ArtChanged() { artRevision.Add(1) }
+
+// portraitSrc resolves a character portrait (an asset name, SHA-256, or
+// /assets/<sha>.<ext> path) through the gRPC art source. It returns "" while
+// the portrait loads so callers show their fallback instead of fetching the
+// image over HTTP.
+func portraitSrc(portrait string) string {
+	portrait = strings.TrimSpace(portrait)
+	if portrait == "" || strings.HasPrefix(portrait, "blob:") || strings.HasPrefix(portrait, "data:") {
+		return portrait
+	}
+	return ArtURL(portrait)
+}

@@ -51,8 +51,13 @@ func explorePageStyle() map[string]string {
 func exploreSceneStyle(asset string) map[string]string {
 	theme := DefaultPhoneTheme()
 	style := map[string]string{"position": "relative", "height": "270px", "overflow": "hidden", "border": "1px solid rgba(217,164,65,.62)", "border-radius": theme.BorderRadius, "background": "linear-gradient(180deg,rgba(6,10,15,.08),rgba(6,10,15,.84)), radial-gradient(circle at 50% 35%,#3a4550,#10141c 72%)", "background-size": "cover", "background-position": "center"}
-	if url := ArtURL(asset); url != "" {
-		style["background-image"] = "linear-gradient(180deg,rgba(6,10,15,.08),rgba(6,10,15,.84)), url(\"" + url + "\")"
+	// Scene names without generated art fall back to the establishing shot
+	// and then the phone backdrop, so the screen always leads with art.
+	for _, name := range []string{asset, "ui/check_backdrop", "ui/phone_bg"} {
+		if url := ArtURL(name); url != "" {
+			style["background-image"] = "linear-gradient(180deg,rgba(6,10,15,.08),rgba(6,10,15,.84)), url(\"" + url + "\")"
+			break
+		}
 	}
 	return style
 }

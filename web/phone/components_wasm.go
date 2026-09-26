@@ -128,7 +128,11 @@ func PortraitHero(imageURL, name, role, quote string) ui.Node {
 // IconHeader renders the title medallion used by check and exploration screens.
 func IconHeader(icon, title, subtitle string) ui.Node {
 	theme := DefaultPhoneTheme()
-	return html.Div(html.Props{Class: "df-phone-icon-header", Style: map[string]string{"display": "flex", "gap": "14px", "align-items": "center"}}, html.Div(html.Props{Style: map[string]string{"width": "56px", "height": "56px", "flex": "0 0 56px", "display": "grid", "place-items": "center", "border": "1px solid " + theme.Gold, "border-radius": "50%", "background": "rgba(40,34,25,.9)", "color": theme.GoldBright, "font-family": theme.Serif, "font-size": "27px", "box-shadow": "inset 0 0 14px rgba(217,164,65,.16)"}}, html.Text(icon)), html.Div(html.Props{Style: map[string]string{"min-width": "0"}}, html.H1(html.Props{Style: map[string]string{"margin": "0", "color": theme.Parchment, "font-family": theme.Serif, "font-size": "26px", "line-height": "1.1"}}, html.Text(title)), html.P(html.Props{Style: map[string]string{"margin": "4px 0 0", "color": theme.Muted, "font-family": theme.Serif, "font-size": "17px"}}, html.Text(subtitle))))
+	var mark ui.Node = html.Text(iconText(icon))
+	if url := ArtURL(icon); url != "" {
+		mark = html.Img(html.Props{Src: url, Alt: "", Style: map[string]string{"width": "34px", "height": "34px", "object-fit": "contain"}})
+	}
+	return html.Div(html.Props{Class: "df-phone-icon-header", Style: map[string]string{"display": "flex", "gap": "14px", "align-items": "center"}}, html.Div(html.Props{Style: map[string]string{"width": "56px", "height": "56px", "flex": "0 0 56px", "display": "grid", "place-items": "center", "border": "1px solid " + theme.Gold, "border-radius": "50%", "background": "rgba(40,34,25,.9)", "color": theme.GoldBright, "font-family": theme.Serif, "font-size": "27px", "box-shadow": "inset 0 0 14px rgba(217,164,65,.16)"}}, mark), html.Div(html.Props{Style: map[string]string{"min-width": "0"}}, html.H1(html.Props{Style: map[string]string{"margin": "0", "color": theme.Parchment, "font-family": theme.Serif, "font-size": "26px", "line-height": "1.1"}}, html.Text(title)), html.P(html.Props{Style: map[string]string{"margin": "4px 0 0", "color": theme.Muted, "font-family": theme.Serif, "font-size": "17px"}}, html.Text(subtitle))))
 }
 
 func choiceIcon(icon string) ui.Node {
@@ -136,9 +140,7 @@ func choiceIcon(icon string) ui.Node {
 	if url := ArtURL(icon); url != "" {
 		return html.Img(html.Props{Src: url, Alt: "", Aria: map[string]string{"hidden": "true"}, Style: map[string]string{"width": "30px", "height": "30px", "flex": "0 0 30px", "object-fit": "contain"}})
 	}
-	if strings.TrimSpace(icon) == "" {
-		icon = "•"
-	}
+	icon = iconText(icon)
 	return html.Span(html.Props{Aria: map[string]string{"hidden": "true"}, Style: map[string]string{"width": "30px", "height": "30px", "flex": "0 0 30px", "display": "grid", "place-items": "center", "border": "1px solid rgba(217,164,65,.42)", "border-radius": "50%", "color": theme.GoldBright, "font-family": theme.Serif, "font-size": "17px"}}, html.Text(icon))
 }
 
@@ -168,4 +170,14 @@ func initials(value string) string {
 		return string(r)
 	}
 	return "?"
+}
+
+// iconText turns an icon selector into a glyph for when its art is not loaded:
+// asset names such as "ui/icon_talk" must never render as text.
+func iconText(icon string) string {
+	icon = strings.TrimSpace(icon)
+	if icon == "" || strings.Contains(icon, "/") || len([]rune(icon)) > 2 {
+		return "◆"
+	}
+	return icon
 }

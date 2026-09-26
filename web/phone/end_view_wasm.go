@@ -44,10 +44,11 @@ func endPage(locale string, state EndSnapshot) ui.Node {
 
 func endPortrait(state EndSnapshot) ui.Node {
 	style := map[string]string{"width": "82px", "height": "104px", "flex": "0 0 82px", "display": "grid", "place-items": "center", "overflow": "hidden", "border": "1px solid #d9a441", "border-radius": "8px", "background": "radial-gradient(circle, #354052, #171a23 70%)", "color": "#e7c27a", "font-family": "Georgia, serif", "font-size": "25px"}
-	if state.PortraitURL == "" {
+	src := portraitSrc(state.PortraitURL)
+	if src == "" {
 		return html.Div(html.Props{Class: "df-phone-end-portrait", Role: "img", Aria: map[string]string{"label": state.Name}, Style: style}, html.Text(endInitials(state.Name)))
 	}
-	return html.Div(html.Props{Class: "df-phone-end-portrait", Style: style}, html.Img(html.Props{Src: state.PortraitURL, Alt: state.Name, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))
+	return html.Div(html.Props{Class: "df-phone-end-portrait", Style: style}, html.Img(html.Props{Src: src, Alt: state.Name, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))
 }
 
 func endFinalStates(values []string) ui.Node {

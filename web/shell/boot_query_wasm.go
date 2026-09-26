@@ -15,7 +15,9 @@ func rememberBootQuery() {
 		return
 	}
 	params := js.Global().Get("URLSearchParams").New(location.Get("search"))
-	for _, pair := range [][2]string{{"token", "df-dm-token"}, {"t", "df-host-token"}, {"room", "df-room"}} {
+	// A preview fixture applies only to the page load that asked for it.
+	storage.Call("removeItem", "df-preview")
+	for _, pair := range [][2]string{{"token", "df-dm-token"}, {"t", "df-host-token"}, {"room", "df-room"}, {"preview", "df-preview"}} {
 		value := params.Call("get", pair[0])
 		if value.Truthy() && value.String() != "" {
 			storage.Call("setItem", pair[1], value.String())
