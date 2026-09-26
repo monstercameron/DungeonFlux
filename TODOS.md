@@ -921,7 +921,7 @@ SchemaFlux for OpenAI-dialect links, Gemini and Haiku adapters, model chains, bu
   why: A transcript becomes a structured intent (dialogue, act, move_id) the engine can accept or reject.
   lane: L-LLM · block: 8–11 · paths: `internal/llmexec/interpret.go` · depends: LLM-005, CONT-002
   done when: Schema-valid output mapped to events; tests.; gate green (≥ 70% coverage where applicable)
-  status: committed ddae0dc · review: coverage 63.8% in internal/llmexec (LLM-012 follow-up)
+  status: committed ddae0dc · coverage fixed by LLM-012 ff2cfb3
 
 - [x] LLM-010 · llmexec Opening and character_flavor
   why: Opening narration and character flavor are model outputs with fallbacks.
@@ -939,7 +939,7 @@ SchemaFlux for OpenAI-dialect links, Gemini and Haiku adapters, model chains, bu
   why: ORCH review measured internal/llmexec at 63.8% after LLM-008 to LLM-011 landed in parallel, below the 70% floor.
   lane: L-LLM · block: 8–11 · paths: `internal/llmexec/*_test.go` · depends: LLM-008, LLM-009, LLM-010, LLM-011
   done when: internal/llmexec >= 70% with behaviour-asserting tests (failure events, fallbacks, schema rejection).
-  status: claimed luna
+  status: committed ff2cfb3
 
 ## 15. Voice in (STT)
 
@@ -1117,7 +1117,7 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   why: web/host was built as its own main package and the shell router never mounts the DM, phone, host, or about screens, so the single WASM bundle cannot serve /dm, /p, and /host.
   lane: L-WEB-SHELL · block: 5–8 · paths: `web/shell/boot*.go`, `web/shell/router*.go`, `web/shell/compose*.go`, `web/host/main_*.go`, `web/host/mount*.go` · depends: WEB-001, WEB-005, WEB-006, DM-001, HOST-001
   done when: web/host is a library with a Mount entry (no package main); the shell router mounts /dm, /p, /host, and /about with the shared client injected through narrow interfaces (screens never import the web/shell root, only its subpackages); client reports start on boot; GOOS=js GOARCH=wasm go build ./web/shell passes and native tests cover the route table.
-  status: claimed luna
+  status: committed 6f53085
 
 ## 19. Phone
 
@@ -1225,7 +1225,7 @@ The operator page: Start, Pause, Skip, Reset, Force d20, and debug panel.
   why: The stage operator needs run status, feature flags, cut-order toggles, and the log tail.
   lane: L-WEB-HOST · block: 14–17 · paths: `web/host/**` · depends: HOST-001
   done when: Shows HostView and log_tail; flags toggle.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 ## 22. Splat battlefield
 
