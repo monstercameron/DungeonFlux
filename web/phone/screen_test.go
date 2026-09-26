@@ -20,7 +20,7 @@ func TestSelectScreen_AllDemoPhases(t *testing.T) {
 		{"hook_event", ScreenSheet},
 		{"combat", ScreenCombat},
 		{"cliffhanger", ScreenSheet},
-		{"end", ScreenSheet},
+		{"end", ScreenEnd},
 		{"unknown", ScreenSheet},
 	}
 	for _, test := range tests {
@@ -49,8 +49,24 @@ func TestSelectScreen_EndIgnoresStaleSeatControls(t *testing.T) {
 		Moves:  []*df.Move{{MoveId: "attack", Enabled: true}},
 		Combat: &df.CombatView{MyTurn: true},
 	}}
-	if got := SelectScreen(view); got != ScreenSheet {
-		t.Fatalf("end screen = %q, want %q", got, ScreenSheet)
+	if got := SelectScreen(view); got != ScreenEnd {
+		t.Fatalf("end screen = %q, want %q", got, ScreenEnd)
+	}
+}
+
+func TestEndModel_PreservesFinalCharacterState(t *testing.T) {
+	model := NewEndModel()
+	state := &df.ScreenState{View: &df.ScreenState_Phone{Phone: &df.PhoneView{
+		Locale: "en", StatusText: "Victory", Character: &df.Character{Name: "Astra", ClassName: "Rogue", PortraitUrl: "hero.png"},
+		Combat: &df.CombatView{Hp: 9, HpMax: 12, Statuses: []string{"Inspired"}},
+	}}}
+	got := model.ApplyScreenState(state)
+	if got.Name != "Astra" || got.Class != "Rogue" || got.FinalHP != 9 || got.FinalHPMax != 12 || got.Outcome != "Victory" || len(got.FinalStates) != 1 {
+		t.Fatalf("end snapshot = %+v", got)
+	}
+	got.FinalStates[0] = "changed"
+	if model.Snapshot().FinalStates[0] != "Inspired" {
+		t.Fatal("snapshot leaked final states")
 	}
 }
 

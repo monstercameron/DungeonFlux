@@ -18,7 +18,7 @@ func TestRenderPhoneScreen_AllFactories(t *testing.T) {
 		creation: NewCreationModel(nil, "seat", 1), sheet: NewSheetModel(),
 		moves: NewMovesModel(nil, "seat"), typed: NewTypedInputModel(nil, "seat"),
 		dice: NewDiceModel(nil, "seat"), combat: NewCombatModel(nil, "seat"),
-		ptt: NewPTTModel(nil, "seat", 1),
+		ptt: NewPTTModel(nil, "seat", 1), end: NewEndModel(),
 	}
 	tests := []struct {
 		kind    ScreenKind
@@ -30,6 +30,7 @@ func TestRenderPhoneScreen_AllFactories(t *testing.T) {
 		{ScreenConversation, []string{"df-phone-conversation", "df-phone-ptt"}},
 		{ScreenDice, []string{"df-phone-dice"}},
 		{ScreenCombat, []string{"df-phone-combat"}},
+		{ScreenEnd, []string{"df-phone-end"}},
 	}
 	for _, test := range tests {
 		t.Run(string(test.kind), func(t *testing.T) {

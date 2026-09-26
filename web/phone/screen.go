@@ -24,6 +24,8 @@ const (
 	ScreenDice ScreenKind = "dice"
 	// ScreenCombat shows movement and attack controls.
 	ScreenCombat ScreenKind = "combat"
+	// ScreenEnd shows the final outcome and character state.
+	ScreenEnd ScreenKind = "end"
 )
 
 // SeatView is the seat-specific state used to select and render a phone screen.
@@ -111,8 +113,10 @@ func SelectScreen(view SeatView) ScreenKind {
 		return ScreenCombat
 	case "conversation":
 		return ScreenConversation
-	case "opening", "resolution", "hook_event", "cliffhanger", "end":
+	case "opening", "resolution", "hook_event", "cliffhanger":
 		return ScreenSheet
+	case "end":
+		return ScreenEnd
 	default:
 		if view.Phone != nil {
 			if view.Phone.GetCombat() != nil {

@@ -14,7 +14,7 @@ func RenderPreview(name string) (ui.Node, bool) {
 		return nil, false
 	}
 	props := previewProps(fixture.View)
-	return renderPhoneScreen(fixture.Screen, props, fixture.View.Phone.GetLocale()), true
+	return renderPhoneScreen(SelectScreen(fixture.View), props, fixture.View.Phone.GetLocale()), true
 }
 
 func previewProps(view SeatView) phoneViewProps {
@@ -22,7 +22,7 @@ func previewProps(view SeatView) phoneViewProps {
 		creation: NewCreationModel(nil, "preview-seat", 1), sheet: NewSheetModel(),
 		moves: NewMovesModel(nil, "preview-seat"), typed: NewTypedInputModel(nil, "preview-seat"),
 		dice: NewDiceModel(nil, "preview-seat"), combat: NewCombatModel(nil, "preview-seat"),
-		ptt: NewPTTModel(nil, "preview-seat", 1),
+		ptt: NewPTTModel(nil, "preview-seat", 1), end: NewEndModel(),
 	}
 	state := &df.ScreenState{Phase: view.Phase, View: &df.ScreenState_Phone{Phone: view.Phone}}
 	props.creation.ApplyScreenState(state)
@@ -30,5 +30,6 @@ func previewProps(view SeatView) phoneViewProps {
 	props.moves.ApplyScreenState(state)
 	props.dice.ApplyScreenState(state)
 	props.combat.ApplyScreenState(state)
+	props.end.ApplyScreenState(state)
 	return props
 }

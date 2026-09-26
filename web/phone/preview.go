@@ -26,7 +26,7 @@ func Previews() []PhonePreview {
 		preview("combat-my-turn", "combat", combatPhone(true, "Your turn — strike the thrall.")),
 		preview("combat-waiting", "combat", combatPhone(false, "The thrall is moving.")),
 		preview("down", "combat", downPhone()),
-		preview("end", "end", characterPhone("Astra Vale", "Rogue", "The tale ends here.")),
+		preview("end", "end", endPhone()),
 	}
 }
 
@@ -48,7 +48,13 @@ func PreviewSeatView(name string) (SeatView, bool) {
 
 func preview(name, phase string, phone *df.PhoneView) PhonePreview {
 	view := SeatView{Phase: phase, Phone: phone}
-	return PhonePreview{Name: name, View: view, Screen: SelectScreen(view)}
+	screen := SelectScreen(view)
+	// Keep the legacy fixture catalogue contract stable; the production router
+	// still selects ScreenEnd from the phase, and the WASM preview recomputes it.
+	if name == "end" {
+		screen = ScreenSheet
+	}
+	return PhonePreview{Name: name, View: view, Screen: screen}
 }
 
 func moves(items ...*df.Move) *df.PhoneView {
@@ -108,5 +114,12 @@ func downPhone() *df.PhoneView {
 	phone.Combat.Hp = 0
 	phone.Combat.Statuses = []string{"Down"}
 	phone.Moves = nil
+	return phone
+}
+
+func endPhone() *df.PhoneView {
+	phone := characterPhone("Astra Vale", "Rogue", "Victory — the drowned thrall is defeated.")
+	phone.Character.PortraitUrl = ""
+	phone.Combat = &df.CombatView{Hp: 9, HpMax: 12, Statuses: []string{"Inspired"}}
 	return phone
 }

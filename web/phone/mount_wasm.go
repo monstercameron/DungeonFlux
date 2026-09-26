@@ -41,7 +41,7 @@ func Mount(client PhoneClient, seatToken, locale string) router.Component {
 			creation: NewCreationModel(client, seatToken, 0),
 			sheet:    NewSheetModel(), moves: NewMovesModel(client, seatToken),
 			typed: NewTypedInputModel(client, seatToken), dice: NewDiceModel(client, seatToken),
-			combat: NewCombatModel(client, seatToken), ptt: NewPTTModel(client, seatToken, 0),
+			combat: NewCombatModel(client, seatToken), ptt: NewPTTModel(client, seatToken, 0), end: NewEndModel(),
 		}
 		return ui.CreateElement(phoneView, props)
 	}
@@ -57,6 +57,7 @@ type phoneViewProps struct {
 	dice      *DiceModel
 	combat    *CombatModel
 	ptt       *PTTModel
+	end       *EndModel
 }
 
 func phoneError(locale, message string) ui.Node {
@@ -81,6 +82,7 @@ func phoneView(props phoneViewProps) ui.Node {
 				props.moves.ApplyScreenState(result.State)
 				props.dice.ApplyScreenState(result.State)
 				props.combat.ApplyScreenState(result.State)
+				props.end.ApplyScreenState(result.State)
 				view.Set(SeatView{Phase: result.State.GetPhase(), Phone: result.State.GetPhone()})
 			}
 		}()
@@ -103,6 +105,8 @@ func renderPhoneScreen(kind ScreenKind, props phoneViewProps, locale string) ui.
 		return ui.CreateElement(DiceScreen(props.dice))
 	case ScreenCombat:
 		return ui.CreateElement(func() ui.Node { return combatScreen(props.combat, locale) })
+	case ScreenEnd:
+		return ui.CreateElement(EndScreen(props.end))
 	case ScreenConversation:
 		return ui.CreateElement(func() ui.Node { return conversationScreen(props, locale) })
 	case ScreenMoves:
