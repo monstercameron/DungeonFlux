@@ -45,12 +45,15 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer, dial conn
 	if code, handled := runWrite(ctx, args, stdout, stderr, dial); handled {
 		return code
 	}
+	if code, handled := runRead(ctx, args, stdout, stderr, dial); handled {
+		return code
+	}
 	opts, verb, err := parseOptions(args, stderr)
 	if err != nil {
 		return exitTransport
 	}
 	if verb != "state" {
-		writeError(stderr, fmt.Errorf("unknown or missing verb %q (available: state)", verb))
+		writeError(stderr, fmt.Errorf("unknown or missing verb %q (available: state and read verbs)", verb))
 		return exitTransport
 	}
 
