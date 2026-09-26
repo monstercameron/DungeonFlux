@@ -39,6 +39,13 @@ func RunJobs(ctx context.Context, writer *ManifestWriter, jobs []Job) error {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "register" {
+		if err := runRegister(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	root := flag.String("root", "artifacts/runtime/buildtime", "build-time output directory")
 	flag.Parse()
 	writer, err := NewManifestWriter(*root)
@@ -49,4 +56,19 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+func runRegister(args []string) error {
+	flags := flag.NewFlagSet("register", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+	root := flags.String("root", "artifacts/runtime/buildtime", "build-time output directory")
+	scan := flags.Bool("scan", false, "register known generated stills")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if !*scan {
+		return errors.New("buildtime: register requires --scan")
+	}
+	_, err := RegisterScannedStills(*root)
+	return err
 }
