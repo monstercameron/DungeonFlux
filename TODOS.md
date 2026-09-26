@@ -449,6 +449,12 @@ SRD 5.2.1 rules the demo uses: deterministic dice, checks, templates, and the co
   done when: SOURCE and NOTICE files present with Open5e commit 0acbf263 and 5e-bits tag.; gate green (≥ 70% coverage where applicable)
   status: done 475a3b9
 
+- [ ] RULES-006 · demo templates for all 12 SRD 5.2.1 classes
+  why: Developer decision (2026-09-26): players choose their class as a third creation option, per the D&D (SRD 5.2.1) class list, replacing R-D7's random draw from four templates.
+  lane: L-ENG · block: 8–11 · paths: `internal/game/rules/build*.go`, `internal/game/rules/class*.go` · depends: RULES-003
+  done when: Barbarian, Bard, Cleric, Druid, Fighter, Monk, Paladin, Ranger, Rogue, Sorcerer, Warlock, and Wizard each have a level-1 demo template (hit die and HP, AC, primary ability order for the constrained random build, one attack, Persuasion proficiency where the SRD grants it or an expertise note); BuildHero accepts any of them; DrawClass remains only as the timeout fallback; table tests per class.
+  status: claimed luna
+
 ## 6. Content
 
 The fixed one-shot: NPCs, beats, prompts, schemas, canned lines, the tavern nav layer, and the libraries the engine and media use.
@@ -500,6 +506,12 @@ The fixed one-shot: NPCs, beats, prompts, schemas, canned lines, the tavern nav 
   lane: L-CONTENT · block: 5–8 · paths: `internal/content/moves*.go` · depends: CON-001
   done when: Every MoveID has a label and each rejection reason has text.; gate green (≥ 70% coverage where applicable)
   status: done c73ca93
+
+- [ ] CONT-009 · class move labels, class names, and descriptions (en, es)
+  why: The phone and TV need display labels, one-line role descriptions, and i18n keys for the class move and the 12 classes.
+  lane: L-CONTENT · block: 8–11 · paths: `internal/content/classes*.go`, `internal/i18n/catalog/**` · depends: CONT-008, I18N-003, I18N-010
+  done when: label and reason for move class; for each class a name and a one-line demo-friendly role blurb in en and es; I18N-011 parity passes.
+  status: claimed luna
 
 ## 7. Engine: root, phase dispatcher, and nested flows
 
@@ -613,6 +625,12 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   done when: the joined name becomes the character's display name (fallback Hero N when empty); Step test; live check.
   status: committed efcb83c
 
+- [ ] ENG-019 · creation offers class as a third choice
+  why: Developer decision: class becomes a player choice (move class, arg = lowercase SRD class name) alongside species and gender; roll_hero requires all three.
+  lane: L-ENG · block: 8–11 · paths: `internal/vocab/vocab.go`, `internal/game/phase/creation/**`, `internal/game/legal*.go` · depends: RULES-006, ENG-016
+  done when: vocab.MoveClass = "class" (ORCH names this lane the writer of that one constant); creation accepts class with validation against the 12 SRD classes; both seats may pick the same class; legal moves before roll are species, gender, class, and roll_hero only once all three are set; timeout fallback still draws; Step and walk tests updated.
+  status: claimed luna
+
 - [ ] INT-001 · lobby seats and join data reach the TV end to end
   why: Live test: two phones joined (engine View version advanced) but dfctl view --dm shows {"dm":{}} and the TV still shows Waiting to join, room code "/p", and a broken QR, because proto DMView has no seats or lobby fields and the projection never fills them.
   lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/common.proto`, `gen/**`, `internal/api/project*.go`, `web/dm/lobby*.go` · depends: ENG-017, API-019, BASE-021
@@ -623,7 +641,7 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: Live test: after the phone's roll_hero is accepted (engine legal moves move on to ready), the phone stays on "The engine is rolling your hero" because PhoneView never carries the rolled build, the moves arrive without labels or reasons, and phase status text is missing.
   lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/common.proto`, `gen/**`, `internal/api/project*.go` · depends: INT-001, ENG-016
   done when: PhoneView carries the seat's character (species, gender, class, build stats, flavor, portrait URL, locked), legal moves with display labels and disabled reasons from content, and phase status; projection tests; live check in the browser: roll shows the build card, Ready locks, and both phones advance to the opening.
-  status: claimed luna
+  status: committed 8329b67
 
 - [ ] INT-003 · simulated game runs itself in fake mode on a live server
   why: Live play-through stalls in opening: with fake adapters and no canned audio assets, PlayCanned never posts line_done, nothing logs effect execution, and the opening never advances; later phases will hit the same class of gap.
@@ -1037,7 +1055,7 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: Live test after INT-001: the TV shows Joined seats but as Player 1/2, the room code as "/p", and a broken QR, because JoinRequest has no player name field and wire never passes room code, join URL, and QR URL into the engine's lobby View.
   lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/common.proto`, `gen/**`, `internal/api/session*.go`, `internal/api/project*.go`, `internal/wire/lobby*.go`, `internal/wire/wire.go`, `web/shell/join*.go` · depends: INT-002, ENG-017, ENG-018, BASE-021
   done when: JoinRequest gains player_name; the phone sends it; session posts it in domain.Join; wire passes lobby data (room code, LAN join URL, QR URL) to the engine via ENG-017's option; projection fills DMView.lobby; live check: TV shows Aria and Bram, the real room code, the join URL, and a QR image that loads.
-  status: open (launch after INT-002)
+  status: claimed luna
 
 ## 14. LLM layer
 
@@ -1465,6 +1483,12 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   done when: at End the phone shows the outcome, the character's final state, thanks, and the SRD attribution link; preview fixture plus live check.
   status: claimed luna
 
+- [ ] PHONE-020 · phone class picker (third creation choice)
+  why: Players choose a class on the phone after species and gender.
+  lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/create*.go`, `web/phone/class*.go` · depends: PHONE-011, ENG-019, CONT-009
+  done when: a Class section with the 12 SRD classes (crest icon when available, name, one-line role) sits after Gender; Roll sends species, gender, class, then roll_hero; the build card shows the chosen class; preview fixture and live check.
+  status: claimed luna
+
 ## 20. DM screen
 
 The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
@@ -1577,6 +1601,12 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   done when: the stage fills any viewport with safe-area insets and per-aspect layout rules (captions, seat rail, dice, combat HUD reposition; backgrounds use cover with focal points; ultrawide gets side vignettes, 4:3 stacks panels, portrait stacks vertically); an ?aspect= override forces a ratio for testing; preview fixtures screenshotted at 1920x1080, 2560x1080, 1920x1200, 1440x1080, 1080x1920 all look intentional.
   status: claimed luna
 
+- [ ] DM-019 · TV creation layer shows each player's class choice
+  why: The TV should show species, gender, and now class as players pick them.
+  lane: L-WEB-DM · block: 8–11 · paths: `web/dm/creation*.go` · depends: DM-017, ENG-019
+  done when: each seat card shows species, gender, and class as they arrive (class crest when available), then the rolled build; preview fixture and live check.
+  status: claimed luna
+
 ## 21. Host
 
 The operator page: Start, Pause, Skip, Reset, Force d20, and debug panel.
@@ -1679,7 +1709,7 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   why: The developer requests actual voxel occupancy to exclude terrain from the playable battle grid.
   lane: L-WEB-SPLAT · paths: `web/splat/protocol*.go`, `web/splat/js/voxel*.mjs`, `web/splat/js/battle_scene.mjs`, `web/splat/js/viewer.mjs`, `web/splat/js/df-splat.mjs`, `web/splat/scenes/*.json` · depends: SPLAT-011
   done when: voxel data is sourced or generated from each scene, coordinate transforms and floor versus obstacle clearance are tested, occupied cells are excluded in the viewer and runtime, both scenes are visually inspected, and the lane gate passes.
-  status: claimed Codex 2026-09-26
+  status: committed 31c20bf
 
 - [ ] SPLAT-013 · rules scale, antialiasing, and complete supported grid coverage
   why: The developer requests correctly scaled rules squares, antialiased lines, and coverage of all walkable space in the battle area.
