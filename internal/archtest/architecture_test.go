@@ -248,7 +248,7 @@ func allowedInternal(packagePath string) []string {
 	case strings.HasPrefix(packagePath, "internal/game/phase/"):
 		return []string{"internal/core/fsm", "internal/domain", "internal/vocab", "internal/content", "internal/game/rules", "internal/game/nested", "internal/game/steer"}
 	case packagePath == "internal/game/phase":
-		return []string{"internal/core/fsm", "internal/domain", "internal/vocab", "internal/content", "internal/game/combat", "internal/game/phase", "internal/game/nested", "internal/game/steer"}
+		return []string{"internal/core/fsm", "internal/domain", "internal/vocab", "internal/content", "internal/game/rules", "internal/game/combat", "internal/game/phase", "internal/game/nested", "internal/game/steer"}
 	case packagePath == "internal/game/nested" || packagePath == "internal/game/steer":
 		return []string{"internal/core/fsm", "internal/domain", "internal/vocab", "internal/content", "internal/game/rules"}
 	case packagePath == "internal/sim":
