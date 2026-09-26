@@ -601,6 +601,12 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   done when: a domain Join event (seat, name, locale) marks the seat joined with its name in lobby and later phases; View carries seats (joined, name, locale) plus room code, join URL, and QR asset reference supplied at construction; Step tests; dfctl view --dm shows joined seats.
   status: claimed luna
 
+- [ ] ENG-018 · characters carry the player's joined name
+  why: Live run: after joining as Aria the TV and phone show "Hero 1 · rogue" because the character name ignores the name from Join.
+  lane: L-ENG · block: 8–11 · paths: `internal/game/phase/creation/name*.go`, `internal/game/state*.go` · depends: ENG-017
+  done when: the joined name becomes the character's display name (fallback Hero N when empty); Step test; live check.
+  status: claimed luna
+
 - [ ] INT-001 · lobby seats and join data reach the TV end to end
   why: Live test: two phones joined (engine View version advanced) but dfctl view --dm shows {"dm":{}} and the TV still shows Waiting to join, room code "/p", and a broken QR, because proto DMView has no seats or lobby fields and the projection never fills them.
   lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/common.proto`, `gen/**`, `internal/api/project*.go`, `web/dm/lobby*.go` · depends: ENG-017, API-019, BASE-021
@@ -1778,6 +1784,12 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   lane: L-OPS · block: 1–5 · paths: `scripts/buildtime/splat*.go`, `scripts/buildtime/spz/**` · depends: OPS-006
   done when: the Marble job requests and downloads .ply (and .sog when the API offers it) directly; SPZ request flags, SPZ URL fields, and scripts/buildtime/spz are removed; the manifest records only .ply/.sog assets with metric_scale_factor and ground_plane_offset; 100k decimation, if needed, operates on PLY.
   status: committed 0b2fb50 (Marble exports PLY at full and 100k; no SOG export offered)
+
+- [ ] OPS-020 · register the generated stills in the build-time manifest
+  why: Live run: the opening scene on the TV is an empty dark frame because artifacts/runtime/buildtime/manifest.json has no assets, although tavern_interior.png, tavern_doorway.png, bell_tower.png, battlefield_flat.png, mother_vell_source.png, and stranger_source.png exist.
+  lane: L-OPS · block: 8–11 · paths: `scripts/buildtime/register*.go`, `scripts/buildtime/manifest*.go` · depends: OPS-001, OPS-002, BASE-008
+  done when: a register command (go run ./scripts/buildtime register --scan) adds existing files under artifacts/runtime/buildtime with the logical names wire/BASE-008 expects (read internal/wire/manifest*.go and internal/content for the names), writes the manifest, and a server restart shows the tavern still behind the opening; tests with temp dirs.
+  status: claimed luna
 
 - [x] OPS-019 · PowerShell SuperSplat manifest and complete LOD downloader
   why: The developer needs a reproducible local copy of every LOD and texture referenced by the supplied SuperSplat scene.
