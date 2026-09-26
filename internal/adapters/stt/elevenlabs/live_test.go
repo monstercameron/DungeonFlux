@@ -5,9 +5,8 @@ package elevenlabs
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
+	"fmt"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -22,32 +21,40 @@ func TestLiveElevenLabsSTT(t *testing.T) {
 	if key == "" {
 		t.Fatal("DF_ELEVENLABS_API_KEY is not set while DF_LIVE=1")
 	}
-	ctx, cancel := context.WithTimeout(t.Context(), 45*time.Second)
-	defer cancel()
-	result, err := New(key, "", 45*time.Second, nil).Transcribe(ctx, ports.STTRequest{Audio: silenceWAV(), MIME: "audio/wav"})
+	audio, err := liveSpeechAudio()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.IndexByte(result.Text, 0) >= 0 {
-		t.Fatal("Scribe transcript contains a NUL byte")
+	ctx, cancel := context.WithTimeout(t.Context(), 45*time.Second)
+	defer cancel()
+	result, err := New(key, "", 45*time.Second, nil).Transcribe(ctx, ports.STTRequest{Audio: audio, MIME: "audio/wav"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Text == "" {
+		t.Fatal("Scribe returned an empty transcript")
 	}
 }
 
-func silenceWAV() []byte {
-	const samples = 16000
-	b := bytes.NewBuffer(nil)
-	b.WriteString("RIFF")
-	binary.Write(b, binary.LittleEndian, uint32(36+samples*2))
-	b.WriteString("WAVEfmt ")
-	binary.Write(b, binary.LittleEndian, uint32(16))
-	binary.Write(b, binary.LittleEndian, uint16(1))
-	binary.Write(b, binary.LittleEndian, uint16(1))
-	binary.Write(b, binary.LittleEndian, uint32(16000))
-	binary.Write(b, binary.LittleEndian, uint32(32000))
-	binary.Write(b, binary.LittleEndian, uint16(2))
-	binary.Write(b, binary.LittleEndian, uint16(16))
-	b.WriteString("data")
-	binary.Write(b, binary.LittleEndian, uint32(samples*2))
-	b.Write(make([]byte, samples*2))
-	return b.Bytes()
+func liveSpeechAudio() ([]byte, error) {
+	path := os.Getenv("DF_LIVE_STT_AUDIO_FILE")
+	if path == "" {
+		return nil, fmt.Errorf("DF_LIVE_STT_AUDIO_FILE is required while DF_LIVE=1")
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, fmt.Errorf("stat live STT audio: %w", err)
+	}
+	const maxAudioBytes = 10 << 20
+	if info.Size() < 44 || info.Size() > maxAudioBytes {
+		return nil, fmt.Errorf("live STT audio size %d is outside 44..%d bytes", info.Size(), maxAudioBytes)
+	}
+	audio, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read live STT audio: %w", err)
+	}
+	if !bytes.Equal(audio[:4], []byte("RIFF")) || !bytes.Equal(audio[8:12], []byte("WAVE")) {
+		return nil, fmt.Errorf("live STT audio is not a RIFF/WAVE file")
+	}
+	return audio, nil
 }

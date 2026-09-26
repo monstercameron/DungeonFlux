@@ -24,7 +24,11 @@ func TestLiveFalSubmit(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(t.Context(), 45*time.Second)
 	defer cancel()
-	job, err := New(key, "", "", nil).Submit(ctx, ports.VideoRequest{FirstFrame: tinyPNG(), Prompt: "a blue dot", Seconds: 4, Resolution: "480p"})
+	frame, err := tinyPNG()
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := New(key, "", "", nil).Submit(ctx, ports.VideoRequest{FirstFrame: frame, Prompt: "a blue dot", Seconds: 4, Resolution: "480p"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,8 +37,14 @@ func TestLiveFalSubmit(t *testing.T) {
 	}
 }
 
-func tinyPNG() []byte {
+func tinyPNG() ([]byte, error) {
 	var b bytes.Buffer
-	_ = png.Encode(&b, image.NewRGBA(image.Rect(0, 0, 1024, 1024)))
-	return b.Bytes()
+	frame := image.NewNRGBA(image.Rect(0, 0, 1024, 1024))
+	for i := range frame.Pix {
+		frame.Pix[i] = 255
+	}
+	if err := png.Encode(&b, frame); err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
 }
