@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DungeonFlux Splat Viewer</title>
+  <style>
+    :root { color-scheme: dark; font: 14px/1.35 system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #070b12; }
+    canvas { display: block; width: 100%; height: 100%; }
+    #hud { position: fixed; inset: 0; pointer-events: none; }
+    #toolbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 10px; }
+    #toolbar, #status { width: fit-content; max-width: calc(100vw - 20px); border: 1px solid #334358;
+      border-radius: 8px; background: rgb(8 14 24 / 88%); box-shadow: 0 5px 22px rgb(0 0 0 / 30%); }
+    #toolbar { pointer-events: auto; }
+    button { border: 1px solid #526981; border-radius: 5px; padding: 6px 9px; color: #eaf2ff;
+      background: #162538; cursor: pointer; font: inherit; }
+    button:hover, button[aria-pressed="true"] { background: #245070; border-color: #72d7e6; }
+    button:disabled { cursor: wait; opacity: .55; }
+    #status { margin: 0 10px; padding: 7px 10px; color: #b7c8dc; white-space: pre-wrap; }
+    #status[data-kind="error"] { color: #ffaaa8; border-color: #a24e5b; }
+    .label { color: #7f9bb7; margin-right: 3px; }
+    .spacer { flex: 1 1 10px; }
+  </style>
+</head>
+<body>
+  <canvas id="df-splat-viewer" aria-label="Gaussian splat viewer"></canvas>
+  <div id="hud">
+    <div id="toolbar">
+      <span class="label">Camera</span>
+      <span id="presets"></span>
+      <span class="spacer"></span>
+      <button id="grid-toggle" type="button" aria-pressed="true">Grid</button>
+      <button id="export-picks" type="button">Export picks</button>
+    </div>
+    <div id="status">Waiting for ?src=scene.ply (or .sog)…</div>
+  </div>
+  <script type="module" src="./viewer.mjs"></script>
+</body>
+</html>
