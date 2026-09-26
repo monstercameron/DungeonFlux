@@ -1066,7 +1066,7 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
 - [ ] INT-006 · server streams all DM audio over gRPC: voice, music, ambience, SFX
   why: Developer request (2026-09-26): all table audio reaches the DM client through gRPC; today AudioService.Listen carries only TTS PCM frames, so music, ambience, and sound effects have no path.
   lane: ORCH (integration) · block: 11–14 · paths: `proto/dungeonflux/v1/common.proto`, `proto/dungeonflux/v1/session.proto`, `gen/**`, `internal/api/listen*.go`, `internal/api/audio*.go`, `internal/media/audio_router*.go`, `internal/wire/audio*.go`, `internal/wire/wire.go` · depends: INT-004, API-005, VOUT-002, MEDIA-009, MEDIA-010
-  done when: AudioMessage gains channel (voice, music, ambience, sfx), encoded chunks (codec mime such as audio/ogg;codecs=opus or audio/mpeg, sequence, final) and mix commands (play, stop, crossfade to track at the next bar with duration, loop on/off, gain, duck); a server audio router turns engine cues (ENG-012 music and shot cues, MEDIA-009 transitions, MEDIA-010 sounds) and manifest assets into streamed chunks on the DM Listen stream with backpressure (drop oldest non-voice chunks, never voice); voice PCM keeps working; tests with bufconn and synctest; live check streams the tavern ambience and a music track to a Go test client.
+  done when: AudioMessage gains channel (voice, music, ambience, sfx), encoded chunks (codec mime such as audio/ogg;codecs=opus or audio/mpeg, sequence, final) and mix commands (play, stop, crossfade to track at the next bar with duration, loop on/off, gain, duck); a server audio router turns engine cues (ENG-012 music and shot cues, MEDIA-009 transitions, MEDIA-010 sounds) and manifest assets into streamed chunks on the DM Listen stream with backpressure (drop oldest non-voice chunks, never voice); voice PCM keeps working; Listen also accepts phone seat tokens and every audio message carries a target (dm, seat N, all phones) so the server can send one-off effects to one player (developer request: cool one-off effects on phones), with phone streams limited to the sfx channel and short clips; tests with bufconn and synctest; live check streams the tavern ambience and a music track to a Go test client.
   status: open (launch after INT-004: gen/)
 
 ## 14. LLM layer
@@ -1518,6 +1518,12 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/theme*.go`, `web/phone/art*.go`, `web/phone/moves*.go`, `web/phone/sheet*.go`, `web/phone/dice*.go`, `web/phone/combat*.go` · depends: PHONE-020, WEB-015, OPS-021
   done when: phone uses ui/phone_bg, ui/icon_* for moves, ui/species_* and ui/class_* in creation and the sheet, ui/button_* plates, ui/d20* for the roll, ui/status_* on the sheet; all via the gRPC asset loader; Edge screenshots at 390x844.
   status: open (launch after WEB-015 and PHONE-020)
+
+- [ ] PHONE-022 · phone one-off audio effects over gRPC
+  why: Developer request (2026-09-26): the server streams short one-off effects to individual player phones (your dice rattle when you roll, a chime when it is your turn, a heartbeat when you are down, a whispered hint only you hear).
+  lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/audio*.go` · depends: INT-006, WEB-016
+  done when: after the first tap the phone opens its own AudioService.Listen with its seat token, plays sfx-channel clips targeted at its seat (or all phones) with a small Web Audio graph (volume, haptic vibrate where supported), respects a mute toggle and prefers-reduced-motion for haptics, never blocks the JS loop; the cue catalogue (MEDIA-010) gains per-seat cues for roll, your turn, damage, down, and success/failure; native tests for queue logic; live check in the browser.
+  status: open (launch after INT-006 and WEB-016)
 
 ## 20. DM screen
 
