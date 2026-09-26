@@ -517,7 +517,7 @@ The fixed one-shot: NPCs, beats, prompts, schemas, canned lines, the tavern nav 
   why: ENG-021 reports the full walk and downstream wire tests fail because the class move has no localized label_key.
   lane: L-CONTENT · block: 11–14 · paths: `internal/content/moves*.go`, `internal/i18n/english*.go`, `internal/i18n/spanish*.go`, `internal/i18n/keys*.go`, `internal/i18n/catalog/**` · depends: CONT-009, ENG-019
   done when: class has label_key and reason keys in en and es; go test ./internal/sim/... ./internal/wire passes; I18N-011 parity passes.
-  status: claimed luna
+  status: committed 76b633a
 
 ## 7. Engine: root, phase dispatcher, and nested flows
 
@@ -653,13 +653,19 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: Developer request (2026-09-26): once a player locks species, gender, and class, the game generates a multi-angle reference of that hero so every later image and video (portrait, scene stills, clips, combat billboards) keeps the character consistent.
   lane: L-ENG · block: 11–14 · paths: `internal/vocab/reference*.go`, `internal/domain/reference*.go`, `internal/game/phase/creation/reference*.go`, `internal/game/nested/reference*.go` · depends: ENG-019, ENG-009
   done when: a new effect GenerateCharacterReference{Seat, Species, Gender, Class, Name, Flavor, Scope} (vocab kind plus domain type in new files, named writer for those files) is emitted on PCLocked; a reference slot tracks pending/ready/failed with the reference asset ids per angle; later portrait/still/clip/billboard effects carry the ready reference ids; creation never waits on it (timeouts fall back); Step tests.
-  status: claimed luna
+  status: committed 5de6fea
 
 - [ ] ENG-023 · per-seat audio cues: combat and spell events play on the acting player's phone
   why: The engine must decide which character sound plays on which phone: the attacker's effort grunt on their phone, the target's hurt grunt on theirs, spell casts, downed, victory, and heals.
   lane: L-ENG · block: 11–14 · paths: `internal/game/audio_cues*.go`, `internal/game/combat/audio*.go` · depends: INT-006, MEDIA-013, COMBAT-008
   done when: attack_made, damage_applied, spell/ability use, status down, combat won, and heal events emit INT-006's targeted sound effect with target = that seat and name voicepack/<seat>/<cue> (falling back to class-generic SFX); the DM still gets the table-wide SFX; Step tests assert targets and cue names per event.
   status: open (launch after INT-006 and MEDIA-013)
+
+- [ ] ENG-024 · engine music, ambience, and shot cues emit the streamed sound effect
+  why: INT-006 streams table audio over gRPC, but the engine's existing music and ambience cues (ENG-012) never emit INT-006's sound effect, so no music or ambience plays on the DM.
+  lane: L-ENG · block: 11–14 · paths: `internal/game/cues*.go`, `internal/game/audio_table*.go` · depends: ENG-012, INT-006, OPS-024, OPS-026
+  done when: each phase and scene transition emits the table-wide sound effects (music track with crossfade at bar, ambience bed, stingers) targeted at the DM, using manifest names from the build-time audio; Step tests assert cue effects per phase.
+  status: claimed luna
 
 - [ ] INT-001 · lobby seats and join data reach the TV end to end
   why: Live test: two phones joined (engine View version advanced) but dfctl view --dm shows {"dm":{}} and the TV still shows Waiting to join, room code "/p", and a broken QR, because proto DMView has no seats or lobby fields and the projection never fills them.
@@ -1075,6 +1081,12 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   done when: view --seat N returns that seat's PhoneView projection and --dm the DMView; tests for both.
   status: committed 57ba26c
 
+- [ ] API-021 · host command handler staticcheck (SA4006)
+  why: staticcheck fails the internal/api gate on host.go:72 (a value of tag is never used), which every API lane reports as a blocker.
+  lane: L-API · block: 11–14 · paths: `internal/api/host*.go` · depends: API-007
+  done when: the tag value is used or removed with behaviour unchanged; staticcheck clean on internal/api; tests pass.
+  status: claimed luna
+
 - [ ] INT-004 · assets over gRPC: AssetService, server, and art loading
   why: Developer decision: gRPC is the only transport after boot, so images (UI art, scene stills, portraits, QR) must reach clients through a gRPC AssetService instead of HTTP /assets routes.
   lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/assets.proto`, `gen/**`, `internal/api/assets*.go`, `internal/wire/assets*.go`, `internal/wire/wire.go` · depends: INT-002, BASE-008, OPS-020
@@ -1091,7 +1103,7 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: Developer request (2026-09-26): all table audio reaches the DM client through gRPC; today AudioService.Listen carries only TTS PCM frames, so music, ambience, and sound effects have no path.
   lane: ORCH (integration) · block: 11–14 · paths: `proto/dungeonflux/v1/common.proto`, `proto/dungeonflux/v1/session.proto`, `gen/**`, `internal/api/listen*.go`, `internal/api/audio*.go`, `internal/media/audio_router*.go`, `internal/wire/audio*.go`, `internal/wire/wire.go` · depends: INT-004, API-005, VOUT-002, MEDIA-009, MEDIA-010
   done when: AudioMessage gains channel (voice, music, ambience, sfx), encoded chunks (codec mime such as audio/ogg;codecs=opus or audio/mpeg, sequence, final) and mix commands (play, stop, crossfade to track at the next bar with duration, loop on/off, gain, duck); a server audio router turns engine cues (ENG-012 music and shot cues, MEDIA-009 transitions, MEDIA-010 sounds) and manifest assets into streamed chunks on the DM Listen stream with backpressure (drop oldest non-voice chunks, never voice); voice PCM keeps working; Listen also accepts phone seat tokens and every audio message carries a target (dm, seat N, all phones) so the server can send one-off effects to one player (developer request: cool one-off effects on phones), with phone streams limited to the sfx channel and short clips; tests with bufconn and synctest; live check streams the tavern ambience and a music track to a Go test client.
-  status: open (launch after INT-004: gen/)
+  status: committed 22e9fe0
 
 ## 14. LLM layer
 
@@ -1429,13 +1441,13 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   why: The DM client must play the gRPC audio stream as a real mix: music and ambience beds, SFX on top, voice always clear.
   lane: L-WEB-SHELL · block: 11–14 · paths: `web/shell/audio/**` · depends: INT-006, WEB-004
   done when: a Web Audio graph with per-channel gain nodes decodes streamed encoded chunks (MediaSource or decodeAudioData on complete segments) and voice PCM, applies play/stop/crossfade/loop/gain commands, ducks music and ambience about 8 dB under voice, and starts after the existing Enable table audio tap; no blocking in JS callbacks; native tests for the mix-state logic; live check in the browser.
-  status: open (launch after INT-006)
+  status: claimed luna
 
 - [ ] WEB-017 · preview query parsing and phone staticcheck
   why: PHONE-021 found that the shell's previewName parses location.search with its leading '?', so ?preview= fixture URLs fall back to the join screen (likely also DM-021's blocked screenshots), and staticcheck fails on the unused srdAttributionURL in web/phone/end.go.
   lane: L-WEB-SHELL · block: 11–14 · paths: `web/shell/preview*.go`, `web/phone/end*.go` · depends: WEB-012, PHONE-019
   done when: /dm?preview=<name> and /p?preview=<name> render their fixtures with no gRPC connection (native test for the parser with and without '?'); the unused constant is used by the end screen's attribution link or removed; staticcheck clean on web/shell and web/phone; Edge screenshot of one DM and one phone preview.
-  status: claimed luna
+  status: committed f5ec7fb
 
 ## 19. Phone
 
@@ -1565,7 +1577,7 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   why: The phone should feel like the concept phone UI: journal background, medallion move icons, species portraits and class crests in creation, and painted button plates.
   lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/theme*.go`, `web/phone/art*.go`, `web/phone/moves*.go`, `web/phone/sheet*.go`, `web/phone/dice*.go`, `web/phone/combat*.go` · depends: PHONE-020, WEB-015, OPS-021
   done when: phone uses ui/phone_bg, ui/icon_* for moves, ui/species_* and ui/class_* in creation and the sheet, ui/button_* plates, ui/d20* for the roll, ui/status_* on the sheet; all via the gRPC asset loader; Edge screenshots at 390x844.
-  status: claimed luna
+  status: committed d856c35
 
 - [ ] PHONE-022 · phone one-off audio effects over gRPC
   why: Developer request (2026-09-26): the server streams short one-off effects to individual player phones (your dice rattle when you roll, a chime when it is your turn, a heartbeat when you are down, a whispered hint only you hear).
@@ -1719,7 +1731,7 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   why: assets/concept/ui-tv-opening-scene-drowned-lantern-tavern.jpg defines how scenes, captions, and speakers look.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/scene*.go`, `web/dm/text*.go`, `web/dm/clip*.go` · depends: DM-011, DM-018
   done when: full-bleed still with the concept's framing, lower-third caption panel, speaker name plate, and ornaments match the concept; stills resolve via dm.ArtURL (tavern_interior and friends); Edge screenshots side by side.
-  status: claimed luna
+  status: committed 0977057
 
 - [ ] DM-024 · TV exploration HUD matches the exploration-HUD concept 1:1
   why: assets/concept/ui-tv-sunken-halls-exploration-hud.jpg shows the exploration HUD (party portraits, spotlight, objective, legal-action hints).
@@ -1737,7 +1749,7 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   why: Six DM concept lanes worked in parallel in web/dm: their layer hooks in mount_wasm.go are stranded in mixed uncommitted hunks (DM-024 HUD, DM-025 dialogue), and sibling edits broke each other's WASM builds (dividerBackground redeclared, combat_wasm.go syntax), so none could take final screenshots.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/**` · depends: DM-020, DM-021, DM-022, DM-023, DM-024, DM-025, WEB-015
   done when: GOOS=js GOARCH=wasm go build ./web/... passes; every layer (title/lobby, creation, scene, HUD, dialogue, dice/callouts, combat, cliffhanger/end) is registered once in the DM screen; the art resolves through dm.ArtURL once WEB-015 lands; Edge screenshots of every preview fixture at 1920x1080 and 2560x1080, compared side by side with the concepts; web/dm >= 70%.
-  status: open (launch after DM-021, DM-022, DM-023)
+  status: claimed luna
 
 ## 21. Host
 
@@ -2133,6 +2145,12 @@ Keeping the build honest: per-commit checks, the 30-minute full gate, checkpoint
   lane: ORCH · block: 8–11 · paths: `internal/wire/**`, `internal/api/debug/**` · depends: ENG-015, BASE-017, E2E-003
   done when: the root cause is found and fixed in wire or api/debug (one source of truth for the room's current engine, reads serialized through the room loop instead of racing it, one inbox shared by room, runner, timers, and debug service); TestE2E_DfctlRunThroughLobby runs lobby to End without skipping on fakes.
   status: committed ef33a57 (full dfctl run lobby to End passes)
+
+- [ ] E2E-005 · e2e and simulated-game tests choose a class before rolling
+  why: After ENG-019 made class a required creation choice, TestE2E_DfctlRunThroughLobby fails (roll_hero rejected: unaccepted_event) and TestSimulatedGame_PhoneSessionReachesEndInFakeMode times out waiting for opening, because both send only species and gender.
+  lane: ORCH · block: 11–14 · paths: `internal/wire/e2e_test.go`, `internal/wire/sim_test.go` · depends: ENG-019, INT-003
+  done when: both tests send species, gender, and class (different classes per seat) before roll_hero and pass lobby to End; go test ./internal/wire passes.
+  status: claimed luna
 
 - [ ] SPIKE-001 · Spike proto and grpctunnel echo
   why: The riskiest path (phone mic over the tunnel, PCM back) is proven with a throwaway proto first.
