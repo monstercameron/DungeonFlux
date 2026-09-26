@@ -1673,11 +1673,11 @@ Everything needed to run the 3-minute demo live.
   done when: dfctl costs within budget.; gate green (≥ 70% coverage where applicable)
   status: open
 
-- [ ] STAGE-008 · cost check script over dfctl costs
+- [x] STAGE-008 · cost check script over dfctl costs
   why: STAGE-007 needs a repeatable check that per-run cost stays near $0.62 and totals stay within the §0.14 budget.
   lane: ORCH (delegated) · block: 14–17 · paths: `scripts/costcheck.ps1` · depends: DFCTL-002, LLM-007
   done when: the script reads dfctl costs JSON lines (or a saved file), sums per vendor and per run, compares to §0.14 caps, exits non-zero over budget; tested on sample JSON under artifacts/tmp.
-  status: committed 1e9af28
+  status: done 1e9af28
 
 ## 27. Localization (i18n)
 
