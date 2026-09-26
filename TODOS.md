@@ -1393,11 +1393,11 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: Switching tested in the browser.; gate green (≥ 70% coverage where applicable)
   status: committed 1703769
 
-- [ ] SPLAT-008 · standalone splat debug viewer page
+- [x] SPLAT-008 · standalone splat debug viewer page
   why: Nav authoring (OPS-007) and fps checks need the splat, grid, presets, and pick mode on a page without running the whole game.
   lane: L-WEB-SPLAT · block: 8–11 · paths: `web/splat/js/viewer*.html`, `web/splat/js/viewer*.mjs` · depends: SPLAT-003, SPLAT-005, SPLAT-006
   done when: opening the viewer with ?src=<.ply or .sog>&debug loads the splat, shows the 8×6 grid and camera presets, logs p5 fps, and exports picked cells as JSON.
-  status: committed c0a4c8a
+  status: done 3776fbd
 
 ## 23. dfctl debug CLI
 
