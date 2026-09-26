@@ -6,6 +6,7 @@ import (
 	"context"
 	"syscall/js"
 
+	"github.com/monstercameron/DungeonFlux/web/phone"
 	"github.com/monstercameron/GoWebComponents/v6/html"
 	"github.com/monstercameron/GoWebComponents/v6/router"
 	"github.com/monstercameron/GoWebComponents/v6/ui"
@@ -34,6 +35,9 @@ func JoinScreen(client *Client) router.Component {
 		})
 		change := ui.UseEvent(func(event ui.InputEvent) { room.Set(event.GetValue()) })
 		state := view.Get()
+		if state.Phase == JoinJoined {
+			return ui.CreateElement(phone.Mount(phoneClientAdapter{client: client}, state.SeatToken))
+		}
 		message := state.Error
 		if state.Phase == JoinPending {
 			message = "Joining the table…"

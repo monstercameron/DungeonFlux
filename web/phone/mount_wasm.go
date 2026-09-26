@@ -115,15 +115,23 @@ func pttScreen(props pttProps) ui.Node {
 	status := ui.UseState("Ready to talk")
 	recorder := ui.UseState((*BrowserRecorder)(nil))
 	stream := ui.UseState(js.Value{})
+	cancelRecording := ui.UseState((context.CancelFunc)(nil))
 	ui.UseEffect(func() func() {
 		return func() {
+			if cancel := cancelRecording.Get(); cancel != nil {
+				cancel()
+			}
 			if current := recorder.Get(); current != nil {
 				current.Dispose()
 			}
 			stopTracks(stream.Get())
 		}
+	}, props.model)
+	start := ui.UseEvent(func() {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancelRecording.Set(cancel)
+		go startPTT(ctx, props.model, status.Set, recorder.Set, stream.Set)
 	})
-	start := ui.UseEvent(func() { go startPTT(props.model, status.Set, recorder.Set, stream.Set) })
 	stop := ui.UseEvent(func() {
 		current := recorder.Get()
 		if current == nil {
@@ -136,6 +144,13 @@ func pttScreen(props pttProps) ui.Node {
 				return
 			}
 			<-current.Done()
+			current.Dispose()
+			stopTracks(stream.Get())
+			if err := current.Err(); err != nil {
+				_ = <-props.model.Stop(context.Background())
+				status.Set(err.Error())
+				return
+			}
 			if err := <-props.model.Stop(context.Background()); err != nil {
 				status.Set(err.Error())
 				return
@@ -144,13 +159,13 @@ func pttScreen(props pttProps) ui.Node {
 		}()
 	})
 	return html.Section(html.Props{Class: "df-phone-ptt"},
-		html.Button(html.Props{Type: "button", OnClick: start}, html.Text("Hold to talk")),
-		html.Button(html.Props{Type: "button", OnClick: stop}, html.Text("Release")),
+		html.Button(html.Props{Type: "button", OnClick: start}, html.Text("Start talking")),
+		html.Button(html.Props{Type: "button", OnClick: stop}, html.Text("Stop talking")),
 		html.P(html.Props{Role: "status"}, html.Text(status.Get())),
 	)
 }
 
-func startPTT(model *PTTModel, setStatus func(string), setRecorder func(*BrowserRecorder), setStream func(js.Value)) {
+func startPTT(ctx context.Context, model *PTTModel, setStatus func(string), setRecorder func(*BrowserRecorder), setStream func(js.Value)) {
 	if model == nil {
 		setStatus("Push-to-talk unavailable")
 		return
@@ -178,12 +193,18 @@ func startPTT(model *PTTModel, setStatus func(string), setRecorder func(*Browser
 		then.Release()
 		catch.Release()
 		setStream(mediaStream)
-		if err := model.Start(context.Background(), "audio/webm"); err != nil {
+		mimeType := recorderMIME()
+		if mimeType == "" {
+			stopTracks(mediaStream)
+			setStatus("This browser cannot record audio")
+			return
+		}
+		if err := model.Start(ctx, mimeType); err != nil {
 			stopTracks(mediaStream)
 			setStatus(err.Error())
 			return
 		}
-		recorder, err := NewBrowserRecorder(mediaStream, "audio/webm", model.QueueChunk)
+		recorder, err := NewBrowserRecorder(mediaStream, mimeType, model.QueueChunk)
 		if err != nil {
 			setStatus(err.Error())
 			return
@@ -195,6 +216,19 @@ func startPTT(model *PTTModel, setStatus func(string), setRecorder func(*Browser
 		setRecorder(recorder)
 		setStatus("Recording…")
 	}
+}
+
+func recorderMIME() string {
+	mediaRecorder := js.Global().Get("MediaRecorder")
+	if !mediaRecorder.Truthy() {
+		return ""
+	}
+	for _, mimeType := range []string{"audio/webm;codecs=opus", "audio/webm", "audio/mp4;codecs=mp4a.40.2", "audio/mp4"} {
+		if mediaRecorder.Call("isTypeSupported", mimeType).Truthy() {
+			return mimeType
+		}
+	}
+	return ""
 }
 
 func stopTracks(stream js.Value) {
