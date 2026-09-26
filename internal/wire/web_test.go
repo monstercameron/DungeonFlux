@@ -48,12 +48,18 @@ func TestMountWeb_ServesPagesAndWasm(t *testing.T) {
 		}
 	}
 	res := request(mux, "/app/dungeonflux.wasm", "")
-	if res.Code != http.StatusOK || res.Header().Get("Content-Type") != "application/wasm" {
+	if res.Code != http.StatusOK || res.Header().Get("Content-Type") != "application/wasm" || res.Header().Get("Cache-Control") != "no-cache" || res.Header().Get("ETag") == "" {
 		t.Fatalf("wasm = %d %q %q", res.Code, res.Body.String(), res.Header().Get("Content-Type"))
 	}
 	res = request(mux, "/wasm_exec.js", "")
-	if res.Code != http.StatusOK || !strings.HasPrefix(res.Header().Get("Content-Type"), "text/javascript") {
+	if res.Code != http.StatusOK || !strings.HasPrefix(res.Header().Get("Content-Type"), "text/javascript") || res.Header().Get("Cache-Control") != "no-cache" || res.Header().Get("ETag") == "" {
 		t.Fatalf("loader = %d %q", res.Code, res.Header().Get("Content-Type"))
+	}
+	for _, path := range []string{"/dm", "/p", "/host"} {
+		res := request(mux, path, "")
+		if res.Header().Get("Cache-Control") != "no-cache" || res.Header().Get("ETag") == "" {
+			t.Errorf("page %s headers = %q, %q", path, res.Header().Get("Cache-Control"), res.Header().Get("ETag"))
+		}
 	}
 }
 
@@ -93,6 +99,10 @@ func TestMountWeb_ServesBrotliAndValidatesAssets(t *testing.T) {
 	if res.Code != http.StatusOK || res.Header().Get("Content-Encoding") != "br" || res.Body.String() != "compressed" {
 		t.Fatalf("brotli = %d %q %q", res.Code, res.Header(), res.Body.String())
 	}
+	match := requestWithETag(mux, "/app/dungeonflux.wasm", "gzip, br", res.Header().Get("ETag"))
+	if match.Code != http.StatusNotModified || match.Body.Len() != 0 {
+		t.Fatalf("brotli conditional = %d %q", match.Code, match.Body.String())
+	}
 	res = request(mux, "/assets/"+name, "")
 	if res.Code != http.StatusOK || res.Body.String() != "asset" {
 		t.Fatalf("asset = %d %q", res.Code, res.Body.String())
@@ -105,8 +115,15 @@ func TestMountWeb_ServesBrotliAndValidatesAssets(t *testing.T) {
 }
 
 func request(handler http.Handler, path, encoding string) *httptest.ResponseRecorder {
+	return requestWithETag(handler, path, encoding, "")
+}
+
+func requestWithETag(handler http.Handler, path, encoding, etag string) *httptest.ResponseRecorder {
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set("Accept-Encoding", encoding)
+	if etag != "" {
+		req.Header.Set("If-None-Match", etag)
+	}
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, req)
 	return res

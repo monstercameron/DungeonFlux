@@ -56,7 +56,7 @@ func addressIPv4(addr net.Addr) string {
 		return ""
 	}
 	ip := net.ParseIP(value)
-	if ip == nil || ip.IsLoopback() || ip.To4() == nil {
+	if ip == nil || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.To4() == nil {
 		return ""
 	}
 	return ip.To4().String()

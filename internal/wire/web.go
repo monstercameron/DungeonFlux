@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/monstercameron/DungeonFlux/internal/config"
@@ -43,7 +44,7 @@ func pageHandler(root string) http.HandlerFunc {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
-		http.ServeFile(w, r, filepath.Join(root, "index.html"))
+		serveNoCacheFile(w, r, filepath.Join(root, "index.html"), "text/html; charset=utf-8")
 	}
 }
 
@@ -53,8 +54,7 @@ func fileHandler(name, contentType string) http.HandlerFunc {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
-		w.Header().Set("Content-Type", contentType)
-		http.ServeFile(w, r, name)
+		serveNoCacheFile(w, r, name, contentType)
 	}
 }
 
@@ -71,9 +71,45 @@ func wasmHandler(uncompressed string) http.HandlerFunc {
 			w.Header().Set("Content-Encoding", "br")
 			w.Header().Set("Vary", "Accept-Encoding")
 		}
-		w.Header().Set("Content-Type", "application/wasm")
-		http.ServeFile(w, r, name)
+		serveNoCacheFile(w, r, name, "application/wasm")
 	}
+}
+
+func serveNoCacheFile(w http.ResponseWriter, r *http.Request, name, contentType string) {
+	file, err := os.Open(name)
+	if err != nil {
+		if os.IsNotExist(err) {
+			http.NotFound(w, r)
+			return
+		}
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	defer func() { _ = file.Close() }()
+	info, err := file.Stat()
+	if err != nil || !info.Mode().IsRegular() {
+		http.NotFound(w, r)
+		return
+	}
+	etag := `"` + strconv.FormatInt(info.Size(), 16) + "-" + strconv.FormatInt(info.ModTime().UnixNano(), 16) + `"`
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("ETag", etag)
+	w.Header().Set("Content-Type", contentType)
+	if matchesETag(r.Header.Get("If-None-Match"), etag) {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+	http.ServeContent(w, r, filepath.Base(name), info.ModTime(), file)
+}
+
+func matchesETag(header, etag string) bool {
+	for _, candidate := range strings.Split(header, ",") {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "*" || candidate == etag || strings.TrimPrefix(candidate, "W/") == etag {
+			return true
+		}
+	}
+	return false
 }
 
 func acceptsBrotli(value string) bool {
