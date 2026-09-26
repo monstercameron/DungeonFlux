@@ -32,6 +32,27 @@ func TestBuild_HealthAndClose(t *testing.T) {
 	}
 }
 
+func TestBuild_TwoStartsShareDataDirWithUniqueRunIDs(t *testing.T) {
+	cfg := testConfig(t)
+	first, err := Build(context.Background(), cfg, []byte("rehearsal"))
+	if err != nil {
+		t.Fatalf("first Build() error = %v", err)
+	}
+	firstID := first.runID
+	if err := first.Close(); err != nil {
+		t.Fatalf("first Close() error = %v", err)
+	}
+
+	second, err := Build(context.Background(), cfg, []byte("rehearsal"))
+	if err != nil {
+		t.Fatalf("second Build() error = %v", err)
+	}
+	defer func() { _ = second.Close() }()
+	if second.runID == firstID {
+		t.Fatalf("second run ID = %q, reused first run ID", firstID)
+	}
+}
+
 func TestBuild_ResetPublishesLobbyFromFreshRun(t *testing.T) {
 	app, err := Build(context.Background(), testConfig(t), []byte("rehearsal"))
 	if err != nil {

@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"github.com/monstercameron/DungeonFlux/internal/api"
@@ -39,6 +40,7 @@ type App struct {
 	logFile   io.Closer
 	logger    *slog.Logger
 	watch     *api.WatchHub
+	runID     domain.RunID
 	debugStop context.CancelFunc
 }
 
@@ -106,7 +108,12 @@ func Build(ctx context.Context, cfg config.Config, seed []byte) (*App, error) {
 		_ = logFile.Close()
 		return nil, fmt.Errorf("wire: create dm token: %w", err)
 	}
-	run := domainRun(roomID, seed)
+	run, err := domainRun(roomID, seed)
+	if err != nil {
+		_ = store.Close()
+		_ = logFile.Close()
+		return nil, fmt.Errorf("wire: create run: %w", err)
+	}
 	if err := store.Start(ctx, run); err != nil {
 		_ = store.Close()
 		_ = logFile.Close()
@@ -183,7 +190,7 @@ func Build(ctx context.Context, cfg config.Config, seed []byte) (*App, error) {
 		return nil, fmt.Errorf("wire: mount web: %w", err)
 	}
 	app := &App{handler: mux, room: room, roomDone: roomDone, roomStop: cancel,
-		store: store, logFile: logFile, logger: logger, watch: watch}
+		store: store, logFile: logFile, logger: logger, watch: watch, runID: run.ID}
 	if cfg.Server.Debug {
 		if err := startDebug(ctx, app, roomEngine, inbox, cfg.Server.Port+1000); err != nil {
 			_ = app.Close()
@@ -286,8 +293,22 @@ func tokenOrGenerate(value string) (string, error) {
 	return hex.EncodeToString(data), nil
 }
 
-func domainRun(room string, seed []byte) domain.Run {
-	return domain.Run{ID: domain.RunID("run-0"), Room: domain.RoomID(room), Seed: append([]byte(nil), seed...), Mode: "demo"}
+func domainRun(room string, seed []byte) (domain.Run, error) {
+	runID, err := newRunID(seed)
+	if err != nil {
+		return domain.Run{}, err
+	}
+	return domain.Run{ID: runID, Room: domain.RoomID(room), Seed: append([]byte(nil), seed...), Mode: "demo"}, nil
+}
+
+func newRunID(seed []byte) (domain.RunID, error) {
+	nonce := make([]byte, 8)
+	if _, err := rand.Read(nonce); err != nil {
+		return "", fmt.Errorf("generate run ID nonce: %w", err)
+	}
+	digest := sha256.Sum256(seed)
+	id := fmt.Sprintf("run-%020d-%x-%x", time.Now().UTC().UnixNano(), digest[:8], nonce)
+	return domain.RunID(id), nil
 }
 
 func newLogger(cfg config.Config) (*slog.Logger, io.Closer, error) {
