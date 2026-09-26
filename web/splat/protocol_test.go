@@ -51,6 +51,23 @@ func TestEnvelope_initCarriesOptionalVoxelCollider(t *testing.T) {
 	}
 }
 
+func TestEnvelope_effectsUsesSnakeCaseAndOptionalFields(t *testing.T) {
+	enabled := true
+	raw, err := envelope("effects", Effects{Seq: 4, Enabled: &enabled, ReducedMotion: &enabled, TiltShift: &TiltShift{Enabled: true, BlurPX: 3.5}, Shake: &Shake{AmplitudePX: 8, DurationMS: 200}, Pan: &Pan{Preset: "SURVEY", DurationMS: 500}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(raw)
+	for _, want := range []string{`"seq":4`, `"enabled":true`, `"reduced_motion":true`, `"tilt_shift"`, `"blur_px":3.5`, `"amplitude_px":8`, `"duration_ms":500`, `"preset":"SURVEY"`} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("effects envelope %s does not contain %s", text, want)
+		}
+	}
+	if strings.Contains(string(mustEnvelope(t, "effects", Effects{Seq: 5})), "tilt_shift") {
+		t.Fatal("omitted tilt shift serialized")
+	}
+}
+
 func mustEnvelope(t *testing.T, kind string, value any) []byte {
 	t.Helper()
 	raw, err := envelope(kind, value)

@@ -53,6 +53,7 @@ type Init struct {
 	Grid          Grid                 `json:"grid"`
 	Cameras       map[string]CameraDef `json:"cameras"`
 	VoxelCollider *VoxelCollider       `json:"voxel_collider,omitempty"`
+	ReducedMotion bool                 `json:"reduced_motion,omitempty"`
 	Device        string               `json:"device"`
 }
 
@@ -83,9 +84,42 @@ type Highlight struct {
 
 // CameraCommand selects a camera preset and optional token focus.
 type CameraCommand struct {
-	Preset       string `json:"preset"`
-	FocusTokenID string `json:"focus_token_id,omitempty"`
-	Seq          uint64 `json:"seq"`
+	Preset       string  `json:"preset"`
+	FocusTokenID string  `json:"focus_token_id,omitempty"`
+	Seq          uint64  `json:"seq"`
+	DurationMS   float64 `json:"duration_ms,omitempty"`
+}
+
+// TiltShift controls the optional battlefield depth-of-field effect.
+type TiltShift struct {
+	Enabled bool    `json:"enabled"`
+	Center  float64 `json:"center"`
+	Band    float64 `json:"band"`
+	Falloff float64 `json:"falloff"`
+	BlurPX  float64 `json:"blur_px"`
+}
+
+// Shake describes a bounded screen-space camera shake.
+type Shake struct {
+	AmplitudePX float64 `json:"amplitude_px"`
+	DurationMS  float64 `json:"duration_ms"`
+}
+
+// Pan requests a camera preset transition.
+type Pan struct {
+	Preset     string  `json:"preset"`
+	DurationMS float64 `json:"duration_ms"`
+}
+
+// Effects controls cinematic battlefield presentation with sequence deduplication.
+type Effects struct {
+	Seq           uint64     `json:"seq"`
+	ReducedMotion *bool      `json:"reduced_motion,omitempty"`
+	Enabled       *bool      `json:"enabled,omitempty"`
+	TiltShift     *TiltShift `json:"tilt_shift,omitempty"`
+	Shake         *Shake     `json:"shake,omitempty"`
+	Pan           *Pan       `json:"pan,omitempty"`
+	Stop          bool       `json:"stop,omitempty"`
 }
 
 // Scene is an idempotent full battlefield snapshot.

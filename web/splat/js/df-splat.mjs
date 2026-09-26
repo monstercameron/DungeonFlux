@@ -1,5 +1,6 @@
 import * as pc from "../vendor/playcanvas.mjs";
 import { createBattleGrid, createSplatEntity, loadSplatBundle } from "./battle_scene.mjs";
+import { createCinematicEffects } from "./cinematic_effects.mjs";
 
 const VERSION = 1;
 const WORLD_LAYER = pc.LAYERID_WORLD;
@@ -66,8 +67,12 @@ function createApplication(canvas) {
   app.scene.gsplat.renderer = pc.GSPLAT_RENDERER_RASTER_CPU_SORT;
   app.scene.gsplat.lodMode = pc.GSPLAT_LODMODE_DISTANCE;
   app.scene.layers.getLayerById(WORLD_LAYER).enabled = true;
+  const resize = () => app.resizeCanvas?.(window.innerWidth ?? canvas.clientWidth, window.innerHeight ?? canvas.clientHeight);
+  window.addEventListener?.("resize", resize);
+  resize();
   console.info(`[splat runtime] grid MSAA: ${app.graphicsDevice?.backBuffer?.samples ?? "unknown"}`);
   app.on("destroy", () => {
+    window.removeEventListener?.("resize", resize);
     if (runtime?.app === app) runtime = null;
   });
   return app;
@@ -164,6 +169,12 @@ function setVisible(canvas, visible) {
 
 function applyCamera(runtimeState, command) {
   if (!command || !runtimeState.camera) return;
+  const sequence = Number(command.seq ?? 0);
+  if (!Number.isSafeInteger(sequence) || sequence < 0) return;
+  if (sequence > 0 && sequence <= runtimeState.cameraSequence) return;
+  if (sequence === 0 && (command.preset ?? "TACTICAL") === runtimeState.cameraPreset) return;
+  if (sequence > 0) runtimeState.cameraSequence = sequence;
+  if (runtimeState.effects?.camera(command)) { runtimeState.cameraPreset = command.preset; return; }
   const preset = command.preset ?? "TACTICAL";
   const definition = getCameraDefinition(runtimeState.cameras, preset);
   applyCameraDefinition(runtimeState.camera, definition);
@@ -192,7 +203,7 @@ function dispose() {
 function createRuntimeState(app, camera, message) {
   return {
     app, camera, canvas: null, cameras: message.cameras ?? {},
-    sceneSequence: 0, paused: false, cameraPreset: "TACTICAL", liteURL: message.lite_url,
+    sceneSequence: 0, cameraSequence: 0, effects: null, paused: false, cameraPreset: "TACTICAL", liteURL: message.lite_url,
     liteTried: false, lowFpsReported: false, replacing: false, transform: message.transform,
     lastFrameAt: 0, lastStatsAt: performance.now(), lowFpsSince: 0, fpsSamples: [], destroyed: false,
   };
@@ -239,6 +250,8 @@ async function initialize(message) {
     const camera = createCamera(app, getCameraDefinition(message.cameras, "TACTICAL"));
     state = createRuntimeState(app, camera, message);
     state.canvas = canvas;
+    state.effects = createCinematicEffects({ pc, app, camera, canvas, cameras: message.cameras ?? {}, reducedMotion: Boolean(message.reduced_motion || window.matchMedia?.("(prefers-reduced-motion: reduce")?.matches), onPanComplete: (target) => state.orbitTarget = target });
+    state.effects.setPose(getCameraDefinition(message.cameras, "TACTICAL"));
     runtime = state;
     app.on("error", (detail) => errorMessage("CONTEXT_LOST", detail));
     app.on("postrender", () => {
@@ -346,9 +359,13 @@ function send(raw) {
     case "pause":
       if (runtime) {
         runtime.paused = Boolean(message.on);
+        runtime.effects?.pause(runtime.paused);
         runtime.app.autoRender = !runtime.paused;
         if (!runtime.paused) runtime.app.renderNextFrame = true;
       }
+      break;
+    case "effects":
+      runtime?.effects?.send(message);
       break;
     case "dispose":
       dispose();

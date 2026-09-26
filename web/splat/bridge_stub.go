@@ -19,6 +19,9 @@ func (b *Bridge) Init(_ Init) error { return ErrUnavailable }
 // Scene reports that no browser is available.
 func (b *Bridge) Scene(_ Scene) error { return ErrUnavailable }
 
+// Effects reports that no browser is available.
+func (b *Bridge) Effects(_ Effects) error { return ErrUnavailable }
+
 // Pause reports that no browser is available.
 func (b *Bridge) Pause(_ Pause) error { return ErrUnavailable }
 

@@ -1962,11 +1962,11 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: a genuine antialiased line glow shader matches the concept palette and halo, 5-foot cells and voxel exclusion remain valid over substantially larger supported areas, both scenes are visually inspected with usable performance, and the scoped gate passes.
   status: completed Codex; scoped gate and visual QA green 2026-09-26
 
-- [ ] SPLAT-015 · game-triggerable tilt-shift and cinematic camera motion
+- [x] SPLAT-015 · game-triggerable tilt-shift and cinematic camera motion
   why: The developer requests adjustable tilt-shift, camera shake, and smooth panning that the game can enable and trigger.
   lane: L-WEB-SPLAT · paths: `web/splat/protocol*.go`, `web/splat/bridge*.go`, `web/splat/js/camera_motion*.mjs`, `web/splat/js/tilt_shift*.mjs`, `web/splat/js/cinematic*.mjs`, `web/splat/js/viewer*.mjs`, `web/splat/js/viewer.html`, `web/splat/js/df-splat.mjs` · depends: SPLAT-014
   done when: the typed Go bridge and JS runtime accept sequenced effect commands, tilt-shift uses a genuine GPU shader, bounded shake and eased pans support pause/stop/reduced motion, viewer controls demonstrate each effect, both battle scenes pass visual QA with usable performance, regressions and the scoped lane gate pass.
-  status: in progress Codex
+  status: completed Codex; gate failures 0, coverage 84.4%, WASM build and both-scene visual QA green 2026-09-26
 
 ## 23. dfctl debug CLI
 

@@ -1,5 +1,6 @@
 import * as pc from "../vendor/playcanvas.mjs";
 import { applyBattleTransform, createBattleGrid, createSplatEntity, loadBattleProfile, loadSplatBundle } from "./battle_scene.mjs";
+import { createCinematicEffects } from "./cinematic_effects.mjs";
 import { installOrbitControls } from "./camera_controls.mjs";
 import { applyCameraPreset, cameraPreset, cameraPresetNames } from "./grid_camera.mjs";
 import { cellsJSON, installDebugPickMode } from "./debug_pick.mjs";
@@ -20,6 +21,11 @@ const gridButton = document.querySelector("#grid-toggle");
 const exportButton = document.querySelector("#export-picks");
 const lodNode = document.querySelector("#lod-selector");
 const sourceInfoNode = document.querySelector("#source-info");
+const tiltButton = document.querySelector("#tilt-toggle");
+const shakeButton = document.querySelector("#shake-effect");
+const panButton = document.querySelector("#pan-effect");
+const stopButton = document.querySelector("#stop-effects");
+const strengthNode = document.querySelector("#effect-strength");
 
 let app;
 let camera;
@@ -28,6 +34,8 @@ let pickMode;
 let gridVisible = true;
 let baseStatus = "";
 let orbitControls;
+let cinematic;
+let effectSeq = 0;
 function setStatus(message, kind = "info") {
   baseStatus = message;
   statusNode.textContent = message;
@@ -57,6 +65,10 @@ function configureApp() {
   });
   app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
   app.setCanvasResolution(pc.RESOLUTION_AUTO);
+  const resize = () => app.resizeCanvas?.(window.innerWidth ?? canvas.clientWidth, window.innerHeight ?? canvas.clientHeight);
+  window.addEventListener?.("resize", resize);
+  resize();
+  app.on?.("destroy", () => window.removeEventListener?.("resize", resize));
   app.scene.gsplat.renderer = pc.GSPLAT_RENDERER_RASTER_CPU_SORT;
   app.scene.gsplat.lodMode = pc.GSPLAT_LODMODE_DISTANCE;
   app.scene.layers.getLayerById(WORLD_LAYER).enabled = true;
@@ -86,6 +98,7 @@ function addPresetButtons(profile = null) {
     button.dataset.preset = name;
     button.addEventListener("click", () => {
       const definition = profile?.cameras?.[name];
+      cinematic?.stop();
       if (definition) {
         const position = definition.position ?? [0, 7, 10];
         const target = definition.target ?? definition.look_at ?? [0, 0, 0];
@@ -149,7 +162,25 @@ function recordFPS() {
   fpsReporter(performance.now());
 }
 
+function installMotionPreference() {
+  const button = document.querySelector("#motion-toggle");
+  if (!button) return;
+  const initial = !window.matchMedia?.("(prefers-reduced-motion: reduce")?.matches;
+  const display = (enabled) => {
+    button.setAttribute("aria-pressed", String(enabled));
+    if (shakeButton) shakeButton.disabled = !enabled;
+    if (panButton) panButton.disabled = !enabled;
+  };
+  display(initial);
+  button.addEventListener("click", () => {
+    const enabled = button.getAttribute("aria-pressed") !== "true";
+    cinematic?.send({ seq: ++effectSeq, reduced_motion: !enabled, enabled: true });
+    display(enabled);
+  });
+}
+
 function installControls() {
+  installMotionPreference();
   gridButton.addEventListener("click", () => {
     if (!gridEntity) return;
     gridVisible = !gridVisible;
@@ -157,6 +188,24 @@ function installControls() {
     gridButton.setAttribute("aria-pressed", String(gridVisible));
   });
   exportButton.addEventListener("click", () => pickMode?.download());
+  tiltButton?.addEventListener("click", () => {
+    const enabled = tiltButton.getAttribute("aria-pressed") !== "true";
+    tiltButton.setAttribute("aria-pressed", String(enabled));
+    const strength = Number(strengthNode?.value ?? 1);
+    cinematic?.send({ seq: ++effectSeq, enabled: true, tilt_shift: { enabled, center: 0.5, band: 0.3, falloff: 0.35, blur_px: enabled ? 2 * strength : 0 } });
+  });
+  strengthNode?.addEventListener("input", () => {
+    if (tiltButton?.getAttribute("aria-pressed") !== "true") return;
+    cinematic?.send({ seq: ++effectSeq, enabled: true, tilt_shift: { enabled: true, center: 0.5, band: 0.3, falloff: 0.35, blur_px: 2 * Number(strengthNode.value) } });
+  });
+  shakeButton?.addEventListener("click", () => cinematic?.send({ seq: ++effectSeq, enabled: true, shake: { amplitude_px: 8, duration_ms: 200 } }));
+  panButton?.addEventListener("click", () => {
+    const wide = panButton.dataset.wide !== "true";
+    panButton.dataset.wide = String(wide);
+    panButton.textContent = wide ? "Pan back" : "Pan wide";
+    cinematic?.send({ seq: ++effectSeq, enabled: true, pan: { preset: wide ? "SURVEY" : "TACTICAL", duration_ms: 2500 } });
+  });
+  stopButton?.addEventListener("click", () => { const pose = cinematic?.stop(); if (pose?.target) orbitControls?.setTarget(pose.target); });
 }
 
 function addLODOptions(profile, levelCount) {
@@ -203,6 +252,11 @@ function setupViewer(profile) {
   }
   installControls();
   orbitControls = installOrbitControls({ canvas, camera, target: initialCamera?.target ?? initialCamera?.look_at ?? [0, 0, 0] });
+  cinematic = createCinematicEffects({ pc, app, camera, canvas, cameras: profile?.cameras ?? {}, reducedMotion: Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce")?.matches), onPanComplete: (target) => orbitControls?.setTarget(target) });
+  cinematic.setPose(initialCamera ?? { position: [0, 7, 10], target: [0, 0, 0], fov: 35 });
+  const stopForGesture = () => { const pose = cinematic?.stop(); if (pose?.target) orbitControls?.setTarget(pose.target); };
+  canvas.addEventListener("pointerdown", stopForGesture);
+  canvas.addEventListener("wheel", stopForGesture, { passive: true });
   lodNode?.addEventListener("change", () => applyLOD(lodNode.value));
   app.on("postrender", recordFPS);
   app.start();

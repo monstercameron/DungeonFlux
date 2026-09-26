@@ -86,6 +86,9 @@ func (b *Bridge) Init(value Init) error { return b.send("init", value) }
 // Scene sends a full battlefield snapshot.
 func (b *Bridge) Scene(value Scene) error { return b.send("scene", value) }
 
+// Effects sends a cinematic effects command to the browser.
+func (b *Bridge) Effects(value Effects) error { return b.send("effects", value) }
+
 // Pause freezes or resumes browser rendering.
 func (b *Bridge) Pause(value Pause) error { return b.send("pause", value) }
 
