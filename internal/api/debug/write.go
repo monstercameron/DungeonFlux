@@ -63,11 +63,22 @@ func (s *Server) Reset(ctx context.Context, request *df.ResetRequest) (*df.SendR
 }
 
 func (s *Server) post(ctx context.Context, event domain.Event) *df.SendResponse {
+	if waiter, ok := s.inbox.(acknowledgedInbox); ok {
+		ack, accepted := waiter.PostAndWait(ctx, domain.Envelope{Event: event})
+		if !accepted {
+			return &df.SendResponse{Reason: "room inbox rejected event"}
+		}
+		return &df.SendResponse{Accepted: ack.Accepted, Reason: ack.Reason}
+	}
 	accepted := s.inbox.Post(ctx, domain.Envelope{Event: event})
 	if !accepted {
 		return &df.SendResponse{Reason: "room inbox rejected event"}
 	}
 	return &df.SendResponse{Accepted: true}
+}
+
+type acknowledgedInbox interface {
+	PostAndWait(context.Context, domain.Envelope) (domain.Ack, bool)
 }
 
 func decodeEvent(kind, payload string) (domain.Event, error) {

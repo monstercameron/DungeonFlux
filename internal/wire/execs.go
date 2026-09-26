@@ -32,6 +32,23 @@ func (i *roomInbox) Post(ctx context.Context, env domain.Envelope) bool {
 	return i.room.Post(ctx, env)
 }
 
+func (i *roomInbox) PostAndWait(ctx context.Context, env domain.Envelope) (domain.Ack, bool) {
+	if i == nil || i.room == nil {
+		return domain.Ack{}, false
+	}
+	reply := make(chan domain.Ack, 1)
+	env.Reply = reply
+	if !i.room.Post(ctx, env) {
+		return domain.Ack{}, false
+	}
+	select {
+	case ack := <-reply:
+		return ack, true
+	case <-ctx.Done():
+		return domain.Ack{}, false
+	}
+}
+
 func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *roomInbox, error) {
 	if _, err := newBudget(cfg.config); err != nil {
 		return nil, nil, err

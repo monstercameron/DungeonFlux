@@ -71,6 +71,12 @@ func Build(ctx context.Context, cfg config.Config, seed []byte) (*App, error) {
 	}
 	oneShot := content.DefaultOneShot().OneShot
 	eng := game.New(oneShot, seed)
+	roomEngine, err := newSynchronizedEngine(eng)
+	if err != nil {
+		_ = store.Close()
+		_ = logFile.Close()
+		return nil, err
+	}
 	roomState, err := runtime.NewRoomState(nil)
 	if err != nil {
 		_ = store.Close()
@@ -114,10 +120,11 @@ func Build(ctx context.Context, cfg config.Config, seed []byte) (*App, error) {
 		_ = logFile.Close()
 		return nil, fmt.Errorf("wire: create executors: %w", err)
 	}
-	room := runtime.NewRoom(eng, clock.Real{}, store, logger, watch.Publish,
+	room := runtime.NewRoom(roomEngine, clock.Real{}, store, logger, watch.Publish,
 		runtime.WithRunner(runner), runtime.WithRoomState(roomState),
 		runtime.WithNewGame(func(runSeed []byte) ports.Engine {
-			return game.New(oneShot, runSeed)
+			roomEngine.replace(game.New(oneShot, runSeed))
+			return roomEngine
 		}))
 	inbox.room = room
 	roomCtx, cancel := context.WithCancel(context.Background())
@@ -148,6 +155,7 @@ func Build(ctx context.Context, cfg config.Config, seed []byte) (*App, error) {
 		_ = logFile.Close()
 		return nil, fmt.Errorf("wire: create host server: %w", err)
 	}
+	host.SetRoomLocales(session)
 	df.RegisterHostServiceServer(grpcServer, host)
 	talk, err := api.NewTalkServer(room, session, noopTalkSink{})
 	if err != nil {
@@ -177,7 +185,7 @@ func Build(ctx context.Context, cfg config.Config, seed []byte) (*App, error) {
 	app := &App{handler: mux, room: room, roomDone: roomDone, roomStop: cancel,
 		store: store, logFile: logFile, logger: logger, watch: watch}
 	if cfg.Server.Debug {
-		if err := startDebug(ctx, app, eng, room, cfg.Server.Port+1000); err != nil {
+		if err := startDebug(ctx, app, roomEngine, inbox, cfg.Server.Port+1000); err != nil {
 			_ = app.Close()
 			return nil, err
 		}

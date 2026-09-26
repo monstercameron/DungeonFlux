@@ -87,19 +87,25 @@ func TestE2E_DfctlRunThroughLobby(t *testing.T) {
 	if response, err := debugClient.DiceForce(debugCtx, &df.DiceForceRequest{Room: "DF-E2E", D20: 17}); err != nil || !response.GetAccepted() {
 		t.Fatalf("dfctl dice force: response=%v error=%v", response, err)
 	}
-	for _, phase := range []string{"exploration", "conversation", "check", "resolution", "hook_event"} {
+	for _, phase := range []string{"exploration", "conversation", "check", "resolution", "exploration", "hook_event"} {
 		sendDebug(t, debugClient, debugCtx, "host_skip")
 		assertPhase(t, debugClient, debugCtx, "DF-E2E", phase, phaseTrace)
 		phaseTrace = append(phaseTrace, phase)
 	}
+	sendDebug(t, debugClient, debugCtx, "host_skip")
+	assertPhase(t, debugClient, debugCtx, "DF-E2E", "combat", phaseTrace)
+	phaseTrace = append(phaseTrace, "combat")
 
 	sendAct(t, debugClient, debugCtx, "1", "attack", "")
-	sendAct(t, debugClient, debugCtx, "1", "end_turn", "")
 	for i := 0; i < 8; i++ {
-		sendAct(t, debugClient, debugCtx, "1", "attack", "")
-		sendAct(t, debugClient, debugCtx, "1", "end_turn", "")
 		sendAct(t, debugClient, debugCtx, "2", "attack", "")
-		sendAct(t, debugClient, debugCtx, "2", "end_turn", "")
+		if readDebugState(t, debugClient, debugCtx, "DF-E2E").GetPhase() != "combat" {
+			break
+		}
+		sendAct(t, debugClient, debugCtx, "1", "attack", "")
+		if readDebugState(t, debugClient, debugCtx, "DF-E2E").GetPhase() != "combat" {
+			break
+		}
 	}
 	state = readDebugState(t, debugClient, debugCtx, "DF-E2E")
 	if state.GetPhase() != "cliffhanger" {
@@ -122,7 +128,11 @@ func sendDebug(t *testing.T, client df.DebugServiceClient, ctx context.Context, 
 
 func sendAct(t *testing.T, client df.DebugServiceClient, ctx context.Context, seat, move, arg string) {
 	t.Helper()
-	response, err := client.Act(ctx, &df.DebugActRequest{Room: "DF-E2E", Seat: seat, MoveId: move, Arg: arg})
+	target := ""
+	if move == "attack" {
+		target = "thrall"
+	}
+	response, err := client.Act(ctx, &df.DebugActRequest{Room: "DF-E2E", Seat: seat, MoveId: move, Arg: arg, TargetId: target})
 	if err != nil || !response.GetAccepted() {
 		t.Fatalf("dfctl act seat=%s move=%s: response=%v error=%v", seat, move, response, err)
 	}

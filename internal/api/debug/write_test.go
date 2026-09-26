@@ -88,3 +88,24 @@ func TestWrites_RejectInvalidRequests(t *testing.T) {
 		}
 	}
 }
+
+type acknowledgedTestInbox struct {
+	ack domain.Ack
+}
+
+func (i acknowledgedTestInbox) Post(context.Context, domain.Envelope) bool { return true }
+
+func (i acknowledgedTestInbox) PostAndWait(context.Context, domain.Envelope) (domain.Ack, bool) {
+	return i.ack, true
+}
+
+func TestWrites_ReturnsRoomAck(t *testing.T) {
+	server, err := NewServer(&fakes.FakeEngine{}, acknowledgedTestInbox{ack: domain.Ack{Accepted: false, Reason: "unaccepted_event"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	response, err := server.Send(context.Background(), &df.SendRequest{Event: "host_pause"})
+	if err != nil || response.GetAccepted() || response.GetReason() != "unaccepted_event" {
+		t.Fatalf("response = %+v, err = %v", response, err)
+	}
+}
