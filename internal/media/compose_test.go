@@ -11,6 +11,7 @@ import (
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/fakes"
+	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
 
 func TestComposeStillExecutor_CompositesTransparentLayer(t *testing.T) {
@@ -38,6 +39,26 @@ func TestComposeStillExecutor_CompositesTransparentLayer(t *testing.T) {
 	}
 	if _, ok := in.Calls[0].Envelope.Event.(domain.AssetReady); !ok {
 		t.Fatalf("event = %T", in.Calls[0].Envelope.Event)
+	}
+}
+
+func TestComposeStillExecutor_PassesReadyReferencesToConditioningHook(t *testing.T) {
+	background := solidPNG(t, color.RGBA{R: 10, A: 255})
+	assets := &fakes.FakeAssetWriter{Script: []fakes.AssetWriteResult{{Asset: domain.Asset{ID: "still"}}}}
+	var got []domain.AssetID
+	refs := ReferenceAssets{Sheet: "sheet", Angles: map[vocab.ReferenceAngle]domain.AssetID{
+		vocab.ReferenceFront: "front", vocab.ReferenceThreeQuarter: "three", vocab.ReferenceSide: "side", vocab.ReferenceBack: "back",
+	}}
+	in := &fakes.FakeInbox{PostResult: true}
+	NewComposeStillExecutor(ComposeStillConfig{
+		Source: func(context.Context, domain.AssetID) ([]byte, error) { return background, nil }, Assets: assets,
+		References: map[domain.SeatID]ReferenceAssets{1: refs}, ReferenceInput: func(_ context.Context, ids []domain.AssetID) error { got = ids; return nil },
+	}).Execute(context.Background(), domain.ComposeStill{Slot: "scene:1", Background: "background"}, domain.Scope{}, in)
+	if len(got) != 5 || got[0] != "sheet" || got[4] != "back" {
+		t.Fatalf("reference IDs=%v", got)
+	}
+	if _, ok := in.Calls[0].Envelope.Event.(domain.AssetReady); !ok {
+		t.Fatalf("event=%T", in.Calls[0].Envelope.Event)
 	}
 }
 

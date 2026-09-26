@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strconv"
+	"strings"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/ports"
@@ -12,21 +14,25 @@ import (
 
 // PortraitConfig supplies the dependencies for a portrait executor.
 type PortraitConfig struct {
-	Images         ports.ImageGen
-	Assets         ports.AssetWriter
-	Pool           *Pool
-	Fallback       []byte
-	Fallbacks      map[string][]byte
-	FallbackVendor vocab.VendorName
+	Images          ports.ImageGen
+	Assets          ports.AssetWriter
+	Pool            *Pool
+	Fallback        []byte
+	Fallbacks       map[string][]byte
+	FallbackVendor  vocab.VendorName
+	References      map[domain.SeatID]ReferenceAssets
+	ReferenceSource ReferenceSource
 }
 
 // PortraitExecutor runs GenerateImage effects and posts asset events.
 type PortraitExecutor struct {
-	images    ports.ImageGen
-	assets    ports.AssetWriter
-	pool      *Pool
-	fallback  []byte
-	fallbacks map[string][]byte
+	images          ports.ImageGen
+	assets          ports.AssetWriter
+	pool            *Pool
+	fallback        []byte
+	fallbacks       map[string][]byte
+	references      map[domain.SeatID]ReferenceAssets
+	referenceSource ReferenceSource
 }
 
 // NewPortraitExecutor constructs a portrait executor from injected services.
@@ -34,6 +40,7 @@ func NewPortraitExecutor(config PortraitConfig) *PortraitExecutor {
 	return &PortraitExecutor{
 		images: config.Images, assets: config.Assets, pool: config.Pool,
 		fallback: append([]byte(nil), config.Fallback...), fallbacks: cloneBytes(config.Fallbacks),
+		references: cloneReferenceAssets(config.References), referenceSource: config.ReferenceSource,
 	}
 }
 
@@ -49,7 +56,7 @@ func (e *PortraitExecutor) Execute(ctx context.Context, effect domain.GenerateIm
 	var stream ports.ImageStream
 	var err error
 	job := func(run context.Context) error {
-		stream, err = e.images.Generate(run, req)
+		stream, err = e.generate(run, effect, req)
 		return err
 	}
 	if e.pool != nil {
@@ -77,6 +84,37 @@ func (e *PortraitExecutor) Execute(ctx context.Context, effect domain.GenerateIm
 		return
 	}
 	post(ctx, in, domain.Envelope{Scope: scope, Event: domain.AssetReady{Slot: effect.Slot, Asset: asset}})
+}
+
+func (e *PortraitExecutor) generate(ctx context.Context, effect domain.GenerateImage, req ports.ImageRequest) (ports.ImageStream, error) {
+	references := e.references[seatFromMediaSlot(effect.Slot)]
+	if !references.Ready() {
+		return e.images.Generate(ctx, req)
+	}
+	req.Prompt = referencePrompt(req.Prompt, references)
+	generator, ok := e.images.(interface {
+		GenerateWithReferences(context.Context, ports.ImageRequest, [][]byte) (ports.ImageStream, error)
+	})
+	if !ok {
+		return e.images.Generate(ctx, req)
+	}
+	images, err := loadReferenceImages(ctx, e.referenceSource, references)
+	if err != nil {
+		return e.images.Generate(ctx, req)
+	}
+	return generator.GenerateWithReferences(ctx, req, images)
+}
+
+func seatFromMediaSlot(slot string) domain.SeatID {
+	parts := strings.Split(slot, ":")
+	if len(parts) < 2 {
+		return 0
+	}
+	value, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0
+	}
+	return domain.SeatID(value)
 }
 
 func (e *PortraitExecutor) consume(ctx context.Context, slot string, stream ports.ImageStream, scope domain.Scope, in ports.Inbox) error {

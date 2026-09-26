@@ -18,19 +18,23 @@ type StillSource func(context.Context, domain.AssetID) ([]byte, error)
 
 // ComposeStillConfig supplies the asset source and destination writer.
 type ComposeStillConfig struct {
-	Source StillSource
-	Assets ports.AssetWriter
+	Source         StillSource
+	Assets         ports.AssetWriter
+	References     map[domain.SeatID]ReferenceAssets
+	ReferenceInput func(context.Context, []domain.AssetID) error
 }
 
 // ComposeStillExecutor composites transparent layers over a background.
 type ComposeStillExecutor struct {
-	source StillSource
-	assets ports.AssetWriter
+	source         StillSource
+	assets         ports.AssetWriter
+	references     map[domain.SeatID]ReferenceAssets
+	referenceInput func(context.Context, []domain.AssetID) error
 }
 
 // NewComposeStillExecutor constructs a still compositor.
 func NewComposeStillExecutor(config ComposeStillConfig) *ComposeStillExecutor {
-	return &ComposeStillExecutor{source: config.Source, assets: config.Assets}
+	return &ComposeStillExecutor{source: config.Source, assets: config.Assets, references: cloneReferenceAssets(config.References), referenceInput: config.ReferenceInput}
 }
 
 // Execute runs a ComposeStill effect and posts a ready or failed asset event.
@@ -53,6 +57,11 @@ func (e *ComposeStillExecutor) compose(ctx context.Context, effect domain.Compos
 	}
 	if effect.Background == "" {
 		return nil, fmt.Errorf("compose still: background is required")
+	}
+	if references := e.references[seatFromMediaSlot(effect.Slot)]; references.Ready() && e.referenceInput != nil {
+		if err := e.referenceInput(ctx, references.IDs()); err != nil {
+			return nil, fmt.Errorf("load reference inputs: %w", err)
+		}
 	}
 	background, err := e.loadPNG(ctx, effect.Background)
 	if err != nil {

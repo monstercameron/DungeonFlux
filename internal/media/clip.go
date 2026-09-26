@@ -17,21 +17,25 @@ type ClipDownloader func(context.Context, string) ([]byte, error)
 
 // ClipConfig supplies video generation and persistence dependencies.
 type ClipConfig struct {
-	Videos       ports.VideoGen
-	Assets       ports.AssetWriter
-	Download     ClipDownloader
-	Clock        clock.Clock
-	PollInterval time.Duration
+	Videos         ports.VideoGen
+	Assets         ports.AssetWriter
+	Download       ClipDownloader
+	Clock          clock.Clock
+	PollInterval   time.Duration
+	References     map[domain.SeatID]ReferenceAssets
+	ReferenceFrame func(context.Context, []domain.AssetID) ([]byte, error)
 }
 
 // ClipExecutor runs GenerateClip effects until a video is ready or its
 // context deadline expires.
 type ClipExecutor struct {
-	videos       ports.VideoGen
-	assets       ports.AssetWriter
-	download     ClipDownloader
-	clock        clock.Clock
-	pollInterval time.Duration
+	videos         ports.VideoGen
+	assets         ports.AssetWriter
+	download       ClipDownloader
+	clock          clock.Clock
+	pollInterval   time.Duration
+	references     map[domain.SeatID]ReferenceAssets
+	referenceFrame func(context.Context, []domain.AssetID) ([]byte, error)
 }
 
 // NewClipExecutor constructs a deadline-aware clip executor.
@@ -44,7 +48,7 @@ func NewClipExecutor(config ClipConfig) *ClipExecutor {
 	if clk == nil {
 		clk = clock.Real{}
 	}
-	return &ClipExecutor{videos: config.Videos, assets: config.Assets, download: config.Download, clock: clk, pollInterval: interval}
+	return &ClipExecutor{videos: config.Videos, assets: config.Assets, download: config.Download, clock: clk, pollInterval: interval, references: cloneReferenceAssets(config.References), referenceFrame: config.ReferenceFrame}
 }
 
 // Execute submits, polls, downloads, and stores one generated video.
@@ -65,7 +69,19 @@ func (e *ClipExecutor) generate(ctx context.Context, effect domain.GenerateClip)
 	if e == nil || e.videos == nil || e.assets == nil || e.download == nil {
 		return nil, errors.New("clip: dependencies are incomplete")
 	}
-	request := ports.VideoRequest{FirstFrame: effect.FirstFrame, LastFrame: effect.LastFrame, Prompt: effect.Shot, Seconds: 5, Resolution: effect.Resolution}
+	firstFrame := append([]byte(nil), effect.FirstFrame...)
+	if references := e.references[seatFromMediaSlot(effect.Slot)]; references.Ready() {
+		requestIDs := references.IDs()
+		if e.referenceFrame != nil {
+			frame, err := e.referenceFrame(ctx, requestIDs)
+			if err != nil {
+				return nil, fmt.Errorf("clip reference frame: %w", err)
+			}
+			firstFrame = frame
+		}
+		effect.Shot = referencePrompt(effect.Shot, references)
+	}
+	request := ports.VideoRequest{FirstFrame: firstFrame, LastFrame: effect.LastFrame, Prompt: effect.Shot, Seconds: 5, Resolution: effect.Resolution}
 	job, err := e.videos.Submit(ctx, request)
 	if err != nil {
 		return nil, err
