@@ -42,6 +42,9 @@ func connect(_ context.Context, address string) (dungeonfluxv1.DebugServiceClien
 }
 
 func run(ctx context.Context, args []string, stdout, stderr io.Writer, dial connectFunc) int {
+	if code, handled := runWrite(ctx, args, stdout, stderr, dial); handled {
+		return code
+	}
 	opts, verb, err := parseOptions(args, stderr)
 	if err != nil {
 		return exitTransport
