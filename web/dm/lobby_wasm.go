@@ -37,8 +37,8 @@ func lobbyTagline() ui.Node {
 }
 
 func lobbyStatus(model LobbyModel) ui.Node {
-	return html.Div(html.Props{Class: "df-lobby-status-stack", Style: map[string]string{"position": "absolute", "left": "390px", "top": "290px", "width": "500px", "z-index": "4", "display": "grid", "gap": "10px"}},
-		GoldButton(LobbyStatus(model)),
+	return html.Div(html.Props{Class: "df-lobby-status-stack", Style: map[string]string{"position": "absolute", "left": "390px", "top": "384px", "width": "500px", "z-index": "4", "display": "grid", "gap": "10px"}},
+		GoldPlateButton("✦", LobbyStatus(model)),
 		DarkButton("↗", "Join: "+shortJoinURL(model.JoinURL)),
 		DarkButton("⌂", "Host controls on the host page"),
 		DarkButton("文", "Locale: "+strings.ToUpper(localeOrDefault(model.Locale))),
@@ -93,7 +93,7 @@ func lobbyTablePanel(art titleArt) ui.Node {
 	features := [][2]string{{"◈", "AI Narration"}, {"∿", "Voice NPCs"}, {"◇", "Rules Engine"}, {"✺", "Character Memory"}, {"♫", "Dynamic Music"}, {"▣", "Cliffhanger Clips"}}
 	items := make([]ui.Node, 0, len(features))
 	for _, feature := range features {
-		items = append(items, html.Div(html.Props{Class: "df-table-feature"}, DarkButton(feature[0], feature[1])))
+		items = append(items, featureTile(feature[0], feature[1]))
 	}
 	content := []ui.Node{html.Div(html.Props{Class: "df-table-grid", Style: map[string]string{"position": "absolute", "left": "25px", "right": "25px", "top": "52px", "bottom": "25px", "display": "grid", "grid-template-columns": "repeat(3, 1fr)", "grid-template-rows": "repeat(2, 1fr)", "gap": "12px"}}, items...)}
 	return panelAt("THE TABLE", 1340, 665, 540, 320, art.PanelFrame, content...)
@@ -101,7 +101,13 @@ func lobbyTablePanel(art titleArt) ui.Node {
 
 func panelAt(title string, left, top, width, height int, frame string, children ...ui.Node) ui.Node {
 	panel := OrnatePanel(title, children...)
-	return html.Div(html.Props{Class: "df-lobby-panel", Style: absoluteStyle(left, top, width, height), Raw: map[string]any{"data-frame": frame != ""}}, panel)
+	if frame == "" {
+		return html.Div(html.Props{Class: "df-lobby-panel", Style: absoluteStyle(left, top, width, height)}, panel)
+	}
+	// The ornate frame art is a 9-slice border image on its own layer behind
+	// the glass panel (GWC style maps drop custom properties, so no CSS var).
+	layer := html.Div(html.Props{Class: "df-panel-frame", Aria: map[string]string{"hidden": "true"}, Style: map[string]string{"border-image-source": "url('" + frame + "')"}})
+	return html.Div(html.Props{Class: "df-lobby-panel is-framed", Style: absoluteStyle(left, top, width, height)}, layer, panel)
 }
 
 func absoluteStyle(left, top, width, height int) map[string]string {
