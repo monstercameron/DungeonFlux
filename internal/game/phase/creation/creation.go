@@ -185,7 +185,7 @@ func (m *Machine) stepLocked(event domain.PCLocked) (Result, error) {
 		return Result{Accepted: true, Complete: m.Complete(), Seat: copySeat(*seat)}, nil
 	}
 	seat.Locked = true
-	return Result{Accepted: true, Complete: m.Complete(), Seat: copySeat(*seat)}, nil
+	return Result{Accepted: true, Complete: m.Complete(), Seat: copySeat(*seat), Effects: []domain.Effect{referenceEffectFor(*seat)}}, nil
 }
 
 func (m *Machine) stepTimeout() (Result, error) {
