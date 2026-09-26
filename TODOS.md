@@ -1549,16 +1549,22 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: opening the viewer with ?src=<.ply or .sog>&debug loads the splat, shows the 8×6 grid and camera presets, logs p5 fps, and exports picked cells as JSON.
   status: done 3776fbd
 
-- [ ] SPLAT-009 · streaming LOD battle scenes and registered grid viewer
+- [x] SPLAT-009 · streaming LOD battle scenes and registered grid viewer
   why: The developer supplied a SuperSplat scene and needs its downloaded LOD tree to render as a battlefield with a visibly aligned grid.
   lane: L-WEB-SPLAT · paths: `web/splat/js/df-splat.mjs`, `web/splat/js/battle_scene.mjs`, `web/splat/js/viewer*.mjs`, `web/splat/js/viewer.html`, `web/splat/scenes/cb2fddd6.json` · depends: SPLAT-008, OPS-019
   done when: local streaming scene and individual LODs render; grid shares the battlefield camera and renders after splats; visual inspection and lane gate pass.
-  status: claimed Codex 2026-09-26
+  status: done 6cc39f1
 
-- [ ] SPLAT-010 · Wooded Path local LOD battle scene profile
+- [x] SPLAT-010 · Wooded Path local LOD battle scene profile
   why: The developer supplied a second SuperSplat scene and needs its complete download usable with the same battle grid viewer.
   lane: L-WEB-SPLAT · paths: `web/splat/scenes/64bb46d5.json` · depends: OPS-019, SPLAT-009
   done when: all referenced assets of 64bb46d5 are downloaded and hash checked, with a visually inspected camera and grid profile.
+  status: done 324c643
+
+- [ ] SPLAT-011 · adversarial scene review and usable battle composition
+  why: The developer requests wider grid coverage, more flattering camera angles, and an adversarial review of both downloaded battle scenes.
+  lane: L-WEB-SPLAT · paths: `web/splat/js/viewer*.mjs`, `web/splat/js/viewer.html`, `web/splat/js/battle_scene.mjs`, `web/splat/js/df-splat.mjs`, `web/splat/scenes/*.json` · depends: SPLAT-009, SPLAT-010
+  done when: review findings are resolved, expanded obstacle-aware grids and camera framing are visually inspected in both scenes, relevant regressions and lane gate pass.
   status: claimed Codex 2026-09-26
 
 ## 23. dfctl debug CLI
