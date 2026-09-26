@@ -7,13 +7,27 @@ import (
 )
 
 func TestCombatModelFromView_ProjectsFlatGridAndTokens(t *testing.T) {
-	view := &dungeonfluxv1.DMView{Battlefield: &dungeonfluxv1.Battlefield{Mode: "FLAT", Visible: true, Grid: &dungeonfluxv1.Grid{Cols: 2, Rows: 2, Walkable: []*dungeonfluxv1.Cell{{C: 0, R: 0}, {C: 1, R: 0}}}, Flat: &dungeonfluxv1.FlatBattlefield{ImageUrl: "floor.png", FloorQuadPx: []float32{0, 0, 200, 0, 200, 100, 0, 100}}}, Tokens: []*dungeonfluxv1.Token{{TokenId: "hero", Name: "Mira", PortraitUrl: "mira.png", Cell: &dungeonfluxv1.Cell{C: 1, R: 0}, Active: true, Statuses: []string{"bloodied"}}, nil}}
+	view := &dungeonfluxv1.DMView{Battlefield: &dungeonfluxv1.Battlefield{Mode: "FLAT", Visible: true, Grid: &dungeonfluxv1.Grid{Cols: 2, Rows: 2, Walkable: []*dungeonfluxv1.Cell{{C: 0, R: 0}, {C: 1, R: 0}}}, Flat: &dungeonfluxv1.FlatBattlefield{ImageUrl: "floor.png", FloorQuadPx: []float32{0, 0, 200, 0, 200, 100, 0, 100}}}, Tokens: []*dungeonfluxv1.Token{{TokenId: "hero", Name: "Mira", PortraitUrl: "mira.png", Cell: &dungeonfluxv1.Cell{C: 1, R: 0}, Active: true, Statuses: []string{"bloodied"}}, nil}, Highlights: []*dungeonfluxv1.Highlight{{Cell: &dungeonfluxv1.Cell{C: 0, R: 1}}}, TurnOrder: []*dungeonfluxv1.TurnOrderEntry{{TokenId: "hero", Name: "Mira", Hp: 9, HpMax: 10, Active: true}}, Round: 2, CombatBanner: "Mira's turn", TurnTimer: &dungeonfluxv1.Timer{Seat: "1", RemainingMs: 7000, TotalMs: 10000}}
 	got := CombatModelFromView(view)
 	if got.ImageURL != "floor.png" || !got.Visible || len(got.Segments) != 7 || len(got.Tokens) != 1 {
 		t.Fatalf("combat model = %#v", got)
 	}
 	if got.Tokens[0].X != 150 || got.Tokens[0].Y != 25 || got.Tokens[0].Statuses[0] != "bloodied" {
 		t.Fatalf("token = %#v", got.Tokens[0])
+	}
+	if len(got.Highlights) != 1 || got.Highlights[0].X != 50 || got.Highlights[0].Y != 75 {
+		t.Fatalf("highlights = %#v", got.Highlights)
+	}
+	if len(got.TurnOrder) != 1 || !got.TurnOrder[0].Active || got.Round != 2 || got.Banner != "Mira's turn" || got.Timer.RemainingMS != 7000 {
+		t.Fatalf("combat HUD model = %#v", got)
+	}
+}
+
+func TestCombatModelFromView_PreservesHUDWithoutBattlefield(t *testing.T) {
+	view := &dungeonfluxv1.DMView{TurnOrder: []*dungeonfluxv1.TurnOrderEntry{nil, {TokenId: "thrall", Name: "Drowned Thrall", Done: true}}, Round: 3, CombatBanner: "The bell tolls"}
+	got := CombatModelFromView(view)
+	if len(got.TurnOrder) != 1 || got.TurnOrder[0].Name != "Drowned Thrall" || !got.TurnOrder[0].Done || got.Round != 3 || got.Banner != "The bell tolls" {
+		t.Fatalf("HUD-only model = %#v", got)
 	}
 }
 

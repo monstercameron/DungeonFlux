@@ -34,28 +34,90 @@ type CombatToken struct {
 	CellRow    int32
 }
 
+// CombatTurn is one entry in the fixed, visible combat initiative order.
+type CombatTurn struct {
+	ID       string
+	Name     string
+	Portrait string
+	HP       int32
+	HPMax    int32
+	Active   bool
+	Done     bool
+}
+
 // CombatModel contains the FLAT battlefield image, projected grid, and tokens.
 type CombatModel struct {
-	ImageURL string
-	Visible  bool
-	Segments []CombatSegment
-	Tokens   []CombatToken
+	ImageURL   string
+	Visible    bool
+	Segments   []CombatSegment
+	Highlights []CombatPoint
+	Tokens     []CombatToken
+	TurnOrder  []CombatTurn
+	Round      int32
+	Banner     string
+	Timer      TimerView
 }
 
 // CombatModelFromView projects a DM combat view into browser-owned data.
 // FLAT is intentionally the only mode rendered by this package.
 func CombatModelFromView(view *dungeonfluxv1.DMView) CombatModel {
-	if view == nil || view.GetBattlefield() == nil {
+	if view == nil {
 		return CombatModel{}
 	}
+	model := CombatModel{
+		Timer:     TimerViewFromProto(view.GetTurnTimer()),
+		Round:     view.GetRound(),
+		Banner:    view.GetCombatBanner(),
+		TurnOrder: projectedTurnOrder(view.GetTurnOrder()),
+	}
 	battlefield := view.GetBattlefield()
-	model := CombatModel{Visible: battlefield.GetVisible()}
+	if battlefield == nil {
+		return model
+	}
+	model.Visible = battlefield.GetVisible()
 	if flat := flatBattlefield(battlefield); flat != nil {
 		model.ImageURL = flat.GetImageUrl()
 		model.Segments = projectedGrid(battlefield.GetGrid(), flat.GetFloorQuadPx())
 		model.Tokens = projectedTokens(view.GetTokens(), battlefield.GetGrid(), flat.GetFloorQuadPx())
+		model.Highlights = projectedHighlights(view.GetHighlights(), battlefield.GetGrid(), flat.GetFloorQuadPx())
 	}
 	return model
+}
+
+func projectedTurnOrder(entries []*dungeonfluxv1.TurnOrderEntry) []CombatTurn {
+	result := make([]CombatTurn, 0, len(entries))
+	for _, entry := range entries {
+		if entry == nil {
+			continue
+		}
+		result = append(result, CombatTurn{ID: entry.GetTokenId(), Name: entry.GetName(), Portrait: entry.GetPortraitUrl(), HP: entry.GetHp(), HPMax: entry.GetHpMax(), Active: entry.GetActive(), Done: entry.GetDone()})
+	}
+	return result
+}
+
+func projectedHighlights(highlights []*dungeonfluxv1.Highlight, grid *dungeonfluxv1.Grid, quad []float32) []CombatPoint {
+	if grid == nil || len(quad) < 8 {
+		return nil
+	}
+	h, ok := newHomography(quad)
+	if !ok {
+		return nil
+	}
+	result := make([]CombatPoint, 0, len(highlights))
+	for _, highlight := range highlights {
+		if highlight == nil || highlight.GetCell() == nil {
+			continue
+		}
+		cell := highlight.GetCell()
+		if cell.GetC() < 0 || cell.GetR() < 0 || cell.GetC() >= grid.GetCols() || cell.GetR() >= grid.GetRows() {
+			continue
+		}
+		point, valid := h.project(float32(cell.GetC())+0.5, float32(cell.GetR())+0.5, grid.GetCols(), grid.GetRows())
+		if valid {
+			result = append(result, point)
+		}
+	}
+	return result
 }
 
 func flatBattlefield(battlefield *dungeonfluxv1.Battlefield) *dungeonfluxv1.FlatBattlefield {
