@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
+	api "github.com/monstercameron/DungeonFlux/internal/api"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 	"google.golang.org/grpc/codes"
@@ -37,7 +38,11 @@ func (s *Server) View(_ context.Context, request *df.ViewRequest) (*df.ScreenSta
 		return nil, status.Error(codes.InvalidArgument, "view request is required")
 	}
 	view := s.engine.View()
-	return screenState(view, request.GetView()), nil
+	seat, hasSeat, err := requestedSeat(request)
+	if err != nil {
+		return nil, err
+	}
+	return screenState(view, request.GetView(), seat, hasSeat), nil
 }
 
 // Legal returns legal moves for the requested seat.
@@ -125,21 +130,25 @@ func (s *Server) Costs(_ context.Context, request *df.DebugRoom) (*df.CostReport
 	return &df.CostReport{}, nil
 }
 
-func screenState(view domain.View, requested string) *df.ScreenState {
-	state := &df.ScreenState{Version: view.Version, Phase: string(view.Path), SpotlightSeat: strconv.Itoa(int(view.Spotlight)), Paused: view.Paused}
-	dm := &df.DMView{Callout: view.Callout, Preload: append([]string(nil), view.Preload...)}
-	if view.Combat != nil {
-		dm.CombatBanner = view.Combat.Banner
-		dm.Round = int32(view.Combat.Round)
+func requestedSeat(request *df.ViewRequest) (domain.SeatID, bool, error) {
+	if request.GetSeat() == "" {
+		return 0, false, nil
 	}
-	if requested == "phone" {
-		state.View = &df.ScreenState_Phone{Phone: &df.PhoneView{}}
-	} else if requested == "host" {
-		state.View = &df.ScreenState_Host{Host: &df.HostView{}}
-	} else {
-		state.View = &df.ScreenState_Dm{Dm: dm}
+	seat, err := strconv.Atoi(request.GetSeat())
+	if err != nil || seat < 0 {
+		return 0, false, status.Error(codes.InvalidArgument, "seat must be numeric")
 	}
-	return state
+	return domain.SeatID(seat), true, nil
+}
+
+func screenState(view domain.View, requested string, seat domain.SeatID, hasSeat bool) *df.ScreenState {
+	if requested == "phone" || requested == "" && hasSeat {
+		return api.Project(view, df.ClientKind_CLIENT_KIND_PHONE, seat)
+	}
+	if requested == "host" {
+		return api.Project(view, df.ClientKind_CLIENT_KIND_HOST, seat)
+	}
+	return api.Project(view, df.ClientKind_CLIENT_KIND_DM, seat)
 }
 
 var _ = vocab.StateID("")
