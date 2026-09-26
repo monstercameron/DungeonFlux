@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
+	"github.com/monstercameron/DungeonFlux/internal/game/phase"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
 
@@ -21,6 +22,7 @@ type State struct {
 	diceCounter uint64
 	nextD20     int
 	seats       []domain.SeatView
+	phase       phase.Machine
 }
 
 func newState(oneShot domain.OneShot, seed []byte) *State {
@@ -36,6 +38,14 @@ func newDebugState(oneShot domain.OneShot, seed []byte, debug bool, debugStart s
 	if debug && debugStart == string(vocab.StateCombat) {
 		path = vocab.StateCombat
 	}
+	dispatcher, err := phase.NewWithSeed(oneShot, seed)
+	if err != nil {
+		dispatcher, _ = phase.New()
+	}
+	if debug && debugStart != "" {
+		_ = dispatcher.Goto(vocab.StateID(debugStart))
+		path = dispatcher.State()
+	}
 	return &State{
 		oneShot:    oneShot,
 		seed:       append([]byte(nil), seed...),
@@ -43,17 +53,19 @@ func newDebugState(oneShot domain.OneShot, seed []byte, debug bool, debugStart s
 		debug:      debug,
 		debugStart: path,
 		seats:      seats,
+		phase:      dispatcher,
 	}
 }
 
 func (s *State) view() domain.View {
-	return domain.View{
-		Version:   s.version,
-		At:        time.Duration(s.at),
-		Path:      s.path,
-		Paused:    s.paused,
-		Spotlight: s.spotlight,
-		NextD20:   s.nextD20,
-		Seats:     append([]domain.SeatView(nil), s.seats...),
+	view := s.phase.View()
+	view.Version = s.version
+	view.At = time.Duration(s.at)
+	view.Path = s.path
+	view.Paused = s.paused
+	view.NextD20 = s.nextD20
+	if view.Seats == nil {
+		view.Seats = append([]domain.SeatView(nil), s.seats...)
 	}
+	return view
 }

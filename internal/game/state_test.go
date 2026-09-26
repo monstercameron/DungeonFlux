@@ -145,3 +145,37 @@ func TestStateLegalMoves_SeatAndPause(t *testing.T) {
 		t.Fatalf("paused moves = %v", got)
 	}
 }
+
+func TestStateStep_DelegatesCreationAndStoryToEnd(t *testing.T) {
+	s := New(domain.OneShot{}, []byte("step-seed"))
+	steps := []domain.Event{
+		domain.HostCmd{Cmd: vocab.HostStart},
+		domain.Act{Seat: 1, Move: vocab.MoveSpecies, Arg: "human"},
+		domain.Act{Seat: 1, Move: vocab.MoveGender, Arg: "nonbinary"},
+		domain.Act{Seat: 1, Move: vocab.MoveRollHero},
+		domain.Act{Seat: 1, Move: vocab.MoveReady},
+		domain.Act{Seat: 2, Move: vocab.MoveSpecies, Arg: "elf"},
+		domain.Act{Seat: 2, Move: vocab.MoveGender, Arg: "female"},
+		domain.Act{Seat: 2, Move: vocab.MoveRollHero},
+		domain.Act{Seat: 2, Move: vocab.MoveReady},
+		domain.LineDone{UtteranceID: "opening"},
+		domain.Act{Seat: 1, Move: vocab.MoveTalkVell},
+		domain.Act{Seat: 1, Move: vocab.MovePersuade},
+		domain.TimerFired{Name: "roll_resolved"},
+		domain.LineDone{UtteranceID: "reveal"},
+		domain.Act{Seat: 1, Move: vocab.MoveLeave},
+		domain.LineDone{UtteranceID: "stranger"},
+		domain.HostCmd{Cmd: vocab.HostSkip},
+		domain.LineDone{UtteranceID: "cliffhanger"},
+	}
+	want := []vocab.StateID{vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateOpening, vocab.StateExploration, vocab.StateConversation, vocab.StateCheck, vocab.StateResolution, vocab.StateExploration, vocab.StateHookEvent, vocab.StateCombat, vocab.StateCliffhanger, vocab.StateEnd}
+	for index, event := range steps {
+		s.Step(domain.Envelope{Event: event})
+		if got := s.View().Path; got != want[index] {
+			t.Fatalf("step %d (%T) path = %q, want %q", index, event, got, want[index])
+		}
+	}
+	if s.View().Seats[0].Character == nil || s.View().Seats[1].Character == nil {
+		t.Fatal("creation characters were not retained by the root view")
+	}
+}

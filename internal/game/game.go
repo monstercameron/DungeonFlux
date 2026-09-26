@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
+	"github.com/monstercameron/DungeonFlux/internal/game/phase"
 	"github.com/monstercameron/DungeonFlux/internal/ports"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
@@ -45,12 +46,14 @@ func (s *State) LegalMoves(seat domain.SeatID) []vocab.MoveID {
 	if s.paused {
 		return nil
 	}
-	switch s.path {
-	case vocab.StateLobby:
-		return []vocab.MoveID{vocab.MoveReady}
-	default:
-		return nil
+	moves := s.phase.LegalMoveViews(seat)
+	ids := make([]vocab.MoveID, 0, len(moves))
+	for _, move := range moves {
+		if move.Enabled {
+			ids = append(ids, move.ID)
+		}
 	}
+	return ids
 }
 
 // View returns a read-only projection of the current state.
@@ -70,63 +73,87 @@ func (s *State) accepts(event domain.Event) bool {
 	if _, ok := event.(domain.HostCmd); ok {
 		return true
 	}
-	if !s.debug {
-		return false
+	if event.Kind() == vocab.EventDebugReset {
+		return s.debug
 	}
-	switch event.Kind() {
-	case vocab.EventDebugReset:
-		return true
-	default:
-		return false
-	}
+	return true
 }
 
 func (s *State) apply(env domain.Envelope) domain.StepOut {
 	switch event := env.Event.(type) {
 	case domain.HostCmd:
-		return s.applyHost(event)
+		return s.applyHost(event, env)
 	case domain.DebugReset:
-		s.seed = append(s.seed[:0], event.Seed...)
-		s.path = s.debugStart
-		s.paused = false
-		s.spotlight = 0
-		s.nextD20 = 0
-		return domain.StepOut{Effects: []domain.Effect{domain.NewRun{Seed: append([]byte(nil), s.seed...)}}}
+		return s.applyDebugReset(event, env)
 	default:
-		return domain.StepOut{Ack: acceptedAck(env)}
+		return s.applyPhase(env)
 	}
 }
 
-func (s *State) applyHost(cmd domain.HostCmd) domain.StepOut {
-	switch cmd.Cmd {
-	case vocab.HostStart:
-		if s.path != vocab.StateLobby {
-			return s.rejected("already_started")
+func (s *State) applyHost(cmd domain.HostCmd, env domain.Envelope) domain.StepOut {
+	if cmd.Cmd == vocab.HostForceD20 {
+		out := s.applyForceD20(cmd.N)
+		if out.Ack == nil || !out.Ack.Accepted {
+			return out
 		}
-		s.path = vocab.StateCreation
-		return domain.StepOut{
-			Effects: []domain.Effect{domain.StartTimer{
-				Name: "creation_timeout", After: 30 * time.Second,
-				Pausable: true, Scope: domain.Scope{Machine: vocab.MachineSession},
-			}},
-			Ack: &domain.Ack{Accepted: true},
+		if err := s.phase.ForceD20(cmd.N); err != nil {
+			return s.rejected(err.Error())
 		}
-	case vocab.HostPause:
-		s.paused = true
-		return domain.StepOut{Effects: []domain.Effect{domain.PauseAll{}}, Ack: &domain.Ack{Accepted: true}}
-	case vocab.HostResume:
-		s.paused = false
-		return domain.StepOut{Effects: []domain.Effect{domain.ResumeAll{}}, Ack: &domain.Ack{Accepted: true}}
-	case vocab.HostReset:
-		s.path = s.debugStart
-		s.paused = false
-		s.nextD20 = 0
-		return domain.StepOut{Effects: []domain.Effect{domain.NewRun{Seed: append([]byte(nil), s.seed...)}}, Ack: &domain.Ack{Accepted: true}}
-	case vocab.HostForceD20:
-		return s.applyForceD20(cmd.N)
-	default:
-		return s.rejected("unsupported_host_command")
+		return out
 	}
+	if cmd.Cmd == vocab.HostReset {
+		s.resetPhase()
+		return domain.StepOut{Effects: []domain.Effect{domain.NewRun{Seed: append([]byte(nil), s.seed...)}}, Ack: acceptedAck(env)}
+	}
+	out := s.dispatch(domain.HostCmd{Cmd: cmd.Cmd})
+	if out.Ack == nil || out.Ack.Reason == "" {
+		out.Ack = acceptedAck(env)
+	}
+	if cmd.Cmd == vocab.HostPause {
+		out.Effects = append(out.Effects, domain.PauseAll{})
+	}
+	if cmd.Cmd == vocab.HostResume {
+		out.Effects = append(out.Effects, domain.ResumeAll{})
+	}
+	return out
+}
+
+func (s *State) applyPhase(env domain.Envelope) domain.StepOut {
+	out := s.dispatch(env.Event)
+	if out.Ack == nil || out.Ack.Reason == "" {
+		out.Ack = acceptedAck(env)
+	}
+	return out
+}
+
+func (s *State) dispatch(event domain.Event) domain.StepOut {
+	result, err := s.phase.Step(event)
+	if err != nil {
+		return s.rejected("unaccepted_event")
+	}
+	s.path = s.phase.State()
+	s.paused = s.phase.Paused()
+	return domain.StepOut{Effects: append([]domain.Effect(nil), result.Effects...), Ack: &domain.Ack{Accepted: true}}
+}
+
+func (s *State) resetPhase() {
+	dispatcher, err := phase.NewWithSeed(s.oneShot, s.seed)
+	if err == nil {
+		if s.debugStart != "" {
+			_ = dispatcher.Goto(s.debugStart)
+		}
+		s.phase = dispatcher
+	}
+	s.path = s.phase.State()
+	s.paused = false
+	s.spotlight = 0
+	s.nextD20 = 0
+}
+
+func (s *State) applyDebugReset(event domain.DebugReset, env domain.Envelope) domain.StepOut {
+	s.seed = append(s.seed[:0], event.Seed...)
+	s.resetPhase()
+	return domain.StepOut{Effects: []domain.Effect{domain.NewRun{Seed: append([]byte(nil), s.seed...)}}, Ack: acceptedAck(env)}
 }
 
 func (s *State) rejected(reason string) domain.StepOut {

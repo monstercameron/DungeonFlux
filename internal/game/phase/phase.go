@@ -1,6 +1,9 @@
 package phase
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/monstercameron/DungeonFlux/internal/core/fsm"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/game/combat"
@@ -11,7 +14,6 @@ import (
 	"github.com/monstercameron/DungeonFlux/internal/game/phase/hook"
 	"github.com/monstercameron/DungeonFlux/internal/game/phase/opening"
 	"github.com/monstercameron/DungeonFlux/internal/game/phase/resolution"
-	"github.com/monstercameron/DungeonFlux/internal/game/rules"
 	"github.com/monstercameron/DungeonFlux/internal/game/rules/dice"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
@@ -29,6 +31,7 @@ const (
 	eventCombat      vocab.EventKind = "phase_combat"
 	eventCliffhanger vocab.EventKind = "phase_cliffhanger"
 	eventSkip        vocab.EventKind = "phase_skip"
+	eventReset       vocab.EventKind = "phase_reset"
 )
 
 // Definition describes one registered top-level phase.
@@ -38,58 +41,64 @@ type Definition struct {
 }
 
 // Definitions returns the registered phases in their canonical run order.
-func Definitions() []Definition {
-	return append([]Definition(nil), phaseDefinitions...)
-}
+func Definitions() []Definition { return append([]Definition(nil), phaseDefinitions...) }
 
 var phaseDefinitions = []Definition{
-	{ID: vocab.StateLobby, Stub: false},
-	{ID: vocab.StateCreation, Stub: false},
-	{ID: vocab.StateOpening, Stub: false},
-	{ID: vocab.StateExploration, Stub: false},
-	{ID: vocab.StateConversation, Stub: false},
-	{ID: vocab.StateCheck, Stub: false},
-	{ID: vocab.StateResolution, Stub: false},
-	{ID: vocab.StateHookEvent, Stub: false},
-	{ID: vocab.StateCombat, Stub: false},
-	{ID: vocab.StateCliffhanger, Stub: false},
-	{ID: vocab.StateEnd, Stub: false},
+	{ID: vocab.StateLobby}, {ID: vocab.StateCreation}, {ID: vocab.StateOpening},
+	{ID: vocab.StateExploration}, {ID: vocab.StateConversation}, {ID: vocab.StateCheck},
+	{ID: vocab.StateResolution}, {ID: vocab.StateHookEvent}, {ID: vocab.StateCombat},
+	{ID: vocab.StateCliffhanger}, {ID: vocab.StateEnd},
 }
 
-// Machine is the pure top-level phase dispatcher.
+// Machine is the pure top-level phase dispatcher and active child state.
 type Machine struct {
-	table            fsm.Machine
-	paused           bool
-	conversationDone bool
-	creation         creation.Machine
-	opening          opening.Machine
-	conversation     conversation.State
-	check            check.Machine
-	resolution       resolution.Machine
-	hook             hook.Machine
-	combat           combat.State
-	combatDice       *dice.Roller
-	cliffhanger      cliffhanger.Machine
+	table                                    fsm.Machine
+	paused, conversationDone, strictCreation bool
+	oneShot                                  domain.OneShot
+	seats                                    []domain.SeatView
+	spotlight                                domain.SeatID
+	forcedD20                                int
+	creation                                 creation.Machine
+	opening                                  opening.Machine
+	conversation                             conversation.State
+	check                                    check.Machine
+	resolution                               resolution.Machine
+	hook                                     hook.Machine
+	combat                                   combat.State
+	combatDice                               *dice.Roller
+	cliffhanger                              cliffhanger.Machine
 }
 
-// Result reports a phase dispatch and whether the event was handled while
-// leaving the machine paused.
+// Result reports phase effects and the accepted top-level transition.
 type Result struct {
 	Transition fsm.Result
+	Effects    []domain.Effect
 	Paused     bool
 }
 
-// New creates a dispatcher in Lobby.
+// New creates a dispatcher in Lobby for standalone phase-machine tests.
 func New() (Machine, error) {
+	return buildMachine(domain.OneShot{}, []byte("dungeonflux-phase"), false)
+}
+
+// NewWithSeed creates the game dispatcher with the two-seat creation contract.
+func NewWithSeed(oneShot domain.OneShot, seed []byte) (Machine, error) {
+	if len(seed) == 0 {
+		seed = []byte("dungeonflux-phase")
+	}
+	return buildMachine(oneShot, seed, true)
+}
+
+func buildMachine(oneShot domain.OneShot, seed []byte, strict bool) (Machine, error) {
 	table, err := fsm.New(definition())
 	if err != nil {
 		return Machine{}, err
 	}
-	created, err := creation.New([]byte("dungeonflux-phase"))
+	created, err := creation.New(seed)
 	if err != nil {
 		return Machine{}, err
 	}
-	return Machine{table: table, creation: created}, nil
+	return Machine{table: table, strictCreation: strict, oneShot: oneShot, creation: created, opening: opening.New(oneShot), seats: initialSeats()}, nil
 }
 
 // State returns the current top-level phase.
@@ -98,8 +107,29 @@ func (m Machine) State() vocab.StateID { return m.table.State() }
 // Paused reports whether top-level execution is paused.
 func (m Machine) Paused() bool { return m.paused }
 
-// Step dispatches one domain event. Events not belonging to the current
-// phase are rejected by the underlying table without changing state.
+// ForceD20 makes the next check or combat roll use face.
+func (m *Machine) ForceD20(face int) error {
+	if face < 1 || face > 20 {
+		return errors.New("d20 must be between 1 and 20")
+	}
+	m.forcedD20 = face
+	return nil
+}
+
+// Goto advances through host skips to a debug phase.
+func (m *Machine) Goto(target vocab.StateID) error {
+	for i := 0; i < len(phaseDefinitions)+1 && m.State() != target; i++ {
+		if _, err := m.Step(domain.HostCmd{Cmd: vocab.HostSkip}); err != nil {
+			return err
+		}
+	}
+	if m.State() != target {
+		return fmt.Errorf("unknown debug phase %q", target)
+	}
+	return nil
+}
+
+// Step dispatches one domain event and returns effects from the active child.
 func (m *Machine) Step(event domain.Event) (Result, error) {
 	if event == nil {
 		return Result{}, &fsm.Rejection{State: m.State(), Reason: fsm.ReasonUnknownEvent}
@@ -122,8 +152,7 @@ func (m *Machine) stepHost(cmd domain.HostCmd) (Result, error) {
 		m.paused = false
 		return Result{}, nil
 	case vocab.HostReset:
-		m.paused = false
-		m.conversationDone = false
+		m.paused, m.conversationDone = false, false
 		return m.step(eventReset)
 	case vocab.HostSkip:
 		m.paused = false
@@ -139,281 +168,175 @@ func (m *Machine) stepHost(cmd domain.HostCmd) (Result, error) {
 }
 
 func (m *Machine) stepPhase(event domain.Event) (Result, error) {
-	if m.State() == vocab.StateCombat {
+	switch m.State() {
+	case vocab.StateLobby, vocab.StateEnd:
+		return m.passive(event)
+	case vocab.StateCreation:
+		return m.stepCreation(event)
+	case vocab.StateOpening:
+		return m.stepOpening(event)
+	case vocab.StateExploration:
+		return m.stepExploration(event)
+	case vocab.StateConversation:
+		return m.stepConversation(event)
+	case vocab.StateCheck:
+		return m.stepCheck(event)
+	case vocab.StateResolution:
+		return m.stepResolution(event)
+	case vocab.StateHookEvent:
+		return m.stepHook(event)
+	case vocab.StateCombat:
 		return m.stepCombat(event)
-	}
-	phaseEvent := eventForDomain(m.State(), event)
-	if phaseEvent == "" {
+	case vocab.StateCliffhanger:
+		return m.stepCliffhanger(event)
+	default:
 		return Result{}, &fsm.Rejection{State: m.State(), Event: event.Kind(), Reason: fsm.ReasonUnknownEvent}
 	}
-	return m.step(phaseEvent)
 }
 
-func (m *Machine) stepCombat(event domain.Event) (Result, error) {
-	if action, ok := event.(domain.Act); ok {
-		if err := m.applyCombatAction(action); err != nil {
-			return Result{}, err
-		}
-		return Result{Paused: m.paused}, nil
+func (m *Machine) stepCreation(event domain.Event) (Result, error) {
+	if act, ok := event.(domain.Act); ok && act.Move == vocab.MoveReady {
+		event = domain.PCLocked{Seat: act.Seat}
 	}
-	if _, ok := event.(domain.LineDone); ok && m.combat.Phase != combat.Done {
-		if line := event.(domain.LineDone); line.UtteranceID == "" || line.UtteranceID == "combat-outcome" {
-			if _, err := m.combat.ResolveEnd(combat.ReasonSkip, 0); err != nil {
-				return Result{}, err
-			}
-			return m.step(eventCliffhanger)
-		}
-		return Result{}, &fsm.Rejection{State: m.State(), Event: event.Kind(), Reason: fsm.ReasonGuardRejected}
+	if isPassive(event) {
+		return Result{}, nil
 	}
-	phaseEvent := eventForDomain(m.State(), event)
-	if phaseEvent == "" {
-		return Result{}, &fsm.Rejection{State: m.State(), Event: event.Kind(), Reason: fsm.ReasonUnknownEvent}
+	if _, ok := event.(domain.PCLocked); ok && !m.strictCreation {
+		return m.step(eventCreationEnd)
 	}
-	return m.step(phaseEvent)
-}
-
-func (m *Machine) applyCombatAction(action domain.Act) error {
-	if action.Move == vocab.MoveMove {
-		_, err := m.combat.Move(combat.Cell{X: action.Cell.C, Y: action.Cell.R})
-		return err
-	}
-	if action.Move == vocab.MoveAttack {
-		result, err := m.combat.Attack(m.combatDice, string(action.Target))
-		if err != nil {
-			return err
-		}
-		if result.Outcome.HPAfter <= 0 {
-			_, err = m.combat.ResolveEnd(combat.ReasonHPZero, result.Seat)
-			return err
-		}
-		m.combat.Phase = combat.PCTurn
-		return m.finishCombatTurn()
-	}
-	if action.Move == vocab.MoveEndTurn {
-		return m.finishCombatTurn()
-	}
-	return &fsm.Rejection{State: m.State(), Event: eventForDomain(m.State(), action), Reason: fsm.ReasonUnknownEvent}
-}
-
-func (m *Machine) finishCombatTurn() error {
-	if m.combat.Phase != combat.PCTurn {
-		return nil
-	}
-	if err := m.combat.EndPlayerTurn(); err != nil {
-		return err
-	}
-	if m.combat.Phase != combat.EnemyTurn {
-		return nil
-	}
-	if _, err := m.combat.EnemyTurn(m.combatDice, 1200); err != nil {
-		return err
-	}
-	return m.combat.EndEnemyTurn()
-}
-
-func (m *Machine) step(event vocab.EventKind) (Result, error) {
-	if err := m.route(event); err != nil {
+	result, err := m.creation.Step(event)
+	if err != nil {
 		return Result{}, err
 	}
-	transition, err := m.table.Step(event)
-	if err == nil && transition.To == vocab.StateExploration && transition.From == vocab.StateResolution {
+	m.updateCreationSeat(result.Seat)
+	if !result.Complete {
+		return Result{Effects: result.Effects}, nil
+	}
+	return m.transition(eventCreationEnd, result.Effects)
+}
+
+func (m *Machine) stepOpening(event domain.Event) (Result, error) {
+	result := m.opening.Step(event)
+	if _, ok := event.(domain.LineDone); ok && result.State == opening.StateReady {
+		return m.transition(eventOpeningEnd, result.Effects)
+	}
+	return Result{Effects: result.Effects}, nil
+}
+
+func (m *Machine) stepExploration(event domain.Event) (Result, error) {
+	act, ok := event.(domain.Act)
+	if !ok {
+		return m.passive(event)
+	}
+	switch act.Move {
+	case vocab.MoveTalkVell:
+		m.spotlight, m.conversation = act.Seat, conversation.State{Seat: act.Seat}
+		return m.step(eventTalk)
+	case vocab.MoveLeave:
+		m.spotlight = act.Seat
+		if err := m.startHook(); err != nil {
+			return Result{}, err
+		}
+		return m.step(eventLeave)
+	default:
+		return m.unhandled(event)
+	}
+}
+
+func (m *Machine) stepConversation(event domain.Event) (Result, error) {
+	if act, ok := event.(domain.Act); ok {
+		switch act.Move {
+		case vocab.MovePersuade:
+			return m.startCheck()
+		case vocab.MoveStepAway:
+			return m.step(eventStepAway)
+		}
+	}
+	result, err := conversation.Step(m.conversation, conversation.Event{Event: event})
+	if err != nil {
+		return Result{}, err
+	}
+	m.conversation = result.State
+	out := Result{Effects: result.Effects}
+	for _, derived := range result.Events {
+		next, nextErr := m.stepConversation(derived)
+		if nextErr != nil {
+			return Result{}, nextErr
+		}
+		out.Effects = append(out.Effects, next.Effects...)
+	}
+	return out, nil
+}
+
+func (m *Machine) startCheck() (Result, error) {
+	roller := newDice()
+	if m.forcedD20 != 0 {
+		if err := roller.ForceD20(m.forcedD20); err != nil {
+			return Result{}, err
+		}
+		m.forcedD20 = 0
+	}
+	created, err := check.New(check.Config{CheckID: "persuasion", Seat: m.spotlight, Charisma: 14, Proficient: true, DC: 10}, roller)
+	if err != nil {
+		return Result{}, err
+	}
+	m.check = created
+	if _, err = m.check.Step(domain.Act{Move: vocab.MovePersuade}); err != nil {
+		return Result{}, err
+	}
+	return m.step(eventPersuade)
+}
+
+func (m *Machine) stepCheck(event domain.Event) (Result, error) {
+	if _, ok := event.(domain.TimerFired); !ok {
+		return m.passive(event)
+	}
+	if _, err := m.check.Step(event); err != nil {
+		return Result{}, err
+	}
+	outcome, ok := m.check.Outcome()
+	if !ok {
+		return Result{}, errors.New("check has no outcome")
+	}
+	created, err := resolution.New(outcome.Success, resolution.Config{SuccessUtterance: "reveal", FailureUtterance: "refuse", SuccessText: "The clue is yours.", FailureText: "She refuses.", SuccessCanned: "canned-reveal", FailureCanned: "canned-refuse"})
+	if err != nil {
+		return Result{}, err
+	}
+	m.resolution = created
+	started, err := m.resolution.Start()
+	if err != nil {
+		return Result{}, err
+	}
+	return m.transition(eventRoll, started.Effects)
+}
+
+func (m *Machine) stepResolution(event domain.Event) (Result, error) {
+	if line, ok := event.(domain.LineDone); ok && line.UtteranceID == "" {
+		line.UtteranceID = "reveal"
+		if _, err := m.resolution.Step(line); err != nil {
+			line.UtteranceID = "refuse"
+		}
+		event = line
+	}
+	result, err := m.resolution.Step(event)
+	if err != nil {
+		if line, ok := event.(domain.LineDone); ok && line.UtteranceID != "" {
+			alternate := "reveal"
+			if string(line.UtteranceID) == alternate {
+				alternate = "refuse"
+			}
+			result, err = m.resolution.Step(domain.LineDone{UtteranceID: domain.UtteranceID(alternate)})
+		}
+	}
+	if err != nil {
+		return Result{}, err
+	}
+	if result.State != resolution.Done {
+		return Result{Effects: result.Effects}, nil
+	}
+	out, err := m.transition(eventResolution, result.Effects)
+	if err == nil {
 		m.conversationDone = true
 	}
-	return Result{Transition: transition, Paused: m.paused}, err
+	return out, err
 }
-
-func (m *Machine) route(event vocab.EventKind) error {
-	if event == eventStart {
-		return nil
-	}
-	switch m.State() {
-	case vocab.StateCreation:
-		if event == eventCreationEnd {
-			return nil
-		}
-	case vocab.StateOpening:
-		if m.opening.State() == opening.StateReady {
-			m.opening = opening.New()
-			m.opening.Enter()
-		}
-		if event == eventOpeningEnd {
-			m.opening.Step(domain.LineDone{})
-		}
-	case vocab.StateExploration:
-		if event == eventTalk {
-			m.conversation = conversation.State{Seat: 1}
-		}
-		if event == eventLeave {
-			var err error
-			m.hook, err = hook.New(hook.Config{ArrivalClip: "hook-arrival", StrangerUtterance: "stranger", CannedUtterance: "stranger-canned", CannedLine: "canned-stranger"})
-			if err != nil {
-				return err
-			}
-			_, err = m.hook.Start()
-			return err
-		}
-	case vocab.StateConversation:
-		if event == eventPersuade {
-			var err error
-			m.check, err = check.New(check.Config{CheckID: "persuasion", Seat: 1, Charisma: 14, Proficient: true, DC: 10}, newDice())
-			if err != nil {
-				return err
-			}
-			_, err = m.check.Step(domain.Act{Move: vocab.MovePersuade})
-			return err
-		}
-	case vocab.StateCheck:
-		if event == eventRoll {
-			if _, err := m.check.Step(domain.TimerFired{Name: "roll_resolved"}); err != nil {
-				return err
-			}
-			outcome, ok := m.check.Outcome()
-			if !ok {
-				return nil
-			}
-			var err error
-			m.resolution, err = resolution.New(outcome.Success, resolution.Config{SuccessUtterance: "reveal", FailureUtterance: "refuse", SuccessText: "The clue is yours.", FailureText: "She refuses.", SuccessCanned: "canned-reveal", FailureCanned: "canned-refuse"})
-			if err != nil {
-				return err
-			}
-			_, err = m.resolution.Start()
-			return err
-		}
-	case vocab.StateResolution:
-		if m.resolution.State() != resolution.Done && event == eventResolution {
-			_, _ = m.resolution.Step(domain.LineDone{})
-		}
-	case vocab.StateHookEvent:
-		if event == eventCombat {
-			_, _ = m.hook.Step(domain.LineDone{})
-			var err error
-			m.combat, err = combat.New(combatConfig())
-			if err != nil {
-				return err
-			}
-			m.combatDice = newDice()
-			return m.combat.Start()
-		}
-	case vocab.StateCombat:
-		if event == eventSkip && m.combat.Phase != combat.Done {
-			_, err := m.combat.ResolveEnd(combat.ReasonSkip, 0)
-			return err
-		}
-	case vocab.StateCliffhanger:
-		if event == eventCliffhanger {
-			var err error
-			m.cliffhanger, err = cliffhanger.New(cliffhanger.Config{
-				LiveClip: domain.Asset{ID: "live-cliffhanger"}, GenericClip: domain.Asset{ID: "generic-cliffhanger"}, AnimatedStill: domain.Asset{ID: "cliffhanger-still"},
-				LineID: "cliffhanger", CannedLineID: "cliffhanger-canned", CannedAssetID: "canned-cliffhanger", NarrationInput: "The road continues.",
-			})
-			if err != nil {
-				return err
-			}
-			if _, err = m.cliffhanger.Enter(); err != nil {
-				return err
-			}
-			_, err = m.cliffhanger.Step(domain.LineDone{UtteranceID: "cliffhanger"})
-			return err
-		}
-	}
-	return nil
-}
-
-func newDice() *dice.Roller { return dice.New([]byte("dungeonflux-check")) }
-
-func combatConfig() combat.Config {
-	return combat.Config{
-		PCs: [2]combat.Participant{
-			{Seat: 1, ID: "pc-1", Build: combatBuild(rules.Paladin), Position: combat.Cell{X: 1, Y: 0}, HP: 10, MaxHP: 10, AC: 14},
-			{Seat: 2, ID: "pc-2", Build: combatBuild(rules.Rogue), Position: combat.Cell{X: 2, Y: 0}, HP: 10, MaxHP: 10, AC: 14},
-		},
-		Thrall: rules.Thrall("thrall"), Grid: combat.Grid{Cols: 4, Rows: 4},
-	}
-}
-
-func combatBuild(class rules.Class) rules.Build {
-	return rules.Build{Class: class, AttackBonus: 5, HP: 10, MaxHP: 10, AC: 14}
-}
-
-func definition() fsm.Def {
-	states := make([]fsm.State, 0, len(phaseDefinitions))
-	for _, phase := range phaseDefinitions {
-		states = append(states, phase.ID)
-	}
-	transitions := []fsm.Transition{
-		{From: vocab.StateLobby, Event: eventStart, To: vocab.StateCreation},
-		{From: vocab.StateCreation, Event: eventCreationEnd, To: vocab.StateOpening},
-		{From: vocab.StateOpening, Event: eventOpeningEnd, To: vocab.StateExploration},
-		{From: vocab.StateExploration, Event: eventTalk, To: vocab.StateConversation},
-		{From: vocab.StateExploration, Event: eventLeave, To: vocab.StateHookEvent},
-		{From: vocab.StateConversation, Event: eventPersuade, To: vocab.StateCheck},
-		{From: vocab.StateConversation, Event: eventStepAway, To: vocab.StateExploration},
-		{From: vocab.StateCheck, Event: eventRoll, To: vocab.StateResolution},
-		{From: vocab.StateResolution, Event: eventResolution, To: vocab.StateExploration},
-		{From: vocab.StateHookEvent, Event: eventCombat, To: vocab.StateCombat},
-		{From: vocab.StateCombat, Event: eventCliffhanger, To: vocab.StateCliffhanger},
-		{From: vocab.StateCliffhanger, Event: eventCliffhanger, To: vocab.StateEnd},
-	}
-	for index, phase := range phaseDefinitions {
-		transitions = append(transitions, fsm.Transition{From: phase.ID, Event: eventSkip, To: skipTarget(index)})
-		transitions = append(transitions, fsm.Transition{From: phase.ID, Event: eventReset, To: vocab.StateLobby})
-	}
-	return fsm.Def{Initial: vocab.StateLobby, States: states, Transitions: transitions}
-}
-
-func skipTarget(index int) vocab.StateID {
-	if index == len(phaseDefinitions)-1 {
-		return vocab.StateLobby
-	}
-	if phaseDefinitions[index].ID == vocab.StateResolution {
-		return vocab.StateExploration
-	}
-	return phaseDefinitions[index+1].ID
-}
-
-func eventForDomain(state vocab.StateID, event domain.Event) vocab.EventKind {
-	switch typed := event.(type) {
-	case domain.PCLocked:
-		if state == vocab.StateCreation {
-			return eventCreationEnd
-		}
-	case domain.TimerFired:
-		if state == vocab.StateCreation && typed.Name == "creation_timeout" {
-			return eventCreationEnd
-		}
-		if state == vocab.StateCheck && typed.Name == "roll_resolved" {
-			return eventRoll
-		}
-	case domain.LineDone:
-		switch state {
-		case vocab.StateOpening:
-			return eventOpeningEnd
-		case vocab.StateResolution:
-			return eventResolution
-		case vocab.StateHookEvent:
-			return eventCombat
-		case vocab.StateCombat:
-			return eventCliffhanger
-		case vocab.StateCliffhanger:
-			return eventCliffhanger
-		}
-	case domain.Act:
-		switch {
-		case state == vocab.StateExploration && typed.Move == vocab.MoveTalkVell:
-			return eventTalk
-		case state == vocab.StateExploration && typed.Move == vocab.MoveLeave:
-			return eventLeave
-		case state == vocab.StateConversation && typed.Move == vocab.MovePersuade:
-			return eventPersuade
-		case state == vocab.StateConversation && typed.Move == vocab.MoveStepAway:
-			return eventStepAway
-		}
-	}
-	return ""
-}
-
-func eventForHost(command vocab.HostCmd) vocab.EventKind {
-	return vocab.EventKind(string(command))
-}
-
-const eventReset vocab.EventKind = "phase_reset"

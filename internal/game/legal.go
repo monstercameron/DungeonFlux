@@ -42,7 +42,7 @@ func (s *State) LegalMoveViews(seat domain.SeatID) []domain.MoveView {
 	if s == nil {
 		return nil
 	}
-	return LegalMoveViews(s.View(), seat)
+	return s.phase.LegalMoveViews(seat)
 }
 
 // AvailableActions returns the current phone action menu for one seat.
