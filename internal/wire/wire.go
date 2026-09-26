@@ -135,8 +135,10 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 	printURLs(out, urls)
 	lobbyProjection := api.LobbyProjection{RoomCode: roomID, JoinURL: joinURL, QRURL: qrURL}
 	lobbyOption := game.Lobby{RoomCode: roomID, JoinURL: joinURL, QRAsset: domain.AssetID(qrURL)}
-	gameOptions := []game.Option{game.WithLobby(lobbyOption), game.WithTurnTimers(cfg.Features.TurnTimers)}
-	eng := newLobbyEngine(game.New(oneShot, seed, gameOptions...), lobbyProjection)
+	gameOptions := []game.Option{game.WithLobby(lobbyOption), game.WithTurnTimers(cfg.Features.TurnTimers), game.WithCombatMoveUI(cfg.Features.CombatMoveUI)}
+	// server.debug enables the live dfctl control events (goto, seat, timer,
+	// combat); the engine rejects them otherwise (ENG-033).
+	eng := newLobbyEngine(game.NewWithDebug(oneShot, seed, cfg.Server.Debug, cfg.DebugStart, gameOptions...), lobbyProjection)
 	roomEngine, err := newSynchronizedEngine(eng)
 	if err != nil {
 		_ = store.Close()
@@ -173,7 +175,7 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 		runtime.WithRunner(runner), runtime.WithRoomState(roomState),
 		runtime.WithTurnTimersEnabled(cfg.Features.TurnTimers),
 		runtime.WithNewGame(func(runSeed []byte) ports.Engine {
-			roomEngine.replace(newLobbyEngine(game.New(oneShot, runSeed, gameOptions...), lobbyProjection))
+			roomEngine.replace(newLobbyEngine(game.NewWithDebug(oneShot, runSeed, cfg.Server.Debug, "", gameOptions...), lobbyProjection))
 			return roomEngine
 		}))
 	inbox.room = room
