@@ -2,6 +2,8 @@
 
 Rules for every coding agent in this repo. Read it in full before your first edit. Owner: the orchestrator (ORCH).
 
+**Who does what:** Claude **Opus 5.5** (Claude Code) is ORCH: coordinator and reviewer. It writes the shared contracts, briefs the lanes, reviews and gates every hand-in, merges, commits, keeps the dev server up, and writes the devlog. **GPT-6 Luna in Codex** runs every worker lane: it writes the first draft of all lane code and its tests. ORCH does not write lane code; a lane is never the last set of eyes on its own work.
+
 ## TL;DR
 1. `plan.md` section 0 is the binding spec. Sections 1–7 are post-demo and non-binding; section 0 wins every conflict.
 2. Read order: this file → your lane's row in the "Spec index by lane" (top of plan §0) → those sections → §0.18.1, §0.18.2, §0.18.7, §0.18.8.
@@ -9,14 +11,17 @@ Rules for every coding agent in this repo. Read it in full before your first edi
 4. Your packages compile after every edit. Your lane's tests run against `internal/fakes`, never a sibling lane's code.
 5. Done means `scripts/gate.ps1 -Lane <LANE>` is green, run from PowerShell, and the hand-in report is written. Not green means not done.
 6. Every generated file goes under `artifacts/` (gitignored). Nothing is written to the repo root or to package directories.
-7. No git writes: no commit, push, stash, worktree, branch, or `checkout --`. ORCH commits per lane.
-8. No paid or live API calls in any test or gate. Live tests sit behind `//go:build live` plus `DF_LIVE=1`, and verification never runs them.
+7. No git writes: no commit, push, stash, worktree, branch, or `checkout --`. Work is tracked in `TODOS.md`; **each todo is exactly one commit**, made by ORCH after review (section 13).
+8. No paid or live API calls in any lane test or lane gate. Live tests sit behind `//go:build live` plus `DF_LIVE=1`. The block gates at hours 2, 5, 8, 11, and 14 (plan §0.18.9) are live checkpoints run by the developer and ORCH on the human test server; lanes never run them.
 9. Kill only the PIDs you started. Use only your lane's port. Stop your server before you hand in.
 10. Go first. JavaScript exists only in `web/splat` (plus the stock `wasm_exec.js`).
 11. Hit something hard, surprising, or instructive? Write a devlog entry (section 9) in your hand-in.
+12. Codex runs as many worker lanes at once as the lane map allows (section 10); idle lanes are wasted hours.
+13. The human test server on `:8443` is always up (section 11). Never stop it, never bind its port, never break the build it runs.
+14. Many agents work at once. Never clobber: touch only your todo's paths, never revert or reformat someone else's change, and re-read a file right before you edit it (section 13).
 
 ## 1. What this repo is
-Planning stage. DungeonFlux is an AI dungeon-master demo: a Go server, one GoWebComponents WASM client (`/dm`, `/p`, `/host`), and gRPC over WebSocket through GoGRPCBridge. It is built in 24 hours by parallel Claude Code lane agents under one orchestrator (plan §0.18.9: at most seven lane agents at once).
+Planning stage. DungeonFlux is an AI dungeon-master demo: a Go server, one GoWebComponents WASM client (`/dm`, `/p`, `/host`), and gRPC over WebSocket through GoGRPCBridge. It is built in 24 hours by parallel GPT-6 Luna worker lanes in Codex, coordinated and reviewed by one Claude Opus 5.5 orchestrator. This file overrides the plan's seven-agent limit (§0.18.9): Codex runs every lane whose inputs are ready, bounded only by the lane map, disk, and quota (section 10).
 
 | Path | What it is | Who edits it |
 |---|---|---|
@@ -25,6 +30,7 @@ Planning stage. DungeonFlux is an AI dungeon-master demo: a Go server, one GoWeb
 | `docs/` | GitHub Pages site (ShellHacks 2026) | Developer / ORCH only |
 | `assets/concept/` | Concept art. Art direction only (palette, type, framing, mood); never a structural or feature spec (plan §3i) | Nobody during the build |
 | `artifacts/` | All generated output (section 4). Gitignored except `.gitkeep` | Any lane, inside its own subfolder |
+| `TODOS.md` | The single list of work; one todo = one commit (section 13) | ORCH only |
 | `AGENTS.md`, `CLAUDE.md`, `.gitignore`, `.gitattributes` | Agent rules and repo config | ORCH |
 
 ## 2. Target layout (plan §0.18.2 is authoritative)
@@ -78,6 +84,10 @@ Everything not meant to be committed goes here. Create the subfolder you need. N
 | `artifacts/runtime/<instance>/` | Runtime data root: `dungeonflux.db` (+ `-wal`, `-shm`) and `assets/{sha256}.{ext}` |
 | `artifacts/runtime/buildtime/` | L-OPS build-time media and `manifest.json` |
 | `artifacts/tmp/` | Scratch. Anything here may be deleted at any time |
+| `artifacts/lanes/<LANE>/` | Codex lane brief, hand-in report, and log (section 10) |
+| `artifacts/cache/go/` | `GOCACHE` for lanes; pruned by ORCH when disk runs low |
+| `artifacts/runtime/human/` | The always-up human test server's data (section 11); ORCH only |
+| `artifacts/build/human/` | The human test server's current and last-good binaries; ORCH only |
 
 **Runtime store decision.** The SQLite file and the sha256 asset store live under `artifacts/runtime/<instance>/`, where `<instance>` is `show` for ORCH runs and the stage, and your lane ID (for example `L-API`) for a lane's dev server, so parallel servers never share a database. The HTTP route stays `/assets/{sha256}.{ext}`; only the disk location changes. `assets/` at the root holds committed art only. plan §0.4, §0.18.5, and §0.18.9 match these paths.
 
@@ -127,7 +137,8 @@ Full coding rules: plan §0.18.8 (24 rules) and §0.18.7 (errors, context, loggi
 ## 6. Local servers
 | Lane | Port |
 |---|---|
-| ORCH | 8443 |
+| Human test server (ORCH-run, always up) | 8443 |
+| ORCH scratch runs | 8444 |
 | L-API | 18101 |
 | L-VIN | 18102 |
 | L-VOUT | 18103 |
@@ -135,7 +146,7 @@ Full coding rules: plan §0.18.8 (24 rules) and §0.18.7 (errors, context, loggi
 | L-WEB-SPLAT | 18114 |
 | L-SPIKE | 18120 |
 
-Start servers with `Start-Process -PassThru` and keep the PID. Stop with `Stop-Process -Id <pid>`. A server you leave running is a failed hand-in.
+Start lane servers with `Start-Process -PassThru` and keep the PID. Stop with `Stop-Process -Id <pid>`. A lane server you leave running is a failed hand-in. The human test server on 8443 is the exception: ORCH keeps it running (section 11), and nobody else starts, stops, or binds it.
 
 ## 7. Quick commands (PowerShell, from the repo root)
 ```powershell
@@ -156,14 +167,14 @@ go test -count=1 -artifacts -outputdir "$PWD\artifacts\test\L-ENG" .\internal\ga
 go test -count=1 -coverprofile "$PWD\artifacts\coverage\L-ENG\cover.out" .\internal\game\...
 
 # Run with fakes, on your own port, logs to artifacts (PID kept for Stop-Process -Id)
-$p = Start-Process go -ArgumentList 'run','./cmd/server','-config','config/fake.json' `
+$p = Start-Process go -ArgumentList 'run','./cmd/server','-config','config/fake.json','-port','18101','-data-dir','artifacts/runtime/L-API' `
   -RedirectStandardOutput artifacts\logs\L-API\out.log -RedirectStandardError artifacts\logs\L-API\err.log -PassThru
 Stop-Process -Id $p.Id
 
 # Race gate (ORCH, WSL2; no race detector on windows/arm64)
 wsl -- bash -lc "cd /mnt/c/Users/mreca/Desktop/DungeonFlux && go test -race ./internal/runtime/... ./internal/api/... ./internal/voice/..."
 ```
-Exact `cmd/server` flags (port, data dir) land with the ORCH skeleton in hours 1–3; follow `gate.ps1` and `config/` once they exist. Note that `go run` starts a child process, so stop it by the PID tree you launched, never by image name.
+`cmd/server` flags (plan §0.18.5): `-config <file>`, `-port <lane port>`, `-data-dir artifacts/runtime/<LANE>`, and `-seed <hex>` (stage and rehearsal only). Always pass your own port and data dir; never run on 8443 or under `artifacts/runtime/human/` or `show/`. Note that `go run` starts a child process, so stop it by the PID tree you launched, never by image name.
 
 ## 8. Definition of done and hand-in
 Done = your lane gate is green from PowerShell, your server is stopped, nothing outside your owned paths and `artifacts/` changed (`git status` shows only your paths), and this report is written as your final message:
@@ -179,7 +190,7 @@ Known gaps: <what is missing or fragile, and why>
 Artifacts: <paths under artifacts/ worth looking at>
 Devlog entries: <zero or more entries in the section 9 template, or "none">
 ```
-ORCH runs your lane gate and the full gate, then commits with explicit paths (`git add <paths>; git commit -m "<LANE>: <what>"`). A failing lane is sent back, not fixed by ORCH.
+ORCH runs your lane gate and the full gate, then commits the todo as one commit with explicit paths (`git add <paths>; git commit -m "<TODO-ID>: <what>"`). A failing lane is sent back, not fixed by ORCH. A hand-in covers exactly one todo; a lane working several todos hands in each one separately.
 
 ## 9. Devlog: record hard issues and discoveries
 The devlog is a public timeline at `docs/devlog.html` (live at https://monstercameron.github.io/DungeonFlux/devlog.html). It is how this project shows its agentic process, so write entries generously for anything a future agent or a reader would learn from.
@@ -214,3 +225,79 @@ Skip routine work (a clean gate, a rename, a formatting pass).
   <p>What happened, why, what was done, and what it changes.</p>
 </li>
 ```
+
+## 10. Running worker lanes in Codex (GPT-6 Luna)
+**Maximise parallelism.** At every point in the build, ORCH launches a Codex worker for every lane whose contract inputs exist (plan §0.18.9 lane table and §0.12 staging). There is no fixed cap: the limits are file ownership (two lanes never own the same path), disk, CPU, and Codex quota. When a lane's work splits cleanly by package or file (for example one adapter per vendor, or one web screen per view), ORCH splits it into sub-lanes with disjoint owned paths and runs them at the same time. A lane that finishes early gets the next item from its own backlog immediately.
+
+**How ORCH launches a lane.** Each lane gets a brief file under `artifacts/lanes/<LANE>/brief.md`: this file's TL;DR and sections 3–5, the lane's owned paths, the binding plan sections from the spec index, the exact deliverables and gate, and the hand-in template. Then, from PowerShell:
+```powershell
+Get-Content artifacts\lanes\L-ENG\brief.md -Raw |
+  codex exec -m gpt-6-luna --sandbox workspace-write -C "C:\Users\mreca\Desktop\DungeonFlux" `
+    -o artifacts\lanes\L-ENG\hand-in.md - *> artifacts\lanes\L-ENG\codex.log
+```
+PowerShell has no `<` input redirection, so the brief is piped in. Run each lane as a background process and keep its PID. Confirm the model and flags with `codex exec --help` in hour 0; if the Codex app (desktop) is used instead of the CLI, the same brief file is the task text and the same rules apply.
+
+**Worker rules (in every brief):** sections 3–5 of this file; no git; no edits outside owned paths; set `GOCACHE`, `GOTMPDIR`, `TMP`, and `TEMP` under `artifacts/` (`artifacts/cache/go`, `artifacts/tmp/<LANE>`); run the lane gate before handing in; report honestly (a test not run is "not run", never "passed").
+
+**ORCH review loop (Opus 5.5), per hand-in:**
+1. Read the hand-in and the diff (`git diff --stat` on the lane's paths only). Anything outside owned paths: reject.
+2. Run the lane gate and the full gate yourself; never trust a reported green.
+3. Review against the binding plan sections and the contracts. Send findings back to the same lane as a follow-up brief; the lane fixes, ORCH re-reviews.
+4. Merge in the plan's merge order, commit with explicit paths, append the lane's devlog entries, and let the human test server pick up the new build (section 11).
+5. Launch the lane's next item at once.
+
+**Failure signatures to recognise:**
+- **Quota exhausted:** the process exits 0, no `hand-in.md` is written, and `codex.log` is short and ends in a usage-limit error. That is not success. Re-run the brief as a Claude **Sonnet** subagent with the same file and the same ownership rules (cheap model drafts, strong model reviews stays true), and note it in the devlog.
+- **Environment misreported as a code failure:** workers sometimes report a flaky or unavailable dependency and skip tests. ORCH re-runs those tests before accepting.
+- **Disk filling up:** `artifacts/cache/go` and `artifacts/tmp` are never pruned automatically. Check `Get-PSDrive C` before each wave; if free space is low, clear `artifacts\tmp` and `artifacts\cache\go` while no lane is running. Scattered, plausible test failures plus a linker "not enough space" error mean a full disk.
+- **Hand-in written only at exit:** `-o` writes the report when Codex exits; watch `codex.log` for progress.
+
+## 11. The human test server (always up)
+The developer tests the game by hand throughout the build, so a working server is always running for them.
+
+- **Where:** `https://dm.{domain}:8443/dm` on the laptop (or `http://localhost:8443/dm` before HTTPS is set up); phones at `/p`; host controls at `/host`. Data under `artifacts/runtime/human/`, separate from lane instances and from the stage's `show` instance.
+- **What it runs:** the last build of `main` that passed the full gate. It starts with the fake adapters and switches to live vendors (`config/human.json`) once the vendor adapters pass their gates; the host page shows which mode is active.
+- **Who runs it:** ORCH, through `scripts/devserver.ps1`, registered as a Windows scheduled task (`Register-ScheduledTask` + `Start-ScheduledTask`, `-ExecutionTimeLimit ([TimeSpan]::Zero)`) so it survives the orchestrating session. A process started from an agent's shell dies with that shell; do not rely on one.
+- **Supervisor behaviour:** after each ORCH merge it rebuilds into `artifacts/build/human/`. It swaps to the new binary only if the build and the full gate pass; otherwise it keeps the last good build running and writes the failure to `artifacts/logs/devserver/`. It restarts the server within 5 seconds if the process exits, and exposes `GET /healthz` plus `artifacts/logs/devserver/status.json` (commit, build time, mode, uptime, last error).
+- **Before any code exists** (hours 0–2), the supervisor serves a placeholder page on 8443 that shows the current phase of the build and the latest devlog entries, so the URL never 404s.
+- **ORCH checks it** after every merge (health endpoint and one page load) and at least every 30 minutes; a down server is fixed before any new lane is launched.
+- **Nobody else touches it:** lanes never start, stop, restart, or bind port 8443, and never write under `artifacts/runtime/human/`.
+
+## 12. Lane map, vendor notes, and the full rules
+- **Lane map:** the authoritative lane table (owned paths, inputs, block schedule) is plan §0.18.9; the binding sections per lane are the "Spec index by lane" at the top of plan §0. A brief always quotes the lane's row from both.
+- **Full coding rules:** plan §0.18.8 (24 rules) and §0.18.7 are binding; section 5 above is the short form. When they disagree, the plan wins.
+- **Vendor notes that bite:**
+  - `gpt-6-luna` defaults to `medium` reasoning: live calls send `none`, `character_flavor` sends `low`.
+  - Gemini 3.x cannot turn thinking off; `LOW` is the minimum and `MINIMAL` errors.
+  - Video first frames are always flattened images, never PNGs with alpha.
+  - ElevenLabs music defaults to `music_v1`; always send `music_v2_5`. `force_instrumental` exists only in prompt mode.
+  - MediaRecorder's first chunk carries the container header; never drop it, or the file will not decode.
+  - Segmind results expire after an hour; download immediately.
+  - Qwen on Cerebras defaults to `high` reasoning; send `reasoning_effort: "none"`.
+- **Game LLM calls go through SchemaFlux** (plan §0.15 and §0.18.3, once the dependency section lands); do not call vendor SDKs directly from game code.
+
+## 13. TODOS.md and working side by side
+**`TODOS.md` is the single list of work.** Every piece of work, from a contract file to a bug fix to a devlog entry batch, is a todo there before anyone starts it.
+
+**One todo = one commit.** A todo is sized so its change is one coherent commit: one package, one adapter, one screen, one fix. If it grows past that, ORCH splits it into new todos before work continues. The commit message starts with the todo ID (`ENG-012: Check machine offered/rolling/resolved`), lists only that todo's paths in `git add`, and the todo records the commit hash when it closes.
+
+**Todo format** (one block per todo, grouped by lane):
+```
+- [ ] ENG-012 · Check machine: offered → rolling → resolved
+  lane: L-ENG · paths: internal/game/nested/check*.go · depends: ORCH-004, ENG-003
+  done when: walk paths 1–2 pass in sim; lane gate green
+  status: open | claimed <agent> <time> | in-review | done <commit> | blocked <reason>
+```
+IDs are `<LANE-PREFIX>-<number>` and never reused. `paths` are the only files the todo may change.
+
+**Who writes `TODOS.md`:** ORCH only. Workers never edit it; they get one todo per brief and report status in their hand-in. That keeps a single writer on the shared list, so parallel agents cannot overwrite each other's status lines.
+
+**Not clobbering each other.** Several Codex workers, and sometimes several ORCH-launched agents, run at the same time in the same working tree. The rules:
+1. **Stay inside your todo's `paths`.** If the work needs a file outside them, stop and put it in the hand-in under "Contract requests" or "Needs another todo". Two open todos never list the same path; ORCH checks this before launching.
+2. **Re-read before you write.** Read a file immediately before editing it, never from a copy taken earlier in the run. Make targeted edits, not whole-file rewrites, unless you created the file in this todo.
+3. **Never undo or reformat others' work.** No reverting, no mass `gofmt -w ./...`, no `go fix ./...`, no find-and-replace across the tree. Format and fix only your own paths.
+4. **Shared files have one writer.** `TODOS.md`, `plan.md`, `README.md`, `docs/`, `AGENTS.md`, `go.mod`, `go.sum`, and the ORCH contract packages are written only by ORCH (or one agent ORCH names for that edit), never by two agents at once.
+5. **No git state changes.** No stash, checkout, reset, rebase, clean, or branch switch: they change files other agents are editing. Only ORCH commits, one todo at a time, with explicit paths.
+6. **Expect a moving tree.** Other todos land while you work. If a package outside your paths stops compiling, do not fix it; note it in the hand-in and keep going against `internal/fakes`.
+7. **Your own ports, data dirs, and temp dirs.** Use your lane's port and `artifacts/runtime/<LANE>/`, `artifacts/tmp/<LANE>/`, and never touch another lane's.
+8. **When in doubt, stop and report.** An unexpected diff in your paths, a file that changed under you, or an overlap with another todo goes in the hand-in; ORCH resolves it.
