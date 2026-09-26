@@ -83,7 +83,7 @@ The project site walks through the three-minute demo beat by beat, shows how the
 
 <p align="center">
   <a href="https://monstercameron.github.io/DungeonFlux/"><strong>&rarr; Open the DungeonFlux site</strong></a><br>
-  <a href="https://monstercameron.github.io/DungeonFlux/devlog.html">Read the devlog</a> &middot; <a href="plan.md">Read the full plan</a>
+  <a href="https://monstercameron.github.io/DungeonFlux/gallery.html">Gallery</a> &middot; <a href="https://monstercameron.github.io/DungeonFlux/devlog.html">Read the devlog</a> &middot; <a href="plan.md">Read the full plan</a>
 </p>
 
 ---

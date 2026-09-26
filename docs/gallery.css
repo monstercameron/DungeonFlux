@@ -1,0 +1,130 @@
+/* DungeonFlux concept-art gallery. Builds on styles.css tokens. */
+
+.gallery { padding-top: clamp(120px, 14vw, 170px); }
+.gallery .wrap { max-width: calc(1440px + 2 * var(--gutter)); }
+.gallery .section-head { max-width: 820px; }
+
+.gallery-note {
+  max-width: 820px;
+  margin: 0 0 32px;
+  padding: 16px 20px;
+  border-left: 2px solid var(--gold);
+  background: var(--panel);
+  color: var(--muted);
+}
+.gallery-note p { margin: 0; font-size: 0.98rem; }
+.gallery-note strong { color: var(--gold-hi); font-weight: 600; }
+
+.gallery-filters { margin-bottom: 12px; }
+.gallery-status { margin: 0 0 24px; font-size: 0.9rem; color: var(--muted); font-style: italic; }
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(16px, 2vw, 24px);
+}
+@media (min-width: 600px) { .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 960px) { .gallery-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1360px) { .gallery-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+.gallery-item { padding: 8px; display: flex; flex-direction: column; }
+.gallery-item[hidden] { display: none; }
+.gallery-link { display: block; cursor: zoom-in; overflow: hidden; background: var(--deep); }
+.gallery-link img {
+  width: 100%; height: auto; aspect-ratio: 1672 / 941; object-fit: cover;
+  transition: transform .35s ease, filter .25s ease;
+}
+.gallery-link:hover img, .gallery-link:focus-visible img { transform: scale(1.03); filter: brightness(1.08); }
+.gallery-link:focus-visible { outline-offset: 2px; }
+
+.gallery-item figcaption {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 10px 4px 4px;
+  font-style: normal;
+}
+.gallery-kind {
+  font: 600 .68rem/1 var(--display); letter-spacing: .12em; text-transform: uppercase;
+  color: var(--gold);
+}
+.gallery-item[data-kind="scene"] .gallery-kind { color: var(--flux); }
+.gallery-item[data-kind="combat"] .gallery-kind { color: var(--ember); }
+.gallery-item[data-kind="battlemap"] .gallery-kind { color: #9fd9a4; }
+.gallery-item[data-kind="establishing"] .gallery-kind { color: #d6a8ff; }
+.gallery-subject { color: var(--text); font-size: 0.95rem; line-height: 1.4; }
+.gallery-subject::first-letter { text-transform: uppercase; }
+
+.gallery-noscript { color: var(--muted); }
+
+/* ---------- Lightbox ---------- */
+
+.gallery-box {
+  width: min(96vw, 1600px);
+  max-width: none;
+  max-height: 96vh;
+  padding: 0;
+  border: 1px solid var(--gold);
+  background: var(--deep);
+  color: var(--text);
+  overflow: hidden;
+}
+.gallery-box[open] { display: flex; flex-direction: column; }
+.gallery-box::backdrop { background: rgba(3, 7, 15, 0.9); }
+
+.gallery-box-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 8px 8px 8px 16px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.gallery-box-count {
+  margin: 0; font: 600 .78rem/1 var(--display); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--gold); font-variant-numeric: tabular-nums;
+}
+
+.gallery-box-stage {
+  position: relative; min-height: 0; flex: 1 1 auto; background: #050b16;
+  display: flex; align-items: center; justify-content: center;
+}
+.gallery-box-img {
+  display: block; width: 100%; height: auto;
+  max-height: calc(96vh - 140px);
+  object-fit: contain;
+  margin: 0 auto;
+  touch-action: pan-y;
+}
+
+.gallery-close, .gallery-nav {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; padding: 0;
+  font-size: 1.7rem; line-height: 1;
+  color: var(--gold-hi); background: rgba(9, 18, 34, 0.85);
+  border: 1px solid var(--rule); border-radius: 2px; cursor: pointer;
+}
+.gallery-close:hover, .gallery-nav:hover { border-color: var(--gold); background: rgba(224, 176, 97, 0.14); }
+.gallery-nav {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 48px; height: 64px; font-size: 2.4rem;
+}
+.gallery-nav[hidden] { display: none; }
+.gallery-prev { left: 10px; }
+.gallery-next { right: 10px; }
+
+.gallery-box-foot {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 20px;
+  padding: 12px 16px 14px;
+  border-top: 1px solid var(--rule-soft);
+}
+.gallery-box-caption { margin: 0; font-size: 0.98rem; color: var(--text); min-width: 0; overflow-wrap: anywhere; }
+.gallery-box-original { font-size: 0.9rem; white-space: nowrap; }
+
+@media (max-width: 599px) {
+  .gallery-box { width: 100vw; max-height: 100vh; margin: auto 0; border-left: 0; border-right: 0; }
+  .gallery-box-img { max-height: calc(100vh - 170px); }
+  .gallery-nav { width: 40px; height: 52px; font-size: 2rem; }
+  .gallery-prev { left: 4px; }
+  .gallery-next { right: 4px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-link img { transition: none; }
+  .gallery-link:hover img, .gallery-link:focus-visible img { transform: none; }
+}
