@@ -601,6 +601,12 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   done when: a domain Join event (seat, name, locale) marks the seat joined with its name in lobby and later phases; View carries seats (joined, name, locale) plus room code, join URL, and QR asset reference supplied at construction; Step tests; dfctl view --dm shows joined seats.
   status: claimed luna
 
+- [ ] INT-001 · lobby seats and join data reach the TV end to end
+  why: Live test: two phones joined (engine View version advanced) but dfctl view --dm shows {"dm":{}} and the TV still shows Waiting to join, room code "/p", and a broken QR, because proto DMView has no seats or lobby fields and the projection never fills them.
+  lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/common.proto`, `gen/**`, `internal/api/project*.go`, `web/dm/lobby*.go` · depends: ENG-017, API-019, BASE-021
+  done when: DMView (and HostView via its dm) carries seats (seat id, player number, name, joined, locale, ready) and lobby (room code, join URL, QR URL); API-008 projection fills them from domain View; the DM lobby renders them; live check: two phones join and the TV shows both names, the real room code, a scannable QR (200), and the join URL.
+  status: claimed luna
+
 ## 8. Engine phases (one package each)
 
 Each phase is a separate subpackage with its own table, registered into the top table.
