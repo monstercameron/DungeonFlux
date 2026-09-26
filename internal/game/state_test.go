@@ -67,6 +67,7 @@ func TestStateStep_RejectionAndReset(t *testing.T) {
 	}
 
 	newSeed := []byte{8, 9}
+	s = NewWithDebug(domain.OneShot{}, []byte{1, 2}, true, "")
 	out = s.Step(domain.Envelope{Event: domain.DebugReset{Seed: newSeed}})
 	newSeed[0] = 0
 	if len(out.Effects) != 1 || out.Effects[0].Kind() != vocab.EffectNewRun {
@@ -74,6 +75,60 @@ func TestStateStep_RejectionAndReset(t *testing.T) {
 	}
 	if s.View().Path != vocab.StateLobby || !bytes.Equal(s.Inspect().Seed, []byte{8, 9}) {
 		t.Fatalf("reset did not replace state: %#v", s.Inspect())
+	}
+}
+
+func TestNewWithDebug_StartAndReset(t *testing.T) {
+	s := NewWithDebug(domain.OneShot{}, []byte{1}, true, string(vocab.StateCombat))
+	if got := s.View().Path; got != vocab.StateCombat {
+		t.Fatalf("debug start path = %q, want %q", got, vocab.StateCombat)
+	}
+	out := s.Step(domain.Envelope{Event: domain.DebugReset{Seed: []byte{2}}})
+	if out.Ack != nil || s.View().Path != vocab.StateCombat || !bytes.Equal(s.Inspect().Seed, []byte{2}) {
+		t.Fatalf("debug reset = ack %v, path %q, seed %v", out.Ack, s.View().Path, s.Inspect().Seed)
+	}
+}
+
+func TestDebugReset_RequiresDebug(t *testing.T) {
+	s := New(domain.OneShot{}, []byte{1})
+	out := s.Step(domain.Envelope{Event: domain.DebugReset{Seed: []byte{2}}})
+	if out.Ack == nil || out.Ack.Accepted || out.Ack.Reason != "unaccepted_event" {
+		t.Fatalf("debug reset ack = %#v", out.Ack)
+	}
+}
+
+func TestHostForceD20_ValidatesAndStoresNextRoll(t *testing.T) {
+	tests := []struct {
+		name  string
+		value int
+		ok    bool
+	}{
+		{name: "low", value: 0},
+		{name: "high", value: 21},
+		{name: "valid", value: 17, ok: true},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			s := New(domain.OneShot{}, nil)
+			out := s.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostForceD20, N: test.value}})
+			if out.Ack == nil || out.Ack.Accepted != test.ok {
+				t.Fatalf("ack = %#v, want accepted %v", out.Ack, test.ok)
+			}
+			if test.ok && s.View().NextD20 != test.value {
+				t.Fatalf("next d20 = %d, want %d", s.View().NextD20, test.value)
+			}
+		})
+	}
+}
+
+func TestConsumeForcedD20_IsOneShot(t *testing.T) {
+	s := New(domain.OneShot{}, nil)
+	s.nextD20 = 19
+	if got, ok := s.consumeForcedD20(); !ok || got != 19 {
+		t.Fatalf("first consume = %d, %v", got, ok)
+	}
+	if got, ok := s.consumeForcedD20(); ok || got != 0 {
+		t.Fatalf("second consume = %d, %v", got, ok)
 	}
 }
 

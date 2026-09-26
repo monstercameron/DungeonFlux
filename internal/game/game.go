@@ -16,6 +16,12 @@ func New(oneShot domain.OneShot, seed []byte) *State {
 	return newState(oneShot, seed)
 }
 
+// NewWithDebug creates a state with the debug event surface enabled. When
+// debugStart is "combat", the state starts directly in Combat.
+func NewWithDebug(oneShot domain.OneShot, seed []byte, debug bool, debugStart string) *State {
+	return newDebugState(oneShot, seed, debug, debugStart)
+}
+
 // Step applies one envelope and returns data effects. It performs no I/O and
 // does not use the wall clock; the envelope supplies the logical time.
 func (s *State) Step(env domain.Envelope) domain.StepOut {
@@ -64,6 +70,9 @@ func (s *State) accepts(event domain.Event) bool {
 	if _, ok := event.(domain.HostCmd); ok {
 		return true
 	}
+	if !s.debug {
+		return false
+	}
 	switch event.Kind() {
 	case vocab.EventDebugReset:
 		return true
@@ -78,9 +87,10 @@ func (s *State) apply(env domain.Envelope) domain.StepOut {
 		return s.applyHost(event)
 	case domain.DebugReset:
 		s.seed = append(s.seed[:0], event.Seed...)
-		s.path = vocab.StateLobby
+		s.path = s.debugStart
 		s.paused = false
 		s.spotlight = 0
+		s.nextD20 = 0
 		return domain.StepOut{Effects: []domain.Effect{domain.NewRun{Seed: append([]byte(nil), s.seed...)}}}
 	default:
 		return domain.StepOut{Ack: acceptedAck(env)}
@@ -108,9 +118,12 @@ func (s *State) applyHost(cmd domain.HostCmd) domain.StepOut {
 		s.paused = false
 		return domain.StepOut{Effects: []domain.Effect{domain.ResumeAll{}}, Ack: &domain.Ack{Accepted: true}}
 	case vocab.HostReset:
-		s.path = vocab.StateLobby
+		s.path = s.debugStart
 		s.paused = false
+		s.nextD20 = 0
 		return domain.StepOut{Effects: []domain.Effect{domain.NewRun{Seed: append([]byte(nil), s.seed...)}}, Ack: &domain.Ack{Accepted: true}}
+	case vocab.HostForceD20:
+		return s.applyForceD20(cmd.N)
 	default:
 		return s.rejected("unsupported_host_command")
 	}
