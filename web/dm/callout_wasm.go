@@ -12,7 +12,6 @@ import (
 func CalloutComponent(view CalloutView) router.Component {
 	return func(_ router.Attrs) *router.Element {
 		return html.Div(html.Props{Class: "df-dm-callout", Hidden: !view.Visible, Role: "status", Aria: map[string]string{"live": "polite"}, Style: calloutStageStyle()},
-			canvasRepairStyle(),
 			html.Div(html.Props{Style: calloutBackdropStyle()}),
 			html.Div(html.Props{Style: calloutPanelStyle()},
 				html.Div(html.Props{Style: map[string]string{"color": "#e7c27a", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "25px", "letter-spacing": ".2em", "text-transform": "uppercase"}}, ui.Text("DM steering")),
@@ -22,10 +21,6 @@ func CalloutComponent(view CalloutView) router.Component {
 			),
 		)
 	}
-}
-
-func canvasRepairStyle() ui.Node {
-	return html.Tag("style", html.Props{ID: "df-dm-canvas-repair"}, html.Text(".df-dm-canvas{left:max(0px,calc((100vw - 1920px)/2))!important;top:max(0px,calc((100vh - 1080px)/2))!important;transform:none!important}"))
 }
 
 func calloutStageStyle() map[string]string {

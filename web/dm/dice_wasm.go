@@ -20,7 +20,6 @@ func DiceComponent(view DiceView) router.Component {
 		}
 		presentation := PresentDice(view)
 		return html.Section(html.Props{Class: "df-dm-dice df-dm-check-screen " + presentation.StateClass, Role: "status", Aria: map[string]string{"label": T(locale, "dm.dice_aria", nil)}, Style: diceScreenStyle()},
-			canvasRepairStyle(),
 			diceHeader(locale, view), diceHero(view, presentation), diceResultPanel(locale, view, presentation), diceAnimationStyle(),
 		)
 	}

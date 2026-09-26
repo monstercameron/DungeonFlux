@@ -18,7 +18,6 @@ func CliffhangerComponent(model CliffhangerModel) router.Component {
 			clip.StillURL = artURL
 		}
 		return html.Section(html.Props{Class: "df-dm-cliffhanger", Role: "status", Aria: map[string]string{"live": "polite", "label": T(locale, "dm.clip_label", nil)}, Style: map[string]string{"position": "relative", "width": "100%", "height": "100%", "overflow": "hidden", "background": "#0f1117"}},
-			canvasRepairStyle(),
 			clipNode(clip),
 			html.Div(html.Props{Style: map[string]string{"position": "absolute", "inset": "0", "pointer-events": "none", "background": "linear-gradient(180deg,rgba(8,10,15,.12) 25%,rgba(8,10,15,.9) 100%),radial-gradient(circle at 50% 42%,transparent 25%,rgba(8,10,15,.55) 100%)"}}),
 			html.Div(html.Props{Style: map[string]string{"position": "absolute", "left": "260px", "right": "260px", "bottom": "72px", "padding": "22px 30px 10px", "pointer-events": "none"}}, SpeakerCaption(CaptionModel{Speaker: T(locale, "dm.speaker_dm", nil), Text: model.Caption})),
@@ -37,7 +36,6 @@ func EndCardComponent(model EndCardModel) router.Component {
 	return func(_ router.Attrs) *router.Element {
 		locale := localeOrDefault(model.Locale)
 		return html.Main(html.Props{Class: "df-dm-end-card", Role: "main", Style: endCardStyle()},
-			canvasRepairStyle(),
 			html.Div(html.Props{Style: map[string]string{"position": "absolute", "left": "210px", "right": "210px", "top": "145px", "bottom": "120px", "display": "grid", "place-items": "center"}},
 				OrnatePanel("THE TALE CONTINUES",
 					html.Div(html.Props{Style: map[string]string{"width": "860px", "max-width": "100%", "padding": "54px 76px 48px", "box-sizing": "border-box", "text-align": "center"}},

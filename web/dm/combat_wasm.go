@@ -25,7 +25,6 @@ func CombatComponent(view *dungeonfluxv1.DMView) router.Component {
 		}
 		children = append(children, combatTokens(model.Tokens)...)
 		return html.Section(html.Props{Class: "df-dm-combat", Role: "img", Aria: map[string]string{"label": T(locale, "dm.combat_label", nil)}, Style: map[string]string{"position": "relative", "width": "100%", "height": "100%", "overflow": "hidden"}},
-			canvasRepairStyle(),
 			html.Div(html.Props{Class: "df-dm-combat-stage", Style: combatStageStyle(model)}, children...),
 		)
 	}
