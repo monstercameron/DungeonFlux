@@ -10,14 +10,34 @@ $brotliPath = "$wasmPath.br"
 $compressor = Join-Path $PSScriptRoot 'buildweb'
 
 New-Item -ItemType Directory -Force -Path $wasmDir | Out-Null
-Remove-Item -LiteralPath $wasmPath, $gzipPath, $brotliPath -Force -ErrorAction SilentlyContinue
+# Build to side files and publish at the end, so a page loading (or live
+# reloading) during the build still gets the previous complete bundle.
+$nextWasm = "$wasmPath.next"
+$nextGzip = "$gzipPath.next"
+Remove-Item -LiteralPath $nextWasm, $nextGzip, $brotliPath -Force -ErrorAction SilentlyContinue
+
+function Publish-File([string]$source, [string]$target) {
+    for ($attempt = 1; $attempt -le 20; $attempt++) {
+        try {
+            if (Test-Path -LiteralPath $target) {
+                [System.IO.File]::Replace($source, $target, [NullString]::Value, $true)
+            } else {
+                [System.IO.File]::Move($source, $target)
+            }
+            return
+        } catch {
+            if ($attempt -eq 20) { throw }
+            Start-Sleep -Milliseconds (25 * $attempt)
+        }
+    }
+}
 
 $oldGOOS = $env:GOOS
 $oldGOARCH = $env:GOARCH
 try {
     $env:GOOS = 'js'
     $env:GOARCH = 'wasm'
-    & go build -trimpath -ldflags='-s -w' -o $wasmPath (Join-Path $repoRoot 'web\shell')
+    & go build -trimpath -ldflags='-s -w' -o $nextWasm (Join-Path $repoRoot 'web\shell')
     if ($LASTEXITCODE -ne 0) {
         throw "go build failed with exit code $LASTEXITCODE"
     }
@@ -36,8 +56,11 @@ Copy-Item -LiteralPath $wasmExec -Destination (Join-Path $wasmDir 'wasm_exec.js'
 $env:GOCACHE = Join-Path $repoRoot 'artifacts\cache\go'
 $env:GOTMPDIR = Join-Path $repoRoot 'artifacts\tmp\ORCH-W'
 New-Item -ItemType Directory -Force -Path $env:GOCACHE, $env:GOTMPDIR | Out-Null
-& go run $compressor -input $wasmPath -output $gzipPath
+& go run $compressor -input $nextWasm -output $nextGzip
 if ($LASTEXITCODE -ne 0) { throw "gzip compression failed with exit code $LASTEXITCODE" }
+
+Publish-File $nextGzip $gzipPath
+Publish-File $nextWasm $wasmPath
 
 $rawSize = (Get-Item -LiteralPath $wasmPath).Length
 $gzipSize = (Get-Item -LiteralPath $gzipPath).Length
