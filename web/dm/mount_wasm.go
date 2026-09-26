@@ -200,7 +200,13 @@ func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handle
 			lobby.SetLocale(locale)
 			children = appendLayer(children, layer, LobbyComponent(lobby)(router.Attrs{}))
 		case LayerScene:
-			children = appendLayer(children, layer, SceneComponent(view)(router.Attrs{}))
+			content := ui.Node(SceneComponent(view)(router.Attrs{}))
+			if strings.EqualFold(strings.TrimSpace(state.GetPhase()), "conversation") {
+				content = html.Div(html.Props{Style: map[string]string{"position": "relative", "width": "100%", "height": "100%"}}, content, DialogueComponent(DialogueModelFromState(state))(router.Attrs{}))
+			}
+			children = appendLayer(children, layer, content)
+		case LayerHUD:
+			children = appendLayer(children, layer, ExplorationHUDComponent(state)(router.Attrs{}))
 		case LayerCreation:
 			children = appendLayer(children, layer, CreationComponent(CreationModelFromView(view))(router.Attrs{}))
 		case LayerCallout:
@@ -218,8 +224,23 @@ func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handle
 		}
 	}
 	children = append(children, html.Button(html.Props{Type: "button", Class: "df-dm-audio-unlock", OnClick: unlock, Style: map[string]string{"position": "absolute", "right": "1rem", "top": "1rem", "z-index": "100"}}, html.Text(AudioUnlock(locale))))
-	stage := html.Div(html.Props{Class: "df-dm-stage", Style: map[string]string{"position": "relative", "width": "100%", "aspect-ratio": "16 / 9", "overflow": "hidden"}}, children...)
-	return html.Main(html.Props{Class: "df-dm-screen " + currentAspectClass(), Role: "main", Style: map[string]string{"width": "100%", "max-width": "1920px", "margin": "0 auto", "padding": "0", "box-sizing": "border-box"}}, stage)
+	stage := html.Div(html.Props{Class: "df-dm-stage"}, children...)
+	canvas := html.Div(html.Props{Class: "df-dm-canvas"}, stage)
+	cover := html.Div(html.Props{Class: "df-dm-cover", Aria: map[string]string{"hidden": "true"}, Style: coverBackgroundStyle(state)})
+	return html.Main(html.Props{Class: "df-dm-screen " + currentAspectClass(), Role: "main"}, cover, canvas)
+}
+
+func coverBackgroundStyle(state *dungeonfluxv1.ScreenState) map[string]string {
+	background := ArtURL("ui/title_bg")
+	if state != nil && state.GetPhase() != "lobby" {
+		background = sceneBackgroundURL(state.GetDm())
+	}
+	if background == "" {
+		background = "linear-gradient(135deg,#13283c,#0f1117 70%)"
+	} else {
+		background = "linear-gradient(180deg,rgba(7,11,18,.28),rgba(7,10,15,.68)),url('" + background + "')"
+	}
+	return map[string]string{"background-image": background, "background-size": "cover", "background-position": "center"}
 }
 
 func appendLayer(children []ui.Node, layer Layer, content ui.Node) []ui.Node {
