@@ -5,6 +5,7 @@ package phone
 import (
 	"context"
 	"errors"
+	"strconv"
 	"syscall/js"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
@@ -84,7 +85,7 @@ func phoneView(props phoneViewProps) ui.Node {
 				props.dice.ApplyScreenState(result.State)
 				props.combat.ApplyScreenState(result.State)
 				props.end.ApplyScreenState(result.State)
-				view.Set(SeatView{Phase: result.State.GetPhase(), Phone: result.State.GetPhone()})
+				view.Set(seatViewFromState(result.State))
 			}
 		}()
 		return cancel
@@ -132,7 +133,7 @@ func frameScreen(model FrameModel, content ui.Node, audio *PhoneAudio, locale st
 	// Every screen is a prop-less closure component, so the reconciler cannot
 	// tell a sheet from a moves screen. Keying by screen kind remounts the frame
 	// when the phase changes the screen; without it the first screen stuck.
-	return html.WithKey(ui.CreateElement(PhoneFrame(model, content, audioControls(audio, locale))), string(model.Screen))
+	return html.WithKey(ui.CreateElement(PhoneFrame(model, content, audioControls(audio, locale))), string(model.Screen)+":"+strconv.FormatUint(artRevision.Load(), 10))
 }
 
 func conversationScreen(props phoneViewProps, locale string) ui.Node {
