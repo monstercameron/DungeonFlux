@@ -107,7 +107,7 @@ The skeleton everything else builds in: module, pinned tools, gate script, CI, a
   why: Build-time jobs need splat-transform under Node 22+, lego v5 for the certificate, and ffmpeg 9, all native on Windows.
   lane: L-OPS · block: 0–1 · paths: none (machine) · depends: none
   done when: Each tool prints its version; the versions are recorded in the hand-in.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: blocked: ffmpeg 9.0.1 present; splat-transform installed under artifacts/tools/splat but fails on win32-arm64 (no webgpu dawn binary) -> OPS-017; lego needs the developer (DO_AUTH_TOKEN)
 
 - [x] REPO-005 · scripts/gate.ps1 lane gate
   why: Every todo is accepted by one command that formats, vets, lints, tests, and measures coverage only on the packages the todo touched.
@@ -1400,6 +1400,12 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   lane: L-OPS · block: 0–1 · paths: `scripts/buildtime/cert.ps1` · depends: REPO-004
   done when: Certificate files in artifacts/runtime/show/tls.; gate green (≥ 70% coverage where applicable)
   status: blocked: needs the developer DO_AUTH_TOKEN for lego DNS-01
+
+- [ ] OPS-017 · native Go SPZ to PLY converter (splat-transform cannot run on win32-arm64)
+  why: npm @playcanvas/splat-transform 3.6.6 fails to load on this X2 because its webgpu dependency ships no win32-arm64 dawn binary; PlayCanvas 2.22.4 also loads .ply, so a stdlib Go converter keeps the Marble splat path alive, with 500k and 100k decimated variants.
+  lane: L-OPS · block: 1–5 · paths: `scripts/buildtime/spz/**` · depends: OPS-006
+  done when: converts an SPZ (gzip, v2/v3 header, packed positions, scales, rotations, alpha, colors, SH degree 0) to binary little-endian PLY in the 3DGS property layout PlayCanvas reads; decimation by opacity-weighted sampling to 500k and 100k; round-trip tests on synthetic SPZ files.
+  status: claimed luna
 
 ## 25. Test server, gates, and checkpoints
 
