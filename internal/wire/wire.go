@@ -100,7 +100,14 @@ func Build(ctx context.Context, cfg config.Config, seed []byte) (*App, error) {
 	}
 	watch := api.NewWatchHub()
 	listen := api.NewListenHub()
-	room := runtime.NewRoom(eng, clock.Real{}, store, logger, watch.Publish)
+	runner, inbox, err := newExecutors(configForWire{config: cfg, logger: logger}, listen)
+	if err != nil {
+		_ = store.Close()
+		_ = logFile.Close()
+		return nil, fmt.Errorf("wire: create executors: %w", err)
+	}
+	room := runtime.NewRoom(eng, clock.Real{}, store, logger, watch.Publish, runtime.WithRunner(runner))
+	inbox.room = room
 	roomCtx, cancel := context.WithCancel(context.Background())
 	roomDone := make(chan error, 1)
 	go func() { roomDone <- room.Run(roomCtx) }()
