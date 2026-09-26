@@ -185,7 +185,7 @@ The skeleton everything else builds in: module, pinned tools, gate script, CI, a
   why: The developer keeps vendor keys in a gitignored .env (DF_* names from plan §0.22), but nothing reads it, so the human server, probe, and build-time jobs still see no keys.
   lane: ORCH (delegated) · block: 8–11 · paths: `scripts/env.ps1`, `scripts/devserver/env*.go`, `.env.example` · depends: REPO-016
   done when: scripts/env.ps1 dot-sources .env into the current PowerShell process (KEY=VALUE, # comments, no echo of values); the supervisor reads .env and passes DF_* keys only in the child's environment; .env.example lists every DF_* variable with empty values and one-line purposes; no value is ever logged or printed; tests use a temp .env with fake values.
-  status: claimed luna
+  status: committed be314be
 
 ## 2. Contracts
 
@@ -331,19 +331,19 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   why: DM and host tokens are generated per start and never shown, so a human tester cannot open /dm?token=… or /host?t=…, and phones need the LAN URL and room code.
   lane: ORCH · block: 8–11 · paths: `internal/wire/urls*.go`, `internal/wire/wire.go` · depends: BASE-012
   done when: on start the server logs at Info (and prints to stdout) the DM URL with token, the host URL with token, and the phone join URL with room code, for localhost and every non-loopback IPv4 address; the same list is written to <data-dir>/urls.txt (gitignored under artifacts); tokens never appear in the JSONL log file (console only); test covers URL building.
-  status: claimed luna
+  status: committed 630387c
 
 - [ ] BASE-020 · no-cache for the app shell; tester URLs skip link-local
   why: Static app files have no Cache-Control, so testers can run a stale WASM after a rebuild; the start-up URL list includes unusable 169.254.x.x addresses.
   lane: ORCH · block: 8–11 · paths: `internal/wire/web*.go`, `internal/wire/urls*.go` · depends: BASE-009, BASE-019
   done when: index.html, wasm_exec.js, and the WASM bundle are served with Cache-Control: no-cache and an ETag (304 on match); splat vendor files may cache; link-local addresses are dropped from the URL list; tests.
-  status: claimed luna
+  status: committed 8b3581d
 
 - [ ] BASE-021 · lobby QR served and lobby data passed to the engine
   why: The DM lobby shows a broken QR (/assets/join-room.png is 404 because the asset route only accepts content hashes) and the room code renders as "/p".
   lane: ORCH · block: 8–11 · paths: `internal/wire/qr*.go`, `internal/wire/wire.go`, `internal/wire/lobby*.go` · depends: BASE-012, ENG-017
   done when: the QR PNG is stored in the asset store under its sha256 name (or served by a dedicated /join-qr.png route) and the View's QR reference resolves with 200; wire passes room code and the preferred LAN join URL to the engine constructor per ENG-017; wire test fetches the QR.
-  status: claimed luna
+  status: committed d5e5624
 
 - [x] BASE-007 · internal/wire skeleton and cmd/server skeleton
   why: The server binary must start from hour 1 with fakes, flags (-config, -port, -data-dir, -seed), and graceful shutdown.
@@ -599,25 +599,25 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: After a phone joined, dfctl view --dm shows no seats and the DM lobby still says Waiting to join; the View also lacks the room code and join URL the TV lobby needs.
   lane: L-ENG · block: 8–11 · paths: `internal/game/state*.go`, `internal/game/view*.go`, `internal/game/game.go`, `internal/game/lobby*.go` · depends: ENG-015
   done when: a domain Join event (seat, name, locale) marks the seat joined with its name in lobby and later phases; View carries seats (joined, name, locale) plus room code, join URL, and QR asset reference supplied at construction; Step tests; dfctl view --dm shows joined seats.
-  status: claimed luna
+  status: committed f225f06
 
 - [ ] ENG-018 · characters carry the player's joined name
   why: Live run: after joining as Aria the TV and phone show "Hero 1 · rogue" because the character name ignores the name from Join.
   lane: L-ENG · block: 8–11 · paths: `internal/game/phase/creation/name*.go`, `internal/game/state*.go` · depends: ENG-017
   done when: the joined name becomes the character's display name (fallback Hero N when empty); Step test; live check.
-  status: claimed luna
+  status: committed efcb83c
 
 - [ ] INT-001 · lobby seats and join data reach the TV end to end
   why: Live test: two phones joined (engine View version advanced) but dfctl view --dm shows {"dm":{}} and the TV still shows Waiting to join, room code "/p", and a broken QR, because proto DMView has no seats or lobby fields and the projection never fills them.
   lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/common.proto`, `gen/**`, `internal/api/project*.go`, `web/dm/lobby*.go` · depends: ENG-017, API-019, BASE-021
   done when: DMView (and HostView via its dm) carries seats (seat id, player number, name, joined, locale, ready) and lobby (room code, join URL, QR URL); API-008 projection fills them from domain View; the DM lobby renders them; live check: two phones join and the TV shows both names, the real room code, a scannable QR (200), and the join URL.
-  status: claimed luna
+  status: committed b62a837
 
 - [ ] INT-002 · phone projection: character build, labelled legal moves, and status per phase
   why: Live test: after the phone's roll_hero is accepted (engine legal moves move on to ready), the phone stays on "The engine is rolling your hero" because PhoneView never carries the rolled build, the moves arrive without labels or reasons, and phase status text is missing.
   lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/common.proto`, `gen/**`, `internal/api/project*.go` · depends: INT-001, ENG-016
   done when: PhoneView carries the seat's character (species, gender, class, build stats, flavor, portrait URL, locked), legal moves with display labels and disabled reasons from content, and phase status; projection tests; live check in the browser: roll shows the build card, Ready locks, and both phones advance to the opening.
-  status: open (launch after INT-001: same projection files)
+  status: claimed luna
 
 - [ ] INT-003 · simulated game runs itself in fake mode on a live server
   why: Live play-through stalls in opening: with fake adapters and no canned audio assets, PlayCanned never posts line_done, nothing logs effect execution, and the opening never advances; later phases will hit the same class of gap.
@@ -995,7 +995,7 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: ORCH review found DebugService.Events and Logs return immediately with no records, so dfctl events and dfctl logs are empty even though the event log and the slog ring buffer exist.
   lane: L-API · block: 8–11 · paths: `internal/api/debug/events*.go`, `internal/api/debug/logs*.go`, `internal/api/debug/reads.go` · depends: API-011, STORE-003, API-013, E2E-004
   done when: Events streams EventLog records since SEQ and follows new ones while the stream is open; Logs streams the ring buffer filtered by level and follows; bufconn tests; dfctl events --since 0 shows the run.
-  status: claimed luna
+  status: committed a2bf4d1
 
 - [ ] API-017 · newest DM Listen replaces the older stream through AudioService
   why: API-014 added replacement in the Listen hub, but through the real server a second DM Listen leaves the first stream open (E2E path 21 measured by ORCH).
@@ -1007,19 +1007,25 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: config/fake.json allows only http://localhost:18101, so the laptop on :8443 and phones on http://192.168.1.27:8443 are refused by the tunnel's origin check; human testing needs any same-origin page to connect.
   lane: L-API · block: 8–11 · paths: `internal/api/server*.go`, `internal/api/origin*.go`, `config/fake.json` · depends: API-001
   done when: a request whose Origin host:port equals the request Host is always allowed; configured extra origins still work; cross-origin requests from other hosts are still refused; tests cover localhost, LAN IP, and a foreign origin.
-  status: claimed luna
+  status: committed 2ec98f5
 
 - [ ] API-019 · session Join posts the Join event to the room
   why: SessionServer.Join allocates a seat but never tells the engine, so the game and the DM screen never learn that a player arrived.
   lane: L-API · block: 8–11 · paths: `internal/api/session*.go` · depends: API-002, ENG-017
   done when: a phone Join (new or reattach with a new name) posts domain.Join{Seat, Name, Locale} to the room inbox; DM and host joins do not; tests assert the posted event.
-  status: claimed luna
+  status: committed 1f19041
 
 - [ ] API-020 · debug View returns the requested seat's phone view
   why: dfctl view --seat 1 returns the DM projection ({"dm":{}}), so seat views cannot be inspected while testing.
   lane: L-API · block: 8–11 · paths: `internal/api/debug/reads*.go`, `internal/api/debug/view*.go` · depends: API-011
   done when: view --seat N returns that seat's PhoneView projection and --dm the DMView; tests for both.
-  status: claimed luna
+  status: committed 57ba26c
+
+- [ ] INT-004 · assets over gRPC: AssetService, server, and art loading
+  why: Developer decision: gRPC is the only transport after boot, so images (UI art, scene stills, portraits, QR) must reach clients through a gRPC AssetService instead of HTTP /assets routes.
+  lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/assets.proto`, `gen/**`, `internal/api/assets*.go`, `internal/wire/assets*.go`, `internal/wire/wire.go` · depends: INT-002, BASE-008, OPS-020
+  done when: AssetService has Get (server stream of chunks by logical name or sha256, with content type and size) and Manifest (logical names to sha, type, size for preloading); the server reads the asset store; wire loads every manifest entry (including ui/*) into the store at start and registers the service on the tunnel; HTTP /assets stays only as a debug fallback; bufconn tests; a Go client fetches ui/title_bg from a live server.
+  status: open (launch after INT-002: gen/)
 
 ## 14. LLM layer
 
@@ -1297,31 +1303,37 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   why: In the browser the Go program exits right after router Mount ("Go program has already exited" on the first callback) because web/shell main does not block, so no screen ever renders.
   lane: L-WEB-SHELL · block: 8–11 · paths: `web/shell/boot_wasm.go` · depends: WEB-008
   done when: main blocks forever after Mount (select {}); newBootClient failure renders a visible error screen instead of a nil client; after scripts/buildweb.ps1, /dm, /p, and /host render with no console errors on a lane server.
-  status: claimed luna
+  status: committed b44fe09
 
 - [ ] WEB-011 · browser client connects; loading text replaced; errors visible
   why: In Edge the shell renders "Player client unavailable" on /dm although the /grpc WebSocket opens, the loading paragraph is never removed, and the failure reason is hidden.
   lane: L-WEB-SHELL · block: 8–11 · paths: `web/shell/client*.go`, `web/shell/boot*.go`, `web/shell/compose*.go`, `web/shell/static/index.html` · depends: WEB-010
   done when: NewClient succeeds in the browser (never blocking the JS event loop); a failure shows the error text on screen and in the console; the loading paragraph is removed on mount; /dm?token=…, /p?room=…, and /host?t=… each render their first screen on a lane server, verified with Edge headless (--dump-dom and --screenshot).
-  status: claimed luna
+  status: committed 6ca5d93
 
 - [ ] WEB-012 · preview mode: ?preview=<state> renders any screen from fixtures without a server
   why: Humans and parallel workers need to see and review every DM and phone state (lobby, creation, conversation, check, combat, cliffhanger, end) without playing to that point.
   lane: L-WEB-SHELL · block: 8–11 · paths: `web/shell/preview*.go` · depends: WEB-010
   done when: /dm?preview=<name> and /p?preview=<name> render the screen from a named fixture supplied by web/dm and web/phone preview registries (DM-009, PHONE-010); /preview lists every fixture as links; no gRPC connection is made in preview mode.
-  status: claimed luna
+  status: committed 001abe3
 
 - [ ] WEB-013 · Phone join screen: room code entry, QR deep link, name, errors
   why: Joining must work first try from a QR scan or typed code, with clear errors for wrong codes and a full room.
   lane: L-WEB-SHELL · block: 8–11 · paths: `web/shell/join*.go` · depends: WEB-012, WEB-011, WEB-012
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
-  status: claimed luna
+  status: committed d2b5c7c
 
 - [ ] WEB-014 · phone reconnects to its saved seat after reload
   why: Live test: reloading /p drops the phone back to the join form although it says the seat is saved on this device.
   lane: L-WEB-SHELL · block: 8–11 · paths: `web/shell/join*.go`, `web/shell/seat_store*.go` · depends: WEB-013, API-015
   done when: the seat token is saved in localStorage per room; on load the phone reattaches (Join with the token) and resumes the current screen without the form; a stale token falls back to the form with a message; verified by reloading in Edge.
-  status: open (launch after WEB-013 lands)
+  status: committed bd29f69
+
+- [ ] WEB-015 · browser asset loader over gRPC with Blob URL cache
+  why: Screens need image URLs; with assets on gRPC the shell must fetch bytes, build Blob URLs, cache them, and preload the manifest at boot.
+  lane: L-WEB-SHELL · block: 8–11 · paths: `web/shell/assets*.go` · depends: INT-004
+  done when: an exported loader (usable by web/dm and web/phone via a small interface) returns a Blob URL for a logical name or sha, dedupes in-flight fetches, preloads ui/* at boot with progress, never blocks the JS loop; tested natively for cache logic; live check shows the title art.
+  status: open (launch after INT-004)
 
 ## 19. Phone
 
@@ -1385,61 +1397,61 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   why: The player UI must be reviewable in every state without a live run (WEB-012).
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/preview*.go` · depends: PHONE-009
   done when: an exported registry of named SeatView fixtures covers join, species/gender pick, rolled build card, sheet, legal moves with greyed reasons, push-to-talk idle/recording/sending, typed input, dice offered/rolled, combat my-turn/waiting, down, end; each renders through the real phone screen; native tests validate fixtures.
-  status: claimed luna
+  status: committed 42fbe60
 
 - [ ] PHONE-011 · Phone creation: species and gender pickers, roll, build card
   why: Character creation is the first phone interaction and must be fast and delightful on a 390 px screen.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/create*.go` · depends: PHONE-010, WEB-011, WEB-012
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
-  status: claimed luna
+  status: committed aa8bcfa
 
 - [ ] PHONE-012 · Phone sheet: portrait, stats, HP, conditions
   why: The phone is the player sheet; it must be glanceable and readable.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/sheet*.go` · depends: PHONE-011, WEB-011, WEB-012
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
-  status: claimed luna
+  status: committed 83e4dd8
 
 - [ ] PHONE-013 · Phone legal moves: big buttons, greyed with reasons
   why: Players never ask what they can do; moves must be large, clear, and explain why some are unavailable.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/moves*.go` · depends: PHONE-012, WEB-011, WEB-012
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
-  status: claimed luna
+  status: committed 1f4c850
 
 - [ ] PHONE-014 · Phone talk: hold-to-talk button states and typed fallback
   why: Talking to NPCs is the core loop; the PTT button needs clear idle/recording/sending/error states and a typed fallback that works over plain HTTP.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/ptt*.go`, `web/phone/typed*.go` · depends: PHONE-013, WEB-011, WEB-012
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
-  status: claimed luna
+  status: committed 2755a93
 
 - [ ] PHONE-015 · Phone dice: offered, roll tap, result
   why: The persuasion roll from the phone must feel physical and show the outcome.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/dice*.go` · depends: PHONE-014, WEB-011, WEB-012
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
-  status: claimed luna
+  status: committed aee2b21
 
 - [ ] PHONE-016 · Phone combat: my-turn controls, targets, timer, waiting state
   why: In combat the phone must make the player's turn obvious and the actions one tap away.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/combat*.go` · depends: PHONE-015, WEB-011, WEB-012
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
-  status: claimed luna
+  status: committed 585913c
 
 - [ ] PHONE-017 · Phone frame: layout, theme tokens, screen transitions, connection status
   why: One consistent phone frame (header with name and connection state, bottom action area, tokens, transitions) ties the screens together.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/screen*.go`, `web/phone/theme*.go`, `web/phone/text*.go` · depends: PHONE-016, WEB-011, WEB-012
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
-  status: claimed luna
+  status: committed d9df47e
 
 - [ ] PHONE-018 · phone lobby waiting screen
   why: Live test: after joining, in the lobby the phone shows an empty sheet or a bare "Your moves" heading instead of a welcoming waiting screen.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/waiting*.go`, `web/phone/screen*.go` · depends: PHONE-017
   done when: in lobby phase the phone shows the player's name, seat number, who else has joined, and "Waiting for the host to start"; preview fixture plus live check.
-  status: claimed luna
+  status: committed b6d18a7
 
 - [ ] PHONE-019 · phone end screen
   why: Live run: when the TV shows the end card, the phone still shows the player sheet.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/end*.go`, `web/phone/screen*.go` · depends: PHONE-018
   done when: at End the phone shows the outcome, the character's final state, thanks, and the SRD attribution link; preview fixture plus live check.
-  status: open (launch after PHONE-018)
+  status: claimed luna
 
 ## 20. DM screen
 
@@ -1497,55 +1509,61 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   why: The main screen must be reviewable in every state without a live run (WEB-012).
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/preview*.go` · depends: DM-008
   done when: an exported registry of named domain View / ScreenState fixtures covers lobby (QR, seats), creation, opening, exploration, conversation (speaking NPC), check (dice rolling and result), resolution, hook, combat FLAT (grid, tokens, turn timer), cliffhanger, end card; each renders through the real DM screen; native tests validate fixtures.
-  status: claimed luna
+  status: committed 4f0dea7
 
 - [ ] DM-010 · DM lobby: title, room code, QR, join URL, seat cards
   why: The TV lobby is the first thing players see; it must show the room code, a large scannable QR, the join URL, and live seat cards as phones join.
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/lobby*.go` · depends: DM-009, WEB-011, WEB-012
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
-  status: claimed luna
+  status: committed c4f00e2
 
 - [ ] DM-011 · DM scene: still, lower-third narration captions, speaking NPC
   why: Most of the demo is a scene with narration and NPC speech; captions must be large, paced, and show who speaks.
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/scene*.go`, `web/dm/text*.go` · depends: DM-010, WEB-011, WEB-012
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
-  status: claimed luna
+  status: committed 0016153
 
 - [ ] DM-012 · DM check: persuasion callout, dice roll animation, result banner
   why: The dice moment is the demo climax on the TV; roll, DC, modifiers, and success/fail must read instantly.
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/dice*.go`, `web/dm/callout*.go` · depends: DM-011, WEB-011, WEB-012
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
-  status: claimed luna
+  status: committed 8ea5349
 
 - [ ] DM-013 · DM combat FLAT: grid, tokens, HP, initiative, turn timer
   why: When the splat is off, combat must still read clearly on the TV: whose turn, HP, positions, timer.
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/combat*.go` · depends: DM-012, WEB-011, WEB-012
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
-  status: claimed luna
+  status: committed e41f0e5
 
 - [ ] DM-014 · DM cliffhanger and end card with attribution
   why: The demo ends here; it must land with a strong cliffhanger still, caption, and the SRD attribution end card.
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/end*.go` · depends: DM-013, WEB-011, WEB-012
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
-  status: claimed luna
+  status: committed db77c09
 
 - [ ] DM-015 · DM clip playback and music indicator
   why: Clips must play full-frame with a still fallback, and music state should be subtly visible for the operator.
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/clip*.go`, `web/dm/music*.go` · depends: DM-014, WEB-011, WEB-012
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
-  status: claimed luna
+  status: committed 6303816
 
 - [ ] DM-016 · DM screen frame: layout, theme tokens, phase transitions
   why: One consistent frame (safe areas, fonts, color tokens, transitions between layers) makes every DM state look like one game.
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/screen*.go`, `web/dm/theme*.go` · depends: DM-015, WEB-011, WEB-012
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
-  status: claimed luna
+  status: committed 610ecf7
 
 - [ ] DM-017 · DM creation layer: players building characters live
   why: Live test: after host Start the TV shows only the audio button because no DM layer exists for the creation phase.
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/creation*.go`, `web/dm/screen*.go` · depends: DM-016, ENG-017
   done when: in creation the TV shows each seat's name, species/gender picks as they arrive, rolled build card and ready state, plus a prompt to use phones; preview fixture and live path verified with Edge screenshots.
-  status: open (launch after DM-016 lands; screen*.go is DM-016's)
+  status: committed 0e64fc9
+
+- [ ] DM-018 · multi-aspect-ratio DM viewer
+  why: The TV screen must look right on any display the venue has (16:9 TV, 21:9 ultrawide, 16:10 laptop, 4:3 projector, portrait monitor), not just 1920x1080.
+  lane: L-WEB-DM · block: 8–11 · paths: `web/dm/screen*.go`, `web/dm/theme*.go`, `web/dm/aspect*.go` · depends: DM-016, DM-017
+  done when: the stage fills any viewport with safe-area insets and per-aspect layout rules (captions, seat rail, dice, combat HUD reposition; backgrounds use cover with focal points; ultrawide gets side vignettes, 4:3 stacks panels, portrait stacks vertically); an ?aspect= override forces a ratio for testing; preview fixtures screenshotted at 1920x1080, 2560x1080, 1920x1200, 1440x1080, 1080x1920 all look intentional.
+  status: claimed luna
 
 ## 21. Host
 
@@ -1567,13 +1585,13 @@ The operator page: Start, Pause, Skip, Reset, Force d20, and debug panel.
   why: The operator needs Start/Pause/Skip/Reset/Force d20 as big safe buttons, run status, and copyable DM/phone links for testers.
   lane: L-WEB-HOST · block: 8–11 · paths: `web/host/**` · depends: HOST-002, WEB-011, WEB-012
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
-  status: claimed luna
+  status: committed c68bc7f
 
 - [ ] HOST-004 · host tester links use the right tokens; run status updates live
   why: Live test: the host page's DM and phone links reuse the host token (DM needs the DM token, phones need ?room=CODE), and Run status stays at No snapshot yet.
   lane: L-WEB-HOST · block: 8–11 · paths: `web/host/**` · depends: HOST-003, BASE-019
   done when: links come from the server (tester URLs via HostView or a host RPC), phone link carries the room code and LAN host; run status shows phase, seats, and timers from the host Watch; verified live in Edge.
-  status: open (launch after HOST-003 lands)
+  status: committed 2f0d1e4
 
 ## 22. Splat battlefield
 
@@ -1795,7 +1813,13 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   why: Live run: the opening scene on the TV is an empty dark frame because artifacts/runtime/buildtime/manifest.json has no assets, although tavern_interior.png, tavern_doorway.png, bell_tower.png, battlefield_flat.png, mother_vell_source.png, and stranger_source.png exist.
   lane: L-OPS · block: 8–11 · paths: `scripts/buildtime/register*.go`, `scripts/buildtime/manifest*.go` · depends: OPS-001, OPS-002, BASE-008
   done when: a register command (go run ./scripts/buildtime register --scan) adds existing files under artifacts/runtime/buildtime with the logical names wire/BASE-008 expects (read internal/wire/manifest*.go and internal/content for the names), writes the manifest, and a server restart shows the tavern still behind the opening; tests with temp dirs.
-  status: claimed luna
+  status: committed 3b410f1
+
+- [ ] OPS-021 · UI art set generated with Codex imagegen, converted to WebP, and registered
+  why: The presentation needs title, lobby, panels, buttons, move and class icons, species portraits, dice, banners, scene stills, phone background, and status icons in the concept-art style; 14 parallel Codex image jobs produce them at no API cost.
+  lane: L-OPS · block: 8–11 · paths: `scripts/buildtime/ui*.go` · depends: OPS-002, OPS-020
+  done when: every image listed in the art job list exists under artifacts/runtime/buildtime/ui, is converted to WebP (quality 82, max 1920 px; theme-plate icons trimmed), and is registered in the manifest as ui/<name>; a checker lists missing items.
+  status: claimed ORCH (generation running)
 
 - [x] OPS-019 · PowerShell SuperSplat manifest and complete LOD downloader
   why: The developer needs a reproducible local copy of every LOD and texture referenced by the supplied SuperSplat scene.
@@ -1807,7 +1831,7 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   why: The supplied scenes need reproducible voxel collision data when public collision assets are unavailable.
   lane: L-OPS · paths: `scripts/generate-supersplat-colliders.ps1` · depends: OPS-019
   done when: a PowerShell script uses the official pinned SplatTransform tool to generate scene-aligned voxel colliders locally, records generation provenance, supports both scene profiles, and the lane gate passes.
-  status: claimed Codex 2026-09-26
+  status: committed 3b410f1
 ## 25. Test server, gates, and checkpoints
 
 Keeping the build honest: per-commit checks, the 30-minute full gate, checkpoints, and e2e tests.
@@ -1910,7 +1934,7 @@ Everything needed to run the 3-minute demo live.
   why: If the uplink is bad, the show runs from recorded sequences.
   lane: ORCH · block: 17–20 · paths: `artifacts/runtime/show/**` · depends: E2E-001
   done when: Safe Mode run completes offline.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed d0a47b2
 
 - [ ] STAGE-003 · Cut-order flags wired
   why: Features cut in order (live video, splat, etc.) are config flags the host can flip.
