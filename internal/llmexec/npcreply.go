@@ -18,6 +18,7 @@ import (
 type NPCReplyExecutor struct {
 	llm      ports.LLM
 	template prompts.Template
+	Locales  LocaleSource
 }
 
 // NpcReplyExecutor is the initialism-compatible name for NPCReplyExecutor.
@@ -49,7 +50,7 @@ func (e *NPCReplyExecutor) StartLine(ctx context.Context, effect domain.StartLin
 		postFailure(ctx, scope, in, effect.UtteranceID, vocab.ErrBadOutput)
 		return
 	}
-	stream, err := e.llm.StreamText(ctx, request)
+	stream, err := e.llm.StreamText(ctx, WithLocale(request, e.Locales.ForRoom()))
 	if err != nil {
 		postFailure(ctx, scope, in, effect.UtteranceID, npcFailureKind(err))
 		return

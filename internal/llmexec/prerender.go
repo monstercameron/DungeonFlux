@@ -17,7 +17,8 @@ import (
 // PrerenderTextExecutor generates and validates the text variants used by
 // voice/out before they are converted into audio assets.
 type PrerenderTextExecutor struct {
-	llm ports.LLM
+	llm     ports.LLM
+	Locales LocaleSource
 }
 
 // NewPrerenderTextExecutor constructs a pre-render text executor.
@@ -74,7 +75,7 @@ func (e *PrerenderTextExecutor) generate(ctx context.Context, effect domain.Prer
 		Messages:  []ports.Message{{Role: vocab.MsgSystem, Text: template.System}, {Role: vocab.MsgUser, Text: user}},
 		MaxTokens: maxTokens(template.MaxWords, len(fields)),
 	}
-	raw, err := e.llm.JSON(ctx, request, ports.Schema{Name: string(effect.Role), JSON: schema.JSON})
+	raw, err := e.llm.JSON(ctx, WithLocale(request, e.Locales.ForRoom()), ports.Schema{Name: string(effect.Role), JSON: schema.JSON})
 	if err != nil {
 		return nil, fmt.Errorf("generate %s: %w", effect.Role, err)
 	}

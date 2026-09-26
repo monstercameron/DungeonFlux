@@ -27,6 +27,7 @@ type InterpretExecutor struct {
 	llm      ports.LLM
 	phase    vocab.StateID
 	glossary string
+	Locales  LocaleSource
 }
 
 // NewInterpretExecutor constructs an interpret executor.
@@ -83,7 +84,7 @@ func (e *InterpretExecutor) interpret(ctx context.Context, effect domain.Interpr
 		return domain.Interpreted{}, fmt.Errorf("render interpret prompt: %w", err)
 	}
 	user := strings.TrimPrefix(rendered, template.System+"\n\n")
-	answer, err := e.llm.JSON(ctx, ports.TextRequest{
+	answer, err := e.llm.JSON(ctx, WithLocale(ports.TextRequest{
 		Meta: ports.CallMeta{
 			Role:        vocab.RoleInterpret,
 			Phase:       e.phase,
@@ -92,7 +93,7 @@ func (e *InterpretExecutor) interpret(ctx context.Context, effect domain.Interpr
 		},
 		Messages:  []ports.Message{{Role: vocab.MsgSystem, Text: template.System}, {Role: vocab.MsgUser, Text: user}},
 		MaxTokens: 128,
-	}, ports.Schema{Name: string(vocab.RoleInterpret), JSON: schema.JSON})
+	}, e.Locales.ForSeat(effect.Seat)), ports.Schema{Name: string(vocab.RoleInterpret), JSON: schema.JSON})
 	if err != nil {
 		return domain.Interpreted{}, fmt.Errorf("interpret model call: %w", err)
 	}

@@ -16,7 +16,8 @@ import (
 
 // OpeningExecutor streams an opening narration and publishes its deltas.
 type OpeningExecutor struct {
-	llm ports.LLM
+	llm     ports.LLM
+	Locales LocaleSource
 }
 
 // NewOpeningExecutor constructs an opening executor around an LLM chain.
@@ -58,14 +59,14 @@ func (e *OpeningExecutor) Execute(ctx context.Context, effect domain.StartLine, 
 		postLineFailure(ctx, scope, in, effect.UtteranceID, vocab.ErrBadOutput)
 		return
 	}
-	stream, err := e.llm.StreamText(ctx, ports.TextRequest{
+	stream, err := e.llm.StreamText(ctx, WithLocale(ports.TextRequest{
 		Meta: ports.CallMeta{Role: vocab.RoleOpening, Phase: vocab.StateOpening, UtteranceID: effect.UtteranceID},
 		Messages: []ports.Message{
 			{Role: vocab.MsgSystem, Text: template.System},
 			{Role: vocab.MsgUser, Text: rendered[len(template.System)+2:]},
 		},
 		MaxTokens: template.MaxWords * 2,
-	})
+	}, e.Locales.ForRoom()))
 	if err != nil || stream == nil {
 		postLineFailure(ctx, scope, in, effect.UtteranceID, failureKind(err))
 		return
@@ -117,7 +118,8 @@ func openingRequest(input string) (OpeningRequest, error) {
 
 // CharacterFlavorExecutor validates a character flavor response and posts it.
 type CharacterFlavorExecutor struct {
-	llm ports.LLM
+	llm     ports.LLM
+	Locales LocaleSource
 }
 
 // NewCharacterFlavorExecutor constructs a character flavor executor.
@@ -152,14 +154,14 @@ func (e *CharacterFlavorExecutor) Execute(ctx context.Context, effect domain.Cha
 		post(ctx, in, scope, domain.FlavorFailed{Seat: effect.Seat})
 		return
 	}
-	raw, err := e.llm.JSON(ctx, ports.TextRequest{
+	raw, err := e.llm.JSON(ctx, WithLocale(ports.TextRequest{
 		Meta: ports.CallMeta{Role: vocab.RoleCharacterFlavor, Phase: vocab.StateCreation, Seat: effect.Seat},
 		Messages: []ports.Message{
 			{Role: vocab.MsgSystem, Text: template.System},
 			{Role: vocab.MsgUser, Text: rendered[len(template.System)+2:]},
 		},
 		MaxTokens: 160,
-	}, ports.Schema{Name: string(vocab.RoleCharacterFlavor), JSON: schema.JSON})
+	}, e.Locales.ForSeat(effect.Seat)), ports.Schema{Name: string(vocab.RoleCharacterFlavor), JSON: schema.JSON})
 	if err != nil || schema.Validate(raw) != nil {
 		post(ctx, in, scope, domain.FlavorFailed{Seat: effect.Seat})
 		return
