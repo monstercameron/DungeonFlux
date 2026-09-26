@@ -38,6 +38,7 @@ type App struct {
 	store     *sqlite.Store
 	logFile   io.Closer
 	logger    *slog.Logger
+	watch     *api.WatchHub
 	debugStop context.CancelFunc
 }
 
@@ -68,7 +69,14 @@ func Build(ctx context.Context, cfg config.Config, seed []byte) (*App, error) {
 		_ = logFile.Close()
 		return nil, fmt.Errorf("wire: make seed: %w", err)
 	}
-	eng := game.New(content.DefaultOneShot().OneShot, seed)
+	oneShot := content.DefaultOneShot().OneShot
+	eng := game.New(oneShot, seed)
+	roomState, err := runtime.NewRoomState(nil)
+	if err != nil {
+		_ = store.Close()
+		_ = logFile.Close()
+		return nil, fmt.Errorf("wire: create room state: %w", err)
+	}
 	roomID := cfg.Server.RoomCode
 	if roomID == "" {
 		roomID = "default"
@@ -106,7 +114,11 @@ func Build(ctx context.Context, cfg config.Config, seed []byte) (*App, error) {
 		_ = logFile.Close()
 		return nil, fmt.Errorf("wire: create executors: %w", err)
 	}
-	room := runtime.NewRoom(eng, clock.Real{}, store, logger, watch.Publish, runtime.WithRunner(runner))
+	room := runtime.NewRoom(eng, clock.Real{}, store, logger, watch.Publish,
+		runtime.WithRunner(runner), runtime.WithRoomState(roomState),
+		runtime.WithNewGame(func(runSeed []byte) ports.Engine {
+			return game.New(oneShot, runSeed)
+		}))
 	inbox.room = room
 	roomCtx, cancel := context.WithCancel(context.Background())
 	roomDone := make(chan error, 1)
@@ -163,7 +175,7 @@ func Build(ctx context.Context, cfg config.Config, seed []byte) (*App, error) {
 		return nil, fmt.Errorf("wire: mount web: %w", err)
 	}
 	app := &App{handler: mux, room: room, roomDone: roomDone, roomStop: cancel,
-		store: store, logFile: logFile, logger: logger}
+		store: store, logFile: logFile, logger: logger, watch: watch}
 	if cfg.Server.Debug {
 		if err := startDebug(ctx, app, eng, room, cfg.Server.Port+1000); err != nil {
 			_ = app.Close()

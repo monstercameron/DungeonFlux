@@ -81,10 +81,8 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 		pcm.Cancel(effect.UtteranceID)
 		canned.Cancel(effect.UtteranceID)
 	})
-	runtime.Handle(runner, func(ctx context.Context, effect domain.TalkStop, scope domain.Scope, in ports.Inbox) {
-		if in != nil {
-			in.Post(ctx, domain.Envelope{Scope: scope, Event: domain.StreamClosed{Seat: effect.Seat, Stream: vocab.StreamTalk}})
-		}
+	runtime.Handle(runner, func(_ context.Context, effect domain.TalkStop, _ domain.Scope, _ ports.Inbox) {
+		cfg.logger.Debug("talk stop requested", "seat", effect.Seat, "reason", effect.Reason)
 	})
 	return runner, inbox, nil
 }

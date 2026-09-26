@@ -9,7 +9,10 @@ import (
 	"strings"
 	"testing"
 
+	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"github.com/monstercameron/DungeonFlux/internal/config"
+	"github.com/monstercameron/DungeonFlux/internal/domain"
+	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
 
 func TestBuild_HealthAndClose(t *testing.T) {
@@ -26,6 +29,34 @@ func TestBuild_HealthAndClose(t *testing.T) {
 	}
 	if err := app.Close(); err != nil {
 		t.Fatalf("Close() error = %v", err)
+	}
+}
+
+func TestBuild_ResetPublishesLobbyFromFreshRun(t *testing.T) {
+	app, err := Build(context.Background(), testConfig(t), []byte("rehearsal"))
+	if err != nil {
+		t.Fatalf("Build() error = %v", err)
+	}
+	defer func() { _ = app.Close() }()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	sub := app.watch.Subscribe(ctx, df.ClientKind_CLIENT_KIND_DM, 0)
+	defer sub.Close()
+	ack := make(chan domain.Ack, 1)
+	if !app.room.Post(ctx, domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostReset}, Reply: ack}) {
+		t.Fatal("reset was not accepted by room")
+	}
+	if response := <-ack; !response.Accepted {
+		t.Fatalf("reset ack = %+v", response)
+	}
+	select {
+	case message := <-sub.Messages():
+		if got := message.GetState().GetPhase(); got != string(vocab.StateLobby) {
+			t.Fatalf("reset phase = %q, want lobby", got)
+		}
+	case <-ctx.Done():
+		t.Fatal("reset view was not published")
 	}
 }
 
