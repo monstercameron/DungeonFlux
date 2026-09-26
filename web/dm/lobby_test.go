@@ -20,9 +20,9 @@ func TestNewLobbyModel_InitialisesTwoSeats(t *testing.T) {
 	}
 }
 
-func TestNewLobbyModel_DefaultsQRAssetAndNormalizesRoom(t *testing.T) {
+func TestNewLobbyModel_DoesNotInventQRPathAndNormalizesRoom(t *testing.T) {
 	model := NewLobbyModel(" ab cd ", "")
-	if model.RoomCode != "AB CD" || model.QRURL != "/assets/join-room.png" || model.JoinURL != "/p?room=AB+CD" {
+	if model.RoomCode != "AB CD" || model.QRURL != "" || model.JoinURL != "/p?room=AB+CD" {
 		t.Fatalf("normalized lobby = %+v", model)
 	}
 }
@@ -43,11 +43,22 @@ func TestNewLobbyModelFromDMView_UsesServerLobbyAndSeats(t *testing.T) {
 
 func TestNewLobbyModelFromDMView_FallsBackForMissingLobbyFields(t *testing.T) {
 	model := NewLobbyModelFromDMView(&dungeonfluxv1.DMView{Seats: []*dungeonfluxv1.LobbySeat{{SeatId: "2", Name: "Rook"}}}, "ROOM")
-	if model.RoomCode != "ROOM" || model.JoinURL != "/p?room=ROOM" || model.QRURL != "/assets/join-room.png" || model.Seats[1].Name != "Rook" {
+	if model.RoomCode != "ROOM" || model.JoinURL != "/p?room=ROOM" || model.QRURL != "" || model.Seats[1].Name != "Rook" {
 		t.Fatalf("fallback lobby = %+v", model)
 	}
 	if got := NewLobbyModelFromDMView(nil, "ROOM"); got.RoomCode != "ROOM" {
 		t.Fatalf("nil view fallback = %+v", got)
+	}
+}
+
+func TestNewLobbyModelFromDMView_EnrichesPartyCards(t *testing.T) {
+	model := NewLobbyModelFromDMView(&dungeonfluxv1.DMView{
+		Seats:      []*dungeonfluxv1.LobbySeat{{PlayerNumber: 1, Joined: true}},
+		BuildCards: []*dungeonfluxv1.BuildCard{{PlayerNumber: 1, Name: "Mara", ClassName: "Rogue", PortraitUrl: "mara.webp"}},
+	}, "ROOM")
+	seat := model.Seats[0]
+	if seat.Name != "Mara" || seat.Class != "Rogue" || seat.PortraitURL != "mara.webp" || !seat.Ready {
+		t.Fatalf("party card = %+v", seat)
 	}
 }
 
@@ -73,6 +84,30 @@ func TestSeatLabel_UsesNameOrPlayerNumber(t *testing.T) {
 	}
 	if got := SeatLabel(Seat{Number: 2, Name: "Mara"}); got != "Mara" {
 		t.Fatalf("named label = %q", got)
+	}
+}
+
+func TestLobbyStatus_ReflectsWaitingAndReadyStates(t *testing.T) {
+	model := NewLobbyModel("ROOM", "")
+	if got := LobbyStatus(model); got != "Waiting for players (0/2)" {
+		t.Fatalf("waiting status = %q", got)
+	}
+	model.Seats[0] = Seat{Number: 1, Joined: true, Ready: true}
+	model.Seats[1] = Seat{Number: 2, Joined: true, Ready: true}
+	if got := LobbyStatus(model); got != "Ready — the host can start" {
+		t.Fatalf("ready status = %q", got)
+	}
+}
+
+func TestSeatSubtitle_UsesSpeciesAndClassFallbacks(t *testing.T) {
+	if got := SeatSubtitle(Seat{Species: "Wood Elf", Class: "Ranger"}); got != "Wood Elf Ranger" {
+		t.Fatalf("full subtitle = %q", got)
+	}
+	if got := SeatSubtitle(Seat{Class: "Rogue"}); got != "Rogue" {
+		t.Fatalf("class subtitle = %q", got)
+	}
+	if got := SeatSubtitle(Seat{}); got != "Adventurer" {
+		t.Fatalf("fallback subtitle = %q", got)
 	}
 }
 

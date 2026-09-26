@@ -231,7 +231,7 @@ func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handle
 }
 
 func coverBackgroundStyle(state *dungeonfluxv1.ScreenState) map[string]string {
-	background := ArtURL("ui/title_bg")
+	background := titleArtFor(currentAspectClass(), ArtURL).Background
 	if state != nil && state.GetPhase() != "lobby" {
 		background = sceneBackgroundURL(state.GetDm())
 	}

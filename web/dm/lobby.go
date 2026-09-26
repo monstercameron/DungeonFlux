@@ -13,10 +13,14 @@ import (
 
 // Seat is the lobby projection for one player position.
 type Seat struct {
-	Number int
-	Name   string
-	Ready  bool
-	Joined bool
+	Number      int
+	Name        string
+	Species     string
+	Class       string
+	Flavor      string
+	PortraitURL string
+	Ready       bool
+	Joined      bool
 }
 
 // LobbyModel is the data needed to render the DM lobby.
@@ -33,9 +37,6 @@ type LobbyModel struct {
 // NewLobbyModel creates a lobby with two empty seats and a join QR URL.
 func NewLobbyModel(roomCode, qrURL string) LobbyModel {
 	roomCode = normalizeRoomCode(roomCode)
-	if qrURL == "" {
-		qrURL = "/assets/join-room.png"
-	}
 	return LobbyModel{
 		RoomCode:   roomCode,
 		QRURL:      qrURL,
@@ -64,7 +65,7 @@ func NewLobbyModelFromDMView(view *dungeonfluxv1.DMView, fallbackRoomCode string
 			model.JoinURL = JoinURL(model.RoomCode)
 		}
 		if lobby.GetQrUrl() != "" {
-			model.QRURL = lobby.GetQrUrl()
+			model.QRURL = strings.TrimSpace(lobby.GetQrUrl())
 		}
 	}
 	for index, seat := range view.GetSeats() {
@@ -76,6 +77,23 @@ func NewLobbyModelFromDMView(view *dungeonfluxv1.DMView, fallbackRoomCode string
 			number = index + 1
 		}
 		model.SetSeat(Seat{Number: number, Name: seat.GetName(), Joined: seat.GetJoined(), Ready: seat.GetReady()})
+	}
+	for _, card := range view.GetBuildCards() {
+		if card == nil {
+			continue
+		}
+		number := int(card.GetPlayerNumber())
+		if number < 1 || number > len(model.Seats) {
+			continue
+		}
+		seat := model.Seats[number-1]
+		if card.GetName() != "" {
+			seat.Name = card.GetName()
+		}
+		seat.Class = card.GetClassName()
+		seat.PortraitURL = card.GetPortraitUrl()
+		seat.Ready = true
+		model.Seats[number-1] = seat
 	}
 	return model
 }
@@ -113,6 +131,35 @@ func (m *LobbyModel) SetSeat(seat Seat) {
 // SeatLabel returns the stable TV label for a seat.
 func SeatLabel(seat Seat) string {
 	return SeatName("en", seat.Name, seat.Number)
+}
+
+// LobbyStatus returns the concise state shown in the highlighted status plate.
+func LobbyStatus(model LobbyModel) string {
+	joined := 0
+	ready := 0
+	for _, seat := range model.Seats {
+		if seat.Joined {
+			joined++
+		}
+		if seat.Ready {
+			ready++
+		}
+	}
+	if ready == len(model.Seats) {
+		return "Ready — the host can start"
+	}
+	return "Waiting for players (" + strconv.Itoa(joined) + "/" + strconv.Itoa(len(model.Seats)) + ")"
+}
+
+// SeatSubtitle returns the species and class line for one party card.
+func SeatSubtitle(seat Seat) string {
+	if seat.Species != "" && seat.Class != "" {
+		return seat.Species + " " + seat.Class
+	}
+	if seat.Class != "" {
+		return seat.Class
+	}
+	return "Adventurer"
 }
 
 // ListenAudio schedules Listen frames for a PCM player.
