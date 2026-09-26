@@ -42,6 +42,40 @@ func TestStateStep_JoinRetainsSeatAcrossPhases(t *testing.T) {
 	}
 }
 
+func TestStateStep_JoinEmptyNameUsesCharacterFallback(t *testing.T) {
+	s := New(domain.OneShot{}, []byte("name"))
+	s.Step(domain.Envelope{Event: domain.Join{Seat: 1}})
+	startCreation(t, s, 1)
+	character := s.View().Seats[0].Character
+	if character == nil || character.Name != "Hero 1" {
+		t.Fatalf("character = %#v, want Hero 1", character)
+	}
+}
+
+func TestView_JoinedNameOverridesGeneratedCharacterName(t *testing.T) {
+	s := New(domain.OneShot{}, []byte("name"))
+	startCreation(t, s, 1)
+	s.names[0] = "Aria"
+	character := s.View().Seats[0].Character
+	if character == nil || character.Name != "Aria" || s.View().Seats[0].Build.Name != "Aria" {
+		t.Fatalf("named character = %#v, build = %#v", character, s.View().Seats[0].Build)
+	}
+}
+
+func startCreation(t *testing.T, state *State, seat domain.SeatID) {
+	t.Helper()
+	state.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostStart}})
+	for _, event := range []domain.Event{
+		domain.Act{Seat: seat, Move: vocab.MoveSpecies, Arg: "human"},
+		domain.Act{Seat: seat, Move: vocab.MoveGender, Arg: "female"},
+		domain.Act{Seat: seat, Move: vocab.MoveRollHero},
+	} {
+		if out := state.Step(domain.Envelope{Event: event}); out.Ack != nil && !out.Ack.Accepted {
+			t.Fatalf("creation event %T rejected: %#v", event, out.Ack)
+		}
+	}
+}
+
 func TestStateStep_JoinRejectsUnknownSeat(t *testing.T) {
 	s := New(domain.OneShot{}, nil)
 	out := s.Step(domain.Envelope{Event: domain.Join{Seat: 3}})
