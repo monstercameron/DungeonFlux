@@ -1459,6 +1459,12 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: local streaming scene and individual LODs render; grid shares the battlefield camera and renders after splats; visual inspection and lane gate pass.
   status: claimed Codex 2026-09-26
 
+- [ ] SPLAT-010 · Wooded Path local LOD battle scene profile
+  why: The developer supplied a second SuperSplat scene and needs its complete download usable with the same battle grid viewer.
+  lane: L-WEB-SPLAT · paths: `web/splat/scenes/64bb46d5.json` · depends: OPS-019, SPLAT-009
+  done when: all referenced assets of 64bb46d5 are downloaded and hash checked, with a visually inspected camera and grid profile.
+  status: claimed Codex 2026-09-26
+
 ## 23. dfctl debug CLI
 
 Command-line reads and demo writes for agents and the developer.
