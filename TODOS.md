@@ -941,7 +941,7 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: ORCH review found DebugService.Events and Logs return immediately with no records, so dfctl events and dfctl logs are empty even though the event log and the slog ring buffer exist.
   lane: L-API · block: 8–11 · paths: `internal/api/debug/events*.go`, `internal/api/debug/logs*.go`, `internal/api/debug/reads.go` · depends: API-011, STORE-003, API-013, E2E-004
   done when: Events streams EventLog records since SEQ and follows new ones while the stream is open; Logs streams the ring buffer filtered by level and follows; bufconn tests; dfctl events --since 0 shows the run.
-  status: open
+  status: claimed luna
 
 - [ ] API-017 · newest DM Listen replaces the older stream through AudioService
   why: API-014 added replacement in the Listen hub, but through the real server a second DM Listen leaves the first stream open (E2E path 21 measured by ORCH).
@@ -1635,13 +1635,13 @@ Everything needed to run the 3-minute demo live.
   why: If the uplink is bad, the show runs from recorded sequences.
   lane: ORCH · block: 17–20 · paths: `artifacts/runtime/show/**` · depends: E2E-001
   done when: Safe Mode run completes offline.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 - [ ] STAGE-003 · Cut-order flags wired
   why: Features cut in order (live video, splat, etc.) are config flags the host can flip.
   lane: ORCH · block: 17–20 · paths: `config/demo.json` · depends: HOST-002
   done when: Each flag verified off.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 - [ ] STAGE-004 · Backup video recorded
   why: A recorded run is the last resort if everything fails on stage.
