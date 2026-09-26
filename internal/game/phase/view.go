@@ -25,6 +25,7 @@ func (m Machine) View() domain.View {
 	}
 	if m.State() == vocab.StateCombat {
 		view.Combat = m.combatView()
+		view.Battlefield = m.combatBattlefieldView(*view.Combat)
 	}
 	return view
 }
@@ -84,12 +85,62 @@ func (m Machine) combatMoves(seat domain.SeatID, card domain.SeatView) []domain.
 }
 
 func (m Machine) combatView() *domain.CombatView {
-	view := &domain.CombatView{Round: m.combat.TurnNumber, Banner: string(m.combat.Phase)}
-	for _, pc := range m.combat.PCs {
-		view.Tokens = append(view.Tokens, domain.TokenView{ID: domain.TokenID(pc.ID), Kind: "pc", Cell: domain.Cell{R: pc.Position.Y, C: pc.Position.X}, HP: pc.HP, HPMax: pc.MaxHP, Active: pc.Seat == m.combat.TurnSeat})
+	presentation := m.combat.Presentation
+	view := &domain.CombatView{
+		Round:   m.combat.TurnNumber,
+		Banner:  string(m.combat.Phase),
+		Camera:  domain.CameraView{Preset: presentation.Camera.Preset, FocusTokenID: domain.TokenID(presentation.Camera.FocusTokenID), Seq: presentation.Camera.Seq, Follow: presentation.Camera.Follow, DurationMS: presentation.Camera.DurationMS},
+		Contact: domain.TimerView{Name: "contact", RemainingMS: presentation.ContactMS, TotalMS: presentation.ContactTotalMS},
+		Shake:   domain.ShakeView{AmplitudePX: presentation.Shake.AmplitudePX, DurationMS: presentation.Shake.DurationMS, Seq: presentation.Shake.Seq},
 	}
-	view.Tokens = append(view.Tokens, domain.TokenView{ID: domain.TokenID(m.combat.Thrall.ID), Kind: "thrall", HP: m.combat.Thrall.HP, HPMax: m.combat.Thrall.MaxHP})
+	for _, pc := range m.combat.PCs {
+		visual := presentation.Tokens[pc.ID]
+		view.Tokens = append(view.Tokens, domain.TokenView{ID: domain.TokenID(pc.ID), Kind: string(pc.Build.Class), Name: pc.ID, Cell: domain.Cell{R: pc.Position.Y, C: pc.Position.X}, Path: domainCells(visual.Path), Anim: visual.Anim, AnimSeq: visual.AnimSeq, HP: pc.HP, HPMax: pc.MaxHP, Active: pc.Seat == m.combat.TurnSeat})
+	}
+	thrallVisual := presentation.Tokens[m.combat.Thrall.ID]
+	view.Tokens = append(view.Tokens, domain.TokenView{ID: domain.TokenID(m.combat.Thrall.ID), Kind: "thrall", Name: m.combat.Thrall.ID, Cell: domain.Cell{C: m.combat.ThrallPosition.X, R: m.combat.ThrallPosition.Y}, Path: domainCells(thrallVisual.Path), Anim: thrallVisual.Anim, AnimSeq: thrallVisual.AnimSeq, HP: m.combat.Thrall.HP, HPMax: m.combat.Thrall.MaxHP, Active: m.combat.Phase == combat.EnemyTurn})
+	for _, highlight := range presentation.Highlights {
+		view.Highlights = append(view.Highlights, domain.HighlightView{Kind: highlight.Kind, Cells: domainCells(highlight.Cells)})
+	}
 	return view
+}
+
+func (m Machine) combatBattlefieldView(combatView domain.CombatView) *domain.BattlefieldView {
+	source := m.oneShot.Encounter.Battlefield
+	return &domain.BattlefieldView{
+		Mode: source.Mode, Visible: true, SceneURL: source.SceneURL, LiteURL: source.LiteURL,
+		Transform: source.Transform, Cameras: cloneBattlefieldCameras(source.Cameras), Grid: cloneGrid(source.Grid), Flat: source.Flat,
+		Camera: combatView.Camera, Tokens: append([]domain.TokenView(nil), combatView.Tokens...),
+		Highlights: append([]domain.HighlightView(nil), combatView.Highlights...), TurnOrder: append([]domain.TurnEntry(nil), combatView.TurnOrder...),
+		Round: combatView.Round, Contact: combatView.Contact, Shake: combatView.Shake,
+	}
+}
+
+func domainCells(cells []combat.Cell) []domain.Cell {
+	if len(cells) == 0 {
+		return nil
+	}
+	out := make([]domain.Cell, len(cells))
+	for index, cell := range cells {
+		out[index] = domain.Cell{C: cell.X, R: cell.Y}
+	}
+	return out
+}
+
+func cloneGrid(source domain.Grid) domain.Grid {
+	source.Walkable = append([]bool(nil), source.Walkable...)
+	return source
+}
+
+func cloneBattlefieldCameras(source map[string]domain.CameraDef) map[string]domain.CameraDef {
+	if source == nil {
+		return nil
+	}
+	out := make(map[string]domain.CameraDef, len(source))
+	for name, camera := range source {
+		out[name] = camera
+	}
+	return out
 }
 
 func creationSeatView(state creation.SeatState) domain.SeatView {

@@ -25,8 +25,15 @@ func TestProject_AllViewFieldsReachClientViews(t *testing.T) {
 		t.Fatalf("dm activity fields = %#v", got)
 	}
 	field := dm.GetDm().Battlefield
-	if field.Mode != "splat" || !field.Visible || len(field.Cameras) != 1 || len(field.Grid.Walkable) != 1 || len(dm.GetDm().Tokens) != 1 || len(dm.GetDm().Highlights) != 1 || len(dm.GetDm().TurnOrder) != 1 {
+	if field.Mode != "splat" || !field.Visible || len(field.Cameras) != 1 || len(field.Grid.Walkable) != 1 || len(dm.GetDm().Tokens) != 1 || len(dm.GetDm().Highlights) != 1 || len(dm.GetDm().Highlights[0].Cells) != 1 || len(dm.GetDm().TurnOrder) != 1 {
 		t.Fatalf("battlefield fields = %#v", field)
+	}
+	if !field.Camera.GetFollow() || field.Camera.GetDurationMs() != 350 || dm.GetDm().GetContactInMs() != 250 || dm.GetDm().GetShake() == nil {
+		t.Fatalf("battlefield effects = %#v", field)
+	}
+	token := dm.GetDm().Tokens[0]
+	if token.GetKind() != "rogue" || token.GetAnim() != "walk" || token.GetAnimSeq() != 3 || len(token.GetPath()) != 1 || token.GetClips()["idle"] != "clip" {
+		t.Fatalf("token renderer fields = %#v", token)
 	}
 
 	phone := Project(view, df.ClientKind_CLIENT_KIND_PHONE, 1).GetPhone()
@@ -171,7 +178,7 @@ func sampleView() domain.View {
 		Seats:       []domain.SeatView{{Seat: 1, Build: &domain.BuildCard{Name: "Astra", Class: "Rogue", Portrait: "portrait", PlayerNumber: 1}, Character: &domain.Character{Name: "Astra", Class: "Rogue", Hook: "river", Portrait: "portrait", PersuasionModifier: 4}, Moves: []domain.MoveView{{ID: vocab.MoveAttack, Label: "Attack", Enabled: true, TargetID: "thrall", Cell: domain.Cell{C: 2, R: 3}, Options: []domain.OptionView{{ID: "x", Label: "X"}}, Preview: &domain.MovePreview{Modifier: 4, VS: 12, PSuccess: .65, Damage: domain.DamageView{Dice: "1d6", Bonus: 2}}}}, TurnTimer: domain.TimerView{Name: "turn", RemainingMS: 500, TotalMS: 1000}, StatusText: "your turn"}},
 		Scene:       domain.SceneView{BackgroundURL: "bg", Layers: []string{"one", "two"}, Narration: "narration", Subtitle: "subtitle"},
 		Dice:        &domain.DiceView{State: "resolved", D20: 19, Modifier: 4, DC: 12, Outcome: "hit", Kind: "attack", VSLLabel: "vs AC", Crit: true, Damage: &domain.DamageView{Dice: "1d6", Faces: []int{6}, Bonus: 2, Total: 8, Type: "piercing"}},
-		Battlefield: &domain.BattlefieldView{Mode: "splat", Visible: true, SceneURL: "scene", LiteURL: "lite", Grid: domain.Grid{Origin: [2]float64{1, 2}, CellM: 1.5, Cols: 2, Rows: 2, Walkable: []bool{true, false, false, false}}, Cameras: map[string]domain.CameraDef{"hero": {}}, Camera: domain.CameraView{Preset: "hero", FocusTokenID: "hero", Seq: 7}, Tokens: []domain.TokenView{{ID: "hero", Name: "Astra", Cell: domain.Cell{C: 1, R: 1}, Portrait: "portrait", Status: "ready", HP: 9, HPMax: 10, Active: true}}, Highlights: []domain.HighlightView{{Kind: "move", Cells: []domain.Cell{{C: 2, R: 2}}}}, TurnOrder: []domain.TurnEntry{{TokenID: "hero", Name: "Astra", Portrait: "portrait", HP: 9, HPMax: 10, Active: true}}, Round: 2},
+		Battlefield: &domain.BattlefieldView{Mode: "splat", Visible: true, SceneURL: "scene", LiteURL: "lite", Grid: domain.Grid{Origin: [2]float64{1, 2}, CellM: 1.5, Cols: 2, Rows: 2, Walkable: []bool{true, false, false, false}}, Cameras: map[string]domain.CameraDef{"hero": {}}, Camera: domain.CameraView{Preset: "hero", FocusTokenID: "hero", Seq: 7, Follow: true, DurationMS: 350}, Contact: domain.TimerView{RemainingMS: 250}, Shake: domain.ShakeView{AmplitudePX: 8, DurationMS: 180, Seq: 4}, Tokens: []domain.TokenView{{ID: "hero", Name: "Astra", Kind: "rogue", Cell: domain.Cell{C: 1, R: 1}, Path: []domain.Cell{{C: 0, R: 0}}, Portrait: "portrait", Clips: map[string]domain.AssetID{"idle": "clip"}, Anim: "walk", AnimSeq: 3, Status: "ready", HP: 9, HPMax: 10, Active: true}}, Highlights: []domain.HighlightView{{Kind: "move", Cells: []domain.Cell{{C: 2, R: 2}}}}, TurnOrder: []domain.TurnEntry{{TokenID: "hero", Name: "Astra", Portrait: "portrait", HP: 9, HPMax: 10, Active: true}}, Round: 2},
 		Combat:      &domain.CombatView{Contact: domain.TimerView{RemainingMS: 250}, Cap: domain.TimerView{RemainingMS: 900}, Banner: "combat"},
 		Preload:     []string{"asset"}, Callout: "callout", Music: domain.MusicView{TrackID: "track", URL: "music", LoopStartMS: 10, LoopEndMS: 20, BPM: 90, Level: .8, Duck: .2, Cue: "cue"}, Slots: []domain.SlotView{{Name: "portrait", State: "ready", Asset: "portrait"}},
 	}

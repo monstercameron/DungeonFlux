@@ -10,25 +10,42 @@ import (
 func TestBattleStageFromViewMapsWoodedPathTokensAndCamera(t *testing.T) {
 	view := &dungeonfluxv1.DMView{
 		Tokens: []*dungeonfluxv1.Token{
-			{TokenId: "seat-a", Name: "Astra", Cell: &dungeonfluxv1.Cell{C: 2, R: 0}, Hp: 9, HpMax: 10, Active: true},
+			{TokenId: "seat-a", Name: "Astra", Kind: "rogue", Cell: &dungeonfluxv1.Cell{C: 2, R: 0}, Path: []*dungeonfluxv1.Cell{{C: 1, R: 0}, {C: 2, R: 0}}, Anim: "walk", AnimSeq: 9, Clips: map[string]string{"walk": "walk-clip"}, Hp: 9, HpMax: 10, Active: true},
 			{TokenId: "seat-b", Name: "Bram", Cell: &dungeonfluxv1.Cell{C: 3, R: 0}, Hp: 8, HpMax: 10},
 			{TokenId: "enemy", Name: "Drowned Thrall", Cell: &dungeonfluxv1.Cell{C: 6, R: 0}, Hp: 12, HpMax: 12},
 		},
 		BuildCards: []*dungeonfluxv1.BuildCard{{Name: "Astra", ClassName: "Ranger"}, {Name: "Bram", ClassName: "Wizard"}},
-		Highlights: []*dungeonfluxv1.Highlight{{Kind: "target", Cell: &dungeonfluxv1.Cell{C: 6, R: 0}}},
+		Highlights: []*dungeonfluxv1.Highlight{{Kind: "target", Cells: []*dungeonfluxv1.Cell{{C: 5, R: 0}, {C: 6, R: 0}}}},
 	}
 	got := BattleStageFromView(view, 7)
 	if !got.Enabled || got.Init.SceneURL != splat.WoodedPathSceneURL || got.Init.Grid.Cols != 16 || len(got.Init.Grid.Walkable) != 78 {
 		t.Fatalf("stage init = %#v", got.Init)
 	}
-	if len(got.Scene.Tokens) != 3 || got.Scene.Tokens[0].ID != "pc-1" || got.Scene.Tokens[0].Kind != "pc-ranger" || got.Scene.Tokens[2].ID != "thrall" {
+	if len(got.Scene.Tokens) != 3 || got.Scene.Tokens[0].ID != "pc-1" || got.Scene.Tokens[0].Kind != "rogue" || got.Scene.Tokens[2].ID != "thrall" {
 		t.Fatalf("stage tokens = %#v", got.Scene.Tokens)
+	}
+	if got.Scene.Tokens[0].Anim != "walk" || got.Scene.Tokens[0].AnimSeq != 9 || len(got.Scene.Tokens[0].Path) != 2 || got.Scene.Tokens[0].Clips["walk"] != "walk-clip" {
+		t.Fatalf("stage token animation = %#v", got.Scene.Tokens[0])
 	}
 	if got.Scene.Camera.Preset != "COMBAT_EST" || got.Scene.Camera.FocusTokenID != "pc-1" || got.Scene.Camera.Follow == nil || !*got.Scene.Camera.Follow || got.Scene.Seq != 7 {
 		t.Fatalf("stage camera = %#v", got.Scene.Camera)
 	}
-	if len(got.Scene.Highlights) != 1 || got.Scene.Highlights[0].Cells[0] != (splat.Cell{6, 0}) || got.HP["thrall"] != 12 {
+	if len(got.Scene.Highlights) != 1 || len(got.Scene.Highlights[0].Cells) != 2 || got.Scene.Highlights[0].Cells[1] != (splat.Cell{6, 0}) || got.HP["thrall"] != 12 {
 		t.Fatalf("stage feedback = %#v, hp=%#v", got.Scene.Highlights, got.HP)
+	}
+}
+
+func TestBattleStageFromViewMapsCameraTimingAndShake(t *testing.T) {
+	view := &dungeonfluxv1.DMView{Battlefield: &dungeonfluxv1.Battlefield{
+		Mode: "SPLAT", Visible: true, Camera: &dungeonfluxv1.Camera{Preset: "IMPACT", FocusTokenId: "thrall", Follow: true, DurationMs: 250},
+		Shake: &dungeonfluxv1.Shake{AmplitudePx: 12, DurationMs: 250, Seq: 4},
+	}}
+	got := BattleStageFromView(view, 3)
+	if got.Scene.Camera.Preset != "IMPACT" || got.Scene.Camera.FocusTokenID != "thrall" || got.Scene.Camera.DurationMS != 250 || got.Scene.Camera.Follow == nil || !*got.Scene.Camera.Follow {
+		t.Fatalf("camera command = %#v", got.Scene.Camera)
+	}
+	if got.Effects.Shake == nil || got.Effects.Shake.AmplitudePX != 12 || got.Effects.Shake.DurationMS != 250 {
+		t.Fatalf("effects = %#v", got.Effects)
 	}
 }
 

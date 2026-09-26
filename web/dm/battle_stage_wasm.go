@@ -55,6 +55,7 @@ func (h *battleStageHandle) mount(stage BattleStageModel) {
 		h.bridge = splat.New(16)
 		_ = h.bridge.Init(h.current.Init)
 		_ = h.bridge.Scene(h.current.Scene)
+		_ = h.bridge.Effects(h.current.Effects)
 		go h.watchEvents(h.bridge.Events())
 		return nil
 	})
@@ -98,7 +99,6 @@ func (h *battleStageHandle) watchEvents(events <-chan splat.Event) {
 }
 
 func (h *battleStageHandle) apply(stage BattleStageModel) {
-	previous := h.current
 	if stage.Scene.Seq <= h.nextSeq {
 		h.nextSeq++
 		stage.Scene.Seq = h.nextSeq
@@ -110,18 +110,9 @@ func (h *battleStageHandle) apply(stage BattleStageModel) {
 		return
 	}
 	_ = h.bridge.Scene(stage.Scene)
-	if hpChanged(previous, stage) {
-		_ = h.bridge.Effects(splat.Effects{Seq: stage.Scene.Seq, Shake: &splat.Shake{AmplitudePX: 10, DurationMS: 220}})
+	if stage.Effects.Shake != nil {
+		_ = h.bridge.Effects(stage.Effects)
 	}
-}
-
-func hpChanged(previous, next BattleStageModel) bool {
-	for id, hp := range next.HP {
-		if old, ok := previous.HP[id]; ok && hp < old {
-			return true
-		}
-	}
-	return false
 }
 
 func (h *battleStageHandle) dispose() {
@@ -161,7 +152,10 @@ func (h *battleStageHandle) setFallbackOpacity(value string) {
 func stageSnapshotKey(stage BattleStageModel) string {
 	var builder strings.Builder
 	for _, token := range stage.Scene.Tokens {
-		fmt.Fprintf(&builder, "%s:%d:%d:%d:%s|", token.ID, token.Cell[0], token.Cell[1], stage.HP[token.ID], token.Anim)
+		fmt.Fprintf(&builder, "%s:%d:%d:%d:%d:%s|", token.ID, token.Cell[0], token.Cell[1], stage.HP[token.ID], token.AnimSeq, token.Anim)
+		for _, cell := range token.Path {
+			fmt.Fprintf(&builder, "%d,%d;", cell[0], cell[1])
+		}
 	}
 	for _, highlight := range stage.Scene.Highlights {
 		builder.WriteString(highlight.Kind)

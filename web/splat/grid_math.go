@@ -64,7 +64,7 @@ func WoodedPathGrid() Grid {
 	return grid
 }
 
-// Distance returns the four-way path length between two walkable cells.
+// Distance returns the eight-way path length between two walkable cells.
 func Distance(grid Grid, from, to Cell) (int, bool) {
 	path, ok := Path(grid, from, to)
 	if !ok {
@@ -73,7 +73,7 @@ func Distance(grid Grid, from, to Cell) (int, bool) {
 	return len(path) - 1, true
 }
 
-// Path returns the shortest four-way path between two walkable cells.
+// Path returns the shortest eight-way path between two walkable cells.
 func Path(grid Grid, from, to Cell) ([]Cell, bool) {
 	if !IsWalkable(grid, from) || !IsWalkable(grid, to) {
 		return nil, false
@@ -99,8 +99,12 @@ func Path(grid Grid, from, to Cell) ([]Cell, bool) {
 	return nil, false
 }
 
-func neighbours(cell Cell) [4]Cell {
-	return [4]Cell{{cell[0], cell[1] - 1}, {cell[0] + 1, cell[1]}, {cell[0], cell[1] + 1}, {cell[0] - 1, cell[1]}}
+func neighbours(cell Cell) [8]Cell {
+	return [8]Cell{
+		{cell[0] - 1, cell[1] - 1}, {cell[0], cell[1] - 1}, {cell[0] + 1, cell[1] - 1},
+		{cell[0] - 1, cell[1]}, {cell[0] + 1, cell[1]},
+		{cell[0] - 1, cell[1] + 1}, {cell[0], cell[1] + 1}, {cell[0] + 1, cell[1] + 1},
+	}
 }
 
 func unwindPath(parents map[Cell]Cell, from, to Cell) []Cell {

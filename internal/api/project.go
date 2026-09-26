@@ -111,6 +111,8 @@ func projectDM(view domain.View, lobby ...LobbyProjection) *df.DMView {
 		out.TurnOrder = projectTurnOrder(view.Battlefield.TurnOrder)
 		out.Round = int32(view.Battlefield.Round)
 		out.CombatBanner = view.Battlefield.Mode
+		out.ContactInMs = view.Battlefield.Contact.RemainingMS
+		out.Shake = projectShake(view.Battlefield.Shake)
 	}
 	if view.Combat != nil {
 		if len(view.Combat.Tokens) > 0 {
@@ -124,6 +126,10 @@ func projectDM(view domain.View, lobby ...LobbyProjection) *df.DMView {
 		}
 		out.Round = int32(view.Combat.Round)
 		out.CombatBanner = view.Combat.Banner
+		out.ContactInMs = view.Combat.Contact.RemainingMS
+		if view.Combat.Shake.Seq != 0 {
+			out.Shake = projectShake(view.Combat.Shake)
+		}
 	}
 	return out
 }
@@ -370,16 +376,15 @@ func projectMusic(music domain.MusicView) *df.Music {
 
 func projectBattlefield(field domain.BattlefieldView) *df.Battlefield {
 	out := &df.Battlefield{Mode: field.Mode, Visible: field.Visible, SceneUrl: field.SceneURL, LiteUrl: field.LiteURL,
-		Transform: jsonString(field.Transform), Grid: projectGrid(field.Grid), Flat: projectFlat(field.Flat), Camera: projectCamera(field.Camera)}
+		Transform: jsonString(field.Transform), Grid: projectGrid(field.Grid), Flat: projectFlat(field.Flat), Camera: projectCamera(field.Camera),
+		ContactInMs: field.Contact.RemainingMS, Shake: projectShake(field.Shake)}
 	keys := make([]string, 0, len(field.Cameras))
 	for key := range field.Cameras {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
-		camera := field.Cameras[key]
-		out.Cameras = append(out.Cameras, &df.Camera{Preset: key, FocusTokenId: "", Seq: 0})
-		_ = camera
+		out.Cameras = append(out.Cameras, &df.Camera{Preset: key})
 	}
 	return out
 }
@@ -403,7 +408,14 @@ func projectFlat(flat domain.FlatBattlefield) *df.FlatBattlefield {
 }
 
 func projectCamera(camera domain.CameraView) *df.Camera {
-	return &df.Camera{Preset: camera.Preset, FocusTokenId: string(camera.FocusTokenID), Seq: camera.Seq}
+	return &df.Camera{Preset: camera.Preset, FocusTokenId: string(camera.FocusTokenID), Seq: camera.Seq, Follow: camera.Follow, DurationMs: camera.DurationMS}
+}
+
+func projectShake(shake domain.ShakeView) *df.Shake {
+	if shake.Seq == 0 && shake.AmplitudePX == 0 && shake.DurationMS == 0 {
+		return nil
+	}
+	return &df.Shake{AmplitudePx: float32(shake.AmplitudePX), DurationMs: shake.DurationMS, Seq: shake.Seq}
 }
 
 func projectTokens(tokens []domain.TokenView) []*df.Token {
@@ -413,7 +425,8 @@ func projectTokens(tokens []domain.TokenView) []*df.Token {
 		if token.Status != "" {
 			statuses = []string{token.Status}
 		}
-		out = append(out, &df.Token{TokenId: string(token.ID), Name: token.Name, PortraitUrl: string(token.Portrait), Cell: projectCell(token.Cell), Hp: int32(token.HP), HpMax: int32(token.HPMax), Active: token.Active, Statuses: statuses})
+		out = append(out, &df.Token{TokenId: string(token.ID), Name: token.Name, PortraitUrl: string(token.Portrait), Cell: projectCell(token.Cell), Hp: int32(token.HP), HpMax: int32(token.HPMax), Active: token.Active, Statuses: statuses,
+			Kind: token.Kind, Path: projectCells(token.Path), Anim: token.Anim, AnimSeq: token.AnimSeq, Clips: projectClips(token.Clips)})
 	}
 	return out
 }
@@ -421,9 +434,34 @@ func projectTokens(tokens []domain.TokenView) []*df.Token {
 func projectHighlights(highlights []domain.HighlightView) []*df.Highlight {
 	var out []*df.Highlight
 	for _, highlight := range highlights {
-		for _, cell := range highlight.Cells {
-			out = append(out, &df.Highlight{Cell: projectCell(cell), Kind: highlight.Kind})
+		cells := projectCells(highlight.Cells)
+		item := &df.Highlight{Kind: highlight.Kind, Cells: cells}
+		if len(cells) > 0 {
+			item.Cell = cells[0]
 		}
+		out = append(out, item)
+	}
+	return out
+}
+
+func projectCells(cells []domain.Cell) []*df.Cell {
+	if len(cells) == 0 {
+		return nil
+	}
+	out := make([]*df.Cell, len(cells))
+	for index, cell := range cells {
+		out[index] = projectCell(cell)
+	}
+	return out
+}
+
+func projectClips(clips map[string]domain.AssetID) map[string]string {
+	if len(clips) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(clips))
+	for name, asset := range clips {
+		out[name] = string(asset)
 	}
 	return out
 }

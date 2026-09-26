@@ -14,6 +14,7 @@ type BattleStageModel struct {
 	Enabled bool
 	Init    splat.Init
 	Scene   splat.Scene
+	Effects splat.Effects
 	HP      map[string]int32
 }
 
@@ -54,6 +55,17 @@ func BattleStageFromView(view *dungeonfluxv1.DMView, sequence uint64) BattleStag
 			break
 		}
 	}
+	camera := splat.CameraCommand{Preset: "COMBAT_EST", FocusTokenID: activeID, Seq: sequence}
+	follow := activeID != ""
+	camera.Follow = &follow
+	if battlefield != nil && battlefield.GetCamera() != nil {
+		command := battlefield.GetCamera()
+		camera.Preset = command.GetPreset()
+		camera.FocusTokenID = command.GetFocusTokenId()
+		follow = command.GetFollow()
+		camera.Follow = &follow
+		camera.DurationMS = float64(command.GetDurationMs())
+	}
 	tokens := stageTokens(view.GetTokens(), view.GetBuildCards())
 	tokens = supportedStageTokens(tokens, grid)
 	highlights := stageHighlights(view.GetHighlights())
@@ -63,8 +75,15 @@ func BattleStageFromView(view *dungeonfluxv1.DMView, sequence uint64) BattleStag
 			hp[stageTokenID(token, index)] = token.GetHp()
 		}
 	}
-	follow := activeID != ""
-	return BattleStageModel{Enabled: true, Init: splat.Init{CanvasID: "df-combat-splat", SceneURL: sceneURL, LiteURL: liteURL, Transform: transform, Grid: grid, Device: "webgl2"}, Scene: splat.Scene{Seq: sequence, Visible: visible, Tokens: tokens, Highlights: highlights, Camera: splat.CameraCommand{Preset: "COMBAT_EST", FocusTokenID: activeID, Follow: &follow, Seq: sequence}}, HP: hp}
+	effects := splat.Effects{Seq: sequence}
+	if battlefield != nil {
+		if shake := battlefield.GetShake(); shake != nil {
+			effects.Shake = &splat.Shake{AmplitudePX: float64(shake.GetAmplitudePx()), DurationMS: float64(shake.GetDurationMs())}
+		}
+	} else if shake := view.GetShake(); shake != nil {
+		effects.Shake = &splat.Shake{AmplitudePX: float64(shake.GetAmplitudePx()), DurationMS: float64(shake.GetDurationMs())}
+	}
+	return BattleStageModel{Enabled: true, Init: splat.Init{CanvasID: "df-combat-splat", SceneURL: sceneURL, LiteURL: liteURL, Transform: transform, Grid: grid, Device: "webgl2"}, Scene: splat.Scene{Seq: sequence, Visible: visible, Tokens: tokens, Highlights: highlights, Camera: camera}, Effects: effects, HP: hp}
 }
 
 func supportedStageTokens(tokens []splat.Token, grid splat.Grid) []splat.Token {
@@ -105,8 +124,15 @@ func stageTokens(tokens []*dungeonfluxv1.Token, cards []*dungeonfluxv1.BuildCard
 		if token == nil || token.GetCell() == nil {
 			continue
 		}
-		kind := stageTokenKind(token, cards)
-		result = append(result, splat.Token{ID: stageTokenID(token, index), Kind: kind, Name: token.GetName(), Cell: splat.Cell{int(token.GetCell().GetC()), int(token.GetCell().GetR())}, HeightM: 1.8, Portrait: token.GetPortraitUrl(), Anim: "idle", AnimSeq: uint64(index), Statuses: append([]string(nil), token.GetStatuses()...)})
+		kind := token.GetKind()
+		if kind == "" {
+			kind = stageTokenKind(token, cards)
+		}
+		anim := token.GetAnim()
+		if anim == "" {
+			anim = "idle"
+		}
+		result = append(result, splat.Token{ID: stageTokenID(token, index), Kind: kind, Name: token.GetName(), Cell: splat.Cell{int(token.GetCell().GetC()), int(token.GetCell().GetR())}, Path: stageCells(token.GetPath()), HeightM: 1.8, Portrait: token.GetPortraitUrl(), Anim: anim, AnimSeq: token.GetAnimSeq(), Clips: copyClips(token.GetClips()), Statuses: append([]string(nil), token.GetStatuses()...)})
 		if kind == "thrall" {
 			result[len(result)-1].HeightM = 1.6
 		}
@@ -141,10 +167,40 @@ func stageTokenKind(token *dungeonfluxv1.Token, cards []*dungeonfluxv1.BuildCard
 func stageHighlights(highlights []*dungeonfluxv1.Highlight) []splat.Highlight {
 	result := make([]splat.Highlight, 0, len(highlights))
 	for _, highlight := range highlights {
-		if highlight == nil || highlight.GetCell() == nil {
+		if highlight == nil {
 			continue
 		}
-		result = append(result, splat.Highlight{Kind: highlight.GetKind(), Cells: []splat.Cell{{int(highlight.GetCell().GetC()), int(highlight.GetCell().GetR())}}})
+		cells := stageCells(highlight.GetCells())
+		if len(cells) == 0 && highlight.GetCell() != nil {
+			cells = []splat.Cell{{int(highlight.GetCell().GetC()), int(highlight.GetCell().GetR())}}
+		}
+		if len(cells) > 0 {
+			result = append(result, splat.Highlight{Kind: highlight.GetKind(), Cells: cells})
+		}
+	}
+	return result
+}
+
+func stageCells(cells []*dungeonfluxv1.Cell) []splat.Cell {
+	if len(cells) == 0 {
+		return nil
+	}
+	result := make([]splat.Cell, 0, len(cells))
+	for _, cell := range cells {
+		if cell != nil {
+			result = append(result, splat.Cell{int(cell.GetC()), int(cell.GetR())})
+		}
+	}
+	return result
+}
+
+func copyClips(clips map[string]string) map[string]string {
+	if len(clips) == 0 {
+		return nil
+	}
+	result := make(map[string]string, len(clips))
+	for name, clip := range clips {
+		result[name] = clip
 	}
 	return result
 }

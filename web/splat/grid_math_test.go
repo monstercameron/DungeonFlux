@@ -50,14 +50,23 @@ func TestGridFromSupportedCellsAndPath(t *testing.T) {
 		t.Fatalf("supported cells were not normalized: %#v", grid.Walkable)
 	}
 	path, ok := Path(grid, Cell{0, 0}, Cell{2, 1})
-	if !ok || len(path) != 4 || path[0] != (Cell{0, 0}) || path[len(path)-1] != (Cell{2, 1}) {
+	if !ok || len(path) != 3 || path[0] != (Cell{0, 0}) || path[len(path)-1] != (Cell{2, 1}) {
 		t.Fatalf("unexpected path: %v, %v", path, ok)
 	}
 	distance, ok := Distance(grid, Cell{0, 0}, Cell{2, 1})
-	if !ok || distance != 3 {
+	if !ok || distance != 2 {
 		t.Fatalf("unexpected distance: %d, %v", distance, ok)
 	}
 	if _, ok := Path(grid, Cell{0, 0}, Cell{2, 0}); ok {
 		t.Fatal("path should reject a blocked destination")
+	}
+}
+
+func TestPath_AllowsDiagonalMovementAtUnitCost(t *testing.T) {
+	grid := GridFromSupportedCells(2, 2, []Cell{{0, 0}, {1, 1}})
+	path, ok := Path(grid, Cell{0, 0}, Cell{1, 1})
+	distance, distanceOK := Distance(grid, Cell{0, 0}, Cell{1, 1})
+	if !ok || !distanceOK || len(path) != 2 || distance != 1 {
+		t.Fatalf("diagonal path = %v, %v", path, ok)
 	}
 }

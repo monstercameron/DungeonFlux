@@ -107,22 +107,36 @@ type BattlefieldView struct {
 	Highlights        []HighlightView
 	TurnOrder         []TurnEntry
 	Round             int
+	Contact           TimerView
+	Shake             ShakeView
 }
+
+// ShakeView is an engine-issued one-shot camera impact request.
+type ShakeView struct {
+	AmplitudePX float64
+	DurationMS  int64
+	Seq         uint64
+}
+
 type CameraView struct {
 	Preset       string
 	FocusTokenID TokenID
 	Seq          uint64
+	Follow       bool
+	DurationMS   int64
 }
 type TokenView struct {
-	ID           TokenID
-	Kind, Name   string
-	Cell         Cell
-	Path         []Cell
-	Portrait     AssetID
-	Clips        map[string]AssetID
-	Anim, Status string
-	HP, HPMax    int
-	Active       bool
+	ID         TokenID
+	Kind, Name string
+	Cell       Cell
+	Path       []Cell
+	Portrait   AssetID
+	Clips      map[string]AssetID
+	Anim       string
+	AnimSeq    uint64
+	Status     string
+	HP, HPMax  int
+	Active     bool
 }
 type HighlightView struct {
 	Kind  string
@@ -143,6 +157,8 @@ type CombatView struct {
 	Banner     string
 	Contact    TimerView
 	Cap        TimerView
+	Camera     CameraView
+	Shake      ShakeView
 }
 type View struct {
 	Version     uint64
@@ -174,12 +190,16 @@ func (v View) DeepCopy() View {
 		b := *v.Battlefield
 		b.Tokens = append([]TokenView(nil), v.Battlefield.Tokens...)
 		b.Highlights = append([]HighlightView(nil), v.Battlefield.Highlights...)
+		cloneTokenViews(b.Tokens)
+		cloneHighlightViews(b.Highlights)
 		out.Battlefield = &b
 	}
 	if v.Combat != nil {
 		c := *v.Combat
 		c.Tokens = append([]TokenView(nil), v.Combat.Tokens...)
 		c.Highlights = append([]HighlightView(nil), v.Combat.Highlights...)
+		cloneTokenViews(c.Tokens)
+		cloneHighlightViews(c.Highlights)
 		out.Combat = &c
 	}
 	if v.Dice != nil {
@@ -192,4 +212,23 @@ func (v View) DeepCopy() View {
 		out.Dice = &d
 	}
 	return out
+}
+
+func cloneTokenViews(tokens []TokenView) {
+	for index := range tokens {
+		tokens[index].Path = append([]Cell(nil), tokens[index].Path...)
+		if tokens[index].Clips != nil {
+			clips := make(map[string]AssetID, len(tokens[index].Clips))
+			for name, asset := range tokens[index].Clips {
+				clips[name] = asset
+			}
+			tokens[index].Clips = clips
+		}
+	}
+}
+
+func cloneHighlightViews(highlights []HighlightView) {
+	for index := range highlights {
+		highlights[index].Cells = append([]Cell(nil), highlights[index].Cells...)
+	}
 }
