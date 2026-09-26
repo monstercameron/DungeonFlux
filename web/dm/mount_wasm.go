@@ -227,6 +227,7 @@ func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handle
 	view := state.GetDm()
 	locale := localeOrDefault(view.GetLocale())
 	layers := SelectLayers(state)
+	phase := state.GetPhase()
 	children := make([]ui.Node, 1, len(layers)+1)
 	children[0] = themeStyles()
 	for _, layer := range layers {
@@ -234,29 +235,29 @@ func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handle
 		case LayerLobby:
 			lobby := NewLobbyModelFromDMView(view, roomCode)
 			lobby.SetLocale(locale)
-			children = appendLayer(children, layer, LobbyComponent(lobby)(router.Attrs{}))
+			children = appendPhaseLayer(children, layer, phase, LobbyComponent(lobby)(router.Attrs{}))
 		case LayerScene:
 			content := ui.Node(SceneComponent(view)(router.Attrs{}))
 			if strings.EqualFold(strings.TrimSpace(state.GetPhase()), "conversation") {
 				content = html.Div(html.Props{Style: map[string]string{"position": "relative", "width": "100%", "height": "100%"}}, content, DialogueComponent(DialogueModelFromState(state))(router.Attrs{}))
 			}
-			children = appendLayer(children, layer, content)
+			children = appendPhaseLayer(children, layer, phase, content)
 		case LayerHUD:
-			children = appendLayer(children, layer, ExplorationHUDComponent(state)(router.Attrs{}))
+			children = appendPhaseLayer(children, layer, phase, ExplorationHUDComponent(state)(router.Attrs{}))
 		case LayerCreation:
-			children = appendLayer(children, layer, CreationComponent(CreationModelFromView(view))(router.Attrs{}))
+			children = appendPhaseLayer(children, layer, phase, CreationComponent(CreationModelFromView(view))(router.Attrs{}))
 		case LayerCallout:
-			children = appendLayer(children, layer, CalloutComponent(CalloutViewFromDMView(view))(router.Attrs{}))
+			children = appendPhaseLayer(children, layer, phase, CalloutComponent(CalloutViewFromDMView(view))(router.Attrs{}))
 		case LayerClip:
-			children = appendLayer(children, layer, ClipComponent(ClipModelFromView(view))(router.Attrs{}))
+			children = appendPhaseLayer(children, layer, phase, ClipComponent(ClipModelFromView(view))(router.Attrs{}))
 		case LayerDice:
-			children = appendLayer(children, layer, DiceComponent(DiceViewFromDMView(view))(router.Attrs{}))
+			children = appendPhaseLayer(children, layer, phase, DiceComponent(DiceViewFromDMView(view))(router.Attrs{}))
 		case LayerTimer:
-			children = appendLayer(children, layer, TimerComponent(TimerViewFromDMView(view))(router.Attrs{}))
+			children = appendPhaseLayer(children, layer, phase, TimerComponent(TimerViewFromDMView(view))(router.Attrs{}))
 		case LayerCombat:
-			children = appendLayer(children, layer, CombatComponent(view)(router.Attrs{}))
+			children = appendPhaseLayer(children, layer, phase, CombatComponent(view)(router.Attrs{}))
 		case LayerEnd:
-			children = appendLayer(children, layer, EndCardComponent(NewEndCardModel().Localized(locale))(router.Attrs{}))
+			children = appendPhaseLayer(children, layer, phase, EndCardComponent(NewEndCardModel().Localized(locale))(router.Attrs{}))
 		}
 	}
 	children = append(children, html.Button(html.Props{Type: "button", Class: "df-dm-audio-unlock", OnClick: unlock, Style: map[string]string{"position": "absolute", "right": "1rem", "top": "1rem", "z-index": "100"}}, html.Text(AudioUnlock(locale))))
@@ -277,6 +278,16 @@ func coverBackgroundStyle(state *dungeonfluxv1.ScreenState) map[string]string {
 		background = "linear-gradient(180deg,rgba(7,11,18,.28),rgba(7,10,15,.68)),url('" + background + "')"
 	}
 	return map[string]string{"background-image": background, "background-size": "cover", "background-position": "center"}
+}
+
+// appendPhaseLayer keys each layer by layer and phase so a phase change mounts
+// fresh DOM. The reconciler reuses nodes and leaves inline style properties
+// that the new style map omits, so without the key the opening's panels kept
+// the previous screen's borders, widths and offsets.
+func appendPhaseLayer(children []ui.Node, layer Layer, phase string, content ui.Node) []ui.Node {
+	children = appendLayer(children, layer, content)
+	children[len(children)-1] = html.WithKey(children[len(children)-1], string(layer)+":"+phase)
+	return children
 }
 
 func appendLayer(children []ui.Node, layer Layer, content ui.Node) []ui.Node {
