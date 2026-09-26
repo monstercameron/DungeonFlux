@@ -358,7 +358,7 @@ func combatScreen(model *CombatModel, locale string) ui.Node {
 	for _, move := range snapshot.Moves {
 		children = append(children, ui.CreateElement(combatMoveButton, combatMoveProps{model: model, move: move, refresh: refresh}))
 	}
-	return html.Main(html.Props{Class: "df-phone df-phone-combat"}, children...)
+	return combatStyledScreen(model, locale, children...)
 }
 
 type combatMoveProps struct {
