@@ -15,18 +15,18 @@ import (
 func CreationScreen(model *CreationModel) router.Component {
 	return func(_ router.Attrs) *router.Element {
 		refresh := ui.UseState(0)
-		roll := ui.UseEvent(func() {
-			go func() { model.ApplyAct(<-model.RollHero(context.Background())); refresh.Set(refresh.Get() + 1) }()
-		})
 		snapshot := model.Snapshot()
 		locale := snapshot.Locale
 		if locale == "" {
 			locale = "en"
 		}
-		pickerDisabled := snapshot.Build != nil || snapshot.Phase == CreationRolling || snapshot.Phase == CreationLocked
+		roll := ui.UseEvent(func() {
+			go func() { model.ApplyAct(<-model.RollHero(context.Background())); refresh.Set(refresh.Get() + 1) }()
+		})
 		lock := ui.UseEvent(func() {
 			go func() { model.ApplyAct(<-model.Lock(context.Background())); refresh.Set(refresh.Get() + 1) }()
 		})
+		pickerDisabled := snapshot.Build != nil || snapshot.Phase == CreationRolling || snapshot.Phase == CreationLocked
 		var action ui.Node = creationRollButton(roll, locale, snapshot)
 		if snapshot.Build != nil && snapshot.Phase == CreationRolling {
 			action = creationLockButton(lock, locale)
@@ -34,22 +34,14 @@ func CreationScreen(model *CreationModel) router.Component {
 		if snapshot.Phase == CreationLocked {
 			action = creationLockedButton(locale)
 		}
-		return html.Main(html.Props{Class: "df-phone df-phone-create", Role: "main", Style: map[string]string{
-			"width": "100%", "max-width": "100vw", "min-height": "100svh", "box-sizing": "border-box", "display": "flex", "flex-direction": "column", "align-items": "stretch", "gap": "1rem", "padding": "1.25rem 1rem 1rem", "background": creationBackground(), "background-size": "cover", "background-position": "center", "color": "#efe6d2", "overflow-x": "hidden",
-		}},
-			html.Div(html.Props{Style: map[string]string{"max-width": "34rem", "width": "100%", "margin": "0 auto"}},
-				html.P(html.Props{Style: map[string]string{"margin": "0 0 .35rem", "color": "#d9a441", "font-size": ".75rem", "letter-spacing": ".16em", "text-transform": "uppercase"}}, html.Text("DUNGEONFLUX")),
-				html.H1(html.Props{Style: map[string]string{"margin": "0", "font-family": "Georgia, serif", "font-size": "clamp(2rem, 9vw, 3rem)", "line-height": "1.05"}}, html.Text(CreateTitle(locale))),
-				html.P(html.Props{Style: map[string]string{"margin": ".55rem 0 0", "color": "#a89f8c", "font-size": "1rem", "line-height": "1.45"}}, html.Text(creationHint(locale))),
-			),
+		return html.Section(html.Props{Class: "df-phone-create", Role: "main", Style: creationContentStyle()},
+			creationHeading(locale),
 			creationPicker(model, refresh, "species", "Species", creationSpecies, snapshot.Species, pickerDisabled),
 			creationPicker(model, refresh, "gender", "Gender", creationGenders, snapshot.Gender, pickerDisabled),
 			creationClassPicker(model, refresh, locale, snapshot.Class, pickerDisabled),
 			creationBuildCard(snapshot),
-			html.Div(html.Props{Style: map[string]string{"margin-top": "auto", "max-width": "34rem", "width": "100%", "margin-left": "auto", "margin-right": "auto"}},
-				action,
-				html.P(html.Props{Role: "status", Aria: map[string]string{"live": "polite"}, Style: map[string]string{"min-height": "1.4rem", "margin": ".65rem 0 0", "text-align": "center", "color": "#bdb4a2", "font-size": ".9rem"}}, html.Text(creationStatus(snapshot))),
-			),
+			html.Div(html.Props{Style: map[string]string{"margin-top": "auto", "padding-top": "2px"}}, action,
+				html.P(html.Props{Role: "status", Aria: map[string]string{"live": "polite"}, Style: map[string]string{"min-height": "18px", "margin": "7px 0 0", "color": "#a89f8c", "font-size": "12px", "line-height": "1.35", "text-align": "center"}}, html.Text(creationStatus(snapshot)))),
 		)
 	}
 }
@@ -71,22 +63,38 @@ func creationPicker(model *CreationModel, refresh stateCounter, id, label string
 			}
 			refresh.Set(refresh.Get() + 1)
 		})
-		style := map[string]string{"min-height": "48px", "min-width": "0", "width": "100%", "padding": ".7rem .35rem", "border-radius": "10px", "border": "1px solid #4b4b4c", "background": "#1a1d26", "color": "#efe6d2", "font-size": ".95rem"}
+		style := map[string]string{"min-height": "52px", "min-width": "0", "width": "100%", "padding": ".45rem .25rem", "display": "grid", "gap": "3px", "place-items": "center", "border-radius": "8px", "border": "1px solid rgba(168,159,140,.42)", "background": "rgba(18,22,29,.92)", "color": "#efe6d2", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": ".96rem", "touch-action": "manipulation"}
 		if selected == choice.ID {
 			style["border-color"] = "#d9a441"
-			style["background"] = "#332a19"
-			style["box-shadow"] = "inset 0 0 0 1px #d9a441"
+			style["background"] = "linear-gradient(180deg, rgba(67,48,23,.9), rgba(30,25,20,.96))"
+			style["box-shadow"] = "inset 0 0 14px rgba(217,164,65,.16), 0 0 10px rgba(217,164,65,.12)"
 		}
 		choices = append(choices, html.Button(html.Props{Type: "button", OnClick: tap, Disabled: disabled, Aria: map[string]string{"pressed": strconv.FormatBool(selected == choice.ID)}, Style: style}, creationOptionArt(id, choice.ID, choice.Label), html.Text(choice.Label)))
 	}
-	return html.Fieldset(html.Props{Style: map[string]string{"max-width": "34rem", "min-width": "0", "width": "100%", "box-sizing": "border-box", "margin": "0 auto", "padding": ".8rem", "border": "1px solid #3a3a42", "border-radius": "12px", "background": "#171a23"}}, html.Legend(html.Props{Style: map[string]string{"padding": "0 .35rem", "color": "#efe6d2", "font-weight": "700"}}, html.Text(label)), html.Div(html.Props{Style: map[string]string{"min-width": "0", "display": "grid", "grid-template-columns": "repeat(3, minmax(0, 1fr))", "gap": ".55rem"}}, choices...))
+	return html.Fieldset(html.Props{Class: "df-phone-create-field", Style: createFieldStyle()}, html.Legend(html.Props{Style: map[string]string{"padding": "0 7px", "color": "#e7c27a", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "17px"}}, html.Text(label)), html.Div(html.Props{Style: map[string]string{"min-width": "0", "display": "grid", "grid-template-columns": "repeat(3, minmax(0, 1fr))", "gap": ".5rem"}}, choices...))
 }
 
 func creationBackground() string {
 	if url := ArtURL(phoneBackgroundAsset); url != "" {
 		return "linear-gradient(180deg, rgba(10, 13, 19, .24), rgba(10, 13, 19, .86)), url(\"" + url + "\")"
 	}
-	return "#10131b"
+	return "radial-gradient(circle at 50% 0%, #242b3b 0, #141923 42%, #0b0f16 100%)"
+}
+
+func creationContentStyle() map[string]string {
+	return map[string]string{"min-height": "100%", "box-sizing": "border-box", "display": "flex", "flex-direction": "column", "gap": "12px", "padding": "4px 0 2px", "background": creationBackground(), "background-size": "cover", "background-position": "center", "color": "#efe6d2", "font-family": "Inter, ui-sans-serif, system-ui, sans-serif"}
+}
+
+func creationHeading(locale string) ui.Node {
+	return html.Div(html.Props{Class: "df-phone-create-heading", Style: map[string]string{"padding": "8px 4px 5px", "text-align": "center"}},
+		html.P(html.Props{Style: map[string]string{"margin": "0 0 3px", "color": "#d9a441", "font-size": "10px", "font-weight": "700", "letter-spacing": ".2em"}}, html.Text("YOUR PHONE CONTROLS THE HERO")),
+		html.H1(html.Props{Style: map[string]string{"margin": "0", "color": "#efe6d2", "font-family": "Cormorant Garamond, Cinzel, Georgia, serif", "font-size": "29px", "line-height": "1.05"}}, html.Text(CreateTitle(locale))),
+		html.P(html.Props{Style: map[string]string{"margin": "5px 0 0", "color": "#a89f8c", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "16px", "line-height": "1.25"}}, html.Text(creationHint(locale))),
+	)
+}
+
+func createFieldStyle() map[string]string {
+	return map[string]string{"min-width": "0", "width": "100%", "box-sizing": "border-box", "margin": "0", "padding": "7px", "border": "1px solid rgba(217,164,65,.34)", "border-radius": "10px", "background": "rgba(17,21,29,.82)", "box-shadow": "inset 0 0 18px rgba(0,0,0,.16)"}
 }
 
 func creationOptionArt(kind, id, label string) ui.Node {
@@ -95,21 +103,25 @@ func creationOptionArt(kind, id, label string) ui.Node {
 		asset = speciesArtAsset(id)
 	}
 	if url := ArtURL(asset); url != "" {
-		return html.Img(html.Props{Src: url, Alt: label, Style: map[string]string{"width": "32px", "height": "42px", "object-fit": "cover", "border-radius": "6px", "flex": "0 0 32px"}})
+		return html.Img(html.Props{Src: url, Alt: label, Style: map[string]string{"width": "24px", "height": "26px", "object-fit": "cover", "border-radius": "5px"}})
 	}
-	return html.Span(html.Props{Aria: map[string]string{"hidden": "true"}, Style: map[string]string{"display": "none"}}, html.Text(""))
+	mark := "•"
+	if kind == "gender" {
+		mark = "○"
+	}
+	return html.Span(html.Props{Role: "img", Aria: map[string]string{"label": label}, Style: map[string]string{"display": "grid", "place-items": "center", "width": "24px", "height": "24px", "border": "1px solid rgba(217,164,65,.55)", "border-radius": "50%", "color": "#e7c27a", "font-family": "Georgia, serif", "font-size": "14px"}}, html.Text(mark))
 }
 
 func creationBuildCard(snapshot CreationSnapshot) ui.Node {
 	if snapshot.Build == nil {
-		return html.Div(html.Props{Style: map[string]string{"max-width": "34rem", "min-width": "0", "width": "100%", "box-sizing": "border-box", "margin": "0 auto", "padding": "1rem", "border": "1px dashed #484750", "border-radius": "12px", "color": "#a89f8c", "text-align": "center"}}, html.Text("Your rolled hero will appear here."))
+		return html.Div(html.Props{Class: "df-phone-create-empty", Style: map[string]string{"padding": "13px 12px", "border": "1px dashed rgba(168,159,140,.35)", "border-radius": "10px", "color": "#a89f8c", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "16px", "text-align": "center"}}, html.Text("Your rolled hero will appear here."))
 	}
 	build := snapshot.Build
-	var portrait ui.Node = html.Div(html.Props{Role: "img", Aria: map[string]string{"label": build.GetName()}, Style: map[string]string{"width": "72px", "height": "92px", "display": "flex", "align-items": "center", "justify-content": "center", "border-radius": "10px", "background": "#25232b", "color": "#d9a441", "font-family": "Georgia, serif", "font-size": "1.4rem"}}, html.Text("✦"))
+	portrait := html.Div(html.Props{Role: "img", Aria: map[string]string{"label": build.GetName()}, Style: map[string]string{"width": "76px", "height": "96px", "display": "grid", "place-items": "center", "flex": "0 0 76px", "border-radius": "8px", "border": "1px solid rgba(217,164,65,.5)", "background": "radial-gradient(circle, #354052, #171a23 70%)", "color": "#e7c27a", "font-family": "Georgia, serif", "font-size": "1.4rem"}}, html.Text("✦"))
 	if build.GetPortraitUrl() != "" {
-		portrait = html.Div(html.Props{Style: map[string]string{"width": "72px", "height": "92px", "border-radius": "10px", "background": "#25232b", "overflow": "hidden"}}, html.Img(html.Props{Src: build.GetPortraitUrl(), Alt: build.GetName(), Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))
+		portrait = html.Div(html.Props{Style: map[string]string{"width": "76px", "height": "96px", "flex": "0 0 76px", "border-radius": "8px", "border": "1px solid rgba(217,164,65,.5)", "background": "#25232b", "overflow": "hidden"}}, html.Img(html.Props{Src: build.GetPortraitUrl(), Alt: build.GetName(), Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))
 	}
-	return html.Section(html.Props{Style: map[string]string{"max-width": "34rem", "min-width": "0", "width": "100%", "box-sizing": "border-box", "margin": "0 auto", "padding": "1rem", "display": "flex", "gap": "1rem", "align-items": "center", "border": "1px solid #d9a441", "border-radius": "12px", "background": "linear-gradient(135deg, #26222a, #171a23)", "box-shadow": "inset 0 0 24px rgba(217,164,65,.08)"}}, portrait, html.Div(html.Props{Style: map[string]string{"min-width": "0"}}, html.P(html.Props{Style: map[string]string{"margin": "0 0 .25rem", "font-family": "Georgia, serif", "font-size": "1.35rem"}}, html.Text(build.GetName())), html.P(html.Props{Style: map[string]string{"margin": "0", "color": "#d9a441", "font-weight": "700"}}, html.Text(build.GetClassName()))))
+	return html.Section(html.Props{Class: "df-phone-create-build", Style: map[string]string{"display": "flex", "gap": "12px", "align-items": "center", "padding": "10px", "border": "1px solid #d9a441", "border-radius": "10px", "background": "linear-gradient(135deg, rgba(47,39,31,.96), rgba(17,21,29,.98))", "box-shadow": "inset 0 0 24px rgba(217,164,65,.08)"}}, portrait, html.Div(html.Props{Style: map[string]string{"min-width": "0"}}, html.P(html.Props{Style: map[string]string{"margin": "0 0 3px", "color": "#e7c27a", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "22px"}}, html.Text(build.GetName())), html.P(html.Props{Style: map[string]string{"margin": "0", "color": "#efe6d2", "font-size": "13px", "letter-spacing": ".08em", "text-transform": "uppercase"}}, html.Text(build.GetClassName()))))
 }
 
 func creationStatus(snapshot CreationSnapshot) string {
@@ -121,7 +133,7 @@ func creationStatus(snapshot CreationSnapshot) string {
 	}
 	switch snapshot.Phase {
 	case CreationRolling:
-		return "The engine is rolling your hero…"
+		return "The engine is rolling your hero..."
 	case CreationLocked:
 		return "Hero locked in."
 	default:
@@ -130,25 +142,14 @@ func creationStatus(snapshot CreationSnapshot) string {
 }
 
 func creationRollButton(roll ui.Handler, locale string, snapshot CreationSnapshot) ui.Node {
-	style := artButtonStyle(buttonPrimaryAsset, "#d9a441")
-	style["width"], style["min-height"], style["border"] = "100%", "56px", "0"
-	style["border-radius"], style["color"], style["font-size"] = "12px", "#16130d", "1.1rem"
-	style["font-weight"], style["box-shadow"] = "700", "0 5px 18px rgba(217,164,65,.2)"
-	return html.Button(html.Props{Type: "button", OnClick: roll, Disabled: snapshot.Species == "" || snapshot.Gender == "" || snapshot.Class == "" || snapshot.Phase == CreationRolling || snapshot.Phase == CreationLocked, Style: style}, html.Text(RollHeroLabel(locale)))
+	disabled := snapshot.Species == "" || snapshot.Gender == "" || snapshot.Class == "" || snapshot.Phase == CreationRolling || snapshot.Phase == CreationLocked
+	return PrimaryButton(RollHeroLabel(locale), roll, disabled)
 }
 
 func creationLockButton(lock ui.Handler, locale string) ui.Node {
-	style := artButtonStyle(buttonSecondaryAsset, "#332a19")
-	style["width"], style["min-height"] = "100%", "56px"
-	style["border"], style["border-radius"] = "1px solid #d9a441", "12px"
-	style["color"], style["font-size"], style["font-weight"] = "#efe6d2", "1.1rem", "700"
-	return html.Button(html.Props{Type: "button", OnClick: lock, Style: style}, html.Text(creationReadyLabel(locale)))
+	return PrimaryButton(creationReadyLabel(locale), lock, false)
 }
 
 func creationLockedButton(locale string) ui.Node {
-	style := artButtonStyle(buttonDisabledAsset, "#172a2a")
-	style["width"], style["min-height"] = "100%", "56px"
-	style["border"], style["border-radius"] = "1px solid #3aa39a", "12px"
-	style["color"], style["font-size"], style["font-weight"] = "#8dd1c9", "1rem", "700"
-	return html.Button(html.Props{Type: "button", Disabled: true, Style: style}, html.Text(creationLockedLabel(locale)))
+	return PrimaryButton(creationLockedLabel(locale), ui.Handler{}, true)
 }
