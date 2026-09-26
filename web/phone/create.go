@@ -40,10 +40,12 @@ type CreationSnapshot struct {
 	PlayerNumber int32
 	Species      string
 	Gender       string
+	Class        string
 	Build        *df.BuildCard
 	Phase        CreationPhase
 	Error        string
 	Locale       string
+	StatusText   string
 }
 
 // CreationOption is one choice shown by a character-creation picker.
@@ -109,13 +111,13 @@ func (m *CreationModel) SelectGender(gender string) error {
 // RollHero starts the server-authoritative hero roll.
 func (m *CreationModel) RollHero(ctx context.Context) <-chan ActResult {
 	result := make(chan ActResult, 1)
-	if m == nil || m.client == nil || m.state.Species == "" || m.state.Gender == "" {
+	if m == nil || m.client == nil || m.state.Species == "" || m.state.Gender == "" || m.state.Class == "" {
 		return m.send(ctx, "roll_hero", "")
 	}
-	// The engine records species and gender as their own moves before it
+	// The engine records the picks as their own moves before it
 	// accepts roll_hero, so the three acts are sent in order.
 	go func() {
-		for _, step := range [][2]string{{"species", m.state.Species}, {"gender", m.state.Gender}} {
+		for _, step := range [][2]string{{"species", m.state.Species}, {"gender", m.state.Gender}, {"class", m.state.Class}} {
 			request := &df.ActRequest{SeatToken: m.state.SeatToken, MoveId: step[0], Arg: step[1]}
 			if outcome := <-m.client.Act(ctx, request); outcome.Err != nil || (outcome.Value != nil && !outcome.Value.GetAccepted()) {
 				result <- outcome
@@ -163,11 +165,23 @@ func (m *CreationModel) ApplyScreenState(state *df.ScreenState) CreationSnapshot
 	}
 	if character := phone.GetCharacter(); character != nil {
 		m.state.Build = &df.BuildCard{Name: character.GetName(), ClassName: character.GetClassName(), PortraitUrl: character.GetPortraitUrl(), PlayerNumber: m.state.PlayerNumber}
-	}
-	if strings.Contains(strings.ToLower(state.GetPhase()), "creation") && m.state.Build != nil {
-		m.state.Phase = CreationRolling
+		if character.GetSpecies() != "" {
+			m.state.Species = strings.ToLower(character.GetSpecies())
+		}
+		if character.GetGender() != "" {
+			m.state.Gender = strings.ToLower(character.GetGender())
+		}
+		if character.GetClassName() != "" {
+			m.state.Class = strings.ToLower(character.GetClassName())
+		}
+		if character.GetLocked() {
+			m.state.Phase = CreationLocked
+		} else {
+			m.state.Phase = CreationRolling
+		}
 	}
 	m.state.Locale = phoneLocale(phone)
+	m.state.StatusText = phone.GetStatusText()
 	return m.Snapshot()
 }
 
@@ -193,8 +207,8 @@ func (m *CreationModel) send(ctx context.Context, move, arg string) <-chan ActRe
 		return result
 	}
 	if move == "roll_hero" {
-		if m.state.Species == "" || m.state.Gender == "" {
-			result <- ActResult{Err: errors.New("species and gender are required")}
+		if m.state.Species == "" || m.state.Gender == "" || m.state.Class == "" {
+			result <- ActResult{Err: errors.New("species, gender, and class are required")}
 			return result
 		}
 		m.state.Phase = CreationRolling

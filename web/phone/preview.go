@@ -13,7 +13,7 @@ type PhonePreview struct {
 func Previews() []PhonePreview {
 	return []PhonePreview{
 		preview("join", "lobby", moves(joinMove("Join the adventure", "ready", true, ""))),
-		preview("creation-pick", "creation", moves(creationMove("species", "Choose species", speciesOptions()), creationMove("gender", "Choose gender", genderOptions()), joinMove("Roll my hero", "roll_hero", false, "Choose species and gender first"))),
+		preview("creation-pick", "creation", moves(creationMove("species", "Choose species", speciesOptions()), creationMove("gender", "Choose gender", genderOptions()), creationMove("class", "Choose class", classOptions()), joinMove("Roll my hero", "roll_hero", false, "Choose species, gender, and class first"))),
 		preview("creation-rolled", "creation", characterPhone("Astra Vale", "Rogue", "Your rolled hero is ready.")),
 		preview("sheet", "opening", characterPhone("Astra Vale", "Rogue", "A shadow waits beyond the tavern door.")),
 		preview("legal-moves", "exploration", moves(joinMove("Talk to Mother Vell", "talk_vell", true, ""), joinMove("Persuade", "persuade", false, "Requires a spoken argument"), joinMove("Leave", "leave", false, "The door is sealed"))),
@@ -75,6 +75,15 @@ func speciesOptions() []*df.Option {
 
 func genderOptions() []*df.Option {
 	return []*df.Option{{Id: "female", Label: "Female"}, {Id: "male", Label: "Male"}, {Id: "nonbinary", Label: "Nonbinary"}}
+}
+
+func classOptions() []*df.Option {
+	classes := CreationClasses()
+	options := make([]*df.Option, 0, len(classes))
+	for _, class := range classes {
+		options = append(options, &df.Option{Id: class.ID, Label: class.Label})
+	}
+	return options
 }
 
 func characterPhone(name, className, status string) *df.PhoneView {

@@ -23,19 +23,31 @@ func CreationScreen(model *CreationModel) router.Component {
 		if locale == "" {
 			locale = "en"
 		}
+		pickerDisabled := snapshot.Build != nil || snapshot.Phase == CreationRolling || snapshot.Phase == CreationLocked
+		lock := ui.UseEvent(func() {
+			go func() { model.ApplyAct(<-model.Lock(context.Background())); refresh.Set(refresh.Get() + 1) }()
+		})
+		var action ui.Node = creationRollButton(roll, locale, snapshot)
+		if snapshot.Build != nil && snapshot.Phase == CreationRolling {
+			action = creationLockButton(lock, locale)
+		}
+		if snapshot.Phase == CreationLocked {
+			action = creationLockedButton(locale)
+		}
 		return html.Main(html.Props{Class: "df-phone df-phone-create", Role: "main", Style: map[string]string{
-			"min-height": "100svh", "box-sizing": "border-box", "display": "flex", "flex-direction": "column", "gap": "1rem", "padding": "1.25rem 1rem 1rem", "background": "#10131b", "color": "#efe6d2", "overflow-x": "hidden",
+			"width": "100%", "max-width": "100vw", "min-height": "100svh", "box-sizing": "border-box", "display": "flex", "flex-direction": "column", "align-items": "stretch", "gap": "1rem", "padding": "1.25rem 1rem 1rem", "background": "#10131b", "color": "#efe6d2", "overflow-x": "hidden",
 		}},
 			html.Div(html.Props{Style: map[string]string{"max-width": "34rem", "width": "100%", "margin": "0 auto"}},
 				html.P(html.Props{Style: map[string]string{"margin": "0 0 .35rem", "color": "#d9a441", "font-size": ".75rem", "letter-spacing": ".16em", "text-transform": "uppercase"}}, html.Text("DUNGEONFLUX")),
 				html.H1(html.Props{Style: map[string]string{"margin": "0", "font-family": "Georgia, serif", "font-size": "clamp(2rem, 9vw, 3rem)", "line-height": "1.05"}}, html.Text(CreateTitle(locale))),
-				html.P(html.Props{Style: map[string]string{"margin": ".55rem 0 0", "color": "#a89f8c", "font-size": "1rem", "line-height": "1.45"}}, html.Text(CreateHint(locale))),
+				html.P(html.Props{Style: map[string]string{"margin": ".55rem 0 0", "color": "#a89f8c", "font-size": "1rem", "line-height": "1.45"}}, html.Text(creationHint(locale))),
 			),
-			creationPicker(model, refresh, "species", "Species", creationSpecies, snapshot.Species),
-			creationPicker(model, refresh, "gender", "Gender", creationGenders, snapshot.Gender),
+			creationPicker(model, refresh, "species", "Species", creationSpecies, snapshot.Species, pickerDisabled),
+			creationPicker(model, refresh, "gender", "Gender", creationGenders, snapshot.Gender, pickerDisabled),
+			creationClassPicker(model, refresh, locale, snapshot.Class, pickerDisabled),
 			creationBuildCard(snapshot),
 			html.Div(html.Props{Style: map[string]string{"margin-top": "auto", "max-width": "34rem", "width": "100%", "margin-left": "auto", "margin-right": "auto"}},
-				html.Button(html.Props{Type: "button", OnClick: roll, Disabled: snapshot.Species == "" || snapshot.Gender == "" || snapshot.Phase == CreationRolling || snapshot.Phase == CreationLocked, Style: map[string]string{"width": "100%", "min-height": "56px", "border": "0", "border-radius": "12px", "background": "#d9a441", "color": "#16130d", "font-size": "1.1rem", "font-weight": "700", "box-shadow": "0 5px 18px rgba(217,164,65,.2)"}}, html.Text(RollHeroLabel(locale))),
+				action,
 				html.P(html.Props{Role: "status", Aria: map[string]string{"live": "polite"}, Style: map[string]string{"min-height": "1.4rem", "margin": ".65rem 0 0", "text-align": "center", "color": "#bdb4a2", "font-size": ".9rem"}}, html.Text(creationStatus(snapshot))),
 			),
 		)
@@ -47,7 +59,7 @@ type stateCounter interface {
 	Set(int)
 }
 
-func creationPicker(model *CreationModel, refresh stateCounter, id, label string, options []CreationOption, selected string) ui.Node {
+func creationPicker(model *CreationModel, refresh stateCounter, id, label string, options []CreationOption, selected string, disabled bool) ui.Node {
 	choices := make([]ui.Node, 0, len(options))
 	for _, option := range options {
 		choice := option
@@ -65,7 +77,7 @@ func creationPicker(model *CreationModel, refresh stateCounter, id, label string
 			style["background"] = "#332a19"
 			style["box-shadow"] = "inset 0 0 0 1px #d9a441"
 		}
-		choices = append(choices, html.Button(html.Props{Type: "button", OnClick: tap, Aria: map[string]string{"pressed": strconv.FormatBool(selected == choice.ID)}, Style: style}, html.Text(choice.Label)))
+		choices = append(choices, html.Button(html.Props{Type: "button", OnClick: tap, Disabled: disabled, Aria: map[string]string{"pressed": strconv.FormatBool(selected == choice.ID)}, Style: style}, html.Text(choice.Label)))
 	}
 	return html.Fieldset(html.Props{Style: map[string]string{"max-width": "34rem", "min-width": "0", "width": "100%", "box-sizing": "border-box", "margin": "0 auto", "padding": ".8rem", "border": "1px solid #3a3a42", "border-radius": "12px", "background": "#171a23"}}, html.Legend(html.Props{Style: map[string]string{"padding": "0 .35rem", "color": "#efe6d2", "font-weight": "700"}}, html.Text(label)), html.Div(html.Props{Style: map[string]string{"min-width": "0", "display": "grid", "grid-template-columns": "repeat(3, minmax(0, 1fr))", "gap": ".55rem"}}, choices...))
 }
@@ -86,6 +98,9 @@ func creationStatus(snapshot CreationSnapshot) string {
 	if snapshot.Error != "" {
 		return snapshot.Error
 	}
+	if snapshot.StatusText != "" {
+		return snapshot.StatusText
+	}
 	switch snapshot.Phase {
 	case CreationRolling:
 		return "The engine is rolling your hero…"
@@ -94,4 +109,16 @@ func creationStatus(snapshot CreationSnapshot) string {
 	default:
 		return "Choose one from each list."
 	}
+}
+
+func creationRollButton(roll ui.Handler, locale string, snapshot CreationSnapshot) ui.Node {
+	return html.Button(html.Props{Type: "button", OnClick: roll, Disabled: snapshot.Species == "" || snapshot.Gender == "" || snapshot.Class == "" || snapshot.Phase == CreationRolling || snapshot.Phase == CreationLocked, Style: map[string]string{"width": "100%", "min-height": "56px", "border": "0", "border-radius": "12px", "background": "#d9a441", "color": "#16130d", "font-size": "1.1rem", "font-weight": "700", "box-shadow": "0 5px 18px rgba(217,164,65,.2)"}}, html.Text(RollHeroLabel(locale)))
+}
+
+func creationLockButton(lock ui.Handler, locale string) ui.Node {
+	return html.Button(html.Props{Type: "button", OnClick: lock, Style: map[string]string{"width": "100%", "min-height": "56px", "border": "1px solid #d9a441", "border-radius": "12px", "background": "#332a19", "color": "#efe6d2", "font-size": "1.1rem", "font-weight": "700"}}, html.Text(creationReadyLabel(locale)))
+}
+
+func creationLockedButton(locale string) ui.Node {
+	return html.Button(html.Props{Type: "button", Disabled: true, Style: map[string]string{"width": "100%", "min-height": "56px", "border": "1px solid #3aa39a", "border-radius": "12px", "background": "#172a2a", "color": "#8dd1c9", "font-size": "1rem", "font-weight": "700"}}, html.Text(creationLockedLabel(locale)))
 }

@@ -17,17 +17,76 @@ func TestCreationModel_SelectRollLockAndProject(t *testing.T) {
 	if err := model.SelectGender("female"); err != nil {
 		t.Fatal(err)
 	}
+	if err := model.SelectClass("rogue"); err != nil {
+		t.Fatal(err)
+	}
 	model.ApplyAct(<-model.RollHero(context.Background()))
 	if fake.request.GetMoveId() != "roll_hero" || fake.request.GetSeatToken() != "seat-1" {
 		t.Fatalf("request = %+v", fake.request)
 	}
 	model.ApplyScreenState(&df.ScreenState{Phase: "creation", View: &df.ScreenState_Phone{Phone: &df.PhoneView{Character: &df.Character{Name: "Astra", ClassName: "Rogue", PortraitUrl: "asset"}}}})
-	if got := model.Snapshot(); got.Build.GetName() != "Astra" || got.Phase != CreationRolling {
+	if got := model.Snapshot(); got.Build.GetName() != "Astra" || got.Class != "rogue" || got.Phase != CreationRolling {
 		t.Fatalf("snapshot = %+v", got)
 	}
 	model.ApplyAct(<-model.Lock(context.Background()))
 	if model.Snapshot().Phase != CreationLocked || fake.request.GetMoveId() != "ready" {
 		t.Fatalf("locked snapshot = %+v", model.Snapshot())
+	}
+}
+
+func TestCreationModel_RollSendsAllPicksInOrder(t *testing.T) {
+	fake := &recordingActFake{result: ActResult{Value: &df.ActResponse{Accepted: true}}}
+	model := NewCreationModel(fake, "seat", 1)
+	_ = model.SelectSpecies("human")
+	_ = model.SelectGender("female")
+	_ = model.SelectClass("paladin")
+	model.ApplyAct(<-model.RollHero(context.Background()))
+	if len(fake.requests) != 4 {
+		t.Fatalf("requests = %d, want 4", len(fake.requests))
+	}
+	for i, want := range []struct{ move, arg string }{{"species", "human"}, {"gender", "female"}, {"class", "paladin"}, {"roll_hero", ""}} {
+		if got := fake.requests[i]; got.GetMoveId() != want.move || got.GetArg() != want.arg {
+			t.Fatalf("request %d = %v, want %s/%s", i, got, want.move, want.arg)
+		}
+	}
+}
+
+func TestCreationModel_ProjectsCharacterFieldsAndLock(t *testing.T) {
+	model := NewCreationModel(&actFake{}, "seat", 1)
+	state := &df.ScreenState{Phase: "creation", View: &df.ScreenState_Phone{Phone: &df.PhoneView{
+		StatusText: "Your hero is ready to lock in",
+		Character:  &df.Character{Name: "Rook", ClassName: "rogue", Species: "human", Gender: "female", Locked: false, Build: &df.CharacterBuild{Hp: 11, HpMax: 11, Ac: 14}},
+	}}}
+	got := model.ApplyScreenState(state)
+	if got.Class != "rogue" || got.Species != "human" || got.Gender != "female" || got.StatusText != "Your hero is ready to lock in" || got.Phase != CreationRolling {
+		t.Fatalf("rolled snapshot = %+v", got)
+	}
+	state.GetPhone().GetCharacter().Locked = true
+	got = model.ApplyScreenState(state)
+	if got.Phase != CreationLocked {
+		t.Fatalf("locked snapshot = %+v", got)
+	}
+}
+
+func TestCreationClasses_AreTwelveStableCopies(t *testing.T) {
+	classes := CreationClasses()
+	if len(classes) != 12 || classes[0].ID != "barbarian" || classes[len(classes)-1].ID != "wizard" {
+		t.Fatalf("classes = %+v", classes)
+	}
+	for _, class := range classes {
+		if class.Label == "" || class.Role == "" || class.Crest == "" {
+			t.Fatalf("incomplete class = %+v", class)
+		}
+		if err := (&CreationModel{}).SelectClass(class.ID); err != nil {
+			t.Fatalf("class %q rejected: %v", class.ID, err)
+		}
+	}
+	classes[0].ID = "changed"
+	if CreationClasses()[0].ID != "barbarian" {
+		t.Fatal("class result aliases package state")
+	}
+	if got := CreationClassesForLocale("es-MX")[0].Label; got != "Bárbaro" {
+		t.Fatalf("Spanish class = %q", got)
 	}
 }
 
@@ -46,7 +105,7 @@ func TestCreationModel_RejectsInvalidSelectionsAndMissingChoices(t *testing.T) {
 			}
 		})
 	}
-	if err := (<-model.RollHero(context.Background())).Err; err == nil || err.Error() != "species and gender are required" {
+	if err := (<-model.RollHero(context.Background())).Err; err == nil || err.Error() != "species, gender, and class are required" {
 		t.Fatalf("missing choices error = %v", err)
 	}
 }
@@ -56,6 +115,7 @@ func TestCreationModel_RecordsRPCFailures(t *testing.T) {
 	model := NewCreationModel(fake, "token", 2)
 	_ = model.SelectSpecies("human")
 	_ = model.SelectGender("nonbinary")
+	_ = model.SelectClass("wizard")
 	got := model.ApplyAct(<-model.RollHero(context.Background()))
 	if got.Phase != CreationFailed || got.Error != "offline" {
 		t.Fatalf("failure = %+v", got)
@@ -88,6 +148,9 @@ func TestCreationModel_RejectsServerResponseAndPreservesSelection(t *testing.T) 
 	if err := model.SelectGender("male"); err != nil {
 		t.Fatal(err)
 	}
+	if err := model.SelectClass("bard"); err != nil {
+		t.Fatal(err)
+	}
 	got := model.ApplyAct(<-model.RollHero(context.Background()))
 	if got.Phase != CreationFailed || got.Error != "seat is locked" || got.Species != "elf" || got.Gender != "male" {
 		t.Fatalf("rejection snapshot = %+v", got)
@@ -97,6 +160,18 @@ func TestCreationModel_RejectsServerResponseAndPreservesSelection(t *testing.T) 
 type actFake struct {
 	request *df.ActRequest
 	result  ActResult
+}
+
+type recordingActFake struct {
+	requests []*df.ActRequest
+	result   ActResult
+}
+
+func (f *recordingActFake) Act(_ context.Context, request *df.ActRequest) <-chan ActResult {
+	f.requests = append(f.requests, request)
+	out := make(chan ActResult, 1)
+	out <- f.result
+	return out
 }
 
 func (f *actFake) Act(_ context.Context, request *df.ActRequest) <-chan ActResult {
