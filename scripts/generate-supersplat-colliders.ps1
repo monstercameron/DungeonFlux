@@ -9,6 +9,7 @@ param(
     [double] $VoxelSize = 0.2,
     [string] $SeedPos = '',
     [string] $FilterBox = '',
+    [switch] $NoFilter,
     [switch] $Overwrite
 )
 
@@ -53,8 +54,10 @@ $output = Join-Path $root "$($profile.id).voxel.json"
 if ((Test-Path -LiteralPath $output) -and -not $Overwrite) { throw "Output exists; pass -Overwrite to regenerate: $output" }
 $effectiveSeed = if ($SeedPos) { $SeedPos } else { $profile.defaultSeed }
 $args = @($source, '--select-lod', [string]$SourceLOD, '--voxel-size', $VoxelSize.ToString('R', [Globalization.CultureInfo]::InvariantCulture), '--voxel-opacity', '0.1', '--seed-pos', $effectiveSeed)
-if (-not $FilterBox) { $FilterBox = $profile.filter }
-if ($FilterBox) { $args += @('--filter-box', $FilterBox) }
+if (-not $NoFilter) {
+    if (-not $FilterBox) { $FilterBox = $profile.filter }
+    if ($FilterBox) { $args += @('--filter-box', $FilterBox) }
+}
 $args += @('--gpu', '0')
 if ($Overwrite) { $args += '--overwrite' }
 $args += @($output)
