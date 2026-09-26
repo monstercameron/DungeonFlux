@@ -34,8 +34,8 @@ type DialogueModel struct {
 }
 
 // DialogueModelFromState projects a DM snapshot into the TV conversation
-// surface. The DM wire view does not yet carry PhoneView.Moves, so the
-// conversation projection keeps the engine's closed move vocabulary here.
+// surface. When the snapshot also carries a phone view, its legal moves are
+// used; otherwise the closed conversation vocabulary supplies the preview.
 func DialogueModelFromState(state *dungeonfluxv1.ScreenState) DialogueModel {
 	if state == nil {
 		return DialogueModel{}
@@ -50,6 +50,7 @@ func DialogueModelFromState(state *dungeonfluxv1.ScreenState) DialogueModel {
 		PortraitURL:   ArtURL("mother_vell"),
 	}
 	if view == nil {
+		model.Options = dialogueOptionsFromState(state)
 		return model
 	}
 	model.Locale = localeOrDefault(view.GetLocale())
@@ -57,7 +58,7 @@ func DialogueModelFromState(state *dungeonfluxv1.ScreenState) DialogueModel {
 	if model.Speaker == "" && model.Line != "" {
 		model.Speaker = model.NPCName
 	}
-	model.Options = dialogueOptions(model.Paused)
+	model.Options = dialogueOptionsFromState(state)
 	return model
 }
 
@@ -73,10 +74,51 @@ func dialogueLine(view *dungeonfluxv1.DMView) (string, string) {
 	return "", ""
 }
 
+func dialogueOptionsFromState(state *dungeonfluxv1.ScreenState) []DialogueOption {
+	if state != nil {
+		if phone := state.GetPhone(); phone != nil && len(phone.GetMoves()) > 0 {
+			return dialogueOptionsFromMoves(phone.GetMoves(), state.GetPaused())
+		}
+		return dialogueOptions(state.GetPaused())
+	}
+	return nil
+}
+
+func dialogueOptionsFromMoves(moves []*dungeonfluxv1.Move, paused bool) []DialogueOption {
+	options := make([]DialogueOption, 0, len(moves))
+	for _, move := range moves {
+		if move == nil {
+			continue
+		}
+		label := strings.TrimSpace(move.GetLabel())
+		if label == "" {
+			label = strings.TrimSpace(move.GetMoveId())
+		}
+		if label == "" {
+			continue
+		}
+		enabled := move.GetEnabled() && !paused
+		reason := strings.TrimSpace(move.GetReason())
+		if paused {
+			reason = "Game is paused"
+		}
+		options = append(options, DialogueOption{
+			ID: move.GetMoveId(), MoveLabel: label, Text: label, Reason: reason,
+			IconName: dialogueIconName(move.GetMoveId()), Enabled: enabled,
+			Primary: len(options) == 0,
+		})
+	}
+	for index := range options {
+		options[index].IconURL = ArtURL(options[index].IconName)
+	}
+	return options
+}
+
 func dialogueOptions(paused bool) []DialogueOption {
 	options := []DialogueOption{
 		{ID: "persuade", MoveLabel: "Persuade +4 vs DC 10", Text: "Try to persuade her", Detail: "+4 vs DC 10", IconName: "ui/icon_persuade", Primary: true},
-		{ID: "step_away", MoveLabel: "Step away", Text: "Step away", IconName: "ui/icon_step_away"},
+		{ID: "ask_question", MoveLabel: "Ask a different question", Text: "Ask a different question", IconName: "ui/icon_talk"},
+		{ID: "look_around", MoveLabel: "Look around the tavern", Text: "Look around the tavern", IconName: "ui/icon_move"},
 	}
 	for index := range options {
 		options[index].Enabled = !paused
@@ -86,4 +128,19 @@ func dialogueOptions(paused bool) []DialogueOption {
 		options[index].IconURL = ArtURL(options[index].IconName)
 	}
 	return options
+}
+
+func dialogueIconName(moveID string) string {
+	switch strings.ToLower(strings.TrimSpace(moveID)) {
+	case "persuade":
+		return "ui/icon_persuade"
+	case "leave", "step_away":
+		return "ui/icon_step_away"
+	case "talk", "talk_vell", "ask_question", "question":
+		return "ui/icon_talk"
+	case "move", "look_around", "explore":
+		return "ui/icon_move"
+	default:
+		return "ui/icon_talk"
+	}
 }

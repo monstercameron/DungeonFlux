@@ -25,11 +25,48 @@ func TestDialogueModelFromState_ProjectsConversation(t *testing.T) {
 	if model.Locale != "es" || model.Speaker != "Mother Vell" || model.Line != "The bell remembers." {
 		t.Fatalf("conversation line = %#v", model)
 	}
-	if len(model.Options) != 2 || model.Options[0].ID != "persuade" || model.Options[1].ID != "step_away" {
+	if len(model.Options) != 3 || model.Options[0].ID != "persuade" || model.Options[1].ID != "ask_question" || model.Options[2].ID != "look_around" {
 		t.Fatalf("conversation options = %#v", model.Options)
 	}
 	if !model.Options[0].Primary || model.Options[0].Detail != "+4 vs DC 10" {
 		t.Fatalf("persuade presentation = %#v", model.Options[0])
+	}
+}
+
+func TestDialogueModelFromState_UsesPhoneLegalMovesWhenPresent(t *testing.T) {
+	state := &dungeonfluxv1.ScreenState{
+		Phase: "conversation",
+		View: &dungeonfluxv1.ScreenState_Phone{Phone: &dungeonfluxv1.PhoneView{Moves: []*dungeonfluxv1.Move{
+			{MoveId: "persuade", Label: "Try to persuade her", Enabled: true},
+			{MoveId: "leave", Label: "Leave the tavern", Enabled: false, Reason: "The door is barred"},
+		}}},
+	}
+
+	model := DialogueModelFromState(state)
+	if len(model.Options) != 2 || model.Options[0].Text != "Try to persuade her" || !model.Options[0].Enabled {
+		t.Fatalf("legal moves = %#v", model.Options)
+	}
+	if model.Options[1].IconName != "ui/icon_step_away" || model.Options[1].Reason != "The door is barred" || model.Options[1].Enabled {
+		t.Fatalf("disabled move = %#v", model.Options[1])
+	}
+}
+
+func TestDialogueModelFromState_SkipsEmptyMovesAndUsesIDFallback(t *testing.T) {
+	state := &dungeonfluxv1.ScreenState{
+		Phase: "conversation",
+		View: &dungeonfluxv1.ScreenState_Phone{Phone: &dungeonfluxv1.PhoneView{Moves: []*dungeonfluxv1.Move{
+			nil,
+			{MoveId: "", Label: "  "},
+			{MoveId: "custom_move", Enabled: true},
+		}}},
+	}
+
+	model := DialogueModelFromState(state)
+	if len(model.Options) != 1 || model.Options[0].ID != "custom_move" || model.Options[0].Text != "custom_move" {
+		t.Fatalf("fallback move = %#v", model.Options)
+	}
+	if model.Options[0].IconName != "ui/icon_talk" || !model.Options[0].Primary {
+		t.Fatalf("fallback move styling = %#v", model.Options[0])
 	}
 }
 
