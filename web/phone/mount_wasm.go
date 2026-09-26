@@ -143,43 +143,45 @@ func pttScreen(props pttProps) ui.Node {
 			return
 		}
 		status.Set("Finishing recording…")
-		go func() {
-			if err := current.Stop(); err != nil {
-				current.Dispose()
-				stopTracks(stream.Get())
-				if cancel := cancelRecording.Get(); cancel != nil {
-					cancel()
-				}
-				status.Set(err.Error())
-				busy.Set(false)
-				return
-			}
-			<-current.Done()
-			current.Dispose()
-			stopTracks(stream.Get())
-			if err := current.Err(); err != nil {
-				_ = <-props.model.Stop(context.Background())
-				status.Set(err.Error())
-				busy.Set(false)
-				return
-			}
-			if err := <-props.model.Stop(context.Background()); err != nil {
-				status.Set(err.Error())
-				busy.Set(false)
-				return
-			}
-			if cancel := cancelRecording.Get(); cancel != nil {
-				cancel()
-			}
-			busy.Set(false)
-			status.Set("Ready to talk")
-		}()
+		go finishPTT(current, props.model, stream.Get(), cancelRecording.Get, status.Set, busy.Set)
 	})
 	return html.Section(html.Props{Class: "df-phone-ptt"},
 		html.Button(html.Props{Type: "button", OnClick: start, Disabled: busy.Get()}, html.Text("Start talking")),
 		html.Button(html.Props{Type: "button", OnClick: stop, Disabled: !busy.Get()}, html.Text("Stop talking")),
 		html.P(html.Props{Role: "status"}, html.Text(status.Get())),
 	)
+}
+
+func finishPTT(recorder *BrowserRecorder, model *PTTModel, stream js.Value, cancel func() context.CancelFunc, setStatus func(string), setBusy func(bool)) {
+	if err := recorder.Stop(); err != nil {
+		recorder.Dispose()
+		stopTracks(stream)
+		if cancelFn := cancel(); cancelFn != nil {
+			cancelFn()
+		}
+		setStatus(err.Error())
+		setBusy(false)
+		return
+	}
+	<-recorder.Done()
+	recorder.Dispose()
+	stopTracks(stream)
+	if err := recorder.Err(); err != nil {
+		<-model.Stop(context.Background())
+		setStatus(err.Error())
+		setBusy(false)
+		return
+	}
+	if err := <-model.Stop(context.Background()); err != nil {
+		setStatus(err.Error())
+		setBusy(false)
+		return
+	}
+	if cancelFn := cancel(); cancelFn != nil {
+		cancelFn()
+	}
+	setBusy(false)
+	setStatus("Ready to talk")
 }
 
 func startPTT(ctx context.Context, cancel context.CancelFunc, model *PTTModel, setStatus func(string), setBusy func(bool), setRecorder func(*BrowserRecorder), setStream func(js.Value)) {
