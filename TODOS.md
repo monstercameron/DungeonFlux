@@ -655,6 +655,12 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   done when: a new effect GenerateCharacterReference{Seat, Species, Gender, Class, Name, Flavor, Scope} (vocab kind plus domain type in new files, named writer for those files) is emitted on PCLocked; a reference slot tracks pending/ready/failed with the reference asset ids per angle; later portrait/still/clip/billboard effects carry the ready reference ids; creation never waits on it (timeouts fall back); Step tests.
   status: claimed luna
 
+- [ ] ENG-023 · per-seat audio cues: combat and spell events play on the acting player's phone
+  why: The engine must decide which character sound plays on which phone: the attacker's effort grunt on their phone, the target's hurt grunt on theirs, spell casts, downed, victory, and heals.
+  lane: L-ENG · block: 11–14 · paths: `internal/game/audio_cues*.go`, `internal/game/combat/audio*.go` · depends: INT-006, MEDIA-013, COMBAT-008
+  done when: attack_made, damage_applied, spell/ability use, status down, combat won, and heal events emit INT-006's targeted sound effect with target = that seat and name voicepack/<seat>/<cue> (falling back to class-generic SFX); the DM still gets the table-wide SFX; Step tests assert targets and cue names per event.
+  status: open (launch after INT-006 and MEDIA-013)
+
 - [ ] INT-001 · lobby seats and join data reach the TV end to end
   why: Live test: two phones joined (engine View version advanced) but dfctl view --dm shows {"dm":{}} and the TV still shows Waiting to join, room code "/p", and a broken QR, because proto DMView has no seats or lobby fields and the projection never fills them.
   lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/common.proto`, `gen/**`, `internal/api/project*.go`, `web/dm/lobby*.go` · depends: ENG-017, API-019, BASE-021
@@ -1317,6 +1323,12 @@ Portraits, stills, clips, and their worker pool with per-vendor concurrency.
   why: Portraits, composed stills, clips, and combat billboard loops must reuse the locked hero's reference so the character stays consistent across the demo.
   lane: L-MEDIA · block: 11–14 · paths: `internal/media/portrait*.go`, `internal/media/compose*.go`, `internal/media/clip*.go`, `internal/media/billboard*.go`, `internal/adapters/image/openai/**`, `internal/adapters/video/**` · depends: MEDIA-011, MEDIA-005, MEDIA-006, MEDIA-007
   done when: when a reference is ready, portrait and still generation pass the reference crops as input images (Images API edit/reference input), clips use a still composed from the reference as the first frame (image-to-video), and billboard loops use the side and front crops; without a reference they behave as before; tests assert the reference ids flow into the requests.
+  status: claimed luna
+
+- [ ] MEDIA-013 · per-character voice-effect pack generated on lock
+  why: Developer request (2026-09-26): each player's phone plays that character's own sounds: a grunt when they strike, a pained grunt when they take damage, their class's spell sound, a gasp when downed, a victory shout.
+  lane: L-MEDIA · block: 11–14 · paths: `internal/media/voicepack*.go`, `internal/content/prompts/voicepack*.go` · depends: MEDIA-010, ENG-022
+  done when: on the reference request at lock (ENG-022's effect) or its own trigger, an executor generates a pack of short clips (attack_effort, hurt, spell_cast by class, downed, victory, heal) through the MEDIA-010 ElevenLabs sound adapter with prompts from species, gender, class, and flavor; clips are 0.4-1.5 s, trimmed and normalised, stored as assets named voicepack/<seat>/<cue>, cached by prompt hash so repeated builds reuse them, with class-generic fallbacks from the build-time SFX library; budget recorded; fake mode returns short tones; tests with fakes and httptest; no live calls in tests.
   status: claimed luna
 
 ## 18. Web shell (shared WASM client)
