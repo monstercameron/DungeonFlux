@@ -515,7 +515,7 @@ The fixed one-shot: NPCs, beats, prompts, schemas, canned lines, the tavern nav 
 
 - [ ] CONT-010 · localized label key for the class move
   why: ENG-021 reports the full walk and downstream wire tests fail because the class move has no localized label_key.
-  lane: L-CONTENT · block: 11–14 · paths: `internal/content/moves*.go`, `internal/i18n/catalog/**` · depends: CONT-009, ENG-019
+  lane: L-CONTENT · block: 11–14 · paths: `internal/content/moves*.go`, `internal/i18n/english*.go`, `internal/i18n/spanish*.go`, `internal/i18n/keys*.go`, `internal/i18n/catalog/**` · depends: CONT-009, ENG-019
   done when: class has label_key and reason keys in en and es; go test ./internal/sim/... ./internal/wire passes; I18N-011 parity passes.
   status: claimed luna
 
