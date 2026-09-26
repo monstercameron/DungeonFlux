@@ -2004,6 +2004,12 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: independent instances load profiles into supplied canvases without replacing nodes or changing host layout, resize to their own element, expose scene/token/camera/effects/visibility/control methods and events, preserve the Go bridge, clean up listeners and GPU resources, and lifecycle/race regressions plus lane gate pass.
   status: done Codex; supplied-canvas API, explicit engine ownership, lifecycle/bridge regressions pass; gate-20260926-153328 failures 0
 
+- [x] SPLAT-022 - toggleable controls, embedding example and devlog
+  why: The developer requests toggleable controllers, usage documentation, devlog updates and commits for new features.
+  lane: L-WEB-SPLAT - paths: `web/splat/js/battle_viewer.mjs`, `web/splat/js/battle_controls.mjs`, `web/splat/js/battle_demo.mjs`, `web/splat/js/viewer_controls.mjs`, `web/splat/js/viewer.mjs`, `web/splat/js/viewer.html`, `web/splat/embed.html`, `docs/devlog.html` - depends: SPLAT-021
+  done when: control panels and camera input can be toggled independently, an accessible scoped panel works with any supplied canvas through the instance API, the existing viewer supports the toggles, a documented two-canvas example is visually verified with independent state and resize, devlog records the work, and regressions and lane gate pass.
+  status: done Codex; independent controller toggles, two-canvas resize/remount and standalone visual checks pass; devlog/API docs updated; gate-20260926-153529 failures 0
+
 ## 23. dfctl debug CLI
 
 Command-line reads and demo writes for agents and the developer.

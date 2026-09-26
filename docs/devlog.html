@@ -87,6 +87,26 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="milestone" id="e-20260926-splat022-embedded-api">
+  <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Milestone</span><span class="who">L-WEB-SPLAT</span></div>
+  <h2 class="entry-title"><a href="#e-20260926-splat022-embedded-api">Battle scenes mount into host canvases with independent controls and a lifecycle API</a></h2>
+  <p>SPLAT-021 (commit <code>656b523</code>) and SPLAT-022 add <code>createBattleRuntime</code> and <code>createBattleViewer</code>. The host supplies its canvas and CSS; the renderer retains that element and resizes its drawing buffer to the element. Control-panel visibility and camera input are independent toggles. The instance API exposes ordered scene snapshots, characters, follow cameras, effects, grades, LOD, pause, events and idempotent disposal. Superseded loads reject with <code>AbortError</code> and late assets are released. The existing v1 Go bridge remains an adapter over the same runtime.</p>
+  <p>Two-canvas visual inspection caught PlayCanvas's default global application ownership: asynchronous entity creation was sending the first scene's entities to the second renderer. Explicit application ownership now covers entities and post effects. The embedding example exercises independent toggles, movement, resize, disposal and remount, and retains scene credits. Regressions preserve the standalone viewer's demo, FPS reporting and debug picking, and cover load races, paused pans, sequenced grades and fallback. Both scoped gates pass; no Go packages changed. Concurrent high-resolution scenes can trigger the existing low-FPS warning on slower devices. The API and two-canvas usage example are documented in <code>web/splat/embed.html</code>.</p>
+</li>
+
+<li class="entry" data-kind="issue" id="e-20260926-splat020-metric-registration">
+  <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Issue</span><span class="who">L-WEB-SPLAT</span></div>
+  <h2 class="entry-title"><a href="#e-20260926-splat020-metric-registration">Scan scale made normal-height characters look miniature</a></h2>
+  <p>SPLAT-018 through SPLAT-020 add terrain-following character movement, optional camera tracking, cyan player cells, crimson enemy cells and distinct player, enemy and NPC stand-in sprites. The first sprite preview exposed an existing registration problem: the imported scans still treated source units as metres. Commit <code>b7bb57a</code> applies an estimated 0.4 metres per source unit to both scans, their collider transforms and camera positions. Characters remain 1.8 metres tall and rules squares remain 1.524 metres, so characters now appear 2.5 times larger relative to the scenery. The estimate comes from visual architecture and path references, not a metric survey. Rescaling also revealed a demo destination on a disconnected terrain patch; the demo now selects a reachable destination. Both scenes were visually inspected and the scoped gate passed.</p>
+</li>
+
+<li class="entry" data-kind="milestone" id="e-20260926-splat017-grid-grade-motion">
+  <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Milestone</span><span class="who">L-WEB-SPLAT</span></div>
+  <h2 class="entry-title"><a href="#e-20260926-splat017-grid-grade-motion">Scanned battle scenes gain supported grids and game-triggered presentation effects</a></h2>
+  <p>The SuperSplat download workflow resolves each scene's LOD manifest and preserves its dependent chunks. SPLAT-012 through SPLAT-017 register the Wooded Path and Dittrich's Tomb scenes as battlefields, generate voxel occupancy, exclude unsupported or blocked cells and fit grid lines to supported terrain heights. The grid uses 5-foot squares, antialiasing, contrast outlines and a glow inspired by the concept art. Neutral gray skyboxes and bounded color grades cover the ten battlemap themes. Sequenced camera commands trigger eased pans, impact shakes and tilt-shift, with pause and reduced-motion handling. These are presentation features; authoritative movement remains in the game engine. Concept images supplied palettes and mood, while navigation came from the scene profiles and colliders. Individual TODO commits and their visual checks are recorded in the repository.</p>
+</li>
+
+
 <li class="entry" data-kind="issue" id="e-20260926-dm032-corner-brand-conversation">
   <div class="entry-head"><time datetime="2026-09-26T13:52-04:00">Sep 26, 2026, 1:52 PM</time><span class="kind">Issue</span><span class="who">ORCH</span></div>
   <h2 class="entry-title"><a href="#e-20260926-dm032-corner-brand-conversation">A shared corner brand replaces three stacked wordmarks; conversation drops duplicate chrome</a></h2>

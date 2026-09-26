@@ -1,3 +1,4 @@
+import { installStandaloneControls } from "./viewer_controls.mjs";
 import * as pc from "../vendor/playcanvas.mjs";
 import { applyBattleTransform, createBattleGrid, createSplatEntity, loadBattleProfile, loadSplatBundle } from "./battle_scene.mjs";
 import { createCinematicEffects } from "./cinematic_effects.mjs";
@@ -45,7 +46,7 @@ let gridEntity;
 let pickMode;
 let gridVisible = true;
 let baseStatus = "";
-let orbitControls;
+let orbitControls; let panelControls;
 let cinematic;
 let effectSeq = 0;
 let demoSeq = 1;
@@ -293,10 +294,12 @@ function setupViewer(profile) {
   orbitControls = installOrbitControls({ canvas, camera, target: initialCamera?.target ?? initialCamera?.look_at ?? [0, 0, 0] });
   cinematic = createCinematicEffects({ pc, app, camera, canvas, cameras: profile?.cameras ?? {}, reducedMotion: Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce")?.matches), onPanComplete: (target) => orbitControls?.setTarget(target) });
   cinematic.setPose(initialCamera ?? { position: [0, 7, 10], target: [0, 0, 0], fov: 35 });
-  const stopForGesture = () => { tokenController?.clearFollow(); if (followNode) followNode.value = "off"; const pose = cinematic?.stop(); if (pose?.target) orbitControls?.setTarget(pose.target); };
+  const stopForGesture = () => { if (!orbitControls) return; tokenController?.clearFollow(); if (followNode) followNode.value = "off"; const pose = cinematic?.stop(); if (pose?.target) orbitControls?.setTarget(pose.target); };
   canvas.addEventListener("pointerdown", stopForGesture, true);
   canvas.addEventListener("wheel", stopForGesture, { passive: true, capture: true });
-  app.on("destroy", () => { canvas.removeEventListener("pointerdown", stopForGesture, true); canvas.removeEventListener("wheel", stopForGesture, true); orbitControls?.dispose(); });
+  panelControls = installStandaloneControls({ panel: document.querySelector("#toolbar"), container: document.querySelector("#hud"), onCameraControls: (on) => { orbitControls?.dispose(); orbitControls = on ? installOrbitControls({ canvas, camera, target: cinematic.getPose()?.target ?? [0,0,0] }) : null; } });
+  window.dfViewerControls = panelControls;
+  app.on("destroy", () => { panelControls?.dispose(); canvas.removeEventListener("pointerdown", stopForGesture, true); canvas.removeEventListener("wheel", stopForGesture, true); orbitControls?.dispose(); });
   lodNode?.addEventListener("change", () => applyLOD(lodNode.value));
   app.on("postrender", recordFPS);
   app.start();
