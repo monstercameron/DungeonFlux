@@ -547,6 +547,12 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   done when: a Step test drives Lobby → Creation → Opening → Conversation → Check → Resolution → HookEvent (combat stubbed) → Cliffhanger → End through the dispatcher; lane-local stand-ins replaced by internal/game/nested types; walk/basic still passes.
   status: committed 8a7a976
 
+- [ ] ENG-015 · engine root delegates to the phase dispatcher (the game actually plays)
+  why: E2E-003 stalls in creation because internal/game.State, the engine wire runs, never uses internal/game/phase.Machine: its Step accepts only host commands and debug reset, rejects Act, Say, timer, line, STT, LLM, and asset events, and LegalMoves knows only the lobby; the phase stack is exercised only by its own tests.
+  lane: L-ENG · block: 8–11 · paths: `internal/game/game.go`, `internal/game/state*.go`, `internal/game/legal*.go`, `internal/game/view*.go`, `internal/game/phase/*.go` · depends: ENG-014, COMBAT-008, ENG-011
+  done when: game.State owns a phase.Machine and routes every domain event to it (creation species/gender/roll_hero/ready Acts, PCLocked, TimerFired, LineDone, Transcribed, Interpreted, asset and prerender events, combat Acts); effects from phase packages are returned from Step; LegalMoves and View come from the active phase with reasons; host and debug handling keep working; a Step test and internal/wire E2E-003 drive lobby to End on fakes without skipping; walk tests and archtest stay green.
+  status: claimed luna
+
 ## 8. Engine phases (one package each)
 
 Each phase is a separate subpackage with its own table, registered into the top table.
@@ -911,7 +917,7 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: API-014 added Watch reattach but its caller in session.go was outside its paths, and staticcheck fails the internal/api gate on an unused locale field (U1000) in session.go.
   lane: L-API · block: 8–11 · paths: `internal/api/session*.go` · depends: API-014
   done when: a reattaching client resumes its Watch through the session path; the locale field is either used (stored on the seat for I18N-004) or removed; staticcheck clean on internal/api; E2E path 12 runs instead of skipping.
-  status: claimed luna
+  status: committed a904299
 
 ## 14. LLM layer
 
@@ -1559,7 +1565,7 @@ Keeping the build honest: per-commit checks, the 30-minute full gate, checkpoint
   why: E2E-001 still skips after the lobby with a note that ENG-014, COMBAT-008, BASE-010, and BASE-011 were pending; all four are committed, so the fastest gate check must now drive a whole run to End.
   lane: ORCH · block: 8–11 · paths: `internal/wire/e2e_test.go` · depends: E2E-001, ENG-014, COMBAT-008, BASE-011
   done when: the test drives lobby → creation → opening → conversation → check → resolution → hook → combat → cliffhanger → End through dfctl only, on fakes, asserting the phase trace; any engine stall is reported with the exact event and state as a follow-up todo request.
-  status: claimed luna
+  status: committed 5df13ea (stalls in creation: engine root does not use the phase dispatcher -> ENG-015)
 
 - [ ] SPIKE-001 · Spike proto and grpctunnel echo
   why: The riskiest path (phone mic over the tunnel, PCM back) is proven with a throwaway proto first.
