@@ -30,6 +30,26 @@ func TestMountGRPC_WebSocketOriginAllowlist(t *testing.T) {
 	}
 }
 
+func TestMountGRPC_WebSocketSameOrigin(t *testing.T) {
+	grpcServer := grpc.NewServer()
+	apiServer, err := NewServer(grpcServer, []string{"https://allowed.example"})
+	if err != nil {
+		t.Fatalf("NewServer() error = %v", err)
+	}
+	httpServer := httptest.NewServer(apiServer.Handler())
+	defer httpServer.Close()
+
+	url := "ws" + httpServer.URL[len("http"):] + "/grpc"
+	conn, response, err := (&websocket.Dialer{}).Dial(url, map[string][]string{"Origin": {httpServer.URL}})
+	if err != nil {
+		t.Fatalf("Dial() error = %v", err)
+	}
+	defer conn.Close()
+	if response.StatusCode != 101 {
+		t.Fatalf("status = %d, want 101", response.StatusCode)
+	}
+}
+
 func TestMountGRPC_RejectsDisallowedOrigin(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	apiServer, err := NewServer(grpcServer, []string{"https://allowed.example"})

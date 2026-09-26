@@ -43,6 +43,6 @@ func MountGRPC(mux *http.ServeMux, grpcServer *grpc.Server, allowedOrigins []str
 	if grpcServer == nil {
 		return errors.New("api: grpc server is required")
 	}
-	mux.Handle(grpcPath, grpctunnel.Wrap(grpcServer, grpctunnel.WithAllowedOrigins(allowedOrigins...)))
+	mux.Handle(grpcPath, grpctunnel.Wrap(grpcServer, grpctunnel.WithOriginCheck(originCheck(allowedOrigins))))
 	return nil
 }
