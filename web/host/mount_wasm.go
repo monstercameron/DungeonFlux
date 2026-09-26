@@ -4,6 +4,7 @@ package host
 
 import (
 	"context"
+	"sync"
 	"syscall/js"
 
 	v1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
@@ -13,10 +14,31 @@ import (
 	"github.com/monstercameron/GoWebComponents/v6/ui"
 )
 
+// sharedHostClients keeps one connection per endpoint; route re-renders
+// (asset loads) otherwise reconnect and drop the host Watch stream.
+var sharedHostClients = struct {
+	sync.Mutex
+	byEndpoint map[string]*hostClient
+}{byEndpoint: map[string]*hostClient{}}
+
+func sharedHostClient(endpoint string) (*hostClient, error) {
+	sharedHostClients.Lock()
+	defer sharedHostClients.Unlock()
+	if client, ok := sharedHostClients.byEndpoint[endpoint]; ok {
+		return client, nil
+	}
+	client, err := newHostClient(endpoint)
+	if err != nil {
+		return nil, err
+	}
+	sharedHostClients.byEndpoint[endpoint] = client
+	return client, nil
+}
+
 // Mount returns the host control screen for the shared shell router.
 func Mount(endpoint string) router.Component {
 	return func(_ router.Attrs) *router.Element {
-		client, err := newHostClient(endpoint)
+		client, err := sharedHostClient(endpoint)
 		if err != nil {
 			return ui.CreateElement(errorView, err.Error())
 		}
