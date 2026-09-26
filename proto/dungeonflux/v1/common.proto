@@ -121,6 +121,19 @@ message Music { string track_id = 1; string url = 2; int64 loop_start_ms = 3; in
 message SoundEffect { string id = 1; string url = 2; }
 message BuildCard { int32 player_number = 1; string name = 2; string class_name = 3; string portrait_url = 4; }
 message Shot { string id = 1; bool fallback = 2; }
+message LobbySeat {
+  string seat_id = 1;
+  int32 player_number = 2;
+  string name = 3;
+  bool joined = 4;
+  string locale = 5;
+  bool ready = 6;
+}
+message Lobby {
+  string room_code = 1;
+  string join_url = 2;
+  string qr_url = 3;
+}
 
 message Battlefield {
   string mode = 1;
@@ -165,6 +178,8 @@ message DMView {
   repeated string preload = 20;
   string locale = 21;
   Text notice = 22;
+  repeated LobbySeat seats = 23;
+  Lobby lobby = 24;
 }
 message Character { string name = 1; string class_name = 2; int32 persuasion_modifier = 3; string portrait_url = 4; string hook_text = 5; }
 message PTT { bool enabled = 1; PTTState state = 2; }

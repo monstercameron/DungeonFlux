@@ -195,7 +195,7 @@ func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handle
 	for _, layer := range layers {
 		switch layer {
 		case LayerLobby:
-			lobby := NewLobbyModel(roomCode, "")
+			lobby := NewLobbyModelFromDMView(view, roomCode)
 			lobby.SetLocale(locale)
 			children = appendLayer(children, layer, LobbyComponent(lobby)(router.Attrs{}))
 		case LayerScene:

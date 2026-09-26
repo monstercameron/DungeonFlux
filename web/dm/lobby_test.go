@@ -27,6 +27,30 @@ func TestNewLobbyModel_DefaultsQRAssetAndNormalizesRoom(t *testing.T) {
 	}
 }
 
+func TestNewLobbyModelFromDMView_UsesServerLobbyAndSeats(t *testing.T) {
+	view := &dungeonfluxv1.DMView{
+		Lobby: &dungeonfluxv1.Lobby{RoomCode: "DF-REAL", JoinUrl: "https://dm.test/p?room=DF-REAL", QrUrl: "/assets/real.png"},
+		Seats: []*dungeonfluxv1.LobbySeat{{PlayerNumber: 1, Name: "Mara", Joined: true, Ready: true}, {SeatId: "2", Joined: true}},
+	}
+	model := NewLobbyModelFromDMView(view, "old-room")
+	if model.RoomCode != "DF-REAL" || model.JoinURL != "https://dm.test/p?room=DF-REAL" || model.QRURL != "/assets/real.png" {
+		t.Fatalf("server lobby = %+v", model)
+	}
+	if model.Seats[0].Name != "Mara" || !model.Seats[0].Joined || !model.Seats[0].Ready || !model.Seats[1].Joined {
+		t.Fatalf("server seats = %+v", model.Seats)
+	}
+}
+
+func TestNewLobbyModelFromDMView_FallsBackForMissingLobbyFields(t *testing.T) {
+	model := NewLobbyModelFromDMView(&dungeonfluxv1.DMView{Seats: []*dungeonfluxv1.LobbySeat{{SeatId: "2", Name: "Rook"}}}, "ROOM")
+	if model.RoomCode != "ROOM" || model.JoinURL != "/p?room=ROOM" || model.QRURL != "/assets/join-room.png" || model.Seats[1].Name != "Rook" {
+		t.Fatalf("fallback lobby = %+v", model)
+	}
+	if got := NewLobbyModelFromDMView(nil, "ROOM"); got.RoomCode != "ROOM" {
+		t.Fatalf("nil view fallback = %+v", got)
+	}
+}
+
 func TestJoinURL_EmptyRoomOmitsEmptyQuery(t *testing.T) {
 	if got := JoinURL(" "); got != "/p" {
 		t.Fatalf("empty join URL = %q", got)

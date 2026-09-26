@@ -18,6 +18,9 @@ func TestProject_AllViewFieldsReachClientViews(t *testing.T) {
 	if got := dm.GetDm(); got.BackgroundUrl != "bg" || len(got.Layers) != 2 || got.Narration.TextSoFar != "narration" || got.Subtitle.Text != "subtitle" || got.Callout != "callout" || len(got.BuildCards) != 1 || len(got.Preload) != 1 {
 		t.Fatalf("dm scene fields = %#v", got)
 	}
+	if got := dm.GetDm(); len(got.Seats) != 1 || got.Seats[0].SeatId != "1" || got.Seats[0].Name != "Astra" || !got.Seats[0].Ready {
+		t.Fatalf("dm lobby seats = %#v", got.Seats)
+	}
 	if got := dm.GetDm(); got.Dice.D20 != 19 || got.Dice.Damage.Total != 8 || got.TurnTimer.RemainingMs != 500 || got.Music.TrackId != "track" {
 		t.Fatalf("dm activity fields = %#v", got)
 	}
@@ -33,6 +36,24 @@ func TestProject_AllViewFieldsReachClientViews(t *testing.T) {
 	host := Project(view, df.ClientKind_CLIENT_KIND_HOST, 1).GetHost()
 	if host.RunMode != "stage" || host.NextD20 != 19 || host.CombatCapRemainingMs != 900 || len(host.AssetSlots) != 1 || host.Dm == nil {
 		t.Fatalf("host fields = %#v", host)
+	}
+}
+
+func TestProjectDMWithLobby_ProjectsRoomMetadata(t *testing.T) {
+	got := ProjectDMWithLobby(domain.View{Seats: []domain.SeatView{{Seat: 2, PlayerNumber: 2, Connected: true, Locale: "es"}}}, LobbyProjection{
+		RoomCode: "DF-ROOM", JoinURL: "https://dm.test/p?room=DF-ROOM", QRURL: "/assets/qr.png",
+	})
+	if got.Lobby == nil || got.Lobby.RoomCode != "DF-ROOM" || got.Lobby.JoinUrl == "" || got.Lobby.QrUrl != "/assets/qr.png" {
+		t.Fatalf("lobby metadata = %#v", got.Lobby)
+	}
+	if len(got.Seats) != 1 || got.Seats[0].SeatId != "2" || got.Seats[0].PlayerNumber != 2 || !got.Seats[0].Joined || got.Seats[0].Locale != "es" || got.Seats[0].Ready {
+		t.Fatalf("lobby seat = %#v", got.Seats)
+	}
+}
+
+func TestProjectDM_LeavesOptionalLobbyMetadataUnset(t *testing.T) {
+	if got := ProjectDM(domain.View{}); got.Lobby != nil {
+		t.Fatalf("empty lobby metadata = %#v", got.Lobby)
 	}
 }
 

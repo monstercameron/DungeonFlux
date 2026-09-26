@@ -32,6 +32,21 @@ func Project(view domain.View, kind df.ClientKind, seat domain.SeatID) *df.Scree
 // ProjectDM converts a domain view to the DM protobuf view.
 func ProjectDM(view domain.View) *df.DMView { return projectDM(view) }
 
+// LobbyProjection carries room metadata that is owned by the composition
+// root and is not part of a game phase. It is optional so older callers can
+// continue projecting a domain view while the shared View contract catches
+// up with the room-level lobby state.
+type LobbyProjection struct {
+	RoomCode string
+	JoinURL  string
+	QRURL    string
+}
+
+// ProjectDMWithLobby converts a domain view and room metadata to a DM view.
+func ProjectDMWithLobby(view domain.View, lobby LobbyProjection) *df.DMView {
+	return projectDM(view, lobby)
+}
+
 // ProjectPhone converts a domain view to the phone protobuf view for seat.
 func ProjectPhone(view domain.View, seat domain.SeatID) *df.PhoneView {
 	return projectPhone(view, seat)
@@ -40,7 +55,7 @@ func ProjectPhone(view domain.View, seat domain.SeatID) *df.PhoneView {
 // ProjectHost converts a domain view to the host protobuf view.
 func ProjectHost(view domain.View) *df.HostView { return projectHost(view) }
 
-func projectDM(view domain.View) *df.DMView {
+func projectDM(view domain.View, lobby ...LobbyProjection) *df.DMView {
 	out := &df.DMView{
 		BackgroundUrl: view.Scene.BackgroundURL,
 		Layers:        projectLayers(view.Scene.Layers),
@@ -50,6 +65,10 @@ func projectDM(view domain.View) *df.DMView {
 		BuildCards:    projectBuildCards(view.Seats),
 		Preload:       append([]string(nil), view.Preload...),
 		Music:         projectMusic(view.Music),
+		Seats:         projectLobbySeats(view.Seats),
+	}
+	if len(lobby) > 0 {
+		out.Lobby = projectLobby(lobby[0])
 	}
 	if view.Dice != nil {
 		out.Dice = projectDice(*view.Dice)
@@ -79,6 +98,35 @@ func projectDM(view domain.View) *df.DMView {
 		out.CombatBanner = view.Combat.Banner
 	}
 	return out
+}
+
+func projectLobbySeats(seats []domain.SeatView) []*df.LobbySeat {
+	out := make([]*df.LobbySeat, 0, len(seats))
+	for _, seat := range seats {
+		name := ""
+		if seat.Build != nil {
+			name = seat.Build.Name
+		}
+		if name == "" && seat.Character != nil {
+			name = seat.Character.Name
+		}
+		out = append(out, &df.LobbySeat{
+			SeatId:       strconv.Itoa(int(seat.Seat)),
+			PlayerNumber: int32(seat.PlayerNumber),
+			Name:         name,
+			Joined:       seat.Connected,
+			Locale:       seat.Locale,
+			Ready:        seat.Build != nil || seat.Character != nil,
+		})
+	}
+	return out
+}
+
+func projectLobby(lobby LobbyProjection) *df.Lobby {
+	if lobby.RoomCode == "" && lobby.JoinURL == "" && lobby.QRURL == "" {
+		return nil
+	}
+	return &df.Lobby{RoomCode: lobby.RoomCode, JoinUrl: lobby.JoinURL, QrUrl: lobby.QRURL}
 }
 
 func projectPhone(view domain.View, seat domain.SeatID) *df.PhoneView {

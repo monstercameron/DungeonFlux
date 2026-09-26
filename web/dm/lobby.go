@@ -4,6 +4,7 @@ package dm
 import (
 	"errors"
 	"net/url"
+	"strconv"
 	"strings"
 
 	dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
@@ -43,6 +44,40 @@ func NewLobbyModel(roomCode, qrURL string) LobbyModel {
 		Seats:      [2]Seat{{Number: 1}, {Number: 2}},
 		Locale:     "en",
 	}
+}
+
+// NewLobbyModelFromDMView converts the live DM snapshot into the lobby model.
+// The fallback room code keeps preview and older servers usable while the
+// server begins sending the room-level lobby metadata.
+func NewLobbyModelFromDMView(view *dungeonfluxv1.DMView, fallbackRoomCode string) LobbyModel {
+	model := NewLobbyModel(fallbackRoomCode, "")
+	if view == nil {
+		return model
+	}
+	if lobby := view.GetLobby(); lobby != nil {
+		if lobby.GetRoomCode() != "" {
+			model.RoomCode = normalizeRoomCode(lobby.GetRoomCode())
+		}
+		if lobby.GetJoinUrl() != "" {
+			model.JoinURL = lobby.GetJoinUrl()
+		} else {
+			model.JoinURL = JoinURL(model.RoomCode)
+		}
+		if lobby.GetQrUrl() != "" {
+			model.QRURL = lobby.GetQrUrl()
+		}
+	}
+	for index, seat := range view.GetSeats() {
+		number := int(seat.GetPlayerNumber())
+		if number == 0 {
+			number, _ = strconv.Atoi(seat.GetSeatId())
+		}
+		if number == 0 {
+			number = index + 1
+		}
+		model.SetSeat(Seat{Number: number, Name: seat.GetName(), Joined: seat.GetJoined(), Ready: seat.GetReady()})
+	}
+	return model
 }
 
 func normalizeRoomCode(roomCode string) string {
