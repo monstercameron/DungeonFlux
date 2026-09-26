@@ -44,16 +44,21 @@ func seatProgress(seat CreationSeat) ui.Node {
 	if gender == "" {
 		gender = "—"
 	}
+	className := seat.Class
+	if className == "" {
+		className = "—"
+	}
 	children := []ui.Node{
 		html.P(html.Props{Style: map[string]string{"margin": "0 0 .55rem", "color": "#a89f8c", "font-size": "clamp(.85rem,1.1vw,1.15rem)", "font-weight": "700", "letter-spacing": ".14em"}}, ui.Text("PLAYER "+strconv.Itoa(int(seat.Number)))),
 		html.H2(html.Props{Style: map[string]string{"margin": "0", "font-family": "Georgia,serif", "font-size": "clamp(1.8rem,3.4vw,4rem)"}}, ui.Text(name)),
-		html.Div(html.Props{Style: map[string]string{"display": "grid", "grid-template-columns": "1fr 1fr", "gap": ".8rem", "margin-top": "1.5rem", "color": "#a89f8c", "font-size": "clamp(1rem,1.6vw,1.7rem)"}},
+		html.Div(html.Props{Style: map[string]string{"display": "grid", "grid-template-columns": "repeat(3,minmax(0,1fr))", "gap": ".8rem", "margin-top": "1.5rem", "color": "#a89f8c", "font-size": "clamp(1rem,1.6vw,1.7rem)"}},
 			html.P(html.Props{Style: map[string]string{"margin": "0"}}, html.Small(html.Props{Style: map[string]string{"display": "block", "color": "#d9a441", "font-size": ".65em", "letter-spacing": ".12em", "text-transform": "uppercase"}}, ui.Text("Species")), ui.Text(species)),
 			html.P(html.Props{Style: map[string]string{"margin": "0"}}, html.Small(html.Props{Style: map[string]string{"display": "block", "color": "#d9a441", "font-size": ".65em", "letter-spacing": ".12em", "text-transform": "uppercase"}}, ui.Text("Gender")), ui.Text(gender)),
+			html.P(html.Props{Style: map[string]string{"margin": "0"}}, html.Small(html.Props{Style: map[string]string{"display": "block", "color": "#d9a441", "font-size": ".65em", "letter-spacing": ".12em", "text-transform": "uppercase"}}, ui.Text("Class")), ui.Text(className)),
 		),
 	}
-	if seat.Class != "" {
-		children = append(children, html.P(html.Props{Style: map[string]string{"margin": "1.4rem 0 0", "color": "#efe6d2", "font-size": "clamp(1.2rem,2vw,2rem)"}}, ui.Text("Rolled class: "+seat.Class)))
+	if seat.ClassCrestURL != "" {
+		children = append(children, html.Img(html.Props{Src: seat.ClassCrestURL, Alt: seat.Class + " class crest", Style: map[string]string{"display": "block", "height": "clamp(3rem,7vh,5rem)", "width": "clamp(3rem,7vh,5rem)", "margin": "1.1rem auto 0", "object-fit": "contain"}}))
 	}
 	if seat.PortraitURL != "" {
 		children = append(children, html.Img(html.Props{Src: seat.PortraitURL, Alt: name, Style: map[string]string{"display": "block", "height": "clamp(7rem,18vh,13rem)", "max-width": "100%", "margin": "1rem auto 0", "object-fit": "contain"}}))

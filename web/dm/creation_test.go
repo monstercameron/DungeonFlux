@@ -2,6 +2,7 @@ package dm
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
@@ -9,11 +10,11 @@ import (
 
 func TestCreationModelFromView_ProjectsPicksAndBuilds(t *testing.T) {
 	view := &dungeonfluxv1.DMView{
-		Callout:    "creation seat=1 species=elf gender=female",
+		Callout:    "creation seat=1 species=elf gender=female class=rogue class_crest=/assets/rogue-crest.webp",
 		BuildCards: []*dungeonfluxv1.BuildCard{{PlayerNumber: 2, Name: "Rook", ClassName: "Paladin", PortraitUrl: "rook.png"}},
 	}
 	model := CreationModelFromView(view)
-	if model.Seats[0].Species != "elf" || model.Seats[0].Gender != "female" || model.Seats[0].Status != "Ready to roll" {
+	if model.Seats[0].Species != "elf" || model.Seats[0].Gender != "female" || model.Seats[0].Class != "rogue" || model.Seats[0].ClassCrestURL != "/assets/rogue-crest.webp" || model.Seats[0].Status != "Ready to roll" {
 		t.Fatalf("seat 1 = %#v", model.Seats[0])
 	}
 	if !model.Seats[1].Ready || model.Seats[1].Name != "Rook" || model.Seats[1].Class != "Paladin" {
@@ -23,8 +24,16 @@ func TestCreationModelFromView_ProjectsPicksAndBuilds(t *testing.T) {
 
 func TestCreationModelFromView_NilHasPhonePrompt(t *testing.T) {
 	model := CreationModelFromView(nil)
-	if model.Prompt == "" || model.Seats[0].Status != "Waiting for player" || model.Seats[1].Number != 2 {
+	if model.Prompt == "" || !strings.Contains(model.Prompt, "class") || model.Seats[0].Status != "Waiting for player" || model.Seats[1].Number != 2 {
 		t.Fatalf("model = %#v", model)
+	}
+}
+
+func TestCreationModelFromView_ClassChoiceIsVisibleBeforeRoll(t *testing.T) {
+	model := CreationModelFromView(&dungeonfluxv1.DMView{Callout: "creation seat=2 class=wizard"})
+	seat := model.Seats[1]
+	if seat.Class != "wizard" || seat.Status != "Choice received" || seat.Ready {
+		t.Fatalf("seat = %#v", seat)
 	}
 }
 
@@ -35,8 +44,9 @@ func TestDecodeCreationCallout(t *testing.T) {
 		want  CreationCallout
 		ok    bool
 	}{
-		{"valid", "Creation seat=2 species=orc gender=nonbinary", CreationCallout{2, "orc", "nonbinary"}, true},
-		{"partial", "creation seat=1 species=dwarf", CreationCallout{1, "dwarf", ""}, true},
+		{"valid", "Creation seat=2 species=orc gender=nonbinary class=barbarian", CreationCallout{Number: 2, Species: "orc", Gender: "nonbinary", Class: "barbarian"}, true},
+		{"partial", "creation seat=1 species=dwarf", CreationCallout{Number: 1, Species: "dwarf"}, true},
+		{"class only", "creation seat=1 class=wizard", CreationCallout{Number: 1, Class: "wizard"}, true},
 		{"bad seat", "creation seat=x species=elf", CreationCallout{}, false},
 		{"other callout", "DM steering: Rook", CreationCallout{}, false},
 	}
