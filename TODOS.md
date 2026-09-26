@@ -659,7 +659,7 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: The engine must decide which character sound plays on which phone: the attacker's effort grunt on their phone, the target's hurt grunt on theirs, spell casts, downed, victory, and heals.
   lane: L-ENG · block: 11–14 · paths: `internal/game/audio_cues*.go`, `internal/game/combat/audio*.go` · depends: INT-006, MEDIA-013, COMBAT-008
   done when: attack_made, damage_applied, spell/ability use, status down, combat won, and heal events emit INT-006's targeted sound effect with target = that seat and name voicepack/<seat>/<cue> (falling back to class-generic SFX); the DM still gets the table-wide SFX; Step tests assert targets and cue names per event.
-  status: open (launch after INT-006 and MEDIA-013)
+  status: claimed luna
 
 - [ ] ENG-024 · engine music, ambience, and shot cues emit the streamed sound effect
   why: INT-006 streams table audio over gRPC, but the engine's existing music and ambience cues (ENG-012) never emit INT-006's sound effect, so no music or ambience plays on the DM.
@@ -1341,13 +1341,13 @@ Portraits, stills, clips, and their worker pool with per-vendor concurrency.
   why: Portraits, composed stills, clips, and combat billboard loops must reuse the locked hero's reference so the character stays consistent across the demo.
   lane: L-MEDIA · block: 11–14 · paths: `internal/media/portrait*.go`, `internal/media/compose*.go`, `internal/media/clip*.go`, `internal/media/billboard*.go`, `internal/adapters/image/openai/**`, `internal/adapters/video/**` · depends: MEDIA-011, MEDIA-005, MEDIA-006, MEDIA-007
   done when: when a reference is ready, portrait and still generation pass the reference crops as input images (Images API edit/reference input), clips use a still composed from the reference as the first frame (image-to-video), and billboard loops use the side and front crops; without a reference they behave as before; tests assert the reference ids flow into the requests.
-  status: claimed luna
+  status: committed f97e835
 
 - [ ] MEDIA-013 · per-character voice-effect pack generated on lock
   why: Developer request (2026-09-26): each player's phone plays that character's own sounds: a grunt when they strike, a pained grunt when they take damage, their class's spell sound, a gasp when downed, a victory shout.
   lane: L-MEDIA · block: 11–14 · paths: `internal/media/voicepack*.go`, `internal/content/prompts/voicepack*.go` · depends: MEDIA-010, ENG-022
   done when: on the reference request at lock (ENG-022's effect) or its own trigger, an executor generates a pack of short clips (attack_effort, hurt, spell_cast by class, downed, victory, heal) through the MEDIA-010 ElevenLabs sound adapter with prompts from species, gender, class, and flavor; clips are 0.4-1.5 s, trimmed and normalised, stored as assets named voicepack/<seat>/<cue>, cached by prompt hash so repeated builds reuse them, with class-generic fallbacks from the build-time SFX library; budget recorded; fake mode returns short tones; tests with fakes and httptest; no live calls in tests.
-  status: claimed luna
+  status: committed 3e25a8b
 
 ## 18. Web shell (shared WASM client)
 
@@ -1596,6 +1596,42 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/combat*.go` · depends: PHONE-016, PHONE-021
   done when: the combat screen (your turn, waiting, down) uses the phone frame, theme tokens, generated icons (ui/icon_attack, icon_move, icon_end_turn), HP and timer bar, and large touch targets matching assets/concept/ui-phone-*.jpg; Edge screenshots at 390x844 via /p?preview=<combat fixtures>.
   status: claimed luna
+
+- [ ] PHONE-024 · phone frame (header, tab bar), ornate components, and theme matched to the phone concepts
+  why: Developer: start the concept-matching effort for the player clients too; both phone concepts share one frame (wordmark header with location, five-tab bottom bar with a raised center tab) and one component language.
+  lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/frame*.go`, `web/phone/components*.go`, `web/phone/theme*.go`, `web/phone/screen*.go`, `web/phone/tabs*.go`, `web/phone/journal*.go`, `web/phone/menu*.go` · depends: PHONE-017, PHONE-021, WEB-015
+  done when: the frame, tab bar (Character, Journal, Play, Map, Menu with real content), and components per the ORCH phone spec exist and wrap every current screen; Edge screenshots at 390x844 next to the concepts.
+  status: claimed luna
+
+- [ ] PHONE-025 · phone conversation and exploration screens per the concepts
+  why: Talking to NPCs and exploring are most of the demo on the phone.
+  lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/moves*.go`, `web/phone/ptt*.go`, `web/phone/typed*.go`, `web/phone/talk*.go`, `web/phone/explore*.go` · depends: PHONE-024
+  done when: conversation (NPC hero portrait, quote, choice rows, mic + typed field) and exploration (scene image, narration card, choice rows) match the concepts; screenshots.
+  status: open (after PHONE-024)
+
+- [ ] PHONE-026 · phone check offer and check result per the concepts
+  why: The dice moment on the phone must look like the concept's check and result screens.
+  lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/dice*.go`, `web/phone/check*.go` · depends: PHONE-024
+  done when: the offer (icon header, modifier panel, big Roll button) and the result (d20 art with number, total, success/failure banner, result text, Continue) match the concepts; screenshots.
+  status: open (after PHONE-024)
+
+- [ ] PHONE-027 · phone character sheet per the concept
+  why: The sheet concept (portrait, stats row, tabs, action rows) is the player's home screen.
+  lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/sheet*.go`, `web/phone/class*.go` · depends: PHONE-024
+  done when: the sheet matches the concept with real character data; screenshots.
+  status: open (after PHONE-024)
+
+- [ ] PHONE-028 · phone creation, join, waiting, and end screens in the concept style
+  why: Every phone screen must share the same frame and ornate language.
+  lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/create*.go`, `web/phone/waiting*.go`, `web/phone/end*.go`, `web/shell/join*.go` · depends: PHONE-024
+  done when: each screen uses the frame and components per the spec; screenshots.
+  status: open (after PHONE-024)
+
+- [ ] PHONE-029 · phone combat screens restyled on the frame
+  why: Combat (your turn, waiting, down) must use the same frame and components as the rest of the phone.
+  lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/combat*.go` · depends: PHONE-024, PHONE-023
+  done when: combat matches the spec section 7 on the frame; screenshots.
+  status: open (after PHONE-024 and PHONE-023)
 
 ## 20. DM screen
 
