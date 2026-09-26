@@ -56,6 +56,9 @@ func TestArchitecture_ImportRules(t *testing.T) {
 		{"web dm uses shell audio", "web/dm", "github.com/monstercameron/DungeonFlux/web/shell/audio", true},
 		{"web shell composes dm", "web/shell", "github.com/monstercameron/DungeonFlux/web/dm", true},
 		{"web dm rejects phone", "web/dm", "github.com/monstercameron/DungeonFlux/web/phone", false},
+		{"wire composes adapters", "internal/wire", "github.com/monstercameron/DungeonFlux/internal/adapters/llm/schemaflux", true},
+		{"wire composes fakes", "internal/wire", "github.com/monstercameron/DungeonFlux/internal/fakes", true},
+		{"runtime rejects adapters", "internal/runtime", "github.com/monstercameron/DungeonFlux/internal/adapters/llm/schemaflux", false},
 		{"web phone rejects runtime", "web/phone", "github.com/monstercameron/DungeonFlux/internal/runtime", false},
 	}
 	for _, tc := range cases {
@@ -257,6 +260,9 @@ func allowedInternal(packagePath string) []string {
 		return []string{"internal/ports", "internal/domain", "internal/vocab", "internal/clock", "internal/httpx"}
 	case packagePath == "internal/config":
 		return nil
+	case packagePath == "internal/wire" || packagePath == "cmd/server":
+		// Composition roots may import every module package except archtest.
+		return []string{"gen", "internal", "web/shell", "cmd/dfctl"}
 	case packagePath == "web/shell":
 		return []string{"gen", "internal/domain", "internal/vocab", "web/shell", "web/splat", "web/dm", "web/phone", "web/host"}
 	case strings.HasPrefix(packagePath, "web/"):
