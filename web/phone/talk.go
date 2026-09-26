@@ -19,8 +19,8 @@ func NewTalkSnapshot(status string) TalkSnapshot {
 		quote = strings.TrimSpace(status)
 	}
 	return TalkSnapshot{
-		Speaker:     "Marra",
-		Role:        "Barkeep",
+		Speaker:     "Mother Vell",
+		Role:        "Keeper of the Drowned Lantern",
 		Quote:       quote,
 		PortraitArt: "mother_vell",
 	}

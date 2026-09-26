@@ -15,7 +15,7 @@ func TestNewTalkSnapshot_UsesNPCDefaultsAndLiveStatus(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got := NewTalkSnapshot(test.status)
-			if got.Speaker != "Marra" || got.Role != "Barkeep" || got.PortraitArt != "mother_vell" || got.Quote != test.quote {
+			if got.Speaker != "Mother Vell" || got.Role != "Keeper of the Drowned Lantern" || got.PortraitArt != "mother_vell" || got.Quote != test.quote {
 				t.Fatalf("snapshot = %+v", got)
 			}
 		})

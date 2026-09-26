@@ -40,7 +40,7 @@ func CheckPresentationFromDice(snapshot DiceSnapshot) CheckPresentation {
 		Name:        "Persuasion Check",
 		Ability:     "Charisma",
 		Skill:       "Persuasion",
-		Description: "You try to reason with Marra, appealing to her better nature.",
+		Description: "You try to reason with Mother Vell, appealing to her better nature.",
 		Quote:       "You gather your thoughts and choose your words carefully…",
 		ResultText:  strings.TrimSpace(snapshot.Outcome),
 		DC:          snapshot.DC,
@@ -85,10 +85,10 @@ func checkOutcome(snapshot DiceSnapshot) (bool, bool) {
 
 func checkResultText(presentation CheckPresentation) string {
 	if presentation.HasOutcome && presentation.Success {
-		return "Marra hesitates, then lowers her voice. Fine. He was taken last night, down by the eastern docks…"
+		return "Mother Vell hesitates, then lowers her voice. Fine. He was taken last night, down by the eastern docks…"
 	}
 	if presentation.HasOutcome {
-		return "Marra folds her arms. Whatever you said, she is not ready to trust you with more."
+		return "Mother Vell folds her arms. Whatever you said, she is not ready to trust you with more."
 	}
 	if presentation.D20 > 0 {
 		return "The die settles while the table waits for its meaning."

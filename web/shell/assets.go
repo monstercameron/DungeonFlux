@@ -103,10 +103,16 @@ func (l *AssetLoader) ArtURL(selector string) string {
 	if l == nil {
 		return ""
 	}
-	key := l.selectorKey(strings.TrimSpace(selector))
+	selector = strings.TrimSpace(selector)
+	key := l.selectorKey(selector)
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	return l.urls[key]
+	if url := l.urls[key]; url != "" {
+		return url
+	}
+	// A name fetched before the manifest arrived was cached under the name;
+	// once the manifest maps it to a SHA the keyed lookup misses it.
+	return l.urls[selector]
 }
 
 // Load starts or joins an asynchronous fetch for a logical name or SHA-256.

@@ -252,3 +252,14 @@ func (f *fakeBlobURLFactory) Create(_ []byte, contentType string) (string, error
 	f.contentTypes = append(f.contentTypes, contentType)
 	return "blob:test/" + string(rune('0'+f.calls)), nil
 }
+
+func TestAssetLoader_ArtURLFindsNameCachedBeforeManifest(t *testing.T) {
+	loader := NewAssetLoader(nil, nil)
+	loader.mu.Lock()
+	loader.urls["mother_vell"] = "blob:vell"
+	loader.mu.Unlock()
+	loader.installManifest(&dungeonfluxv1.AssetManifestResponse{Assets: []*dungeonfluxv1.AssetManifestEntry{{Name: "mother_vell", Sha256: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ContentType: "image/png"}}})
+	if got := loader.ArtURL("mother_vell"); got != "blob:vell" {
+		t.Fatalf("ArtURL after manifest = %q, want the blob cached under the name", got)
+	}
+}

@@ -30,7 +30,7 @@ func TalkScreen(props phoneViewProps, locale string) router.Component {
 			children = append(children, ChoiceRow(item, tap))
 		}
 		if len(children) == 0 {
-			children = append(children, html.P(html.Props{Style: talkMutedTextStyle()}, html.Text("Marra waits for your answer.")))
+			children = append(children, html.P(html.Props{Style: talkMutedTextStyle()}, html.Text("Mother Vell waits for your answer.")))
 		}
 		if moves.Error != "" {
 			children = append(children, html.P(html.Props{Role: "alert", Style: talkErrorStyle()}, html.Text(moves.Error)))

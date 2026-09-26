@@ -10,7 +10,7 @@ func TestCheckPresentationFromDice_ProjectsOfferAndResult(t *testing.T) {
 		wantResult  string
 		wantSuccess bool
 	}{
-		{name: "offer", snapshot: DiceSnapshot{Phase: DiceOffered, Modifier: 4, DC: 10}, wantResult: "You try to reason with Marra, appealing to her better nature."},
+		{name: "offer", snapshot: DiceSnapshot{Phase: DiceOffered, Modifier: 4, DC: 10}, wantResult: "You try to reason with Mother Vell, appealing to her better nature."},
 		{name: "success", snapshot: DiceSnapshot{Phase: DiceResolved, D20: 17, Modifier: 4, DC: 10, Outcome: "success"}, wantRoll: true, wantResult: "success", wantSuccess: true},
 		{name: "failure", snapshot: DiceSnapshot{Phase: DiceResolved, D20: 2, Modifier: 4, DC: 10}, wantRoll: true, wantResult: "failure"},
 	}
