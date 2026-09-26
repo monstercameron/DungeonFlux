@@ -3,6 +3,7 @@ package phone
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
@@ -96,11 +97,15 @@ func (m *DiceModel) ApplyScreenState(state *df.ScreenState) DiceSnapshot {
 	if m == nil {
 		return DiceSnapshot{Phase: DiceFailed, Error: "dice model is unavailable"}
 	}
+	if state == nil {
+		return m.Snapshot()
+	}
 	phone := state.GetPhone()
 	if phone == nil {
 		return m.Snapshot()
 	}
 	m.state.Locale = phoneLocale(phone)
+	m.state.CanRoll = false
 	for _, move := range phone.GetMoves() {
 		if move.GetMoveId() != "persuade" {
 			continue
@@ -121,4 +126,17 @@ func (m *DiceModel) ApplyScreenState(state *df.ScreenState) DiceSnapshot {
 		m.state.Phase = DiceOffered
 	}
 	return m.Snapshot()
+}
+
+// DiceFace returns the large face glyph for a phone dice card.
+func DiceFace(phase DicePhase, d20 int32) string {
+	switch phase {
+	case DiceRolling:
+		return "…"
+	case DiceResolved:
+		if d20 >= 1 && d20 <= 20 {
+			return strconv.Itoa(int(d20))
+		}
+	}
+	return "—"
 }

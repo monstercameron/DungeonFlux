@@ -58,3 +58,23 @@ func TestDiceModel_PreservesStateWithoutPhone(t *testing.T) {
 		t.Fatalf("nil snapshot = %+v", got)
 	}
 }
+
+func TestDiceFace_UsesPhaseAndValidD20(t *testing.T) {
+	tests := []struct {
+		name, want string
+		phase      DicePhase
+		d20        int32
+	}{
+		{name: "offered placeholder", phase: DiceOffered, d20: 0, want: "—"},
+		{name: "rolling glyph", phase: DiceRolling, d20: 12, want: "…"},
+		{name: "resolved face", phase: DiceResolved, d20: 17, want: "17"},
+		{name: "invalid resolved placeholder", phase: DiceResolved, d20: 21, want: "—"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := DiceFace(test.phase, test.d20); got != test.want {
+				t.Fatalf("DiceFace(%q, %d) = %q, want %q", test.phase, test.d20, got, test.want)
+			}
+		})
+	}
+}
