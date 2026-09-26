@@ -333,6 +333,12 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   done when: on start the server logs at Info (and prints to stdout) the DM URL with token, the host URL with token, and the phone join URL with room code, for localhost and every non-loopback IPv4 address; the same list is written to <data-dir>/urls.txt (gitignored under artifacts); tokens never appear in the JSONL log file (console only); test covers URL building.
   status: claimed luna
 
+- [ ] BASE-020 · no-cache for the app shell; tester URLs skip link-local
+  why: Static app files have no Cache-Control, so testers can run a stale WASM after a rebuild; the start-up URL list includes unusable 169.254.x.x addresses.
+  lane: ORCH · block: 8–11 · paths: `internal/wire/web*.go`, `internal/wire/urls*.go` · depends: BASE-009, BASE-019
+  done when: index.html, wasm_exec.js, and the WASM bundle are served with Cache-Control: no-cache and an ETag (304 on match); splat vendor files may cache; link-local addresses are dropped from the URL list; tests.
+  status: claimed luna
+
 - [x] BASE-007 · internal/wire skeleton and cmd/server skeleton
   why: The server binary must start from hour 1 with fakes, flags (-config, -port, -data-dir, -seed), and graceful shutdown.
   lane: ORCH · block: 1–5 · paths: `internal/wire/**`, `cmd/server/**` · depends: BASE-002, BASE-005
@@ -1245,6 +1251,18 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   done when: main blocks forever after Mount (select {}); newBootClient failure renders a visible error screen instead of a nil client; after scripts/buildweb.ps1, /dm, /p, and /host render with no console errors on a lane server.
   status: claimed luna
 
+- [ ] WEB-011 · browser client connects; loading text replaced; errors visible
+  why: In Edge the shell renders "Player client unavailable" on /dm although the /grpc WebSocket opens, the loading paragraph is never removed, and the failure reason is hidden.
+  lane: L-WEB-SHELL · block: 8–11 · paths: `web/shell/client*.go`, `web/shell/boot*.go`, `web/shell/compose*.go`, `web/shell/static/index.html` · depends: WEB-010
+  done when: NewClient succeeds in the browser (never blocking the JS event loop); a failure shows the error text on screen and in the console; the loading paragraph is removed on mount; /dm?token=…, /p?room=…, and /host?t=… each render their first screen on a lane server, verified with Edge headless (--dump-dom and --screenshot).
+  status: claimed luna
+
+- [ ] WEB-012 · preview mode: ?preview=<state> renders any screen from fixtures without a server
+  why: Humans and parallel workers need to see and review every DM and phone state (lobby, creation, conversation, check, combat, cliffhanger, end) without playing to that point.
+  lane: L-WEB-SHELL · block: 8–11 · paths: `web/shell/preview*.go` · depends: WEB-010
+  done when: /dm?preview=<name> and /p?preview=<name> render the screen from a named fixture supplied by web/dm and web/phone preview registries (DM-009, PHONE-010); /preview lists every fixture as links; no gRPC connection is made in preview mode.
+  status: claimed luna
+
 ## 19. Phone
 
 The player's controller: character creation, sheet, legal moves, push-to-talk, combat taps.
@@ -1303,6 +1321,12 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   done when: a pure screen-selection function maps SeatView to the active screen with table tests for every phase; the /p route mounted by the shell renders it; GOOS=js GOARCH=wasm build passes.
   status: done 2037829
 
+- [ ] PHONE-010 · phone preview fixtures for every screen
+  why: The player UI must be reviewable in every state without a live run (WEB-012).
+  lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/preview*.go` · depends: PHONE-009
+  done when: an exported registry of named SeatView fixtures covers join, species/gender pick, rolled build card, sheet, legal moves with greyed reasons, push-to-talk idle/recording/sending, typed input, dice offered/rolled, combat my-turn/waiting, down, end; each renders through the real phone screen; native tests validate fixtures.
+  status: claimed luna
+
 ## 20. DM screen
 
 The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
@@ -1354,6 +1378,12 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/screen*.go`, `web/dm/mount*.go` · depends: DM-001, DM-002, DM-003, DM-004, DM-005, DM-006, DM-007, WEB-008
   done when: a pure layer-selection function maps View to visible layers with table tests per phase; the /dm route renders it; GOOS=js GOARCH=wasm build passes.
   status: done d899bf1
+
+- [ ] DM-009 · DM preview fixtures for every phase
+  why: The main screen must be reviewable in every state without a live run (WEB-012).
+  lane: L-WEB-DM · block: 8–11 · paths: `web/dm/preview*.go` · depends: DM-008
+  done when: an exported registry of named domain View / ScreenState fixtures covers lobby (QR, seats), creation, opening, exploration, conversation (speaking NPC), check (dice rolling and result), resolution, hook, combat FLAT (grid, tokens, turn timer), cliffhanger, end card; each renders through the real DM screen; native tests validate fixtures.
+  status: claimed luna
 
 ## 21. Host
 
