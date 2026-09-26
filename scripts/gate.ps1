@@ -189,6 +189,11 @@ function Invoke-FullGate {
     } else { Write-GateLine "SKIP: walk tests (packages not present)" }
     $fullProfile = Join-Path $coverageRoot "full.out"
     Invoke-GateCommand "whole-module coverage (informational)" "go" @("test", "-count=1", "-coverprofile", $fullProfile, "./...") | Out-Null
+    if (Test-Path $fullProfile) {
+        $fullCoverText = & go tool cover -func $fullProfile 2>&1
+        $fullTotal = $fullCoverText | Where-Object { $_ -match "^total:" } | Select-Object -Last 1
+        if ($fullTotal) { Write-GateLine "WHOLE-MODULE $fullTotal" }
+    }
 }
 
 Write-GateLine "DungeonFlux gate: $reportName"
@@ -210,5 +215,6 @@ if ($Full) {
 }
 
 Write-GateLine "`nFailures: $script:Failures"
+Write-GateLine "`nSummary: report=$transcriptPath; failures=$script:Failures"
 if ($script:Failures -ne 0) { exit 1 }
 exit 0
