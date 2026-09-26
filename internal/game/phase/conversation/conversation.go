@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
-	"github.com/monstercameron/DungeonFlux/internal/game/nested"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
 
@@ -61,7 +60,7 @@ func Step(state State, input Event) (Result, error) {
 	case domain.LineFailed:
 		result.voiceBusy(event.UtteranceID, false)
 	case domain.TimerFired:
-		if event.Name == nested.IdleTimerName {
+		if event.Name == idleTimerName {
 			result.State.IdleElapsed = true
 		}
 	case domain.UtteranceFinal:
