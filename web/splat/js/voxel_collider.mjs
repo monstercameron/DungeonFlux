@@ -286,7 +286,10 @@ function intersectsBoxForFloor(grid, index, intersectsBox, options, floor) {
 }
 
 function deriveGrid(grid, bounds, options) {
-  if (!options.allCandidates) return grid;
+  // keepAuthoredGrid: the game's engine owns the grid (its cells are the
+  // engine's cells), so the collider only measures floors and blocked cells
+  // on it instead of re-gridding the whole scan.
+  if (!options.allCandidates || options.keepAuthoredGrid) return grid;
   const cell = grid.cell_m;
   const origin = [Math.floor(bounds.min[0] / cell) * cell, Math.floor(bounds.min[2] / cell) * cell];
   const cols = Math.ceil((bounds.max[0] - origin[0]) / cell);
@@ -328,14 +331,16 @@ function filterGrid(grid, intersectsBox, floorAt, bounds, rawOptions = {}) {
   const insetMargin = Number(rawOptions.insetMargin ?? rawOptions.inset ?? 0.15);
   const floorY = Number(rawOptions.floorY ?? rawOptions.floor_y ?? 0);
   if (!(agentHeight > stepClearance) || stepClearance < 0 || insetMargin < 0 || insetMargin >= grid.cell_m / 2 || !Number.isFinite(agentHeight + stepClearance + insetMargin + floorY)) throw new Error("voxel collision dimensions are invalid");
-  const options = { agentHeight, stepClearance, insetMargin, floorY, floorSearchMin: rawOptions.floorSearchMin ?? rawOptions.floor_search_min, floorSearchMax: rawOptions.floorSearchMax ?? rawOptions.floor_search_max, supportRadius: Number(rawOptions.supportRadius ?? rawOptions.support_radius ?? 0), maxFloorSlope: Number(rawOptions.maxFloorSlope ?? rawOptions.max_floor_slope ?? 0.45), allCandidates: Boolean(rawOptions.allCandidates ?? rawOptions.all_candidates) };
+  const options = { agentHeight, stepClearance, insetMargin, floorY, floorSearchMin: rawOptions.floorSearchMin ?? rawOptions.floor_search_min, floorSearchMax: rawOptions.floorSearchMax ?? rawOptions.floor_search_max, supportRadius: Number(rawOptions.supportRadius ?? rawOptions.support_radius ?? 0), maxFloorSlope: Number(rawOptions.maxFloorSlope ?? rawOptions.max_floor_slope ?? 0.45), allCandidates: Boolean(rawOptions.allCandidates ?? rawOptions.all_candidates), keepAuthoredGrid: Boolean(rawOptions.keepAuthoredGrid ?? rawOptions.keep_authored_grid) };
   if (!(options.supportRadius >= 0) || !Number.isFinite(options.supportRadius)) throw new Error("voxel support radius is invalid");
   if (!(options.maxFloorSlope >= 0) || !Number.isFinite(options.maxFloorSlope)) throw new Error("voxel floor slope is invalid");
   const activeGrid = deriveGrid(grid, bounds, options);
   const results = activeGrid.walkable.map((index) => options.allCandidates ? adaptiveCell(activeGrid, index, intersectsBox, floorAt, options) : { blocked: cellBlocked(activeGrid, index, intersectsBox, options), floor: null });
   const excluded = activeGrid.walkable.filter((_, index) => results[index].blocked);
   const unsupported = options.allCandidates ? activeGrid.walkable.filter((_, index) => results[index].floor === null) : [];
-  const removed = new Set(excluded);
+  // With the engine's grid kept, the engine decides walkability; the collider
+  // only supplies floor heights, so no engine cell is removed here.
+  const removed = new Set(options.keepAuthoredGrid ? [] : excluded);
   const floorsByCell = results.map((result) => result.floor);
   const playable = new Set(activeGrid.walkable.filter((index) => !removed.has(index)));
   return { ...activeGrid, walkable: activeGrid.walkable.filter((index) => !removed.has(index)), excluded, excludedUnsupported: unsupported, authoredWalkable: grid.walkable.length, voxel_filtered: true, floorYByCell: floorsByCell, corner_heights: options.allCandidates ? cornerHeights(activeGrid, floorAt, options, floorsByCell, playable) : activeGrid.corner_heights };

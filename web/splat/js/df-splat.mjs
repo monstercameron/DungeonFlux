@@ -9,8 +9,29 @@ let runtime = null;
 let lifecycle = null;
 let loadedSceneURL = "";
 let runtimeCanvas = null;
+let lastScene = null;
 function emit(event) { if (!["ready", "error", "stats", "pick", "disposed"].includes(event.type)) return; if (["ready", "error", "disposed"].includes(event.type)) lifecycle = event; for (const listener of listeners) { try { const { state, ...payload } = event; listener({ v: 1, ...payload }); } catch (error) { queueMicrotask(() => { throw error; }); } } }
 function bridgeRuntime(next) { runtime = next; runtime.onEvent(event => emit(event)); return runtime; }
+
+/**
+ * gameProfile fetches a scene profile and pins it to the engine's grid: the
+ * init message's grid (the engine's cells) replaces the profile grid and the
+ * collider keeps it (keep_authored_grid) instead of re-gridding the whole
+ * scan, so a token's engine cell is the cell it is drawn on. Relative asset
+ * URLs are resolved against the profile's URL.
+ */
+async function gameProfile(profileURL, message) {
+  const url = new URL(profileURL, globalThis.location?.href).href;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`battle profile HTTP ${response.status}`);
+  const profile = await response.json();
+  const resolve = value => (typeof value === "string" && value ? new URL(value, url).href : value);
+  for (const key of ["scene_url", "lite_url", "meta_url", "lod_meta_url", "voxel_collider_url"]) if (profile[key]) profile[key] = resolve(profile[key]);
+  if (profile.voxel_collider && typeof profile.voxel_collider === "object") profile.voxel_collider = { ...profile.voxel_collider, url: resolve(profile.voxel_collider.url), keep_authored_grid: true };
+  const grid = message.grid;
+  if (grid && Number(grid.cols) > 0 && Number(grid.rows) > 0 && Array.isArray(grid.walkable)) profile.grid = { ...profile.grid, ...grid };
+  return profile;
+}
 
 /** Sends a legacy v1 message to the fullscreen bridge runtime. */
 function send(raw) {
@@ -27,12 +48,14 @@ function send(raw) {
       // the profile, which carries the splat, collider, grid, and cameras. Sending
       // the init object itself made the loader treat the profile JSON as the splat.
       const profileURL = typeof message.scene_url === "string" && /\/scenes\/[^/]+\.json$/.test(message.scene_url) ? message.scene_url : null;
-      void runtime.load(message.profile ?? message.scene ?? profileURL ?? message).catch(() => {});
+      const source = message.profile ?? message.scene ?? (profileURL ? gameProfile(profileURL, message) : message);
+      void Promise.resolve(source).then(value => runtime?.load(value)).catch(() => {});
     } catch (error) { emit({ type: "error", code: "WEBGL_UNAVAILABLE", detail: String(error?.message ?? error) }); }
     return;
   }
   if (message.type === "dispose") { runtime?.dispose(); runtime = null; lifecycle = null; loadedSceneURL = ""; return; }
   if (!["scene", "pause", "effects"].includes(message.type)) { emit({ type: "error", code: "INVALID_MESSAGE", detail: `unknown type: ${message.type}` }); return; }
+  if (message.type === "scene") lastScene = message;
   runtime?.send(message);
 }
 
@@ -43,5 +66,7 @@ function onEvent(listener) {
   if (runtime && lifecycle) { const { state, ...payload } = lifecycle; queueMicrotask(() => { if (listeners.has(listener)) listener({ v: 1, ...payload }); }); }
   return () => listeners.delete(listener);
 }
-if (typeof window !== "undefined") window.dfSplat = Object.freeze({ send, onEvent });
+/** Returns the live runtime's state snapshot (tokens, camera, grid) for debugging, or null. */
+function state() { return { runtime: runtime?.getState?.() ?? null, lastScene }; }
+if (typeof window !== "undefined") window.dfSplat = Object.freeze({ send, onEvent, state });
 export { send, onEvent };
