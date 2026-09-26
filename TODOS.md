@@ -659,7 +659,7 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: The engine must decide which character sound plays on which phone: the attacker's effort grunt on their phone, the target's hurt grunt on theirs, spell casts, downed, victory, and heals.
   lane: L-ENG · block: 11–14 · paths: `internal/game/audio_cues*.go`, `internal/game/combat/audio*.go` · depends: INT-006, MEDIA-013, COMBAT-008
   done when: attack_made, damage_applied, spell/ability use, status down, combat won, and heal events emit INT-006's targeted sound effect with target = that seat and name voicepack/<seat>/<cue> (falling back to class-generic SFX); the DM still gets the table-wide SFX; Step tests assert targets and cue names per event.
-  status: claimed luna
+  status: committed c9999d0
 
 - [ ] ENG-024 · engine music, ambience, and shot cues emit the streamed sound effect
   why: INT-006 streams table audio over gRPC, but the engine's existing music and ambience cues (ENG-012) never emit INT-006's sound effect, so no music or ambience plays on the DM.
@@ -671,6 +671,12 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: ENG-024 built CueForState(...).Effects() for music, ambience, and stingers but game.go never calls it on phase transitions, so nothing plays.
   lane: L-ENG · block: 11–14 · paths: `internal/game/game.go`, `internal/game/state*.go` · depends: ENG-024
   done when: every phase transition appends CueForState(new phase).Effects() to Step's effects exactly once (no duplicates on self-transitions); Step tests assert the music/ambience effects per phase; walk tests stay green.
+  status: committed 459a3ca
+
+- [ ] ENG-026 · combat and phase events call the per-seat audio cues; phase staticcheck
+  why: ENG-023 built and tested the per-seat cue mapping but nothing calls it where attack, damage, spell, down, heal, and victory happen, and staticcheck fails on the unused reason func in internal/game/phase/view.go.
+  lane: L-ENG · block: 11–14 · paths: `internal/game/phase/*.go`, `internal/game/combat/*.go` · depends: ENG-023, ENG-025
+  done when: those events append the ENG-023 per-seat sound effects (attacker, target, caster) alongside the table cues; staticcheck clean on internal/game/...; Step and combatsim tests assert the targeted effects; walk tests stay green.
   status: claimed luna
 
 - [ ] INT-001 · lobby seats and join data reach the TV end to end
@@ -1595,7 +1601,7 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   why: Developer request (2026-09-26): the server streams short one-off effects to individual player phones (your dice rattle when you roll, a chime when it is your turn, a heartbeat when you are down, a whispered hint only you hear).
   lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/audio*.go` · depends: INT-006, WEB-016
   done when: after the first tap the phone opens its own AudioService.Listen with its seat token, plays sfx-channel clips targeted at its seat (or all phones) with a small Web Audio graph (volume, haptic vibrate where supported), respects a mute toggle and prefers-reduced-motion for haptics, never blocks the JS loop; the cue catalogue (MEDIA-010) gains per-seat cues for roll, your turn, damage, down, and success/failure; native tests for queue logic; live check in the browser.
-  status: claimed luna
+  status: committed e740fac
 
 - [ ] PHONE-023 · phone combat screen matches the phone concepts
   why: ORCH review of the combat preview (artifacts/screenshots/L-WEB-SHELL/phone-preview.png): the phone's combat turn screen is unstyled default HTML buttons on a bare page.
@@ -1803,31 +1809,31 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   why: Developer: the DM screen looks nothing like the concepts; the concepts use a fixed 16:9 composition of full-bleed painted art with ornate gold-framed panels at exact positions, while the current screens stack full-width boxes.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/**` · depends: DM-020, WEB-015
   done when: a 1920x1080 design canvas scaled to fit any viewport with a separate cover background layer; shared components (OrnatePanel, TitlePlate, GoldButton, DarkButton, PortraitCard, SpeakerCaption, ActionButton, LocationTitle) in web/dm/components*.go; the title/lobby screen laid out per the ORCH spec measured from ui-tv-title-screen-join-lobby.jpg with the QR square and loaded via the asset loader and the room code in spaced letters; Edge screenshots at 1920x1080 and 2560x1080 next to the concept.
-  status: claimed luna
+  status: committed cd3409b
 
 - [ ] DM-028 · conversation screen laid out on the canvas per the barkeep-dialogue concept
   why: Conversation is the heart of the demo; it must look like ui-tv-tavern-barkeep-dialogue-choices.jpg.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/dialogue*.go` · depends: DM-027
   done when: full-bleed scene, small title plate, location title, centered speaker caption, and a choice row from legal moves per the ORCH spec; screenshots next to the concept.
-  status: open (after DM-027)
+  status: claimed luna
 
 - [ ] DM-029 · exploration HUD laid out on the canvas per the exploration-HUD concept
   why: Exploration must look like ui-tv-sunken-halls-exploration-hud.jpg: party column, objective panel, narration panel, action bar.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/hud*.go` · depends: DM-027
   done when: layout per the ORCH spec with real View data; screenshots next to the concept.
-  status: open (after DM-027)
+  status: claimed luna
 
 - [ ] DM-030 · opening scene and creation screens laid out per their concepts
   why: The opening and creation must look like ui-tv-opening-scene-drowned-lantern-tavern.jpg and ui-tv-character-creation-phone-picker.jpg.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/scene*.go`, `web/dm/text*.go`, `web/dm/clip*.go`, `web/dm/creation*.go` · depends: DM-027
   done when: both screens built from the shared components and matching their concepts; screenshots next to the concepts.
-  status: open (after DM-027)
+  status: claimed luna
 
 - [ ] DM-031 · check, combat, cliffhanger, and end screens on the canvas
   why: The dice check, FLAT combat, cliffhanger, and end card must share the same ornate language as the concepts.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/dice*.go`, `web/dm/callout*.go`, `web/dm/combat*.go`, `web/dm/end*.go` · depends: DM-027
   done when: each screen per the ORCH spec section 6 using the shared components and generated art; screenshots at 1920x1080 and 2560x1080.
-  status: open (after DM-027)
+  status: claimed luna
 
 ## 21. Host
 
