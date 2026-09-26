@@ -1133,37 +1133,37 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   why: The phone is the player sheet: stats, HP, conditions, portrait.
   lane: L-WEB-PHONE · block: 5–8 · paths: `web/phone/sheet*.go` · depends: PHONE-001
   done when: Sheet renders from SeatView.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 790bf1a
 
 - [ ] PHONE-003 · web/phone legal moves with reasons
   why: Players see legal moves and greyed-out ones with reasons, so they never ask the DM what they can do.
   lane: L-WEB-PHONE · block: 5–8 · paths: `web/phone/moves*.go` · depends: PHONE-002, ENG-005
   done when: Tap sends Act; greyed moves show reasons.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 - [ ] PHONE-004 · web/phone PTT recorder
   why: Hold to talk records with MediaRecorder and streams chunks on Talk; the callback only queues blobs.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/ptt*.go` · depends: PHONE-002, API-009
   done when: Recording uploads from a real phone; no deadlock.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 - [ ] PHONE-005 · web/phone typed input fallback
   why: If STT fails, the player can type the message.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/type*.go` · depends: API-003
   done when: Say RPC from the text box.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 - [ ] PHONE-006 · web/phone combat controls
   why: In combat the phone shows attack, move targets, and the bell on the player's turn with a timer bar.
   lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/combat*.go` · depends: COMBAT-006
   done when: Taps become combat moves.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 - [ ] PHONE-007 · web/phone dice roll view
   why: The persuasion check is rolled from the phone.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/dice*.go` · depends: PH-CHK-001
   done when: dice{OFFERED} → roll tap → result.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 ## 20. DM screen
 
@@ -1209,7 +1209,7 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   why: The demo ends on an end card with the SRD attribution.
   lane: L-WEB-DM · block: 14–17 · paths: `web/dm/end*.go` · depends: PH-CLIFF-001
   done when: End card renders at End.; gate green (≥ 70% coverage where applicable)
-  status: claimed luna
+  status: committed 1b9c6bb
 
 ## 21. Host
 
