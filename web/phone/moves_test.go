@@ -72,3 +72,41 @@ func TestMovesModel_NilAndMissingPhoneAreSafe(t *testing.T) {
 		t.Fatalf("missing phone moves = %+v", got)
 	}
 }
+
+func TestMoveReason_UsesFallbackOnlyForDisabledMoves(t *testing.T) {
+	tests := []struct {
+		name string
+		move MoveSnapshot
+		want string
+	}{
+		{name: "server reason", move: MoveSnapshot{Enabled: false, Reason: "Target out of range"}, want: "Target out of range"},
+		{name: "fallback", move: MoveSnapshot{Enabled: false}, want: "Move unavailable"},
+		{name: "enabled blank", move: MoveSnapshot{Enabled: true}, want: ""},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := MoveReason(test.move); got != test.want {
+				t.Fatalf("MoveReason() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestMovePreviewText_DescribesRollAndDamage(t *testing.T) {
+	tests := []struct {
+		name string
+		move MoveSnapshot
+		want string
+	}{
+		{name: "attack", move: MoveSnapshot{Preview: &df.MovePreview{Vs: 13, Damage: &df.DamagePreview{Dice: "1d8", Bonus: 3}}}, want: "vs DC 13 · 1d8+3 damage"},
+		{name: "modifier", move: MoveSnapshot{Preview: &df.MovePreview{Modifier: 4}}, want: "+4 modifier"},
+		{name: "empty", move: MoveSnapshot{}, want: ""},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := MovePreviewText(test.move); got != test.want {
+				t.Fatalf("MovePreviewText() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}

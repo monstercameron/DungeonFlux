@@ -3,6 +3,7 @@ package phone
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
@@ -114,6 +115,49 @@ func (m *MovesModel) find(moveID string) (MoveSnapshot, bool) {
 		}
 	}
 	return MoveSnapshot{}, false
+}
+
+// MoveReason returns the explanation shown for an unavailable move.
+func MoveReason(move MoveSnapshot) string {
+	reason := strings.TrimSpace(move.Reason)
+	if !move.Enabled && reason == "" {
+		return "Move unavailable"
+	}
+	return reason
+}
+
+// MovePreviewText returns the compact mechanical preview for a move.
+func MovePreviewText(move MoveSnapshot) string {
+	if move.Preview == nil {
+		return ""
+	}
+	preview := move.Preview
+	parts := make([]string, 0, 2)
+	if preview.GetVs() > 0 {
+		parts = append(parts, "vs DC "+numberText(preview.GetVs()))
+	}
+	if damage := preview.GetDamage(); damage != nil && damage.GetDice() != "" {
+		damageText := damage.GetDice()
+		if bonus := damage.GetBonus(); bonus > 0 {
+			damageText += "+" + numberText(bonus)
+		}
+		parts = append(parts, damageText+" damage")
+	}
+	if len(parts) == 0 && preview.GetModifier() != 0 {
+		return signedNumber(preview.GetModifier()) + " modifier"
+	}
+	return strings.Join(parts, " · ")
+}
+
+func numberText(value int32) string {
+	return strconv.FormatInt(int64(value), 10)
+}
+
+func signedNumber(value int32) string {
+	if value >= 0 {
+		return "+" + numberText(value)
+	}
+	return numberText(value)
 }
 
 func projectMoves(moves []*df.Move) []MoveSnapshot {
