@@ -19,6 +19,8 @@ Rules for every coding agent in this repo. Read it in full before your first edi
 12. Codex runs as many worker lanes at once as the lane map allows (section 10); idle lanes are wasted hours.
 13. The human test server on `:8443` is always up (section 11). Never stop it, never bind its port, never break the build it runs.
 14. Many agents work in the same tree at once, with uncommitted changes of their own. Never clobber them: touch only your todo's paths, never stage or commit anything else, never revert or reformat someone else's change, and re-read a file right before you edit it (section 13).
+15. The backend is concurrent: work runs in goroutines that each have an owner and a context, every channel is bounded, and results return to the room loop as events. Only the engine (`Step`) stays single-threaded and pure (section 15).
+16. Log with `log/slog` only, through the logger you were handed, narrowed with `With`; never the stdlib `log` package or `fmt.Print*` outside `cmd/` and tests (section 16).
 
 ## 1. What this repo is
 Planning stage. DungeonFlux is an AI dungeon-master demo: a Go server, one GoWebComponents WASM client (`/dm`, `/p`, `/host`), and gRPC over WebSocket through GoGRPCBridge. It is built in 24 hours by parallel GPT-6 Luna worker lanes in Codex, coordinated and reviewed by one Claude Opus 5.5 orchestrator. This file overrides the plan's seven-agent limit (§0.18.9): Codex runs every lane whose inputs are ready, bounded only by the lane map, disk, and quota (section 10).
@@ -372,3 +374,25 @@ The goal is to catch bugs early without making anyone wait. The floor is **70% s
 - Coverage without assertions is rejected: every test checks an outcome (a returned value, an emitted effect, a state change, an error).
 - Tests follow the plan's contracts, not the implementation's internals, so refactors do not break them.
 - A worker reports each touched package's coverage percentage in the hand-in ("Coverage: internal/game/nested 78.4%").
+
+## 15. Concurrency: goroutines with owners
+The binding model is plan §0.18.10. In short:
+- **Where concurrency lives.** One loop goroutine per room serialises every event. Work effects (vendor calls, STT, TTS, pre-renders, asset fetches) each run in their own goroutine under the scope context that started them (run, phase, check, combat, utterance) and are cancelled with that scope. gRPC streams, Watch/Listen subscribers, the SQLite writer, and each ElevenLabs connection have their own goroutines. Pre-renders run in parallel through a worker pool with one semaphore per vendor, sized to that vendor's quota.
+- **Rules.**
+  - Every goroutine has an owner, takes a `context.Context`, and returns when it is cancelled. No fire-and-forget.
+  - Fan-out uses `sync.WaitGroup.Go`; `golang.org/x/sync` is not a dependency.
+  - Every channel is bounded, and the code states what happens when it is full: block, drop the oldest, or drop the subscriber.
+  - A work goroutine never touches room state. It sends a result or failure event back to the room loop.
+  - Work goroutines recover panics, log them at Error with the scope fields, and convert them into a failure event.
+  - Timers come from `internal/clock`; no bare `time.After` or `time.Sleep` in business code.
+  - `internal/game`, `fsm`, `domain`, `content`, and `sim` contain no goroutines, `sync`, or logging (archtest enforces this).
+- **Tests.** Concurrency is tested with `testing/synctest` (a leaked goroutine fails the bubble) or `clock.Fake`, never with sleeps. `go test -race` runs in the GitHub Actions `race.yml` job on every push; a race there opens a fix todo for the owning lane.
+
+## 16. Structured logging
+The binding spec is plan §0.18.11. In short:
+- `log/slog` only. `main` builds a JSON-lines handler (`artifacts/runtime/<instance>/logs/server-<start>.jsonl`) plus a text console handler; the level comes from config (`debug` on lane dev servers, `info` for the demo).
+- Take the `*slog.Logger` you are given and narrow it with `With` at each scope boundary (room, run, scope, utterance, asset, vendor call), so correlation fields ride along automatically. Use the plan's field names (`run`, `room`, `scope`, `utterance_id`, `asset_id`, `trace_id`, `vendor`, `model`, `ttft_ms`, `dur_ms`, `err_kind`, and the rest); do not invent synonyms.
+- Levels: Debug for per-chunk detail, Info for transitions, vendor calls, and asset lifecycle, Warn for fallbacks, retries, and dropped subscribers, Error for broken invariants and recovered panics.
+- Each vendor call emits exactly one `call` record with latency and cost fields; this is the demo's latency and cost telemetry.
+- Never log keys, tokens, raw audio, or full prompts (log a prompt hash). The redacting handler is a backstop, not permission.
+- Read logs with `scripts/logs.ps1 -Instance <name> [-Run <id>] [-Level warn] [-Trace <id>]`. Packages that log assert their key records in tests through a capturing handler.
