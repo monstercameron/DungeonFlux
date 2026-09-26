@@ -11,7 +11,7 @@ const dmThemeCSS = `
 html,body,#app{margin:0;min-width:0;min-height:100%;background:#0f1117}
 .df-dm-screen{--df-ink:#0f1117;--df-panel:rgba(15,17,23,.86);--df-parchment:#efe6d2;--df-muted:#a89f8c;--df-gold:#d9a441;--df-blood:#b3372f;--df-teal:#3aa39a;box-sizing:border-box;container-type:inline-size;isolation:isolate;position:fixed!important;inset:0;width:100vw!important;max-width:none!important;height:100vh;min-height:100svh;background:var(--df-ink);color:var(--df-parchment);font-family:Inter,ui-sans-serif,system-ui,sans-serif;line-height:1.35;overflow:hidden;padding:0!important}
 .df-dm-cover{position:absolute;inset:0;z-index:0;pointer-events:none;background-color:#0f1117;background-position:center;background-size:cover;filter:saturate(.96) contrast(1.03)}
-.df-dm-canvas{position:absolute;left:50%;top:50%;width:1920px!important;height:1080px!important;transform:translate(-50%,-50%) scale(min(100vw / 1920, 100vh / 1080));transform-origin:center center;overflow:hidden;z-index:1}
+.df-dm-canvas{position:absolute;left:50%;top:50%;width:1920px!important;height:1080px!important;transform:translate(-50%,-50%) scale(var(--df-scale,0.5));transform-origin:center center;overflow:hidden;z-index:1}
 .df-dm-canvas>.df-dm-stage{position:absolute;inset:0;width:1920px!important;height:1080px!important}
 .df-ornate-panel{position:relative;overflow:hidden;border:1px solid #b8893a;border-radius:12px;background:rgba(12,18,28,.82);box-shadow:0 14px 38px rgba(0,0,0,.48),inset 0 0 0 1px rgba(12,12,16,.78),inset 0 0 28px rgba(184,137,58,.07);color:#efe6d2}
 .df-ornate-panel:before,.df-ornate-panel:after{position:absolute;width:18px;height:18px;color:#d9a441;content:"✦";font-family:Georgia,serif;font-size:14px;line-height:18px;pointer-events:none}.df-ornate-panel:before{left:7px;top:4px}.df-ornate-panel:after{right:7px;bottom:4px}
@@ -61,5 +61,6 @@ html,body,#app{margin:0;min-width:0;min-height:100%;background:#0f1117}
 `
 
 func themeStyles() ui.Node {
+	installCanvasScale()
 	return html.Tag("style", html.Props{ID: "df-dm-theme"}, html.Text(dmThemeCSS))
 }
