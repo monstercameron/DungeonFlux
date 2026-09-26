@@ -33,13 +33,13 @@ func ReasonKey(code string) string {
 func ScreenKeys() map[string][]string {
 	return map[string][]string{
 		"phone": {
-			"move.ready", "move.species", "move.gender", "move.roll_hero",
+			"move.ready", "move.species", "move.gender", "move.class", "move.roll_hero",
 			"move.talk_vell", "move.persuade", "move.step_away", "move.leave",
 			"move.attack", "move.move", "move.end_turn",
 			"reason.WAITING_FOR_PLAYER", "reason.CONVERSATION_DONE",
 			"reason.CONVERSATION_REFUSED", "reason.TALK_FIRST", "reason.SPEAKING",
 			"reason.NO_PATH", "reason.NO_MOVEMENT", "reason.DOWN",
-			"reason.BUILDING_HERO", "reason.MISSING_CHOICE", "reason.NOT_YOUR_TURN",
+			"reason.BUILDING_HERO", "reason.MISSING_CHOICE", "reason.MISSING_CLASS", "reason.NOT_YOUR_TURN",
 			"reason.NO_SLOT", "reason.OUT_OF_RANGE", "reason.INCAPACITATED",
 			"ui.join.title", "ui.join.room_code", "ui.join.join", "ui.join.retry",
 			"ui.join.room_required", "ui.join.failed", "ui.join.waiting",
