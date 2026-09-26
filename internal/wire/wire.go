@@ -20,7 +20,6 @@ import (
 	"github.com/monstercameron/DungeonFlux/internal/api/debug"
 	"github.com/monstercameron/DungeonFlux/internal/clock"
 	"github.com/monstercameron/DungeonFlux/internal/config"
-	"github.com/monstercameron/DungeonFlux/internal/content"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/game"
 	"github.com/monstercameron/DungeonFlux/internal/logx"
@@ -77,7 +76,20 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 		_ = logFile.Close()
 		return nil, fmt.Errorf("wire: make seed: %w", err)
 	}
-	oneShot := content.DefaultOneShot().OneShot
+	manifestPath := filepath.Join("artifacts", "runtime", "buildtime", "manifest.json")
+	manifest, err := LoadManifest(manifestPath, logger)
+	if err != nil {
+		_ = store.Close()
+		_ = logFile.Close()
+		return nil, fmt.Errorf("wire: load build-time manifest: %w", err)
+	}
+	assetCatalog, err := loadAssetCatalog(ctx, cfg.Server.DataDir, manifestPath, sqlite.NewAssets(store), logger)
+	if err != nil {
+		_ = store.Close()
+		_ = logFile.Close()
+		return nil, fmt.Errorf("wire: load asset store: %w", err)
+	}
+	oneShot := manifest.OneShot.OneShot
 	roomState, err := runtime.NewRoomState(nil)
 	if err != nil {
 		_ = store.Close()
@@ -161,6 +173,14 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 	go func() { roomDone <- room.Run(roomCtx) }()
 
 	grpcServer := grpc.NewServer()
+	assetServer, err := api.NewAssetServer(assetCatalog)
+	if err != nil {
+		cancel()
+		_ = store.Close()
+		_ = logFile.Close()
+		return nil, fmt.Errorf("wire: create asset server: %w", err)
+	}
+	df.RegisterAssetServiceServer(grpcServer, assetServer)
 	report, err := api.NewReportServer(room)
 	if err != nil {
 		cancel()
