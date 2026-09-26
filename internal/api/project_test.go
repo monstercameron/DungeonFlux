@@ -57,6 +57,16 @@ func TestProjectDM_LeavesOptionalLobbyMetadataUnset(t *testing.T) {
 	}
 }
 
+func TestProjectDM_ProjectsAttachedLobbyMetadata(t *testing.T) {
+	view := AttachLobbyMetadata(domain.View{}, LobbyProjection{
+		RoomCode: "DF-ROOM", JoinURL: "https://dm.test/p?room=DF-ROOM", QRURL: "/assets/qr.png",
+	})
+	got := ProjectDM(view)
+	if got.GetLobby() == nil || got.GetLobby().GetRoomCode() != "DF-ROOM" || got.GetLobby().GetJoinUrl() == "" || got.GetLobby().GetQrUrl() != "/assets/qr.png" {
+		t.Fatalf("attached lobby = %#v", got.GetLobby())
+	}
+}
+
 func TestProject_NilAndUnknownValues(t *testing.T) {
 	view := domain.View{Seats: []domain.SeatView{{Seat: 2, TurnTimer: domain.TimerView{}}}}
 	if got := ProjectDM(view); got.Dice != nil || got.Music != nil || got.TurnTimer != nil {

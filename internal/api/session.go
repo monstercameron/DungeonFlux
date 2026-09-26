@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"reflect"
+	"strings"
 	"sync"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
@@ -38,6 +40,7 @@ type seatSession struct {
 	playerNumber int
 	token        string
 	locale       string
+	name         string
 }
 
 // NewSessionServer creates a session service for one configured room.
@@ -166,6 +169,10 @@ func (s *SessionServer) joinPhone(ctx context.Context, request *df.JoinRequest) 
 	s.mu.Lock()
 	if request.GetSeatToken() != "" {
 		if seat, ok := s.seats[request.GetSeatToken()]; ok {
+			if name := normalizePlayerName(request.GetPlayerName()); name != "" {
+				seat.name = name
+				s.seats[request.GetSeatToken()] = seat
+			}
 			locale := seat.locale
 			if locale == "" {
 				locale = s.roomLocale
@@ -174,7 +181,7 @@ func (s *SessionServer) joinPhone(ctx context.Context, request *df.JoinRequest) 
 				locale = "en"
 			}
 			s.mu.Unlock()
-			if !s.postPhoneJoin(ctx, seat.id, locale) {
+			if !s.postPhoneJoin(ctx, seat.id, locale, seat.name) {
 				return nil, status.Error(codes.ResourceExhausted, "room inbox is full")
 			}
 			response := joinResponse(seat)
@@ -199,14 +206,14 @@ func (s *SessionServer) joinPhone(ctx context.Context, request *df.JoinRequest) 
 	if locale == "" {
 		locale = "en"
 	}
-	seat := seatSession{id: id, playerNumber: s.nextSeat, token: token, locale: locale}
+	seat := seatSession{id: id, playerNumber: s.nextSeat, token: token, locale: locale, name: normalizePlayerName(request.GetPlayerName())}
 	s.seats[token] = seat
 	if s.locales == nil {
 		s.locales = make(map[string]string)
 	}
 	s.locales[token] = locale
 	s.mu.Unlock()
-	if !s.postPhoneJoin(ctx, id, locale) {
+	if !s.postPhoneJoin(ctx, id, locale, seat.name) {
 		s.mu.Lock()
 		delete(s.seats, token)
 		delete(s.locales, token)
@@ -218,8 +225,28 @@ func (s *SessionServer) joinPhone(ctx context.Context, request *df.JoinRequest) 
 	return response, nil
 }
 
-func (s *SessionServer) postPhoneJoin(ctx context.Context, seat domain.SeatID, locale string) bool {
-	return s.inbox.Post(ctx, domain.Envelope{Event: domain.Join{Seat: seat, JoinKind: "phone", Locale: locale}})
+func (s *SessionServer) postPhoneJoin(ctx context.Context, seat domain.SeatID, locale, name string) bool {
+	event := domain.Join{Seat: seat, JoinKind: "phone", Locale: locale}
+	setJoinName(&event, name)
+	return s.inbox.Post(ctx, domain.Envelope{Event: event})
+}
+
+// setJoinName bridges the ENG-018 Name field while the shared domain contract
+// remains source-compatible with older generated workers. Once Name is in the
+// contract this simply sets that exported string field; older contracts ignore
+// it and keep the rest of the join event unchanged.
+func setJoinName(join *domain.Join, name string) {
+	if join == nil || name == "" {
+		return
+	}
+	field := reflect.ValueOf(join).Elem().FieldByName("Name")
+	if field.IsValid() && field.CanSet() && field.Kind() == reflect.String {
+		field.SetString(name)
+	}
+}
+
+func normalizePlayerName(name string) string {
+	return strings.Join(strings.Fields(strings.TrimSpace(name)), " ")
 }
 
 func joinResponse(seat seatSession) *df.JoinResponse {

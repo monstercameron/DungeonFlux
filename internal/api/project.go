@@ -43,6 +43,27 @@ type LobbyProjection struct {
 	QRURL    string
 }
 
+const (
+	lobbyRoomCodeArg = "__lobby_room_code"
+	lobbyJoinURLArg  = "__lobby_join_url"
+	lobbyQRURLArg    = "__lobby_qr_url"
+)
+
+// AttachLobbyMetadata carries composition-root lobby data through the current
+// domain view until the shared View contract grows a room-level Lobby field.
+// The reserved notice arguments are not rendered as user-facing text.
+func AttachLobbyMetadata(view domain.View, lobby LobbyProjection) domain.View {
+	args := make(map[string]string, len(view.Notice.Args)+3)
+	for key, value := range view.Notice.Args {
+		args[key] = value
+	}
+	args[lobbyRoomCodeArg] = lobby.RoomCode
+	args[lobbyJoinURLArg] = lobby.JoinURL
+	args[lobbyQRURLArg] = lobby.QRURL
+	view.Notice.Args = args
+	return view
+}
+
 // ProjectDMWithLobby converts a domain view and room metadata to a DM view.
 func ProjectDMWithLobby(view domain.View, lobby LobbyProjection) *df.DMView {
 	return projectDM(view, lobby)
@@ -57,6 +78,11 @@ func ProjectPhone(view domain.View, seat domain.SeatID) *df.PhoneView {
 func ProjectHost(view domain.View) *df.HostView { return projectHost(view) }
 
 func projectDM(view domain.View, lobby ...LobbyProjection) *df.DMView {
+	if len(lobby) == 0 {
+		if attached, ok := attachedLobby(view); ok {
+			lobby = []LobbyProjection{attached}
+		}
+	}
 	out := &df.DMView{
 		BackgroundUrl: view.Scene.BackgroundURL,
 		Layers:        projectLayers(view.Scene.Layers),
@@ -99,6 +125,15 @@ func projectDM(view domain.View, lobby ...LobbyProjection) *df.DMView {
 		out.CombatBanner = view.Combat.Banner
 	}
 	return out
+}
+
+func attachedLobby(view domain.View) (LobbyProjection, bool) {
+	args := view.Notice.Args
+	if args == nil {
+		return LobbyProjection{}, false
+	}
+	lobby := LobbyProjection{RoomCode: args[lobbyRoomCodeArg], JoinURL: args[lobbyJoinURLArg], QRURL: args[lobbyQRURLArg]}
+	return lobby, lobby.RoomCode != "" || lobby.JoinURL != "" || lobby.QRURL != ""
 }
 
 func projectLobbySeats(seats []domain.SeatView) []*df.LobbySeat {

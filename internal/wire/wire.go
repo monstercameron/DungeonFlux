@@ -78,13 +78,6 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 		return nil, fmt.Errorf("wire: make seed: %w", err)
 	}
 	oneShot := content.DefaultOneShot().OneShot
-	eng := game.New(oneShot, seed)
-	roomEngine, err := newSynchronizedEngine(eng)
-	if err != nil {
-		_ = store.Close()
-		_ = logFile.Close()
-		return nil, err
-	}
 	roomState, err := runtime.NewRoomState(nil)
 	if err != nil {
 		_ = store.Close()
@@ -128,6 +121,15 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 	logger.Info("room ready", "room_code", roomID, "join_url", joinURL, "join_qr", qrURL)
 	logger.Info("tester URLs ready", "url_count", len(urls))
 	printURLs(out, urls)
+	lobbyProjection := api.LobbyProjection{RoomCode: roomID, JoinURL: joinURL, QRURL: qrURL}
+	lobbyOption := game.Lobby{RoomCode: roomID, JoinURL: joinURL, QRAsset: domain.AssetID(qrURL)}
+	eng := newLobbyEngine(game.New(oneShot, seed, game.WithLobby(lobbyOption)), lobbyProjection)
+	roomEngine, err := newSynchronizedEngine(eng)
+	if err != nil {
+		_ = store.Close()
+		_ = logFile.Close()
+		return nil, err
+	}
 	run, err := domainRun(roomID, seed)
 	if err != nil {
 		_ = store.Close()
@@ -150,7 +152,7 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 	room := runtime.NewRoom(roomEngine, clock.Real{}, store, logger, watch.Publish,
 		runtime.WithRunner(runner), runtime.WithRoomState(roomState),
 		runtime.WithNewGame(func(runSeed []byte) ports.Engine {
-			roomEngine.replace(game.New(oneShot, runSeed))
+			roomEngine.replace(newLobbyEngine(game.New(oneShot, runSeed, game.WithLobby(lobbyOption)), lobbyProjection))
 			return roomEngine
 		}))
 	inbox.room = room
@@ -218,6 +220,24 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 		}
 	}
 	return app, nil
+}
+
+// lobbyEngine keeps room metadata on every projected engine view while the
+// shared domain View contract still has no room-level Lobby field.
+type lobbyEngine struct {
+	ports.Engine
+	lobby api.LobbyProjection
+}
+
+func newLobbyEngine(engine ports.Engine, lobby api.LobbyProjection) ports.Engine {
+	return &lobbyEngine{Engine: engine, lobby: lobby}
+}
+
+func (e *lobbyEngine) View() domain.View {
+	if e == nil || e.Engine == nil {
+		return domain.View{}
+	}
+	return api.AttachLobbyMetadata(e.Engine.View(), e.lobby)
 }
 
 func startDebug(ctx context.Context, app *App, eng ports.Engine, inbox ports.Inbox, port int) error {

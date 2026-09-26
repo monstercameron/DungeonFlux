@@ -117,7 +117,7 @@ func (m *JoinModel) StartJoin(ctx context.Context, seatToken string) <-chan Unar
 	m.state.RoomCode = roomCode
 	m.state.Phase = JoinPending
 	m.state.Error = ""
-	request := &dungeonfluxv1.JoinRequest{RoomCode: roomCode, Kind: dungeonfluxv1.ClientKind_CLIENT_KIND_PHONE, SeatToken: strings.TrimSpace(seatToken), Locale: m.state.Locale}
+	request := &dungeonfluxv1.JoinRequest{RoomCode: roomCode, Kind: dungeonfluxv1.ClientKind_CLIENT_KIND_PHONE, SeatToken: strings.TrimSpace(seatToken), Locale: m.state.Locale, PlayerName: m.state.PlayerName}
 	return m.client.Join(ctx, request)
 }
 

@@ -221,7 +221,7 @@ message ScreenState {
 
 message WatchRequest { string seat_token = 1; }
 message ClientCommand { string command_id = 1; string verb = 2; string arg = 3; }
-message JoinRequest { string room_code = 1; ClientKind kind = 2; string seat_token = 3; string host_token = 4; string dm_token = 5; string locale = 6; }
+message JoinRequest { string room_code = 1; ClientKind kind = 2; string seat_token = 3; string host_token = 4; string dm_token = 5; string locale = 6; string player_name = 7; }
 message JoinResponse { string seat_id = 1; string seat_token = 2; int32 player_number = 3; string locale = 4; }
 message ActRequest { string seat_token = 1; string move_id = 2; string arg = 3; string target_id = 4; Cell cell = 5; }
 message ActResponse { bool accepted = 1; string reason = 2; }

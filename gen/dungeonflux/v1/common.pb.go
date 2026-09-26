@@ -3510,6 +3510,7 @@ type JoinRequest struct {
 	HostToken     string                 `protobuf:"bytes,4,opt,name=host_token,json=hostToken,proto3" json:"host_token,omitempty"`
 	DmToken       string                 `protobuf:"bytes,5,opt,name=dm_token,json=dmToken,proto3" json:"dm_token,omitempty"`
 	Locale        string                 `protobuf:"bytes,6,opt,name=locale,proto3" json:"locale,omitempty"`
+	PlayerName    string                 `protobuf:"bytes,7,opt,name=player_name,json=playerName,proto3" json:"player_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3582,6 +3583,13 @@ func (x *JoinRequest) GetDmToken() string {
 func (x *JoinRequest) GetLocale() string {
 	if x != nil {
 		return x.Locale
+	}
+	return ""
+}
+
+func (x *JoinRequest) GetPlayerName() string {
+	if x != nil {
+		return x.PlayerName
 	}
 	return ""
 }
@@ -5227,7 +5235,7 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\n" +
 	"command_id\x18\x01 \x01(\tR\tcommandId\x12\x12\n" +
 	"\x04verb\x18\x02 \x01(\tR\x04verb\x12\x10\n" +
-	"\x03arg\x18\x03 \x01(\tR\x03arg\"\xcb\x01\n" +
+	"\x03arg\x18\x03 \x01(\tR\x03arg\"\xec\x01\n" +
 	"\vJoinRequest\x12\x1b\n" +
 	"\troom_code\x18\x01 \x01(\tR\broomCode\x12.\n" +
 	"\x04kind\x18\x02 \x01(\x0e2\x1a.dungeonflux.v1.ClientKindR\x04kind\x12\x1d\n" +
@@ -5236,7 +5244,9 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\n" +
 	"host_token\x18\x04 \x01(\tR\thostToken\x12\x19\n" +
 	"\bdm_token\x18\x05 \x01(\tR\admToken\x12\x16\n" +
-	"\x06locale\x18\x06 \x01(\tR\x06locale\"\x83\x01\n" +
+	"\x06locale\x18\x06 \x01(\tR\x06locale\x12\x1f\n" +
+	"\vplayer_name\x18\a \x01(\tR\n" +
+	"playerName\"\x83\x01\n" +
 	"\fJoinResponse\x12\x17\n" +
 	"\aseat_id\x18\x01 \x01(\tR\x06seatId\x12\x1d\n" +
 	"\n" +

@@ -16,7 +16,7 @@ func TestSessionServer_JoinPhoneAllocatesAndRestoresSeat(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	first, err := server.Join(context.Background(), &df.JoinRequest{RoomCode: "ROOM", Kind: df.ClientKind_CLIENT_KIND_PHONE})
+	first, err := server.Join(context.Background(), &df.JoinRequest{RoomCode: "ROOM", Kind: df.ClientKind_CLIENT_KIND_PHONE, PlayerName: "  Aria   Vale "})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,6 +33,12 @@ func TestSessionServer_JoinPhoneAllocatesAndRestoresSeat(t *testing.T) {
 	if len(inbox.Calls) != 2 {
 		t.Fatalf("join events = %d, want one for each phone join", len(inbox.Calls))
 	}
+	server.mu.Lock()
+	if got := server.seats[first.GetSeatToken()].name; got != "Aria Vale" {
+		server.mu.Unlock()
+		t.Fatalf("stored player name = %q, want normalized name", got)
+	}
+	server.mu.Unlock()
 	for i, call := range inbox.Calls {
 		event, ok := call.Envelope.Event.(domain.Join)
 		if !ok || event.Seat != 1 || event.JoinKind != "phone" || event.Locale != "en" {

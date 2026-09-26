@@ -11,11 +11,12 @@ import (
 func TestJoinModel_StartJoinBuildsPhoneRequest(t *testing.T) {
 	fake := &joinFake{response: &dungeonfluxv1.JoinResponse{SeatId: "1", SeatToken: "seat-token", PlayerNumber: 1}}
 	model := NewJoinModel(fake, "  ab12  ")
+	model.SetPlayerName("  Aria   Vale ")
 	result := <-model.StartJoin(context.Background(), "")
 	if result.Err != nil {
 		t.Fatal(result.Err)
 	}
-	if fake.request.GetRoomCode() != "AB12" || fake.request.GetKind() != dungeonfluxv1.ClientKind_CLIENT_KIND_PHONE {
+	if fake.request.GetRoomCode() != "AB12" || fake.request.GetKind() != dungeonfluxv1.ClientKind_CLIENT_KIND_PHONE || fake.request.GetPlayerName() != "Aria Vale" {
 		t.Fatalf("request = %+v", fake.request)
 	}
 	if model.Snapshot().Phase != JoinPending {
