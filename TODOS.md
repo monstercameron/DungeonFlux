@@ -1489,6 +1489,12 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   done when: a Class section with the 12 SRD classes (crest icon when available, name, one-line role) sits after Gender; Roll sends species, gender, class, then roll_hero; the build card shows the chosen class; preview fixture and live check.
   status: claimed luna
 
+- [ ] PHONE-021 · phone screens with the generated art
+  why: The phone should feel like the concept phone UI: journal background, medallion move icons, species portraits and class crests in creation, and painted button plates.
+  lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/theme*.go`, `web/phone/art*.go`, `web/phone/moves*.go`, `web/phone/sheet*.go`, `web/phone/dice*.go`, `web/phone/combat*.go` · depends: PHONE-020, WEB-015, OPS-021
+  done when: phone uses ui/phone_bg, ui/icon_* for moves, ui/species_* and ui/class_* in creation and the sheet, ui/button_* plates, ui/d20* for the roll, ui/status_* on the sheet; all via the gRPC asset loader; Edge screenshots at 390x844.
+  status: open (launch after WEB-015 and PHONE-020)
+
 ## 20. DM screen
 
 The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
@@ -1606,6 +1612,18 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/creation*.go` · depends: DM-017, ENG-019
   done when: each seat card shows species, gender, and class as they arrive (class crest when available), then the rolled build; preview fixture and live check.
   status: claimed luna
+
+- [ ] DM-020 · TV title and lobby screen with the generated art
+  why: The first thing on the TV must look like the concept title screen: painted harbor background, the DungeonFlux wordmark, a framed QR, and parchment panels.
+  lane: L-WEB-DM · block: 11–14 · paths: `web/dm/lobby*.go`, `web/dm/title*.go` · depends: DM-018, WEB-015, OPS-021, INT-005
+  done when: lobby uses ui/title_bg (ui/title_bg_wide on ultrawide), ui/logo_wordmark, ui/qr_frame around the QR, ui/panel_frame and ui/divider, loaded through the WEB-015 gRPC asset loader; looks right at all DM-018 aspect ratios; Edge screenshots.
+  status: open (launch after WEB-015)
+
+- [ ] DM-021 · TV scene, check, combat, and end layers with the generated art
+  why: Scene stills, the d20 art, callout banners, status icons, and the cliffhanger/end backdrops make each phase read on the TV.
+  lane: L-WEB-DM · block: 11–14 · paths: `web/dm/scene*.go`, `web/dm/dice*.go`, `web/dm/callout*.go`, `web/dm/combat*.go`, `web/dm/end*.go`, `web/dm/art*.go` · depends: DM-018, WEB-015, OPS-021
+  done when: scene layers use the manifest stills (tavern_interior, tavern_doorway, bell_tower, ui/check_backdrop, ui/cliffhanger, ui/end_bg), dice uses ui/d20, ui/d20_success, ui/d20_fail, callouts use ui/banner_callout, seats show ui/class_* crests and ui/status_* icons; all via the gRPC asset loader; Edge screenshots per phase fixture.
+  status: open (launch after WEB-015)
 
 ## 21. Host
 
