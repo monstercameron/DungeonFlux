@@ -103,6 +103,7 @@ func phoneView(props phoneViewProps) ui.Node {
 			}
 		}
 	}, props.audio)
+	snapshotVersion = state.Version
 	return renderPhoneScreen(SelectScreen(state), props, locale)
 }
 
@@ -129,11 +130,19 @@ func renderPhoneScreen(kind ScreenKind, props phoneViewProps, locale string) ui.
 	}
 }
 
+// snapshotVersion is the server snapshot being rendered. Screens are prop-less
+// closure components that the reconciler never re-renders from the parent, so
+// screens without local input state are keyed by it and remount per snapshot
+// (the creation screen otherwise kept its pickers after the hero was rolled).
+// Conversation keeps its key so typed text and push-to-talk state survive.
+var snapshotVersion uint64
+
 func frameScreen(model FrameModel, content ui.Node, audio *PhoneAudio, locale string) ui.Node {
-	// Every screen is a prop-less closure component, so the reconciler cannot
-	// tell a sheet from a moves screen. Keying by screen kind remounts the frame
-	// when the phase changes the screen; without it the first screen stuck.
-	return html.WithKey(ui.CreateElement(PhoneFrame(model, content, audioControls(audio, locale))), string(model.Screen)+":"+strconv.FormatUint(artRevision.Load(), 10))
+	key := string(model.Screen) + ":" + strconv.FormatUint(artRevision.Load(), 10)
+	if model.Screen != ScreenConversation {
+		key += ":" + strconv.FormatUint(snapshotVersion, 10)
+	}
+	return html.WithKey(ui.CreateElement(PhoneFrame(model, content, audioControls(audio, locale))), key)
 }
 
 func conversationScreen(props phoneViewProps, locale string) ui.Node {
