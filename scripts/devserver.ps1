@@ -2,6 +2,9 @@
 param(
     [int]$Port = 8443,
     [string]$TaskName = 'DungeonFlux-HumanServer',
+    [string]$DataDir = 'artifacts\runtime\human',
+    [string]$ConfigPath = '',
+    [switch]$SkipGate,
     [switch]$RegisterTask,
     [switch]$StartTask
 )
@@ -23,7 +26,13 @@ New-Item -ItemType Directory -Force -Path $env:GOCACHE, $env:GOTMPDIR | Out-Null
 go build -o $binary ./scripts/devserver
 if ($LASTEXITCODE -ne 0) { throw "go build failed with exit code $LASTEXITCODE" }
 
-$argumentList = "-port $Port -devlog `"$PWD\docs\devlog.html`" -status `"$PWD\artifacts\logs\devserver\status.json`""
+$dataPath = if ([IO.Path]::IsPathRooted($DataDir)) { $DataDir } else { Join-Path $PWD $DataDir }
+$argumentList = "-port $Port -repo `"$PWD`" -build-dir `"$buildDir`" -data-dir `"$dataPath`" -devlog `"$PWD\docs\devlog.html`" -status `"$PWD\artifacts\logs\devserver\status.json`""
+if (-not [string]::IsNullOrWhiteSpace($ConfigPath)) {
+    $configPath = if ([IO.Path]::IsPathRooted($ConfigPath)) { $ConfigPath } else { Join-Path $PWD $ConfigPath }
+    $argumentList += " -config `"$configPath`""
+}
+if ($SkipGate) { $argumentList += ' -skip-gate' }
 if ($RegisterTask) {
     $action = New-ScheduledTaskAction -Execute $binary -Argument $argumentList -WorkingDirectory $PWD
     $trigger = New-ScheduledTaskTrigger -AtLogOn -User ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME)

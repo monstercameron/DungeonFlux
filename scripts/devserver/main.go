@@ -1,4 +1,4 @@
-// Command devserver serves the hour-zero DungeonFlux placeholder.
+// Command devserver supervises the human DungeonFlux test server.
 package main
 
 import (
@@ -17,10 +17,11 @@ import (
 )
 
 type configuration struct {
-	port       int
-	phase      string
-	devlogPath string
-	statusPath string
+	port                                    int
+	phase, devlogPath, statusPath           string
+	repoRoot, buildDir, dataDir, configPath string
+	interval                                time.Duration
+	skipGate                                bool
 }
 
 type status struct {
@@ -30,60 +31,59 @@ type status struct {
 	Uptime  string `json:"uptime"`
 	LastErr string `json:"last_error"`
 }
-
 type statusWriter struct {
 	mu      sync.Mutex
 	path    string
 	started time.Time
 	current status
 }
-
-type devlogEntry struct {
-	Title string
-	Body  string
-}
+type devlogEntry struct{ Title, Body string }
 
 func main() {
 	cfg := configuration{}
 	flag.IntVar(&cfg.port, "port", 8443, "HTTP port")
-	flag.StringVar(&cfg.phase, "phase", "Build in progress", "build phase shown on the placeholder")
-	flag.StringVar(&cfg.devlogPath, "devlog", "docs/devlog.html", "path to the HTML devlog")
-	flag.StringVar(&cfg.statusPath, "status", "artifacts/logs/devserver/status.json", "status JSON path")
+	flag.StringVar(&cfg.phase, "phase", "Build in progress", "placeholder phase")
+	flag.StringVar(&cfg.devlogPath, "devlog", "docs/devlog.html", "HTML devlog")
+	flag.StringVar(&cfg.statusPath, "status", "artifacts/logs/devserver/status.json", "status JSON")
+	flag.StringVar(&cfg.repoRoot, "repo", ".", "repository root")
+	flag.StringVar(&cfg.buildDir, "build-dir", "artifacts/build/human", "binary directory")
+	flag.StringVar(&cfg.dataDir, "data-dir", "artifacts/runtime/human", "runtime data directory")
+	flag.StringVar(&cfg.configPath, "config", "", "server config")
+	flag.DurationVar(&cfg.interval, "interval", 30*time.Minute, "rebuild interval")
+	flag.BoolVar(&cfg.skipGate, "skip-gate", false, "skip full gate for local development")
 	flag.Parse()
-	if err := run(cfg, http.ListenAndServe); err != nil {
-		fmt.Fprintf(os.Stderr, "serve: %v\n", err)
+	if err := runSupervisor(cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "supervisor: %v\n", err)
 	}
 }
 
 type listenFunc func(string, http.Handler) error
 
+// run retains the placeholder HTTP harness used by unit tests.
 func run(cfg configuration, listen listenFunc) error {
 	started := time.Now()
-	writer := &statusWriter{
-		path:    cfg.statusPath,
-		started: started,
-		current: status{BuildAt: started.UTC().Format(time.RFC3339), Mode: "placeholder"},
-	}
-	if err := writer.write(""); err != nil {
-		fmt.Fprintf(os.Stderr, "write status: %v\n", err)
-	}
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("/healthz", healthHandler)
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
-			return
-		}
-		servePlaceholder(w, cfg, writer)
-	})
-
+	w := &statusWriter{path: cfg.statusPath, started: started, current: status{BuildAt: started.UTC().Format(time.RFC3339), Mode: "placeholder"}}
+	_ = w.write("")
+	server := newPlaceholderServer(cfg, w)
 	addr := fmt.Sprintf(":%d", cfg.port)
-	if err := listen(addr, mux); err != nil {
-		_ = writer.write(err.Error())
+	if err := listen(addr, server.Handler); err != nil {
+		_ = w.write(err.Error())
 		return fmt.Errorf("serve %s: %w", addr, err)
 	}
 	return nil
+}
+
+func newPlaceholderServer(cfg configuration, w *statusWriter) *http.Server {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/healthz", healthHandler)
+	mux.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(rw, r)
+			return
+		}
+		servePlaceholder(rw, cfg, w)
+	})
+	return &http.Server{Handler: mux}
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
@@ -104,7 +104,6 @@ func servePlaceholder(w http.ResponseWriter, cfg configuration, writer *statusWr
 		lastErr = err.Error()
 	}
 	_ = writer.write(lastErr)
-
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = io.WriteString(w, placeholderHTML(cfg.phase, entries, writer.started))
@@ -132,7 +131,7 @@ func parseDevlog(source string) []devlogEntry {
 		title := firstText(titleRE.FindStringSubmatch(match[1]), tagRE)
 		body := firstText(bodyRE.FindStringSubmatch(match[1]), tagRE)
 		if title != "" || body != "" {
-			entries = append(entries, devlogEntry{Title: title, Body: body})
+			entries = append(entries, devlogEntry{title, body})
 		}
 	}
 	return entries
@@ -154,11 +153,7 @@ func placeholderHTML(phase string, entries []devlogEntry, started time.Time) str
 	if logHTML.Len() == 0 {
 		logHTML.WriteString("<p class=muted>The first devlog entry will appear here shortly.</p>")
 	}
-	return fmt.Sprintf(`<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DungeonFlux — build in progress</title><style>
-:root{color-scheme:dark}body{margin:0;background:#0b1528;color:#e8edf5;font:16px system-ui,sans-serif}main{max-width:760px;margin:10vh auto;padding:2rem}h1{font-size:clamp(2rem,6vw,4rem);margin:.2rem 0;color:#e0b061}h2{font-weight:400;color:#b7c4d8}.card{border:1px solid #30425e;border-radius:12px;padding:1rem 1.25rem;margin:1.5rem 0;background:#111f36}article{border-top:1px solid #30425e;padding:.8rem 0}article:first-of-type{border-top:0}h3{margin:.2rem 0;color:#e0b061}p{line-height:1.5}.muted{color:#9aa9bd}small{color:#8494ab}
-</style></head><body><main><small>DUNGEONFLUX · HOUR ZERO</small><h1>%s</h1><h2>The human test server is online.</h2><div class="card"><strong>Current phase</strong><p>%s</p><p class="muted">The playable dungeon will appear here as the build passes its gates. Keep this page open; the supervisor will replace it with the latest good build.</p></div><section><h2>Latest devlog entries</h2>%s</section><small>Placeholder started %s · <a href="/healthz">health check</a></small></main></body></html>`, html.EscapeString(phase), html.EscapeString(phase), logHTML.String(), started.UTC().Format(time.RFC3339))
+	return fmt.Sprintf(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>DungeonFlux — build in progress</title><style>:root{color-scheme:dark}body{margin:0;background:#0b1528;color:#e8edf5;font:16px system-ui,sans-serif}main{max-width:760px;margin:10vh auto;padding:2rem}h1{font-size:clamp(2rem,6vw,4rem);color:#e0b061}.card{border:1px solid #30425e;border-radius:12px;padding:1rem;margin:1.5rem 0;background:#111f36}article{border-top:1px solid #30425e;padding:.8rem 0}h3{color:#e0b061}p{line-height:1.5}.muted{color:#9aa9bd}small{color:#8494ab}</style></head><body><main><small>DUNGEONFLUX · HOUR ZERO</small><h1>%s</h1><h2>The human test server is online.</h2><div class="card"><strong>Current phase</strong><p>%s</p><p class="muted">The playable dungeon will appear here as the build passes its gates. Keep this page open; the supervisor will replace it with the latest good build.</p></div><section><h2>Latest devlog entries</h2>%s</section><small>Placeholder started %s · <a href="/healthz">health check</a></small></main></body></html>`, html.EscapeString(phase), html.EscapeString(phase), logHTML.String(), started.UTC().Format(time.RFC3339))
 }
 
 func (s *statusWriter) write(lastErr string) error {
