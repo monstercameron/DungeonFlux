@@ -60,6 +60,14 @@ const phoneFinishCSS = `
 .df-phone-create-field{border:1px solid rgba(200,152,70,.35)!important;border-radius:4px!important;background:rgba(9,13,19,.8)!important}
 .df-phone-talk-input-field{border:1px solid rgba(200,152,70,.45)!important;border-radius:26px!important;background:rgba(9,13,19,.9)!important;font-family:'Cormorant Garamond',Georgia,serif!important;font-size:17px!important}
 .df-phone-talk-ptt,.df-phone-ptt button{border:1px solid #e7c27a!important;box-shadow:0 0 16px rgba(231,194,122,.3),inset 0 0 12px rgba(231,194,122,.2)!important}
+.df-phone-read-along{position:fixed;left:50%;bottom:92px;z-index:40;width:min(452px,calc(100vw - 24px));max-height:32vh;overflow:auto;box-sizing:border-box;transform:translateX(-50%);padding:12px 16px 14px;border:1px solid rgba(231,194,122,.7);border-radius:6px;background:linear-gradient(180deg,rgba(16,22,31,.96),rgba(8,11,17,.97));box-shadow:0 14px 34px rgba(0,0,0,.6),inset 0 0 0 3px rgba(8,11,16,.9),inset 0 0 0 4px rgba(231,194,122,.16);animation:df-read-along-in 240ms ease-out}
+.df-phone-read-along:before{position:absolute;left:50%;top:-6px;width:10px;height:10px;margin-left:-5px;content:"";background:#e7c27a;transform:rotate(45deg);box-shadow:0 0 10px rgba(231,194,122,.7)}
+.df-phone-read-along-speaker{display:block;margin-bottom:4px;color:#e7c27a;font-family:Cinzel,Georgia,serif;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.df-phone-read-along-text{margin:0;color:#efe6d2;font-family:Cormorant Garamond,Georgia,serif;font-size:18px;font-style:italic;line-height:1.3}
+.df-phone-read-along.is-speaking .df-phone-read-along-speaker:after{display:inline-block;width:6px;height:6px;margin-left:8px;border-radius:50%;vertical-align:middle;content:"";background:#e7c27a;box-shadow:0 0 8px #e7c27a;animation:df-read-along-pulse 1s ease-in-out infinite}
+@keyframes df-read-along-in{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes df-read-along-pulse{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.df-phone-read-along{animation:none}.df-phone-read-along.is-speaking .df-phone-read-along-speaker:after{animation:none}}
 `
 
 var phoneFinishInjected bool

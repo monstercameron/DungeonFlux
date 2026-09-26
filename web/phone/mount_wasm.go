@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"strings"
 	"syscall/js"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
@@ -104,7 +105,11 @@ func phoneView(props phoneViewProps) ui.Node {
 		}
 	}, props.audio)
 	snapshotVersion = state.Version
-	return renderPhoneScreen(SelectScreen(state), props, locale)
+	screen := renderPhoneScreen(SelectScreen(state), props, locale)
+	if bubble := narrationBubble(state.Narration); bubble != nil {
+		return html.Div(html.Props{Class: "df-phone-read-along-host"}, screen, bubble)
+	}
+	return screen
 }
 
 func renderPhoneScreen(kind ScreenKind, props phoneViewProps, locale string) ui.Node {
@@ -400,4 +405,25 @@ func combatMoveButton(props combatMoveProps) ui.Node {
 		}()
 	})
 	return html.Button(html.Props{Type: "button", OnClick: tap, Disabled: !props.move.GetEnabled()}, html.Text(props.move.GetLabel()))
+}
+
+// narrationBubble shows the line being spoken so players can read along. It
+// lives outside the keyed screen frame so it updates as the text streams.
+func narrationBubble(narration NarrationModel) ui.Node {
+	text := strings.TrimSpace(narration.Text)
+	if text == "" {
+		return nil
+	}
+	speaker := strings.TrimSpace(narration.Speaker)
+	if speaker == "" {
+		speaker = "Dungeon Master"
+	}
+	class := "df-phone-read-along"
+	if !narration.Done {
+		class += " is-speaking"
+	}
+	return html.Aside(html.Props{Class: class, Role: "status", Aria: map[string]string{"live": "polite", "label": speaker}},
+		html.Strong(html.Props{Class: "df-phone-read-along-speaker"}, ui.Text(speaker)),
+		html.P(html.Props{Class: "df-phone-read-along-text"}, ui.Text(text)),
+	)
 }
