@@ -76,7 +76,7 @@ func hostView(props hostViewProps) ui.Node {
 			primary = append(primary, button)
 		}
 	}
-	links := linksFor(browserOrigin(), token)
+	links := linksFromState(browserOrigin(), token, query.Get("dm_token"), query.Get("room"), snapshot.State)
 	return html.Main(html.Props{Class: "df-host"},
 		html.Div(html.Props{Class: "df-host-hero"}, html.Div(html.Props{Class: "df-host-kicker"}, html.Text("CONTROL ROOM")), html.H1(html.Props{}, html.Text(HostTitle(locale))), html.P(html.Props{Class: "df-host-status", Aria: map[string]string{"live": "polite"}}, html.Span(html.Props{Class: "df-host-status-dot"}), html.Text(snapshot.Status+" · "+status.Get()))),
 		html.Section(html.Props{Class: "df-host-controls"}, html.Div(html.Props{Class: "df-host-section-head"}, html.H2(html.Props{}, html.Text("Run controls")), html.Small(html.Props{}, html.Text("Safe, reversible steering"))), html.Div(html.Props{Class: "df-host-actions df-host-actions-primary"}, primary...), html.Div(html.Props{Class: "df-host-subactions"}, html.Div(html.Props{Class: "df-host-action-group"}, html.Small(html.Props{}, html.Text("Dice")), html.Div(html.Props{Class: "df-host-actions"}, dice...)), html.Div(html.Props{Class: "df-host-action-group"}, html.Small(html.Props{}, html.Text("Options")), html.Div(html.Props{Class: "df-host-actions"}, toggles...)))),
@@ -200,7 +200,7 @@ button, input { font: inherit; }
 .df-host-copy { min-width: 76px; border: 1px solid #625b4c; border-radius: 8px; background: #242936; color: #efe6d2; cursor: pointer; font-weight: 700; transition: transform .18s ease, border-color .18s ease, background .18s ease; }
 .df-host ul { margin: 10px 0 0; padding-left: 20px; color: #c8bfad; }
 .df-host p { color: #c8bfad; }
-@media (max-width: 700px) { .df-host { padding: 16px 14px 36px; } .df-host-hero { display: block; padding: 22px 20px; } .df-host-status { margin-top: 18px; white-space: normal; } .df-host-controls, .df-host-links, .df-host-locale, .df-host-run, .df-host-assets, .df-host-log { padding: 18px; } .df-host-actions-primary { grid-template-columns: repeat(2, 1fr); } .df-host-subactions { grid-template-columns: 1fr; gap: 16px; } .df-host-link-row { grid-template-columns: 1fr; gap: 7px; } .df-host-link-input input { width: 0; } .df-host-copy { min-height: 48px; } }
+@media (max-width: 700px) { .df-host { width: 100%; max-width: 100%; padding: 16px 14px 36px; } .df-host-hero { display: block; padding: 22px 20px; } .df-host-status { margin-top: 18px; white-space: normal; } .df-host-controls, .df-host-links, .df-host-locale, .df-host-run, .df-host-assets, .df-host-log { box-sizing: border-box; max-width: 100%; padding: 18px; } .df-host-section-head { display: block; } .df-host-section-head small { display: block; margin-top: 8px; } .df-host-actions, .df-host-action-group { min-width: 0; } .df-host-actions-primary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .df-host-subactions { grid-template-columns: minmax(0, 1fr); gap: 16px; } .df-host-action-group > .df-host-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); } .df-host-link-row { grid-template-columns: minmax(0, 1fr); gap: 7px; } .df-host-link-input { width: 100%; } .df-host-link-input input { width: 0; } .df-host-copy { min-height: 48px; } }
 @media (prefers-reduced-motion: reduce) { .df-host-action, .df-host-copy { transition: none; } .df-host-action:hover, .df-host-copy:hover { transform: none; } }
 `
 
@@ -251,15 +251,12 @@ func setToggleState(action hostAction, on bool, safe, timers, splat func(bool)) 
 }
 
 func hostRunView(snapshot hostSnapshot) ui.Node {
-	locale := snapshot.Locale
-	if locale == "" {
-		locale = "en"
+	lines := runStatusLines(snapshot)
+	nodes := make([]ui.Node, 0, len(lines))
+	for _, line := range lines {
+		nodes = append(nodes, html.P(html.Props{}, html.Text(line)))
 	}
-	if snapshot.View == nil {
-		return html.P(html.Props{}, html.Text(NoSnapshot(locale)))
-	}
-	view := snapshot.View
-	return html.Div(html.Props{}, html.P(html.Props{}, html.Text(ModeLine(locale, view.GetRunMode()))), html.P(html.Props{}, html.Text(NextD20Line(locale, view.GetNextD20()))), html.P(html.Props{}, html.Text(CombatCapLine(locale, view.GetCombatCapRemainingMs()))))
+	return html.Div(html.Props{}, nodes...)
 }
 
 func assetSlots(view interface{ GetAssetSlots() []*v1.AssetSlot }, locale string) ui.Node {

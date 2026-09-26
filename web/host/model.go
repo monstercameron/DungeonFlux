@@ -2,9 +2,11 @@ package host
 
 import (
 	"net/url"
+	"strconv"
 	"strings"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 type hostAction struct {
@@ -50,6 +52,11 @@ type hostSnapshot struct {
 	Locale     string
 	RoomLocale string
 	Selector   RoomLocaleSelector
+	Phase      string
+	Spotlight  string
+	TurnSeat   string
+	TurnMs     int64
+	TurnTotal  int64
 }
 
 type testerLinks struct {
@@ -58,13 +65,53 @@ type testerLinks struct {
 	Host  string
 }
 
-func linksFor(origin, token string) testerLinks {
+func linksFor(origin, hostToken, dmToken, room string) testerLinks {
 	base := strings.TrimRight(origin, "/")
-	query := ""
-	if token != "" {
-		query = "?t=" + url.QueryEscape(token)
+	dmQuery := ""
+	if dmToken != "" {
+		dmQuery = "?token=" + url.QueryEscape(dmToken)
 	}
-	return testerLinks{DM: base + "/dm" + query, Phone: base + "/p" + query, Host: base + "/host" + query}
+	phoneQuery := ""
+	if room != "" {
+		phoneQuery = "?room=" + url.QueryEscape(room)
+	}
+	hostQuery := ""
+	if hostToken != "" {
+		hostQuery = "?t=" + url.QueryEscape(hostToken)
+	}
+	return testerLinks{DM: base + "/dm" + dmQuery, Phone: base + "/p" + phoneQuery, Host: base + "/host" + hostQuery}
+}
+
+// linksFromState accepts URL fields added by a later server contract without
+// coupling this lane to an uncommitted generated-proto change. Empty fields
+// fall back to the stable host-page inputs supplied by the browser.
+func linksFromState(origin, hostToken, dmToken, room string, state *df.ScreenState) testerLinks {
+	links := linksFor(origin, hostToken, dmToken, room)
+	view := state.GetHost()
+	if view == nil {
+		return links
+	}
+	fields := view.ProtoReflect().Descriptor().Fields()
+	for index := 0; index < fields.Len(); index++ {
+		field := fields.Get(index)
+		value := view.ProtoReflect().Get(field)
+		if field.Kind() != protoreflect.StringKind || value.String() == "" {
+			continue
+		}
+		switch string(field.Name()) {
+		case "dm_url":
+			links.DM = value.String()
+		case "phone_url", "join_url":
+			links.Phone = value.String()
+		case "host_url":
+			links.Host = value.String()
+		case "dm_token":
+			links.DM = linksFor(origin, hostToken, value.String(), room).DM
+		case "room_code":
+			links.Phone = linksFor(origin, hostToken, dmToken, value.String()).Phone
+		}
+	}
+	return links
 }
 
 func snapshotFromState(state *df.ScreenState) hostSnapshot {
@@ -72,6 +119,8 @@ func snapshotFromState(state *df.ScreenState) hostSnapshot {
 	if state == nil {
 		return snapshot
 	}
+	snapshot.Phase = state.GetPhase()
+	snapshot.Spotlight = state.GetSpotlightSeat()
 	if state.GetHost() != nil {
 		snapshot.View = state.GetHost()
 		snapshot.Locale = localeOrDefault(state.GetHost().GetLocale())
@@ -86,7 +135,33 @@ func snapshotFromState(state *df.ScreenState) hostSnapshot {
 		snapshot.Status = T(snapshot.Locale, "ui.dm.paused", nil)
 	}
 	snapshot.Connected = true
+	if host := state.GetHost(); host != nil {
+		if dm := host.GetDm(); dm != nil && dm.GetTurnTimer() != nil {
+			timer := dm.GetTurnTimer()
+			snapshot.TurnSeat = timer.GetSeat()
+			snapshot.TurnMs = timer.GetRemainingMs()
+			snapshot.TurnTotal = timer.GetTotalMs()
+		}
+	}
 	return snapshot
+}
+
+func runStatusLines(snapshot hostSnapshot) []string {
+	if snapshot.View == nil {
+		return []string{NoSnapshot(snapshot.Locale)}
+	}
+	lines := []string{ModeLine(snapshot.Locale, snapshot.View.GetRunMode())}
+	if snapshot.Phase != "" {
+		lines = append(lines, "Phase: "+snapshot.Phase)
+	}
+	if snapshot.Spotlight != "" {
+		lines = append(lines, "Spotlight seat: "+snapshot.Spotlight)
+	}
+	if snapshot.TurnSeat != "" || snapshot.TurnMs != 0 || snapshot.TurnTotal != 0 {
+		lines = append(lines, "Turn timer ("+snapshot.TurnSeat+"): "+strconv.FormatInt(snapshot.TurnMs, 10)+"ms / "+strconv.FormatInt(snapshot.TurnTotal, 10)+"ms")
+	}
+	lines = append(lines, NextD20Line(snapshot.Locale, snapshot.View.GetNextD20()), CombatCapLine(snapshot.Locale, snapshot.View.GetCombatCapRemainingMs()))
+	return lines
 }
 
 func commandForToggle(action hostAction, token string, on bool) *df.HostCommand {
