@@ -35,7 +35,7 @@ func CreationScreen(model *CreationModel) router.Component {
 			action = creationLockedButton(locale)
 		}
 		return html.Main(html.Props{Class: "df-phone df-phone-create", Role: "main", Style: map[string]string{
-			"width": "100%", "max-width": "100vw", "min-height": "100svh", "box-sizing": "border-box", "display": "flex", "flex-direction": "column", "align-items": "stretch", "gap": "1rem", "padding": "1.25rem 1rem 1rem", "background": "#10131b", "color": "#efe6d2", "overflow-x": "hidden",
+			"width": "100%", "max-width": "100vw", "min-height": "100svh", "box-sizing": "border-box", "display": "flex", "flex-direction": "column", "align-items": "stretch", "gap": "1rem", "padding": "1.25rem 1rem 1rem", "background": creationBackground(), "background-size": "cover", "background-position": "center", "color": "#efe6d2", "overflow-x": "hidden",
 		}},
 			html.Div(html.Props{Style: map[string]string{"max-width": "34rem", "width": "100%", "margin": "0 auto"}},
 				html.P(html.Props{Style: map[string]string{"margin": "0 0 .35rem", "color": "#d9a441", "font-size": ".75rem", "letter-spacing": ".16em", "text-transform": "uppercase"}}, html.Text("DUNGEONFLUX")),
@@ -77,9 +77,27 @@ func creationPicker(model *CreationModel, refresh stateCounter, id, label string
 			style["background"] = "#332a19"
 			style["box-shadow"] = "inset 0 0 0 1px #d9a441"
 		}
-		choices = append(choices, html.Button(html.Props{Type: "button", OnClick: tap, Disabled: disabled, Aria: map[string]string{"pressed": strconv.FormatBool(selected == choice.ID)}, Style: style}, html.Text(choice.Label)))
+		choices = append(choices, html.Button(html.Props{Type: "button", OnClick: tap, Disabled: disabled, Aria: map[string]string{"pressed": strconv.FormatBool(selected == choice.ID)}, Style: style}, creationOptionArt(id, choice.ID, choice.Label), html.Text(choice.Label)))
 	}
 	return html.Fieldset(html.Props{Style: map[string]string{"max-width": "34rem", "min-width": "0", "width": "100%", "box-sizing": "border-box", "margin": "0 auto", "padding": ".8rem", "border": "1px solid #3a3a42", "border-radius": "12px", "background": "#171a23"}}, html.Legend(html.Props{Style: map[string]string{"padding": "0 .35rem", "color": "#efe6d2", "font-weight": "700"}}, html.Text(label)), html.Div(html.Props{Style: map[string]string{"min-width": "0", "display": "grid", "grid-template-columns": "repeat(3, minmax(0, 1fr))", "gap": ".55rem"}}, choices...))
+}
+
+func creationBackground() string {
+	if url := ArtURL(phoneBackgroundAsset); url != "" {
+		return "linear-gradient(180deg, rgba(10, 13, 19, .24), rgba(10, 13, 19, .86)), url(\"" + url + "\")"
+	}
+	return "#10131b"
+}
+
+func creationOptionArt(kind, id, label string) ui.Node {
+	asset := ""
+	if kind == "species" {
+		asset = speciesArtAsset(id)
+	}
+	if url := ArtURL(asset); url != "" {
+		return html.Img(html.Props{Src: url, Alt: label, Style: map[string]string{"width": "32px", "height": "42px", "object-fit": "cover", "border-radius": "6px", "flex": "0 0 32px"}})
+	}
+	return html.Span(html.Props{Aria: map[string]string{"hidden": "true"}, Style: map[string]string{"display": "none"}}, html.Text(""))
 }
 
 func creationBuildCard(snapshot CreationSnapshot) ui.Node {
@@ -112,13 +130,25 @@ func creationStatus(snapshot CreationSnapshot) string {
 }
 
 func creationRollButton(roll ui.Handler, locale string, snapshot CreationSnapshot) ui.Node {
-	return html.Button(html.Props{Type: "button", OnClick: roll, Disabled: snapshot.Species == "" || snapshot.Gender == "" || snapshot.Class == "" || snapshot.Phase == CreationRolling || snapshot.Phase == CreationLocked, Style: map[string]string{"width": "100%", "min-height": "56px", "border": "0", "border-radius": "12px", "background": "#d9a441", "color": "#16130d", "font-size": "1.1rem", "font-weight": "700", "box-shadow": "0 5px 18px rgba(217,164,65,.2)"}}, html.Text(RollHeroLabel(locale)))
+	style := artButtonStyle(buttonPrimaryAsset, "#d9a441")
+	style["width"], style["min-height"], style["border"] = "100%", "56px", "0"
+	style["border-radius"], style["color"], style["font-size"] = "12px", "#16130d", "1.1rem"
+	style["font-weight"], style["box-shadow"] = "700", "0 5px 18px rgba(217,164,65,.2)"
+	return html.Button(html.Props{Type: "button", OnClick: roll, Disabled: snapshot.Species == "" || snapshot.Gender == "" || snapshot.Class == "" || snapshot.Phase == CreationRolling || snapshot.Phase == CreationLocked, Style: style}, html.Text(RollHeroLabel(locale)))
 }
 
 func creationLockButton(lock ui.Handler, locale string) ui.Node {
-	return html.Button(html.Props{Type: "button", OnClick: lock, Style: map[string]string{"width": "100%", "min-height": "56px", "border": "1px solid #d9a441", "border-radius": "12px", "background": "#332a19", "color": "#efe6d2", "font-size": "1.1rem", "font-weight": "700"}}, html.Text(creationReadyLabel(locale)))
+	style := artButtonStyle(buttonSecondaryAsset, "#332a19")
+	style["width"], style["min-height"] = "100%", "56px"
+	style["border"], style["border-radius"] = "1px solid #d9a441", "12px"
+	style["color"], style["font-size"], style["font-weight"] = "#efe6d2", "1.1rem", "700"
+	return html.Button(html.Props{Type: "button", OnClick: lock, Style: style}, html.Text(creationReadyLabel(locale)))
 }
 
 func creationLockedButton(locale string) ui.Node {
-	return html.Button(html.Props{Type: "button", Disabled: true, Style: map[string]string{"width": "100%", "min-height": "56px", "border": "1px solid #3aa39a", "border-radius": "12px", "background": "#172a2a", "color": "#8dd1c9", "font-size": "1rem", "font-weight": "700"}}, html.Text(creationLockedLabel(locale)))
+	style := artButtonStyle(buttonDisabledAsset, "#172a2a")
+	style["width"], style["min-height"] = "100%", "56px"
+	style["border"], style["border-radius"] = "1px solid #3aa39a", "12px"
+	style["color"], style["font-size"], style["font-weight"] = "#8dd1c9", "1rem", "700"
+	return html.Button(html.Props{Type: "button", Disabled: true, Style: style}, html.Text(creationLockedLabel(locale)))
 }

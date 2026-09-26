@@ -10,6 +10,7 @@ import (
 type SheetSnapshot struct {
 	Name               string
 	Class              string
+	Species            string
 	PortraitURL        string
 	Hook               string
 	PersuasionModifier int32
@@ -88,6 +89,7 @@ func (m *SheetModel) ApplyScreenState(state *df.ScreenState) SheetSnapshot {
 	if character != nil {
 		m.state.Name = character.GetName()
 		m.state.Class = character.GetClassName()
+		m.state.Species = character.GetSpecies()
 		m.state.PortraitURL = character.GetPortraitUrl()
 		m.state.Hook = character.GetHookText()
 		m.state.PersuasionModifier = character.GetPersuasionModifier()

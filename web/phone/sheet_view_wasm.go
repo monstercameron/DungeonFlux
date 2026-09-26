@@ -41,7 +41,7 @@ func sheetPage(locale string, state SheetSnapshot) ui.Node {
 		status = sheetReadyLabel(locale)
 	}
 	return html.Main(html.Props{Class: "df-phone df-phone-sheet", Style: sheetPageStyle()},
-		html.Header(html.Props{Class: "df-phone-sheet-header"}, portrait, html.Div(html.Props{Class: "df-phone-sheet-title"}, html.H1(html.Props{}, html.Text(SheetName(locale, state.Name, state.Class))), html.P(html.Props{Class: "df-phone-sheet-kicker"}, html.Text(sheetKicker(locale))))),
+		html.Header(html.Props{Class: "df-phone-sheet-header"}, portrait, sheetSpeciesBadge(state), sheetClassCrest(state), html.Div(html.Props{Class: "df-phone-sheet-title"}, html.H1(html.Props{}, html.Text(SheetName(locale, state.Name, state.Class))), html.P(html.Props{Class: "df-phone-sheet-kicker"}, html.Text(sheetKicker(locale))))),
 		html.Div(html.Props{Class: "df-phone-sheet-grid"}, hp, stats),
 		conditions,
 		hook,
@@ -51,16 +51,37 @@ func sheetPage(locale string, state SheetSnapshot) ui.Node {
 
 func sheetPortrait(state SheetSnapshot) ui.Node {
 	if state.PortraitURL == "" {
+		if url := ArtURL(speciesArtAsset(state.Species)); url != "" {
+			return html.Img(html.Props{Class: "df-phone-portrait", Src: url, Alt: state.Species})
+		}
 		return html.Div(html.Props{Class: "df-phone-portrait df-phone-portrait-fallback", Role: "img", Aria: map[string]string{"label": state.Name}}, html.Text(sheetInitials(state.Name)))
 	}
 	return html.Img(html.Props{Class: "df-phone-portrait", Src: state.PortraitURL, Alt: state.Name})
+}
+
+func sheetClassCrest(state SheetSnapshot) ui.Node {
+	if url := ArtURL(classArtAsset(state.Class)); url != "" {
+		return html.Img(html.Props{Class: "df-phone-class-crest", Src: url, Alt: state.Class, Style: map[string]string{"width": "46px", "height": "46px", "object-fit": "contain", "flex": "0 0 46px"}})
+	}
+	return html.Span(html.Props{Aria: map[string]string{"hidden": "true"}, Style: map[string]string{"display": "none"}}, html.Text(""))
+}
+
+func sheetSpeciesBadge(state SheetSnapshot) ui.Node {
+	if url := ArtURL(speciesArtAsset(state.Species)); url != "" {
+		return html.Img(html.Props{Class: "df-phone-species-badge", Src: url, Alt: state.Species, Style: map[string]string{"width": "34px", "height": "42px", "object-fit": "cover", "border-radius": "6px", "flex": "0 0 34px"}})
+	}
+	return html.Span(html.Props{Aria: map[string]string{"hidden": "true"}, Style: map[string]string{"display": "none"}}, html.Text(""))
 }
 
 func sheetConditions(locale string, values []string) ui.Node {
 	items := make([]ui.Node, 0, len(values))
 	for _, value := range values {
 		if value != "" {
-			items = append(items, html.Li(html.Props{Class: "df-phone-condition"}, html.Text(value)))
+			icon := html.Span(html.Props{Aria: map[string]string{"hidden": "true"}, Style: map[string]string{"display": "none"}}, html.Text(""))
+			if url := ArtURL(statusArtAsset(value)); url != "" {
+				icon = html.Img(html.Props{Src: url, Alt: "", Aria: map[string]string{"hidden": "true"}, Style: map[string]string{"width": "28px", "height": "28px", "object-fit": "contain"}})
+			}
+			items = append(items, html.Li(html.Props{Class: "df-phone-condition", Style: map[string]string{"display": "flex", "align-items": "center", "gap": "8px"}}, icon, html.Text(value)))
 		}
 	}
 	if len(items) == 0 {
@@ -79,7 +100,11 @@ func sheetHook(locale, hook string) ui.Node {
 }
 
 func sheetPageStyle() map[string]string {
-	return map[string]string{"background": "#10131b", "color": "#efe6d2", "min-height": "100vh", "box-sizing": "border-box", "padding": "clamp(16px, 4vw, 28px)", "font-family": "system-ui, -apple-system, sans-serif"}
+	background := "#10131b"
+	if url := ArtURL(phoneBackgroundAsset); url != "" {
+		background = "linear-gradient(180deg, rgba(10, 13, 19, .2), rgba(10, 13, 19, .82)), url(\"" + url + "\")"
+	}
+	return map[string]string{"background": background, "background-size": "cover", "background-position": "center", "color": "#efe6d2", "min-height": "100vh", "box-sizing": "border-box", "padding": "clamp(16px, 4vw, 28px)", "font-family": "system-ui, -apple-system, sans-serif"}
 }
 
 func sheetInitials(name string) string {
