@@ -19,3 +19,18 @@ func TestCatalogueKinds(t *testing.T) {
 		})
 	}
 }
+
+func TestEveryCatalogueTypeHasKind(t *testing.T) {
+	events := []Event{HostCmd{}, Join{}, Act{}, Say{}, TalkStart{}, TalkEnd{}, StreamClosed{}, Report{}, TimerFired{}, Transcribed{}, STTError{}, Interpreted{}, InterpretFailed{}, FlavorDone{}, FlavorFailed{}, LineFirstAudio{}, LineAudioFinal{}, LineFailed{}, NarrationDelta{}, AssetPartial{}, AssetReady{}, AssetFailed{}, PrerenderTextDone{}, PrerenderDone{}, PrerenderFailed{}, UtteranceFinal{}, LineDone{}, ClipDone{}, PCLocked{}, DebugGoto{}, DebugPatch{}, DebugTimer{}, DebugForceDice{}, DebugReset{}}
+	for _, event := range events {
+		if event.Kind() == "" {
+			t.Fatalf("empty event kind for %T", event)
+		}
+	}
+	effects := []Effect{TimerEffect{}, NamedEffect{}, ScopeEffect{}, NewRun{}, TalkStop{}, SendAudioCancel{}, Transcribe{}, Interpret{}, CharacterFlavor{}, StartLine{}, ReleaseLine{}, DropLine{}, PlayCanned{}, PrerenderText{}, RenderLines{}, GenerateImage{}, ComposeStill{}, GenerateClip{}, GenerateBillboardLoops{}, StartTimer{}, CancelTimer{}, FreezeTimer{}, ThawTimer{}, PauseAll{}, ResumeAll{}, CancelScope{}, CancelKey{}}
+	for _, effect := range effects {
+		if effect.Kind() == "" {
+			t.Fatalf("empty effect kind for %T", effect)
+		}
+	}
+}
