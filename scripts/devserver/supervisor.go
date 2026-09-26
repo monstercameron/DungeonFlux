@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -19,11 +20,12 @@ import (
 )
 
 type supervisor struct {
-	cfg       configuration
-	writer    *statusWriter
-	mu        sync.RWMutex
-	child     *exec.Cmd
-	childExit chan error
+	cfg        configuration
+	writer     *statusWriter
+	mu         sync.RWMutex
+	child      *exec.Cmd
+	childExit  chan error
+	lastStderr string
 }
 
 func runSupervisor(cfg configuration) error {
@@ -198,13 +200,27 @@ func (s *supervisor) startCurrent(current string) {
 		current = fallback
 	}
 	s.stopChild()
+	logFile, err := s.openChildLog()
+	if err != nil {
+		s.fail(fmt.Errorf("open child log: %w", err))
+		return
+	}
+	env, err := s.childEnvironment()
+	if err != nil {
+		_ = logFile.Close()
+		s.fail(fmt.Errorf("prepare child environment: %w", err))
+		return
+	}
 	childPort := s.cfg.port + 1
 	args := []string{"-config", s.cfg.configPath, "-port", fmt.Sprint(childPort), "-data-dir", s.cfg.dataDir}
 	cmd := exec.Command(current, args...)
 	cmd.Dir = s.cfg.repoRoot
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Env = env
+	cmd.Stdout = logFile
+	stderr := &stderrTail{}
+	cmd.Stderr = io.MultiWriter(logFile, stderr)
 	if err := cmd.Start(); err != nil {
+		_ = logFile.Close()
 		s.fail(fmt.Errorf("start server: %w", err))
 		return
 	}
@@ -212,28 +228,39 @@ func (s *supervisor) startCurrent(current string) {
 	s.mu.Lock()
 	s.child = cmd
 	s.childExit = exit
+	s.lastStderr = ""
 	s.mu.Unlock()
-	go func() { exit <- cmd.Wait() }()
+	go s.waitChild(cmd, exit, logFile, stderr)
 	s.setMode(strings.TrimSuffix(filepath.Base(s.cfg.configPath), filepath.Ext(s.cfg.configPath)), nil)
 }
 
 func (s *supervisor) restartAfterExit() {
 	s.mu.Lock()
+	lastStderr := s.lastStderr
 	s.child = nil
 	s.childExit = nil
+	s.lastStderr = ""
 	s.mu.Unlock()
-	s.setMode("placeholder", errors.New("server exited; restarting"))
+	if lastStderr == "" {
+		lastStderr = "server exited; restarting"
+	}
+	s.setMode("placeholder", errors.New(lastStderr))
 	s.startCurrent(filepath.Join(s.cfg.buildDir, "dungeonflux.exe"))
 }
 
 func (s *supervisor) stopChild() {
 	s.mu.Lock()
 	child := s.child
+	exit := s.childExit
 	s.child = nil
 	s.childExit = nil
 	s.mu.Unlock()
 	if child != nil && child.Process != nil {
 		_ = child.Process.Kill()
+		if exit != nil {
+			<-exit
+			return
+		}
 		_, _ = child.Process.Wait()
 	}
 }

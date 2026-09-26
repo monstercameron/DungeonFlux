@@ -38,7 +38,112 @@ func testSupervisor(t *testing.T) *supervisor {
 	t.Helper()
 	root := t.TempDir()
 	w := &statusWriter{path: filepath.Join(root, "logs", "status.json"), started: time.Now()}
-	return &supervisor{cfg: configuration{repoRoot: root, buildDir: filepath.Join(root, "build")}, writer: w}
+	return &supervisor{cfg: configuration{repoRoot: root, buildDir: filepath.Join(root, "build"), dataDir: filepath.Join(root, "data")}, writer: w}
+}
+
+func TestSupervisorChildEnvironmentGeneratesPrivateToken(t *testing.T) {
+	s := testSupervisor(t)
+	t.Setenv("DF_DEBUG_TOKEN", "")
+	env, err := s.childEnvironment()
+	if err != nil {
+		t.Fatal(err)
+	}
+	token := environmentValue(env, "DF_DEBUG_TOKEN")
+	if len(token) != 64 || strings.Trim(token, "0123456789abcdef") != "" {
+		t.Fatalf("unexpected generated token %q", token)
+	}
+	data, err := os.ReadFile(filepath.Join(s.cfg.dataDir, "debug.token"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(string(data)) != token {
+		t.Fatalf("token file does not match child token: %q", data)
+	}
+	if got := os.Getenv("DF_DEBUG_TOKEN"); got != "" {
+		t.Fatalf("parent token was changed: %q", got)
+	}
+}
+
+func TestSupervisorChildEnvironmentPreservesProvidedToken(t *testing.T) {
+	s := testSupervisor(t)
+	t.Setenv("DF_DEBUG_TOKEN", "provided-token")
+	env, err := s.childEnvironment()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := environmentValue(env, "DF_DEBUG_TOKEN"); got != "provided-token" {
+		t.Fatalf("child token = %q", got)
+	}
+	if _, err := os.Stat(filepath.Join(s.cfg.dataDir, "debug.token")); !os.IsNotExist(err) {
+		t.Fatalf("provided token unexpectedly wrote token file: %v", err)
+	}
+}
+
+func TestStderrTailKeepsLastCompleteOrPartialLine(t *testing.T) {
+	var tail stderrTail
+	for _, data := range []string{"first\npart", "ial\nlast"} {
+		if _, err := tail.Write([]byte(data)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := tail.LastLine(); got != "last" {
+		t.Fatalf("last stderr line = %q", got)
+	}
+	if _, err := tail.Write([]byte("\n")); err != nil {
+		t.Fatal(err)
+	}
+	if got := tail.LastLine(); got != "last" {
+		t.Fatalf("completed stderr line = %q", got)
+	}
+}
+
+func TestSupervisorRestartAfterExitCopiesLastStderr(t *testing.T) {
+	s := testSupervisor(t)
+	if err := os.MkdirAll(s.cfg.buildDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	current := filepath.Join(s.cfg.buildDir, "dungeonflux.exe")
+	if err := copyFile(os.Args[0], current); err != nil {
+		t.Fatal(err)
+	}
+	s.lastStderr = "server configuration failed"
+	s.restartAfterExit()
+	s.stopChild()
+	data, err := os.ReadFile(s.writer.path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), `"last_error": "server configuration failed"`) {
+		t.Fatalf("status did not preserve stderr: %s", data)
+	}
+}
+
+func TestSupervisorOpenChildLogUsesDevserverDirectory(t *testing.T) {
+	s := testSupervisor(t)
+	file, err := s.openChildLog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := file.Name()
+	if err := file.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(filepath.Base(path), "server-") || filepath.Ext(path) != ".log" {
+		t.Fatalf("child log path = %q", path)
+	}
+	if filepath.Dir(path) != filepath.Dir(s.writer.path) {
+		t.Fatalf("child log directory = %q", filepath.Dir(path))
+	}
+}
+
+func environmentValue(env []string, key string) string {
+	prefix := key + "="
+	for _, item := range env {
+		if strings.HasPrefix(item, prefix) {
+			return strings.TrimPrefix(item, prefix)
+		}
+	}
+	return ""
 }
 
 func TestSupervisorHelpers(t *testing.T) {
