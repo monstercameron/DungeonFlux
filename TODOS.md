@@ -685,6 +685,66 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   done when: those events append the ENG-023 per-seat sound effects (attacker, target, caster) alongside the table cues; staticcheck clean on internal/game/...; Step and combatsim tests assert the targeted effects; walk tests stay green.
   status: committed 431ab86
 
+- [ ] ENG-027 · check resolution leaves "rolling" without host Skip
+  why: PHONE-031 browser play-through (artifacts/runtime/L-WEB-PHONE-RUN2/logs/server.jsonl): after a phone rolls the offered check, the check stays in the rolling state and the game only continues after the host presses Skip. A simulated game must play to End with no host intervention.
+  lane: L-ENGINE · block: 11–14 · paths: `internal/game/phase/check*.go`, `internal/game/phase/*_test.go`, `internal/runtime/*.go` (timer wiring only), `internal/wire/e2e*_test.go` · depends: ENG-014, E2E-005
+  done when: the root cause is found from the server trace and fixed so the check resolves (dice timer/animation completes, result posted, phase advances) on its own; a regression test drives offer → roll → resolved → next phase with the fake clock; the wire simulated-game test asserts no host skip is used; gate green.
+  status: open
+
+- [ ] ENG-028 · TIMERS_OFF and features.turn_timers actually stop turn timers
+  why: Live playtest 14:17: creation_timeout (30 s after host Start) fired before the players had picked, so the game went to Opening with default heroes and their choices were lost. The plan (§0 timer table) lets the host turn timers off (combat_cap excepted), but HostTimersOff is only parsed in internal/api (host.go, debug/write.go) and nothing in internal/game or internal/runtime handles it; config features.turn_timers is read into config and never used.
+  lane: L-ENGINE · block: 11–14 · paths: `internal/game/**`, `internal/runtime/*.go`, `internal/wire/wire.go` (config hand-off only), related `*_test.go` · depends: ENG-027
+  done when: (1) host TIMERS_OFF cancels running pausable turn timers (creation_timeout, seat deadlines, turn timers) except combat_cap and any timer the plan marks as not stopped, and suppresses starting new ones until TIMERS_ON (add TIMERS_ON if missing, mirrored through host.go and dfctl); (2) features.turn_timers=false starts the room with timers off; (3) creation waits for both seats to lock when timers are off; (4) the host view shows the current timers state; (5) tests with the fake clock; e2e: with timers off, creation does not advance after 60 s of fake time until both seats lock; gate green.
+  status: open
+
+- [ ] ENG-029 · hook still stalls until host Skip (root cause from the event trail)
+  why: E2E-007 (Codex browser, 16:3x, server at 8d7c930 which includes a03d795): after Leave the TV stayed on the "Animated scene still" until the host pressed Skip. a03d795 fixed the hook glue (arrival line_done now starts the stranger line; PlayCanned arrival carries UtteranceID "hook-arrival") but the live run still stalls, so the arrival or stranger line never completes in the running system. The hook is the gate to combat (SPLAT-023) and the demo script (1:40–2:00).
+  lane: L-ENGINE · block: 11–14 · paths: `internal/game/phase/hook/**`, `internal/game/phase/support.go`, `internal/game/*.go` (hook routing only), `internal/voice/out/*.go`, `internal/wire/execs.go` (dispatch only), `internal/runtime/*.go` (effect routing only), related `*_test.go` · depends: ENG-027, NARR-001
+  done when: the root cause is found from a live trace (run your own server with the fake config, drive join → creation → Leave with dfctl act/send, log every event and effect of the hook, including PlayCanned for the arrival (asset hook-arrival has no recording: playSilence path), the StartLine stranger dispatch (fake TTS canned_stranger_found, paced), line_done ids, clip handling and any dropped or rejected events); fixed so Leave → arrival → stranger line → combat runs with no host input in both timers-on and TIMERS_OFF; a wire e2e drives exactly that path through the real executors (not a fake engine) and asserts combat within 20 s of fake-clock time; verified live on your lane server. No web/ changes.
+  status: open
+
+- [ ] ENG-030 · combat view contract matches the PlayCanvas renderer (one grid, 8-connected, engine-owned paths, anims, contact, camera)
+  why: The developer: "get the rules engine and gameplay engine fleshed out while the playcanvas renderer is cooking, make sure their apis and hooks relate or match". The engine is 8-connected (R-08) but web/splat and the new navigation.go are 4-connected; proto Token/Highlight/Camera lack the path, anim, anim_seq, kind, contact_in_ms, highlight cell sets, follow and duration that the renderer (splat.Token/Scene/Effects/CameraCommand) consumes; the §0.21.3 combat machine (timers, bell, cap, Skip, Down, crit, Sneak Attack, R-D6 tactics, SPLAT_READY/FAILED mode) needs an audit.
+  lane: L-ENGINE · paths: `proto/dungeonflux/v1/*.proto` + generated code, `internal/game/combat/**` (navigation.go only as the final step after SPLAT-023 lands), `internal/game/view_combat.go`, `internal/game/battlefield.go`, related tests · depends: SPLAT-023 (last step only), RULES-007 (API)
+  done when: (1) proto carries the contract fields (additive only); (2) every §0.21.3 transition sets them so the renderer only draws; (3) a test per §0.21.3 transition row, including cap, Skip, bell (R-D2), Down (R-D4), R-D6 tactics and SPLAT_READY/FAILED/host_splat_off mode; (4) after SPLAT-023 lands, one 8-connected grid shared with content; (5) coverage >= 70% on touched packages.
+  status: open
+
+- [ ] ENG-031 · the renderer contract reaches the TV: project anim, anim_seq, path, kind, highlights, contact, shake, camera follow/duration end to end
+  why: ENG-030 (4a2d7f7) added the contract fields to internal/game and proto, but the shared domain view and the API projection do not carry them, so the DM battle stage (SPLAT-023, 325b269) still sees only cell/hp/active/statuses and cannot animate walks, attacks, hits, shakes or camera moves.
+  lane: L-ENGINE · paths: `internal/domain/view*.go`, `internal/api/project*.go` (combat/battlefield projection functions only; L-RULES edits the sheet mapping in the same file, touch nothing else), `internal/game/phase/**` (combat view plumbing only), `web/dm/battle_stage*.go` (map the new proto fields 1:1 to splat.Token/Scene/Effects/CameraCommand; no CSS), `web/splat/grid_math.go` (Path/Distance 8-connected, diagonal cost 1, matching internal/game/combat/navigation.go), related tests · depends: ENG-030, SPLAT-023
+  done when: (1) dfctl view --dm during a combat shows tokens with kind, path, anim, anim_seq, highlights with cell sets, contact_in_ms, shake and camera follow/duration after an attack; (2) the battle stage passes them to the splat bridge (a Go test on the mapping; the renderer computes no paths); (3) web/splat grid_math is 8-connected; (4) coverage >= 70% on touched packages.
+  status: open
+
+- [ ] ENG-032 · combat starts from the real party: names, classes, portraits, HP/AC from the rolled builds, spawns on walkable content cells
+  why: Live run 2026-09-26 17:45 (server at 6f625c3): dfctl view --dm in combat shows tokens "pc-1" (paladin, 10/10 HP) at cell (1,0), "pc-2" (rogue, 10/10) at (2,0) and the thrall at (0,0), although the seated heroes were a ranger and a barbarian with their own names, rolled HP/AC and stand-in portraits, and (0,0)/(1,0) are not walkable in the Wooded Path grid (first walkable row cells are c=2,3,6..9). Combat is placeholder data; COMBAT-008 (combat wired into phases) is still open.
+  lane: L-ENGINE · paths: `internal/game/combat/**`, `internal/game/phase/**` (HookEvent -> Combat entry and Combat -> Cliffhanger exit only), `internal/game/view_combat.go`, `internal/game/battlefield.go`, `internal/content/battlefield_*.go` + `internal/content/oneshot.go` (spawn cells only), related tests · depends: RULES-007, ENG-031, SPLAT-023
+  done when: (1) at Combat entry each seated hero becomes a token with the seat's character name, class (and species for the sprite kind), portrait URL (the same stand-in/portrait the phone and TV party rows use), HP/MaxHP/AC and attack from the RULES-007 build via the exported rules API; (2) spawn cells for both heroes and the thrall are content data, validated walkable against the content grid (a test fails on a non-walkable spawn), placed so the thrall is 4-6 cells from seat 1 per §0.21.2; (3) attacks use each hero's real attack bonus/damage and the thrall AC 8/HP 12; a Down PC stays Down per R-D4; at Combat -> Cliffhanger a Down PC goes to 1 HP and HP carries back to the seat; (4) COMBAT-008 done-when satisfied and marked; (5) dfctl view --dm in combat on a lane server shows real names, classes, HP and walkable cells (paste it in the hand-in); coverage >= 70%.
+  status: open
+
+- [ ] ENG-033 · the engine executes live debug control: DebugGoto, DebugPatch, DebugTimer (dfctl goto/seat/timer/combat verbs work on a running room)
+  why: BL-001..BL-005 (0552514..2ba0339) added the dfctl verbs and DebugService RPCs, but the engine rejects the events: `dfctl goto combat --turn pc1` on the live :8446 room returns {"reason":"unaccepted_event"} with debug: true in the config. The developer: "you should be able to access the runtime and control anything realtime".
+  lane: L-ENG2 · paths: `internal/game/debug*.go`, `internal/game/game.go` + `internal/game/state*.go` (dispatch of the debug events only), `internal/game/phase/**` (entry helpers the goto needs, additive only), related tests · depends: BL-001, ENG-011
+  done when: with debug on, on a LIVE room and without restart: goto every phase (lobby, creation, opening, exploration, conversation, check, resolution, hook_event, combat [--turn pc1|thrall|pc2], cliffhanger, end) synthesizes what the phase needs (two seated heroes with rules-built characters from seeded dice, NPC state, combat tokens on walkable content spawn cells), cancels the old phase's scopes and timers and runs the target phase's entry effects so the TV, phones, audio and battle stage react as in a real transition; seat set/ready, timer fire/cancel/set, timers off/on, pause/resume and combat hp/move/end are applied; every debug event is logged so replay stays deterministic; debug off rejects them. Verified with dfctl on a lane server (paste state + view --dm after goto combat and after combat hp). ENG-032 is changing combat entry at the same time: call its entry function rather than duplicating it, re-read internal/game/combat before editing, keep edits additive; coverage >= 70%.
+  status: open
+
+- [x] COMBAT-MOVE · phone top-down combat map: engine-computed move (6) and dash (12) reach with paths, commit, walk/dash animation, R-D8 Dash ruling
+  why: The developer: "if the player wants to move, pull the grid from the battle map and create a top down view on the player client so the player can click and commit and watch his player character walk or dash there".
+  lane: ORCH subagent · paths: internal/game/combat (reach, dash, budget), internal/game/phase (combat map projection), internal/game/rules/rulings (R-D8), proto MiniGrid + Token.step_ms, internal/api (phone projection), web/phone combat map · depends: ENG-030
+  done when: Move opens the map; tap previews the engine path; Commit moves or dashes; token animates on the phone; screenshots artifacts/screenshots/MOVE/. TV pace (step_ms) is carried by the ENG-032 rerun.
+  status: done e9458d4
+
+- [ ] RULES-007 · rules engine complete for every class the phone offers (SRD 5.2.1 build model, checks, attacks) and the sheet shows real scores
+  why: The developer asked to flesh out the rules engine alongside the renderer. internal/game/rules covers part of §0.20/§0.21.2; live play offers classes beyond the plan's four, and the phone sheet shows "Unknown data" for ability scores.
+  lane: L-RULES · paths: `internal/game/rules/**`, `internal/game/phase/creation/**` (build wiring only), `internal/api/project.go` + `internal/game/view.go` (sheet mapping only), the phone sheet mapping file if strictly needed, related tests · depends: none
+  done when: (1) every offered class has a complete level-1 template and the §0.20 build model; (2) check resolution with adv, dice per §0.20, host_force_d20 on any d20; (3) attack math per §0.21.2 (crit R-09, nat 1, Sneak Attack R-D5, Down R-D4) exported for the combat engine with a documented surface; (4) the sheet shows all six scores, mods, saves, skills, HP, AC, attack; (5) tests pin the tables and odds; coverage >= 70%.
+  status: open
+
+- [ ] RULES-008 · the phone sheet and TV build card show the real seeded build (six scores, mods, saves, skills, HP, AC, attack) for all 12 classes
+  why: RULES-007 (3603c22) builds complete seeded characters, but the shared domain projection carries only summary build data, so the phone sheet shows "Unknown data" for ability scores and the class attack mapping covers only some classes.
+  lane: L-RULES · paths: a NEW `internal/domain/build_stats.go` (BuildStats{Abilities [6]int, SaveProficiencies []string, SkillProficiencies map[string]string, HP, MaxHP, AC int, AttackName, AttackDice, AttackDamageType string, AttackBonus int}) plus ONE added field on SeatView/BuildCard in internal/domain (L-ENGINE ENG-031 is editing combat fields in internal/domain view files at the same time: add, never reorder), `internal/game/phase/creation/**` + `internal/game/view.go` (fill it from the rules build), `internal/api/project.go` (sheet/build-card mapping functions only; ENG-031 edits the combat projection functions in the same file), the phone sheet mapping in `web/phone/*sheet*.go` (all 12 classes; no CSS), related tests · depends: RULES-007
+  done when: dfctl view --seat 1 after roll_hero shows all six scores, modifiers, save and skill proficiencies, HP, AC and the attack line; the phone sheet renders them (no "Unknown data") for every class; tests pin the projection; coverage >= 70%.
+  status: open
+
 - [ ] INT-001 · lobby seats and join data reach the TV end to end
   why: Live test: two phones joined (engine View version advanced) but dfctl view --dm shows {"dm":{}} and the TV still shows Waiting to join, room code "/p", and a broken QR, because proto DMView has no seats or lobby fields and the projection never fills them.
   lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/common.proto`, `gen/**`, `internal/api/project*.go`, `web/dm/lobby*.go` · depends: ENG-017, API-019, BASE-021
@@ -1129,6 +1189,12 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   done when: the reference and voice-pack executors run on lock in fake and live config (fake returns placeholders); the phone opens its Listen stream after the first tap and plays seat-targeted clips; a wire test locks a seat and sees reference and voice-pack assets ready; a browser check on a lane server shows the phone receiving a targeted clip.
   status: claimed luna
 
+- [ ] INT-008 · AssetService serves runtime assets (QR, portraits, clips) over gRPC
+  why: The developer reported the lobby QR as broken. Probe 13:59: AssetService.Get for the lobby QR SHA (d5b78794…) returns NotFound "open asset …: file does not exist", so runtime assets written under <data-dir>/assets (join QR, generated portraits, reference sheets, clips) are only reachable through the HTTP /assets/ route. The DM falls back to that HTTP URL today; once WEB-021 routes every image through the gRPC art source they would never load, and the fallback already breaks the gRPC-only transport rule.
+  lane: L-API · block: 11–14 · paths: `internal/api/assets*.go`, `internal/api/*_test.go`, `internal/wire/wire.go` (constructor argument only), `internal/wire/e2e*_test.go` · depends: WEB-015, INT-004
+  done when: (1) Get by SHA-256 finds build-time assets and runtime assets in the data dir (content type from the stored extension, streamed in chunks, path traversal impossible: SHA-256 hex only); (2) Manifest keeps listing build-time names; runtime assets are addressed by SHA; (3) tests cover a runtime asset hit, a miss, and a bad selector; an e2e fetches the lobby QR from the DM view qr_url over gRPC; (4) verified against a live server on your lane port with a tiny grpctunnel client (see artifacts/tmp/ORCH/probe/main.go). No web/ changes.
+  status: open
+
 ## 14. LLM layer
 
 SchemaFlux for OpenAI-dialect links, Gemini and Haiku adapters, model chains, budget, and the executors that turn effects into model calls.
@@ -1473,10 +1539,58 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   done when: /dm?preview=<name> and /p?preview=<name> render their fixtures with no gRPC connection (native test for the parser with and without '?'); the unused constant is used by the end screen's attribution link or removed; staticcheck clean on web/shell and web/phone; Edge screenshot of one DM and one phone preview.
   status: committed f5ec7fb
 
-- [ ] WEB-018 · browser DM and host Watch streams deliver no snapshots
+- [x] WEB-018 · browser DM and host Watch streams deliver no snapshots
   why: Live check 12:35: the DM lobby renders the concept layout but never receives state (room code shows a dash, QR placeholder, seats empty) and the host page stays on No snapshot yet, even after host_pause/host_resume via dfctl; tokens are now preserved (0bd94ad) and wire/api Watch tests pass, so the break is in the browser client path (WASM Watch stream over GoGRPCBridge, or the updates channel feeding ui state).
   lane: L-WEB-SHELL · block: 11–14 · paths: `web/dm/mount*.go`, `web/host/client*.go`, `web/shell/client*.go` · depends: WEB-011, INT-005
   done when: opening /dm?token=... and /host?t=... on a live server shows the room code, QR, seats, and host run status within 2 s, and updates on every engine event; verified in the browser.
+  status: committed 07b41e7
+
+- [ ] WEB-019 · persistent client asset cache with a sane TTL
+  why: The developer asked that clients cache assets with a sane TTL. AssetLoader keeps Blob URLs in memory only, so every reload of /dm, /host or /p re-downloads all art and audio over the gRPC AssetService (tens of MB on a phone). Assets are content-addressed by SHA-256 and therefore immutable; only the logical-name manifest can change.
+  lane: L-WEB-SHELL · block: 11–14 · paths: `web/shell/assets*.go`, `web/shell/assetcache*.go` · depends: WEB-015, INT-004
+  done when: (1) asset bytes are stored in the browser Cache Storage API (fall back to IndexedDB, or to memory-only when neither is available or storage throws, e.g. private mode) keyed by SHA-256, with stored-at and last-used times; (2) a cached asset is served without a gRPC Get when younger than 30 days since last use, its SHA-256 is verified on read, and a mismatch or corrupt entry is evicted and refetched; (3) the manifest is refetched over gRPC on every boot, but a cached manifest younger than 10 minutes lets the page render art immediately while the refresh runs, and logical names re-point when a SHA changes; (4) total cache size is capped at 256 MB on phones (width under 700 px) and 1 GB elsewhere, with LRU eviction; expired entries are pruned at boot; (5) all TTLs and caps are constants in one place; (6) unit tests cover hit, miss, expiry, SHA mismatch, cap eviction and storage failure through an injected store interface (no browser needed); (7) verified in headless Edge: the second load of /dm issues no AssetService Get calls for cached art (server log or a counter) and renders art within 1 s; gate green.
+  status: open
+
+- [ ] WEB-020 · lobby title stinger and background music on the DM screen
+  why: The developer asked "what about the main menu stingers and bg music?" The live DM lobby plays nothing after "Enable table audio": dfctl view --dm in the lobby carries no music or cue, so neither the title stinger nor the lobby music bed is ever streamed, even though the build-time ElevenLabs assets exist (see internal/content/music.go, CONT-013 names, OPS-026 accepted cues).
+  lane: L-WEB-SHELL · block: 11–14 · paths: `internal/game/phase/lobby*.go`, `internal/content/music*.go`, `web/dm/music*.go`, `web/dm/mount_wasm.go` (audio effect only), `web/shell/audio/**` · depends: ENG-024, ENG-025, WEB-016, INT-006
+  done when: (1) the lobby view (or its entry effects) cues the lobby music bed and a one-shot title stinger, both resolved from the existing accepted build-time assets, and streamed over gRPC per the transport rule (no HTTP audio fetches); (2) after the DM taps "Enable table audio" the stinger plays once and the music bed loops with a fade-in, and the bed crossfades out when the phase leaves the lobby; if the page was already unlocked (autoplay allowed) it starts without a tap; (3) a reconnecting DM does not replay the stinger; (4) unit tests cover the cue selection and the no-replay rule; (5) verified in real headless Edge with --autoplay-policy=no-user-gesture-required using python artifacts/tmp/ORCH/cdp.py: audio nodes or an AudioContext report playback of the stinger then the bed (log it), plus the server log shows the audio stream; report which asset names were used; gate green. No visual/CSS changes: design is done by ORCH.
+  status: open
+
+- [ ] WEB-021 · DM images and clips resolve through the gRPC art source; previews use real assets
+  why: Transport rule is gRPC-only after boot, but the DM renders view URLs directly (scene layers, scene cards, HUD party portraits, combat tokens, dialogue option icons, dice art, clip stills and videos), so live games fetch /assets/<sha> over HTTP and preview fixtures point at non-existent /assets/preview/*.webp files, which shows broken images in every preview. The phone got portraitSrc (web/phone/art.go) in 67b2a00; the DM needs the same.
+  lane: L-WEB-DM · block: 11–14 · paths: `web/dm/art.go`, `web/dm/scene.go`, `web/dm/scene_wasm.go`, `web/dm/hud_wasm.go`, `web/dm/combat_wasm.go`, `web/dm/dialogue_wasm.go`, `web/dm/clip_wasm.go`, `web/dm/creation.go`, `web/dm/preview.go`, `web/dm/*_test.go`, `web/shell/assets*.go` (video Blob support only) · depends: WEB-015, INT-004
+  done when: (1) one dm helper (e.g. artSrc) resolves names, SHA-256 and /assets/<sha>.<ext> through ArtURL, passes blob:/data: through, and returns "" while loading so callers show their existing fallback; (2) every img/video src in web/dm uses it (no raw view URL reaches the DOM); clips play from a Blob URL loaded over gRPC (the loader must handle video content types); (3) preview fixtures use real manifest names (mother_vell, establishing_tavern, stranger, battlefield_tavern_flat, ui/class_* for portraits, and so on) so every /dm?preview=<fixture> renders real art with zero 404s in the console; (4) tests cover the helper; (5) verified with python artifacts/tmp/ORCH/cdp.py on each fixture (no 404 console errors, images have naturalWidth > 0). Do NOT change CSS, colors, sizes or layout: design is ORCH-owned; if an element needs a fallback look, reuse the existing one.
+  status: open
+
+- [ ] WEB-022 · phone never shows lazily loaded (non-ui) art
+  why: Live 15:12: on the phone, ArtURL("mother_vell") stays "" in the conversation although the asset is in the persistent cache (Cache Storage df-assets-v1 has /df-cache/e9d36f1b…) and the DM on the same origin renders it. No non-ui/ asset (mother_vell, establishing_tavern, stranger, runtime portraits by SHA) has ever displayed on a phone; only preloaded ui/* art does. ORCH added a ui/check_backdrop fallback in the talk view (89bac72) to unblock play; the lazy path itself is broken on the phone.
+  lane: L-WEB-SHELL · block: 11–14 · paths: `web/shell/assets*.go`, `web/shell/lazy_art*.go`, `web/shell/assetcache*.go`, `web/phone/art.go`, related `*_test.go` · depends: WEB-015, WEB-019, WEB-021
+  done when: root cause found and fixed (check: lazy source started-map never retrying after a miss or error, the phone re-render/remount path after art arrival via phone.ArtChanged and the frame key in web/phone/mount_wasm.go, persistent-cache hit returning without caching the Blob URL under the looked-up key, name vs SHA keys); a regression test; verified in headless Edge (python artifacts/tmp/ORCH/cdp.py) that /p?preview=... or a live phone conversation shows mother_vell within 2 s of the screen opening, and a runtime SHA portrait resolves on the phone sheet. No CSS changes.
+  status: open
+
+- [ ] API-022 · DM party cards show players as they join (name, then hero)
+  why: The developer could not tell whether "Your party" updates as players join. Live check 13:58: after two phones joined as Lyra and Brom, the status reads "Waiting for players (2/2)" but both party cards still say "Waiting for a player… / Adventurer", because the projected LobbySeat has joined=true with an empty name (the join name travels in postPhoneJoin but is not kept on the engine seat or projected; project.go only uses Build/Character names) and PortraitCard treats an empty name as an empty seat.
+  lane: L-API · block: 11–14 · paths: `internal/domain/*.go` (seat player-name field only), `internal/game/**` (store the name on Join), `internal/api/project.go`, `internal/api/*_test.go`, `web/dm/lobby.go`, `web/dm/components_wasm.go` (card copy selection only), `web/dm/*_test.go`, `internal/wire/e2e*_test.go` · depends: API-014, WEB-018
+  done when: (1) the engine seat stores the player name from Join (renames on rejoin), and LobbySeat.name carries it before a hero exists, then the hero name once built (keep the player name available if the proto has room, otherwise hero name wins); (2) the DM card for a joined seat shows the player name with a status line ("Joined" → "Choosing a hero" in creation → class/species once built), and only a seat with joined=false shows "Waiting for a player…"; the card gets data-joined="true" so ORCH can style it; (3) phones see the same names in their waiting list; (4) tests cover projection and card copy; an e2e asserts the DM view seat names after two joins; (5) verified live with python artifacts/tmp/ORCH/drive.py or cdp.py: two phones join and the DM cards change within 1 s. Do NOT change CSS/visual styling (ORCH owns design).
+  status: open
+
+- [ ] NARR-001 · read-along narration text for the TV and every phone
+  why: The developer wants narration bubbles so players can read along while the DM and NPCs speak. Today nothing carries line text to clients: domain View.Scene.Narration is never written (grep finds no writer), DMView.narration is always empty, and PhoneView has no narration field. Line text exists only inside the voice/LLM executors (StartLine.Input for NPC lines; LLM-streamed text for opening/cliffhanger/stranger; canned lines have fixed text in internal/content/canned.go and i18n canned.* keys).
+  lane: L-API · block: 11–14 · paths: `proto/dungeonflux/v1/common.proto` + regenerated `gen/`, `internal/domain/*.go`, `internal/game/**`, `internal/api/project.go`, `internal/voice/out/*.go`, `internal/llmexec/*.go`, `internal/wire/*.go`, `web/dm/*.go` and `web/phone/*.go` (data mapping only), related `*_test.go` · depends: VOICE fake canned TTS (d397236)
+  done when: (1) a line-text event carries speaker (DM, NPC name, stranger) + the text so far as it streams (LLM text deltas; the full text at once for Input and canned lines, using the localized canned text) and a final flag; the engine stores it on the view (speaker, text, line id, done) and clears it when the next line starts or the phase changes after a short hold; (2) DMView.narration gets speaker + text_so_far; PhoneView gains `Narration narration = 9` (regenerate gen/ with the repo tooling) with the same content; (3) web/dm and web/phone models expose the narration (speaker, text, done) to the screens without visual changes (ORCH designs the bubbles); (4) tests: engine stores/clears, projection to both views, executor posts text for Input, canned and streamed lines; e2e: after host Start and two locks the phones and DM see the opening narration text; (5) live check on your lane port with python artifacts/tmp/ORCH/cdp.py: the DM view and a phone view JSON (dfctl view --dm / --seat 1) show the opening text during the opening. No CSS/visual changes.
+  status: open
+
+- [ ] SFX-001 · sound effects for on-screen actions (join, ready, taps, rolls, locks)
+  why: The developer wants short sound effects on on-screen actions such as a player joining the room or taking an action, so the table and phones feel responsive.
+  lane: L-AUDIO · block: 11–14 · paths: `internal/game/**` (cue effects only), `internal/api/*.go` (join/act hooks only), `internal/content/*.go`, `scripts/buildtime/**` (new UI sfx generation), `web/shell/audio/**`, `web/dm/*audio*.go`, `web/phone/*audio*.go`, related `*_test.go` · depends: INT-006, WEB-016, PHONE-022, ENG-023, ENG-024
+  done when: (1) a small cue table maps events to sounds: player joined (TV: a warm chime/door creak; phone: a soft confirm), ready, host start (TV sting), species/gender/class pick (phone tick), roll my hero (phone dice rattle + TV reveal), hero locked (TV chime), move/choice tapped (phone tick), attack/roll (existing sfx_dice_roll, sfx_sword_slash etc.), check success/failure (existing sfx_check_success/failure); (2) reuse the existing build-time sfx where they fit; generate the missing short UI sounds (0.2–1.5 s) through the existing ElevenLabs build-time pipeline (paid build-time generation is approved; keep total cost under $2 and log it), registered in the manifest; (3) TV cues travel over the existing gRPC audio channels (no HTTP audio); phone-local tap sounds play from the phone asset loader so taps feel instant (no server round trip) and are muted when the phone is muted; (4) sounds never stack more than one per cue within 150 ms and respect the table audio unlock; (5) tests for the cue table and dedupe; live check on your lane port with python artifacts/tmp/ORCH/cdp.py (autoplay allowed) logging which cue played for join, ready, pick, roll, lock, and a move tap. No visual/CSS changes.
+  status: open
+
+- [ ] AUD-002 · audio follow-ups: one-shot stingers do not loop, cliffhanger/end music exists, the TV reconnects Listen
+  why: The audio root-cause pass (e4a0d98, 9cecf79, b590f57, cf22cea) found: internal/game/audio_table.go marks every music cue Loop, so the 6 s STING_STRANGER repeats for the whole hook; CLIFF_TENSION_BED and END_CARD_THEME are missing from the build-time manifest, so combat music keeps playing through the cliffhanger and end; STING_COMBAT_START is not in the cue table (combat uses sfx_door_burst); the TV (web/dm/mount_wasm.go) never reconnects its Listen stream if the hub drops it.
+  lane: L-AUDIO · paths: `internal/game/audio_table.go`, `internal/game/cues.go`, `internal/content/music.go` + `sound_cues.go`, `scripts/buildtime/music*.go` (generate only the missing tracks; ElevenLabs build-time generation is approved, no other paid calls, cap $2), `web/dm/mount_wasm.go` (Listen effect only), related tests · depends: b590f57
+  done when: (1) stingers (Kind "stinger" / non-loop tracks) play once, then the phase's loop bed takes over; combat entry plays STING_COMBAT_START then COMBAT_SKIRMISH_LOOP per §0.21.3; (2) CLIFF_TENSION_BED and END_CARD_THEME generated, registered in the manifest and cued for cliffhanger/end so combat music crossfades out; (3) the TV reconnects Listen with capped backoff (3 s) after a drop and resumes; (4) verified on your own lane server by instrumenting AudioBufferSourceNode.start per phase (reuse artifacts/tmp/AUD/ scripts); tests; coverage >= 70%.
   status: open
 
 ## 19. Phone
@@ -1656,6 +1770,18 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/combat*.go` · depends: PHONE-024, PHONE-023
   done when: combat matches the spec section 7 on the frame; screenshots.
   status: claimed luna
+
+- [ ] PHONE-030 · richness pass: phone screens as rich as the concepts
+  why: Same review as DM-032 for the player phone: the phone screens follow the concept layout but lack the finish of assets/concept/ui-phone-*.jpg (layered art, ornate gold borders, glows, iconography, depth).
+  lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/theme*.go`, `web/phone/components*.go`, `web/phone/frame*.go`, `web/phone/talk*.go`, `web/phone/explore*.go`, `web/phone/check*.go`, `web/phone/sheet*.go`, `web/phone/create*.go`, `web/phone/join*.go`, `web/phone/combat*.go` · depends: PHONE-024, PHONE-029
+  done when: headless-Edge screenshots at 390x844 of each phone preview fixture hold up next to the matching concept phone in finish; an adversarial critic scores each at least 8/10 for richness; gate green.
+  status: open
+
+- [ ] PHONE-031 · browser play-through: phones reach End with no stuck screens
+  why: Live browser run 13:25 (headless Edge, DM + two phones + host): join, ready and host Start work, and species/gender/class + Roll my hero succeed on the server (seat view shows the rolled elf ranger and a "ready" move with status "Your hero is ready to lock in"), but the phone keeps the pickers with every button disabled and shows no build card or Lock button, so the game cannot continue from a phone. The goal is a full simulated game played through real browser clients.
+  lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/create.go`, `web/phone/create_model*.go`, `web/phone/screen.go`, `web/phone/moves*.go`, `web/phone/dice.go`, `web/phone/combat.go`, `web/phone/end.go`, `web/phone/*_test.go`, `web/shell/join*.go` · depends: PHONE-020, E2E-005
+  done when: (1) after the roll the creation screen switches to the build card with a Lock control that sends "ready", and pickers reflect the server choices; (2) using python artifacts/tmp/ORCH/drive.py against a server on your lane port, two phones + DM + host play from join through creation (with class), opening, conversation, check, combat and End in real headless Edge with no dfctl moves except host controls, and every phone screen always offers the current legal moves; each non-visual blocker found on the way is fixed in its own commit with a test; (3) the hand-in lists the play-through steps and screenshots per phase. Do NOT change CSS, colors, spacing or visual styling (ORCH owns design); if a screen is missing entirely, render it with existing components and report it.
+  status: open
 
 ## 20. DM screen
 
@@ -1846,6 +1972,12 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/dice*.go`, `web/dm/callout*.go`, `web/dm/combat*.go`, `web/dm/end*.go` · depends: DM-027
   done when: each screen per the ORCH spec section 6 using the shared components and generated art; screenshots at 1920x1080 and 2560x1080.
   status: claimed luna
+
+- [ ] DM-032 · richness pass: TV screens as rich as the concepts
+  why: The developer reviewed the live lobby and said it "doesnt look as sexy as the concept images, refine it to be more rich". The layout matches, but the finish does not: the wordmark is small on a black plate, panels are flat opaque boxes, menu rows are wide and plain, feature icons are tiny glyphs, portraits have plain frames, and there is no glow, depth or ornament.
+  lane: L-WEB-DM · block: 11–14 · paths: `web/dm/theme*.go`, `web/dm/components*.go`, `web/dm/lobby*.go`, `web/dm/title*.go`, `web/dm/scene*.go`, `web/dm/dialogue*.go`, `web/dm/creation*.go`, `web/dm/hud*.go` · depends: DM-027, DM-030
+  done when: side-by-side headless-Edge screenshots at 1920x1080 of the live lobby and the preview fixtures for opening, dialogue, creation and exploration hold up next to assets/concept/ui-tv-*.jpg in finish, not just layout (large blended wordmark, translucent glass panels with ornate gold corners and inner glow, bevelled menu rows with icons, large line-art feature icons, framed portraits, vignette and light bloom, no overlapping text); an adversarial critic scores each screen at least 8/10 for richness; gate green.
+  status: open
 
 ## 21. Host
 
@@ -2320,6 +2452,24 @@ Keeping the build honest: per-commit checks, the 30-minute full gate, checkpoint
   done when: both tests send species, gender, and class (different classes per seat) before roll_hero and pass lobby to End; go test ./internal/wire passes.
   status: claimed luna
 
+- [ ] E2E-006 · visual play-through in the Codex browser, verified layer by layer
+  why: The developer asked to run the simulated game with the revised assets in the Codex browser and to verify each layer visually before moving to the next. Scripted runs so far checked state, not what each screen looked like at each step.
+  lane: L-E2E · block: 11–14 · paths: none (report only; screenshots under artifacts/test/L-E2E/e2e006/) · depends: PHONE-031, ENG-027, WEB-021
+  done when: one complete game (DM TV at 1920x1080, host console, two phones at 390x844) is played from an empty lobby through joining, readying, host Start, creation with species/gender/class, roll and lock, opening, conversation, check (roll and result), combat (at least one attack each), cliffhanger and End, using your browser tool; at EVERY step you take the screenshots of the DM and the acting phone, look at them, and record PASS or the concrete defects (broken image, placeholder or empty area, overlapping or clipped text, unreadable contrast, stale data, missing art, controls that do nothing, wrong screen for the phase) before taking the next action; the hand-in is a step table (step, action, DM shot, phone shot, verdict, defects) plus a ranked defect list with the element and the likely source file. No code edits.
+  status: open
+
+- [ ] E2E-007 · live play-through in the Codex browser on the dev server, step by step
+  why: The developer asked for the simulated game to be played from the beginning in the Codex browser (browser tabs / computer use), verifying each layer visually before moving on, on the live self-rebuilding dev server so they can follow along.
+  lane: L-E2E · block: 11–14 · paths: none (report only; screenshots under artifacts/test/L-E2E/e2e007/) · depends: E2E-006
+  done when: one complete game on http://localhost:8446 is played in the Codex browser from an empty lobby to the End card, with a TV tab (/dm), a host tab (/host), and two phone tabs that do not share storage (phone 1 at http://localhost:8446/p?room=DF-FAKE, phone 2 at http://127.0.0.1:8446/p?room=DF-FAKE); at every step the DM tab and the acting phone are screenshotted and inspected before the next action; the hand-in is a step table (step, action, screenshots, PASS or concrete defects) plus a ranked defect list, and notes where audio should have played (enable table audio on the TV first).
+  status: open
+
+- [ ] SPLAT-023 · the PlayCanvas battle stage is the TV combat scene (wired into the pipeline, with a transition)
+  why: The developer: "this is effectively our battle gameplay scene, can you wire it into the pipeline and transition to it?" The battle viewer (web/splat/js/battle_viewer.mjs, createBattleViewer; SPLAT-017..022) runs only on web/splat/embed.html. No client package imports web/splat, the TV combat layer is the flat 2D fallback, content points the battlefield at a tavern splat that does not exist (battlefield_tavern_splat, /assets/battlefield-tavern-500k.sog) with a hand-made 8x6 grid, and features.splat is false in fake/safe/dev configs.
+  lane: L-SPLAT · block: 11–14 · paths: `web/splat/**`, `web/dm/combat*.go` and a new `web/dm/battle_stage*.go`, `internal/content/*.go` + `internal/content/battlefield_*.json`, `internal/game/**/combat*` (grid/cell source only), `internal/wire/web.go` (route only), `config/*.json` (features.splat), related `*_test.go` · depends: SPLAT-022, ENG-014, INT-001
+  done when: (1) the combat battlefield uses the Wooded Path scan (web/splat/scenes/64bb46d5.json) and the engine grid, walkable cells, spawn cells (2 heroes + drowned thrall) and path distances come from that scene collider's supported cells so every engine cell is a valid splat cell (keep Dittrich's tomb cb2fddd6 selectable by content id); (2) the TV combat layer mounts one createBattleViewer on a full-screen canvas (controls and camera input off), loads the scene when combat starts, feeds setTokens from every combat snapshot (pc-1, pc-2 with class/species sprite kinds, thrall; cells, active token, HP), follows the active token, fires effects (shake on hit, highlight on the target cell), and disposes on phase exit; the TV HUD (turn banner, party rows, action chips, dice) stays on top; (3) transition: at combat entry the hook scene cross-fades to the splat over about 1 s with the COMBAT_EST camera move; if the scene is not ready within 6 s or fails, the existing FLAT battlefield shows instead, with no dead air; (4) splat files load over the existing HTTP /splat route (the one approved exception to the gRPC-only rule for large streamed LOD chunks; record it in the hand-in) and are preloaded during the hook so combat entry is instant; (5) features.splat true in the dev scratch config (artifacts/tmp/ORCH/scratch.json) and config/demo.json; (6) tests for grid derivation and token mapping; verified live on your own lane server with python artifacts/tmp/ORCH/cdp.py (headless WebGL may need --use-angle=swiftshader; report fps) showing the transition, tokens on the right cells, and an attack moving HP. Visual polish of the HUD over the splat is ORCH-owned: keep CSS minimal.
+  status: open
+
 - [ ] SPIKE-001 · Spike proto and grpctunnel echo
   why: The riskiest path (phone mic over the tunnel, PCM back) is proven with a throwaway proto first.
   lane: L-SPIKE · block: 0–1 · paths: `scripts/spike/**` · depends: none
@@ -2466,37 +2616,37 @@ Useful but not needed for the demo.
 
 - [ ] BL-001 · dfctl goto <phase>, seat set, timer verbs
   why: More debug control speeds up testing but adds engine surface the demo does not need.
-  lane: L-OPS · block: backlog · paths: `cmd/dfctl/**`, `internal/api/debug/**` · depends: DFCTL-003
+  lane: L-OPS · block: now (developer 2026-09-26: realtime CLI control) · paths: `cmd/dfctl/**`, `internal/api/debug/**` · depends: DFCTL-003
   done when: Verbs work against a lane server.
-  status: backlog
+  status: open
 
 - [ ] BL-002 · dfctl snapshot save/load
   why: Saving and replaying a run to a point helps debugging.
-  lane: L-OPS · block: backlog · paths: `cmd/dfctl/**`, `internal/api/debug/**` · depends: BL-001
+  lane: L-OPS · block: now (developer 2026-09-26: realtime CLI control) · paths: `cmd/dfctl/**`, `internal/api/debug/**` · depends: BL-001
   done when: Deterministic reload.
-  status: backlog
+  status: open
 
 - [ ] BL-003 · dfctl vendor fake and fault injection
   why: Flipping a vendor to fail or slow tests fallbacks live.
-  lane: L-OPS · block: backlog · paths: `cmd/dfctl/**`, `internal/modelchain/**` · depends: LLM-005
+  lane: L-OPS · block: now (developer 2026-09-26: realtime CLI control) · paths: `cmd/dfctl/**`, `internal/modelchain/**` · depends: LLM-005
   done when: Faults injected without paid calls.
-  status: backlog
+  status: open
 
 - [ ] BL-004 · dfctl client verbs and screenshots
   why: Reloading, rerouting, and screenshotting clients from the CLI.
-  lane: L-OPS · block: backlog · paths: `cmd/dfctl/**`, `web/shell/**` · depends: WEB-006
+  lane: L-OPS · block: now (developer 2026-09-26: realtime CLI control) · paths: `cmd/dfctl/**`, `web/shell/**` · depends: WEB-006
   done when: Verbs work on the DM tab.
-  status: backlog
+  status: open
 
 - [ ] BL-005 · dfctl --dry-run
   why: Seeing effects without applying needs state cloning across machines.
   lane: L-ENG · block: backlog · paths: `internal/game/**` · depends: ENG-003
   done when: Dry-run returns effects.
-  status: backlog
+  status: open
 
 - [ ] BL-006 · MCP wrapper for dfctl
   why: An MCP server would let agents call dfctl as tools.
-  lane: L-OPS · block: backlog · paths: `cmd/dfctl-mcp/**` · depends: DFCTL-003
+  lane: L-OPS · block: now (developer 2026-09-26: realtime CLI control) · paths: `cmd/dfctl-mcp/**` · depends: DFCTL-003
   done when: Post-demo.
   status: backlog
 

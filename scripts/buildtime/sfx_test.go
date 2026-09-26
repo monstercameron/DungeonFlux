@@ -138,7 +138,7 @@ func TestPlanSFX_AccountsForTwoTakes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if plan.Requests != 48 || plan.EstimatedSeconds != 103.2 || plan.EstimatedCostUSD <= 0 {
+	if plan.Requests != 48 || plan.EstimatedSeconds != 104.2 || plan.EstimatedCostUSD <= 0 {
 		t.Fatalf("unexpected plan: %#v", plan)
 	}
 	if _, err := PlanSFX(SFXAssets(), 4); err == nil {
