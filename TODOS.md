@@ -607,6 +607,12 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   done when: DMView (and HostView via its dm) carries seats (seat id, player number, name, joined, locale, ready) and lobby (room code, join URL, QR URL); API-008 projection fills them from domain View; the DM lobby renders them; live check: two phones join and the TV shows both names, the real room code, a scannable QR (200), and the join URL.
   status: claimed luna
 
+- [ ] INT-002 · phone projection: character build, labelled legal moves, and status per phase
+  why: Live test: after the phone's roll_hero is accepted (engine legal moves move on to ready), the phone stays on "The engine is rolling your hero" because PhoneView never carries the rolled build, the moves arrive without labels or reasons, and phase status text is missing.
+  lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/common.proto`, `gen/**`, `internal/api/project*.go` · depends: INT-001, ENG-016
+  done when: PhoneView carries the seat's character (species, gender, class, build stats, flavor, portrait URL, locked), legal moves with display labels and disabled reasons from content, and phase status; projection tests; live check in the browser: roll shows the build card, Ready locks, and both phones advance to the opening.
+  status: open (launch after INT-001: same projection files)
+
 ## 8. Engine phases (one package each)
 
 Each phase is a separate subpackage with its own table, registered into the top table.
@@ -995,6 +1001,12 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: SessionServer.Join allocates a seat but never tells the engine, so the game and the DM screen never learn that a player arrived.
   lane: L-API · block: 8–11 · paths: `internal/api/session*.go` · depends: API-002, ENG-017
   done when: a phone Join (new or reattach with a new name) posts domain.Join{Seat, Name, Locale} to the room inbox; DM and host joins do not; tests assert the posted event.
+  status: claimed luna
+
+- [ ] API-020 · debug View returns the requested seat's phone view
+  why: dfctl view --seat 1 returns the DM projection ({"dm":{}}), so seat views cannot be inspected while testing.
+  lane: L-API · block: 8–11 · paths: `internal/api/debug/reads*.go`, `internal/api/debug/view*.go` · depends: API-011
+  done when: view --seat N returns that seat's PhoneView projection and --dm the DMView; tests for both.
   status: claimed luna
 
 ## 14. LLM layer
@@ -1403,6 +1415,12 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   why: One consistent phone frame (header with name and connection state, bottom action area, tokens, transitions) ties the screens together.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/screen*.go`, `web/phone/theme*.go`, `web/phone/text*.go` · depends: PHONE-016, WEB-011, WEB-012
   done when: renders polished in every relevant preview fixture and on the live path with no console errors, verified by Edge headless screenshots at the target size (TV 1920x1080, phone 390x844) listed in the hand-in; view-model logic >= 70% covered.
+  status: claimed luna
+
+- [ ] PHONE-018 · phone lobby waiting screen
+  why: Live test: after joining, in the lobby the phone shows an empty sheet or a bare "Your moves" heading instead of a welcoming waiting screen.
+  lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/waiting*.go`, `web/phone/screen*.go` · depends: PHONE-017
+  done when: in lobby phase the phone shows the player's name, seat number, who else has joined, and "Waiting for the host to start"; preview fixture plus live check.
   status: claimed luna
 
 ## 20. DM screen
