@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
-	"github.com/monstercameron/DungeonFlux/internal/game/nested"
 	"github.com/monstercameron/DungeonFlux/internal/game/rules"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
@@ -28,9 +27,53 @@ const (
 type SeatSlots struct {
 	Seat     domain.SeatID
 	Class    rules.Class
-	Portrait nested.SlotMachine
+	Portrait PortraitSlot
 	Flavor   domain.Flavor
 	State    FlavorState
+}
+
+// PortraitSlot tracks one portrait and its template fallback.
+type PortraitSlot struct {
+	name     string
+	state    string
+	asset    domain.Asset
+	fallback domain.Asset
+}
+
+// State returns the portrait lifecycle state.
+func (s PortraitSlot) State() string { return s.state }
+
+// Asset returns the currently served portrait, if one exists.
+func (s PortraitSlot) Asset() (domain.Asset, bool) {
+	if s.state != "ready" && s.state != "fallback" {
+		return domain.Asset{}, false
+	}
+	return s.asset, s.asset.ID != ""
+}
+
+func (s *PortraitSlot) step(event domain.Event) error {
+	switch value := event.(type) {
+	case domain.AssetPartial:
+		if value.Slot == s.name && s.state == "pending" {
+			return nil
+		}
+	case domain.AssetReady:
+		if value.Slot == s.name && s.state == "pending" {
+			s.asset = value.Asset
+			s.state = "ready"
+		}
+	case domain.AssetFailed:
+		if value.Slot == s.name && s.state == "pending" {
+			s.asset = s.fallback
+			s.state = "fallback"
+		}
+	case domain.TimerFired:
+		if s.state == "pending" {
+			s.asset = s.fallback
+			s.state = "fallback"
+		}
+	}
+	return nil
 }
 
 // Slots tracks creation assets for both player seats.
@@ -42,10 +85,7 @@ type Slots struct {
 func NewSlots(classes [2]rules.Class) (Slots, error) {
 	var slots Slots
 	for i, class := range classes {
-		portrait, err := nested.NewSlot(portraitSlot(domain.SeatID(i+1)), []domain.Asset{fallbackPortrait(class)})
-		if err != nil {
-			return Slots{}, fmt.Errorf("seat %d portrait slot: %w", i+1, err)
-		}
+		portrait := PortraitSlot{name: portraitSlot(domain.SeatID(i + 1)), state: "pending", fallback: fallbackPortrait(class)}
 		slots.seats[i] = SeatSlots{Seat: domain.SeatID(i + 1), Class: class, Portrait: portrait, State: FlavorPending}
 	}
 	return slots, nil
@@ -89,14 +129,14 @@ func (s *Slots) Step(event domain.Event) error {
 			return fmt.Errorf("unknown creation slot %q", slotName(event))
 		}
 		index, _ := slotIndex(seat)
-		return s.seats[index].Portrait.Step(event)
+		return s.seats[index].Portrait.step(event)
 	case domain.TimerFired:
 		seat, ok := seatFromDeadline(value.Name)
 		if !ok {
 			return fmt.Errorf("unknown creation timer %q", value.Name)
 		}
 		index, _ := slotIndex(seat)
-		return s.seats[index].Portrait.Step(value)
+		return s.seats[index].Portrait.step(value)
 	case domain.FlavorDone:
 		index, ok := slotIndex(value.Seat)
 		if !ok {
