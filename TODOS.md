@@ -1563,7 +1563,7 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
 
 - [ ] SPLAT-011 · adversarial scene review and usable battle composition
   why: The developer requests wider grid coverage, more flattering camera angles, and an adversarial review of both downloaded battle scenes.
-  lane: L-WEB-SPLAT · paths: `web/splat/js/viewer*.mjs`, `web/splat/js/viewer.html`, `web/splat/js/battle_scene.mjs`, `web/splat/js/df-splat.mjs`, `web/splat/scenes/*.json` · depends: SPLAT-009, SPLAT-010
+  lane: L-WEB-SPLAT · paths: `web/splat/js/viewer*.mjs`, `web/splat/js/viewer.html`, `web/splat/js/battle_scene.mjs`, `web/splat/js/df-splat.mjs`, `web/splat/js/grid_overlay.mjs`, `web/splat/js/debug_pick.mjs`, `web/splat/scenes/*.json` · depends: SPLAT-009, SPLAT-010
   done when: review findings are resolved, expanded obstacle-aware grids and camera framing are visually inspected in both scenes, relevant regressions and lane gate pass.
   status: claimed Codex 2026-09-26
 
