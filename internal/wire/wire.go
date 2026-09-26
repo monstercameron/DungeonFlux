@@ -73,6 +73,13 @@ func Build(ctx context.Context, cfg config.Config, seed []byte) (*App, error) {
 	if roomID == "" {
 		roomID = "default"
 	}
+	qrURL, err := writeJoinQR(cfg.Server.DataDir, cfg.Server.Port, roomID)
+	if err != nil {
+		_ = store.Close()
+		_ = logFile.Close()
+		return nil, err
+	}
+	logger.Info("room ready", "room_code", roomID, "join_qr", qrURL)
 	hostToken, err := tokenOrGenerate(cfg.Server.HostToken)
 	if err != nil {
 		_ = store.Close()
