@@ -34,7 +34,7 @@ func runControl(ctx context.Context, args []string, stdout, stderr io.Writer, di
 	}
 	if opts.dryRun {
 		if event == nil {
-			writeError(stderr, errors.New("--dry-run is only supported for event commands"))
+			writeError(stderr, errors.New("--dry-run requires a write command"))
 			return exitTransport, true
 		}
 		if err := writeDryRun(stdout, event, opts.pretty); err != nil {
@@ -300,6 +300,12 @@ func writeDryRun(dst io.Writer, request proto.Message, pretty bool) error {
 		value["event"], value["payload"] = request.GetEvent(), json.RawMessage(request.GetPayloadJson())
 	case *dungeonfluxv1.DebugActRequest:
 		value["event"], value["payload"] = "act", request
+	case *dungeonfluxv1.SnapshotRequest:
+		value["request"] = map[string]any{"room": request.GetRoom(), "operation": request.GetOperation(), "data": string(request.GetData())}
+	case *dungeonfluxv1.VendorRequest:
+		value["request"] = map[string]any{"room": request.GetRoom(), "operation": request.GetOperation(), "payload_json": request.GetPayloadJson()}
+	case *dungeonfluxv1.ClientRequest:
+		value["request"] = map[string]any{"room": request.GetRoom(), "client_id": request.GetClientId(), "verb": request.GetVerb(), "arg": request.GetArg()}
 	default:
 		value["request"] = request
 	}

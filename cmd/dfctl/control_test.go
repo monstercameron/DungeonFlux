@@ -59,6 +59,11 @@ func TestRunControl_DryRunDoesNotDial(t *testing.T) {
 	if !strings.Contains(output.String(), `"event":"debug_patch"`) || !strings.Contains(output.String(), `"cell":"2,3"`) {
 		t.Fatalf("dry run = %q", output.String())
 	}
+	output.Reset()
+	code, handled = runControl(context.Background(), []string{"--dry-run", "snapshot", "save", "before"}, &output, &stderr, dial)
+	if !handled || code != exitOK || !strings.Contains(output.String(), `"operation":"save"`) {
+		t.Fatalf("snapshot dry run = %d/%v %q", code, handled, output.String())
+	}
 }
 
 func TestRunWriteDryRun_CoversDemoWrites(t *testing.T) {
