@@ -22,7 +22,7 @@ func ClipModelFromView(view *dungeonfluxv1.DMView) ClipModel {
 	if view == nil {
 		return ClipModel{UseFallback: true}
 	}
-	model := ClipModel{StillURL: view.GetBackgroundUrl(), UseFallback: true, Locale: view.GetLocale()}
+	model := ClipModel{StillURL: sceneBackgroundURL(view), UseFallback: true, Locale: view.GetLocale()}
 	clip := view.GetClip()
 	if clip == nil || clip.GetUrl() == "" {
 		return model

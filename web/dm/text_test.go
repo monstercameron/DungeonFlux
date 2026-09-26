@@ -72,3 +72,21 @@ func TestEndCard_Localized(t *testing.T) {
 		t.Fatalf("audio state = %q", lobby.AudioState)
 	}
 }
+
+func TestDMText_SceneLabels(t *testing.T) {
+	if got := SceneTitle("en"); got != "The Drowned Lantern" {
+		t.Fatalf("title = %q", got)
+	}
+	if got := SceneAct("en"); got != "ACT I" {
+		t.Fatalf("act = %q", got)
+	}
+	if got := SceneSpeaker("en", "DM"); got != "Dungeon Master" {
+		t.Fatalf("dm speaker = %q", got)
+	}
+	if got := SceneSpeaker("en", "Mother Vell"); got != "Mother Vell" {
+		t.Fatalf("npc speaker = %q", got)
+	}
+	if got := SceneStepLabels("en"); len(got) != 5 || got[0] != "Arrive at the tavern" {
+		t.Fatalf("steps = %#v", got)
+	}
+}

@@ -73,3 +73,60 @@ func TestSceneLayerStyle_ZeroScaleKeepsNaturalSize(t *testing.T) {
 		t.Fatalf("transform = %q", style["transform"])
 	}
 }
+
+func TestSceneModelFromView_ResolvesOpeningArtAndProgress(t *testing.T) {
+	SetArtSource(mapArt{
+		"tavern_interior": "blob:tavern",
+		"ui/panel_frame":  "blob:frame",
+		"ui/divider":      "blob:divider",
+		"mother_vell":     "blob:vell",
+	})
+	t.Cleanup(func() { SetArtSource(nil) })
+	view := &dungeonfluxv1.DMView{
+		BackgroundUrl: "wire:tavern",
+		Layers:        []*dungeonfluxv1.Layer{{Id: "mother-vell"}},
+		Narration:     &dungeonfluxv1.Narration{Speaker: "Mother Vell", TextSoFar: "Speak."},
+	}
+	got := SceneModelFromView(view)
+	if got.BackgroundURL != "blob:tavern" || got.FrameURL != "blob:frame" || got.DividerURL != "blob:divider" {
+		t.Fatalf("art = %#v", got)
+	}
+	if got.SpeakerPortraitURL != "blob:vell" || got.Layers[0].URL != "blob:vell" {
+		t.Fatalf("speaker art = %#v", got)
+	}
+	if got.ProgressIndex != 1 || len(got.Progress) != 5 || !got.Progress[1].Active || !got.Progress[0].Completed || got.ShowTitle {
+		t.Fatalf("progress = %#v, show title = %v", got.Progress, got.ShowTitle)
+	}
+}
+
+func TestSceneModelFromView_ProgressFollowsViewSignals(t *testing.T) {
+	cases := []struct {
+		name  string
+		view  *dungeonfluxv1.DMView
+		index int
+	}{
+		{name: "opening", view: &dungeonfluxv1.DMView{}, index: 0},
+		{name: "stranger clip", view: &dungeonfluxv1.DMView{Clip: &dungeonfluxv1.Clip{Url: "stranger.webm"}}, index: 1},
+		{name: "check", view: &dungeonfluxv1.DMView{Dice: &dungeonfluxv1.Dice{}}, index: 2},
+		{name: "combat", view: &dungeonfluxv1.DMView{Battlefield: &dungeonfluxv1.Battlefield{}}, index: 3},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := SceneModelFromView(tc.view).ProgressIndex; got != tc.index {
+				t.Fatalf("progress index = %d, want %d", got, tc.index)
+			}
+		})
+	}
+}
+
+func TestSceneModelFromView_ResolvesDMSpeakerArt(t *testing.T) {
+	SetArtSource(mapArt{"ui/dm_speaker": "blob:dm"})
+	t.Cleanup(func() { SetArtSource(nil) })
+	view := &dungeonfluxv1.DMView{
+		Narration: &dungeonfluxv1.Narration{Speaker: "Dungeon Master", TextSoFar: "Rain drums."},
+	}
+	got := SceneModelFromView(view)
+	if got.SpeakerPortraitURL != "blob:dm" || !got.ShowTitle {
+		t.Fatalf("DM scene = %#v", got)
+	}
+}

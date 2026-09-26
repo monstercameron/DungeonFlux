@@ -37,10 +37,26 @@ type SceneCaption struct {
 
 // SceneModel contains the DM scene data needed by the browser renderer.
 type SceneModel struct {
-	BackgroundURL string
-	Layers        []SceneLayer
-	Characters    []SceneCharacter
-	Caption       SceneCaption
+	BackgroundURL      string
+	FrameURL           string
+	DividerURL         string
+	SpeakerPortraitURL string
+	Title              string
+	Act                string
+	Tagline            string
+	Progress           []SceneProgress
+	ProgressIndex      int
+	ShowTitle          bool
+	Layers             []SceneLayer
+	Characters         []SceneCharacter
+	Caption            SceneCaption
+}
+
+// SceneProgress is one story beat shown in the opening-scene rail.
+type SceneProgress struct {
+	Label     string
+	Completed bool
+	Active    bool
 }
 
 // SceneModelFromView projects a wire DM view into an owned scene model.
@@ -49,7 +65,19 @@ func SceneModelFromView(view *dungeonfluxv1.DMView) SceneModel {
 	if view == nil {
 		return SceneModel{}
 	}
-	model := SceneModel{BackgroundURL: view.GetBackgroundUrl(), Caption: SceneCaptionFromView(view)}
+	caption := SceneCaptionFromView(view)
+	model := SceneModel{
+		BackgroundURL:      sceneBackgroundURL(view),
+		FrameURL:           ArtURL("ui/panel_frame"),
+		DividerURL:         ArtURL("ui/divider"),
+		SpeakerPortraitURL: speakerPortraitURL(caption.Speaker),
+		Title:              SceneTitle(""),
+		Act:                SceneAct(""),
+		Tagline:            SceneTagline(""),
+		Caption:            caption,
+		ShowTitle:          !caption.Visible || isDMSpeaker(caption.Speaker),
+	}
+	model.Progress, model.ProgressIndex = sceneProgress(view)
 	speaker := normalizeCaptionText(model.Caption.Speaker)
 	model.Layers = make([]SceneLayer, 0, len(view.GetLayers()))
 	for _, layer := range view.GetLayers() {
@@ -59,7 +87,7 @@ func SceneModelFromView(view *dungeonfluxv1.DMView) SceneModel {
 		layerID := normalizeCaptionText(layer.GetId())
 		model.Layers = append(model.Layers, SceneLayer{
 			ID:        layer.GetId(),
-			URL:       layer.GetUrl(),
+			URL:       layerURL(layer.GetId(), layer.GetUrl()),
 			X:         layer.GetX(),
 			Y:         layer.GetY(),
 			Scale:     layer.GetScale(),
@@ -80,6 +108,68 @@ func SceneModelFromView(view *dungeonfluxv1.DMView) SceneModel {
 		})
 	}
 	return model
+}
+
+func sceneBackgroundURL(view *dungeonfluxv1.DMView) string {
+	for _, name := range []string{"tavern_interior", "establishing_tavern"} {
+		if value := ArtURL(name); value != "" {
+			return value
+		}
+	}
+	return view.GetBackgroundUrl()
+}
+
+func layerURL(id, fallback string) string {
+	if fallback != "" {
+		return fallback
+	}
+	switch {
+	case strings.Contains(normalizeCaptionText(id), "vell"):
+		return ArtURL("mother_vell")
+	case strings.Contains(normalizeCaptionText(id), "stranger"), strings.Contains(normalizeCaptionText(id), "courier"):
+		return ArtURL("stranger")
+	default:
+		return ""
+	}
+}
+
+func speakerPortraitURL(speaker string) string {
+	normalized := normalizeCaptionText(speaker)
+	switch {
+	case isDMSpeaker(speaker):
+		return ArtURL("ui/dm_speaker")
+	case strings.Contains(normalized, "vell"):
+		return ArtURL("mother_vell")
+	case strings.Contains(normalized, "stranger"), strings.Contains(normalized, "courier"):
+		return ArtURL("stranger")
+	default:
+		return ""
+	}
+}
+
+func isDMSpeaker(speaker string) bool {
+	normalized := normalizeCaptionText(speaker)
+	return normalized == "dm" || normalized == "dungeon master" || normalized == "narrator"
+}
+
+func sceneProgress(view *dungeonfluxv1.DMView) ([]SceneProgress, int) {
+	labels := SceneStepLabels("")
+	index := 0
+	switch {
+	case view.GetBattlefield() != nil:
+		index = 3
+	case view.GetDice() != nil:
+		index = 2
+	case view.GetNarration() != nil && view.GetNarration().GetSpeaker() != "":
+		index = 1
+	case view.GetClip() != nil && strings.Contains(normalizeCaptionText(view.GetClip().GetUrl()), "stranger"):
+		index = 1
+	}
+	progress := make([]SceneProgress, len(labels))
+	for i, label := range labels {
+		progress[i] = SceneProgress{Label: label, Completed: i < index, Active: i == index}
+	}
+	return progress, index
 }
 
 // SceneCaptionFromView chooses the streamed narration text, falling back to

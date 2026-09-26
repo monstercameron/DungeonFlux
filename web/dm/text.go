@@ -103,3 +103,30 @@ func EndSubtitle(locale string) string { return T(locale, "dm.end_subtitle", nil
 
 // EndRules returns the localized attribution heading.
 func EndRules(locale string) string { return T(locale, "dm.end_rules", nil) }
+
+// SceneTitle returns the fixed one-shot title used by the TV opening scene.
+func SceneTitle(locale string) string { return "The Drowned Lantern" }
+
+// SceneAct returns the opening act marker used by the TV scene title plate.
+func SceneAct(locale string) string { return "ACT I" }
+
+// SceneTagline returns the concise one-shot premise shown under the TV title.
+func SceneTagline(locale string) string {
+	return "A flooded town. A missing lamplighter. Questions that do not like the light."
+}
+
+// SceneSpeaker returns a readable speaker plate, preserving named NPC labels.
+func SceneSpeaker(locale, speaker string) string {
+	if speaker == "" {
+		return T(locale, "ui.dm.narration", nil)
+	}
+	if isDMSpeaker(speaker) {
+		return "Dungeon Master"
+	}
+	return speaker
+}
+
+// SceneStepLabels returns the real demo beats used by the TV progress rail.
+func SceneStepLabels(locale string) []string {
+	return []string{"Arrive at the tavern", "Talk to the locals", "Find clues", "Face the drowned", "Uncover the truth"}
+}

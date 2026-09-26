@@ -46,3 +46,12 @@ func TestClipModel_ClipStartSecondsUsesMilliseconds(t *testing.T) {
 		t.Fatalf("start seconds = %v", got)
 	}
 }
+
+func TestClipModelFromView_UsesResolvedTavernArt(t *testing.T) {
+	SetArtSource(mapArt{"tavern_interior": "blob:tavern"})
+	t.Cleanup(func() { SetArtSource(nil) })
+	got := ClipModelFromView(&dungeonfluxv1.DMView{BackgroundUrl: "wire:tavern"})
+	if got.StillURL != "blob:tavern" {
+		t.Fatalf("still = %q, want resolved art", got.StillURL)
+	}
+}
