@@ -142,11 +142,24 @@ func renderPhoneScreen(kind ScreenKind, props phoneViewProps, locale string) ui.
 // Conversation keeps its key so typed text and push-to-talk state survive.
 var snapshotVersion uint64
 
+// phoneEnter remembers the screen kind whose entry animation last started and
+// the frame key it started on. The frame remounts on every snapshot, so the
+// entry class rides only that first key: later snapshots of the same screen
+// remount without it and never replay the animation.
+var phoneEnter struct {
+	kind ScreenKind
+	key  string
+}
+
 func frameScreen(model FrameModel, content ui.Node, audio *PhoneAudio, locale string) ui.Node {
 	key := string(model.Screen) + ":" + strconv.FormatUint(artRevision.Load(), 10)
 	if model.Screen != ScreenConversation {
 		key += ":" + strconv.FormatUint(snapshotVersion, 10)
 	}
+	if model.Screen != phoneEnter.kind {
+		phoneEnter.kind, phoneEnter.key = model.Screen, key
+	}
+	model.Enter = key == phoneEnter.key
 	return html.WithKey(ui.CreateElement(PhoneFrame(model, content, audioControls(audio, locale))), key)
 }
 

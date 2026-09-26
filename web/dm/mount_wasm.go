@@ -204,6 +204,7 @@ func screenView(props screenProps) ui.Node {
 			_ = PlayLobbyAudio(player, strings.ToLower(strings.TrimSpace(snapshot.GetPhase())))
 		}
 	})
+	useTransitionClock(snapshot.GetPhase())
 	return compose(snapshot, dmRoomCode(), unlock)
 }
 
@@ -227,47 +228,28 @@ func dmToken() string {
 }
 
 func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handler) ui.Node {
-	view := state.GetDm()
-	locale := localeOrDefault(view.GetLocale())
-	layers := SelectLayers(state)
-	phase := state.GetPhase()
-	children := make([]ui.Node, 1, len(layers)+1)
-	children[0] = themeStyles()
-	for _, layer := range layers {
-		switch layer {
-		case LayerLobby:
-			lobby := NewLobbyModelFromDMView(view, roomCode)
-			lobby.SetLocale(locale)
-			children = appendPhaseLayer(children, layer, phase, LobbyComponent(lobby)(router.Attrs{}))
-		case LayerScene:
-			content := ui.Node(SceneComponent(view)(router.Attrs{}))
-			if strings.EqualFold(strings.TrimSpace(state.GetPhase()), "conversation") {
-				content = html.Div(html.Props{Style: map[string]string{"position": "relative", "width": "100%", "height": "100%"}}, content, DialogueComponent(DialogueModelFromState(state))(router.Attrs{}))
-			}
-			children = appendPhaseLayer(children, layer, phase, content)
-		case LayerHUD:
-			children = appendPhaseLayer(children, layer, phase, ExplorationHUDComponent(state)(router.Attrs{}))
-		case LayerCreation:
-			children = appendPhaseLayer(children, layer, phase, CreationComponent(CreationModelFromView(view))(router.Attrs{}))
-		case LayerCallout:
-			children = appendPhaseLayer(children, layer, phase, CalloutComponent(CalloutViewFromDMView(view))(router.Attrs{}))
-		case LayerClip:
-			children = appendPhaseLayer(children, layer, phase, ClipComponent(ClipModelFromView(view))(router.Attrs{}))
-		case LayerDice:
-			children = appendPhaseLayer(children, layer, phase, DiceComponent(DiceViewFromDMView(view))(router.Attrs{}))
-		case LayerTimer:
-			children = appendPhaseLayer(children, layer, phase, TimerComponent(TimerViewFromDMView(view))(router.Attrs{}))
-		case LayerCombat:
-			children = appendPhaseLayer(children, layer, phase, CombatComponent(view)(router.Attrs{}))
-		case LayerEnd:
-			children = appendPhaseLayer(children, layer, phase, EndCardComponent(NewEndCardModel().Localized(locale))(router.Attrs{}))
-		}
+	now := transitionNowMS()
+	tvTransitions.Observe(state, now)
+	tx, active := tvTransitions.Active(now)
+	outgoing := tvTransitions.Outgoing(now)
+	locale := localeOrDefault(state.GetDm().GetLocale())
+	children := []ui.Node{themeStyles()}
+	if outgoing != nil {
+		// The previous phase keeps its layer keys, so the reconciler reuses its
+		// DOM (and any running animation or video) under the exit class.
+		children = append(children, phaseLayers(outgoing, roomCode, outgoingLayerClass(tx))...)
 	}
+	children = append(children, phaseLayers(state, roomCode, "")...)
+	children = append(children, transitionVeil(tx, active, state, tvTransitions.Seq())...)
 	children = append(children, html.Button(html.Props{Type: "button", Class: "df-dm-audio-unlock", OnClick: unlock, Style: map[string]string{"position": "absolute", "right": "1rem", "top": "1rem", "z-index": "100"}}, html.Text(AudioUnlock(locale))))
 	stage := html.Div(html.Props{Class: "df-dm-stage"}, children...)
 	canvas := html.Div(html.Props{Class: "df-dm-canvas"}, stage)
-	cover := html.Div(html.Props{Class: "df-dm-cover", Aria: map[string]string{"hidden": "true"}, Style: coverBackgroundStyle(state)})
-	return html.Main(html.Props{Class: "df-dm-screen " + currentAspectClass(), Role: "main"}, cover, canvas)
+	coverState := state
+	if outgoing != nil {
+		coverState = outgoing
+	}
+	cover := html.Div(html.Props{Class: "df-dm-cover", Aria: map[string]string{"hidden": "true"}, Style: coverBackgroundStyle(coverState)})
+	return html.Main(html.Props{Class: "df-dm-screen " + currentAspectClass() + transitionScreenClass(tx, active), Role: "main"}, cover, canvas)
 }
 
 func coverBackgroundStyle(state *dungeonfluxv1.ScreenState) map[string]string {
@@ -287,14 +269,10 @@ func coverBackgroundStyle(state *dungeonfluxv1.ScreenState) map[string]string {
 // fresh DOM. The reconciler reuses nodes and leaves inline style properties
 // that the new style map omits, so without the key the opening's panels kept
 // the previous screen's borders, widths and offsets.
-func appendPhaseLayer(children []ui.Node, layer Layer, phase string, content ui.Node) []ui.Node {
-	children = appendLayer(children, layer, content)
+func appendPhaseLayer(children []ui.Node, layer Layer, phase, extra string, content ui.Node) []ui.Node {
+	children = append(children, html.Div(html.Props{Class: "df-dm-layer df-dm-layer-" + string(layer) + extra, Style: layerStyle(layer)}, content))
 	children[len(children)-1] = html.WithKey(children[len(children)-1], string(layer)+":"+phase)
 	return children
-}
-
-func appendLayer(children []ui.Node, layer Layer, content ui.Node) []ui.Node {
-	return append(children, html.Div(html.Props{Class: "df-dm-layer df-dm-layer-" + string(layer), Style: layerStyle(layer)}, content))
 }
 
 func layerStyle(layer Layer) map[string]string {

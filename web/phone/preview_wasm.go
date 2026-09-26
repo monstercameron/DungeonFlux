@@ -3,18 +3,53 @@
 package phone
 
 import (
+	"syscall/js"
+
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"github.com/monstercameron/GoWebComponents/v6/ui"
 )
 
 // RenderPreview renders a named fixture through the production phone screen.
+// In preview mode the page also exposes window.dfPreview(name), which swaps the
+// fixture in place so screen-to-screen transitions can be reviewed.
 func RenderPreview(name string) (ui.Node, bool) {
-	fixture, ok := Preview(name)
-	if !ok {
+	if _, ok := Preview(name); !ok {
 		return nil, false
 	}
-	props := previewProps(fixture.View)
-	return renderPhoneScreen(SelectScreen(fixture.View), props, fixture.View.Phone.GetLocale()), true
+	return ui.CreateElement(previewScreen, previewScreenProps{name: name}), true
+}
+
+type previewScreenProps struct{ name string }
+
+// previewPick is the fixture chosen through window.dfPreview; it survives a
+// shell re-render (art loaded).
+var previewPick string
+
+func previewScreen(props previewScreenProps) ui.Node {
+	picks := ui.UseState(0)
+	ui.UseEffect(func() func() {
+		pick := js.FuncOf(func(_ js.Value, args []js.Value) any {
+			if len(args) > 0 && args[0].Type() == js.TypeString {
+				if _, ok := Preview(args[0].String()); ok {
+					previewPick = args[0].String()
+					snapshotVersion++
+					picks.Set(picks.Get() + 1)
+				}
+			}
+			return nil
+		})
+		js.Global().Set("dfPreview", pick)
+		return func() {
+			js.Global().Delete("dfPreview")
+			pick.Release()
+		}
+	}, props.name)
+	name := props.name
+	if previewPick != "" {
+		name = previewPick
+	}
+	fixture, _ := Preview(name)
+	return renderPhoneScreen(SelectScreen(fixture.View), previewProps(fixture.View), fixture.View.Phone.GetLocale())
 }
 
 func previewProps(view SeatView) phoneViewProps {

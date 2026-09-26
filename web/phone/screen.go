@@ -82,6 +82,9 @@ type FrameModel struct {
 	Screen      ScreenKind
 	Mode        PhoneMode
 	ActiveTab   PhoneTabID
+	// Enter plays the short screen entry (fade and 8 px rise) on this frame.
+	// The mount sets it only on the frame where the screen kind changed.
+	Enter bool
 }
 
 // NewFrameModel creates a frame with sensible labels for a seat.

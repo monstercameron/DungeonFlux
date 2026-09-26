@@ -174,7 +174,7 @@ const dmLobbyFinishCSS = `
 
 func themeStyles() ui.Node {
 	installCanvasScale()
-	injectStyleSheet("df-dm-theme", dmThemeCSS+dmRichnessCSS+dmLobbyFinishCSS)
+	injectStyleSheet("df-dm-theme", dmThemeCSS+dmRichnessCSS+dmLobbyFinishCSS+dmTransitionCSS)
 	return html.Span(html.Props{Class: "df-dm-theme-anchor", Hidden: true})
 }
 

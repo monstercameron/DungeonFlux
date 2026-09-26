@@ -67,6 +67,11 @@ const phoneFinishCSS = `
 .df-phone-read-along.is-speaking .df-phone-read-along-speaker:after{display:inline-block;width:6px;height:6px;margin-left:8px;border-radius:50%;vertical-align:middle;content:"";background:#e7c27a;box-shadow:0 0 8px #e7c27a;animation:df-read-along-pulse 1s ease-in-out infinite}
 @keyframes df-read-along-in{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes df-read-along-pulse{50%{opacity:.25}}
+@keyframes df-phone-enter{from{opacity:0;translate:0 8px}}
+@keyframes df-phone-enter-fade{from{opacity:0}}
+.df-phone-enter .df-phone-frame-content{animation:df-phone-enter 220ms cubic-bezier(.2,.8,.2,1) both}
+.df-phone-enter .df-phone-action>:first-child:not(.df-phone-tabs){animation:df-phone-enter-fade 200ms ease 40ms both}
+@media (prefers-reduced-motion:reduce){.df-phone-enter .df-phone-frame-content{animation:df-phone-enter-fade 150ms ease both}.df-phone-enter .df-phone-action>*{animation:none!important}}
 @media (prefers-reduced-motion:reduce){.df-phone-read-along{animation:none}.df-phone-read-along.is-speaking .df-phone-read-along-speaker:after{animation:none}}
 `
 

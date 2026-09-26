@@ -57,8 +57,8 @@ func diceHero(view DiceView, presentation DicePresentation) ui.Node {
 		children = append(children, html.Img(html.Props{Src: art, Alt: "", Style: map[string]string{"position": "absolute", "inset": "0", "width": "100%", "height": "100%", "object-fit": "cover"}, Raw: map[string]any{"aria-hidden": "true"}}))
 	}
 	children = append(children, html.Span(html.Props{Style: map[string]string{"position": "relative", "z-index": "1", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "138px", "font-weight": "600", "line-height": "1", "color": "#17130c", "text-shadow": "0 2px 6px rgba(255,248,231,.55)"}}, ui.Text(presentation.FaceLabel)))
-	return html.Div(html.Props{Style: map[string]string{"position": "absolute", "left": "810px", "top": "220px", "width": "300px", "text-align": "center"}},
-		html.Div(html.Props{Style: faceStyle}, children...),
+	return html.Div(html.Props{Class: "df-dm-dice-hero", Style: map[string]string{"position": "absolute", "left": "810px", "top": "220px", "width": "300px", "text-align": "center"}},
+		html.Div(html.Props{Class: "df-dm-dice-face", Style: faceStyle}, children...),
 		html.Div(html.Props{Style: map[string]string{"margin-top": "26px", "color": "#a89f8c", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "28px", "letter-spacing": ".08em", "text-transform": "uppercase"}}, ui.Text(modifierText(localeOrDefault(view.Locale), view))),
 	)
 }
@@ -81,7 +81,7 @@ func diceResultPanel(locale string, view DiceView, presentation DicePresentation
 	if view.Damage != nil && view.Damage.Total != 0 {
 		damage = strconv.Itoa(int(view.Damage.Total)) + " " + view.Damage.Type
 	}
-	return html.Div(html.Props{Style: map[string]string{"position": "absolute", "left": "350px", "right": "350px", "top": "625px", "min-height": "245px", "padding": "26px 70px", "box-sizing": "border-box", "text-align": "center", "background": "rgba(12,18,28,.88)", "border": "1px solid #b8893a", "border-radius": "12px", "box-shadow": "0 18px 42px rgba(0,0,0,.5), inset 0 0 0 1px rgba(12,12,16,.78)"}},
+	return html.Div(html.Props{Class: "df-dm-dice-result", Style: map[string]string{"position": "absolute", "left": "350px", "right": "350px", "top": "625px", "min-height": "245px", "padding": "26px 70px", "box-sizing": "border-box", "text-align": "center", "background": "rgba(12,18,28,.88)", "border": "1px solid #b8893a", "border-radius": "12px", "box-shadow": "0 18px 42px rgba(0,0,0,.5), inset 0 0 0 1px rgba(12,12,16,.78)"}},
 		html.Div(html.Props{Style: map[string]string{"color": "#e7c27a", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "24px", "letter-spacing": ".16em", "text-transform": "uppercase"}}, ui.Text(vsLabel(locale, view))),
 		html.Div(html.Props{Style: map[string]string{"margin-top": "14px", "color": color, "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "54px", "font-weight": "600", "letter-spacing": ".08em", "text-transform": "uppercase"}}, ui.Text(result)),
 		html.Div(html.Props{Hidden: damage == "", Style: map[string]string{"margin-top": "8px", "color": "#efe6d2", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "28px"}}, ui.Text(damage)),
