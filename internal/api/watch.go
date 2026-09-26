@@ -85,7 +85,12 @@ func (s *watchSubscriber) send(ctx context.Context) {
 		case <-ctx.Done():
 			s.hub.remove(s)
 			return
-		case view := <-s.queue:
+		case <-s.done:
+			return
+		case view, ok := <-s.queue:
+			if !ok {
+				return
+			}
 			message := &df.WatchMessage{Message: &df.WatchMessage_State{State: Project(view, s.kind, s.seat)}}
 			select {
 			case s.output <- message:
