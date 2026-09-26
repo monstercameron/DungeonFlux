@@ -200,6 +200,15 @@ func (s *fakePCMStream) Recv() (ports.PCMChunk, error) {
 		return ports.PCMChunk{}, io.EOF
 	}
 	if s.wait && s.noTail {
+		// Hold the line open for as long as the recording plays (24 kHz s16
+		// mono), so the engine does not move on while the DM is still talking.
+		timer := time.NewTimer(time.Duration(len(s.pcm)) * time.Second / (24000 * 2))
+		defer timer.Stop()
+		select {
+		case <-timer.C:
+		case <-s.ctx.Done():
+			return ports.PCMChunk{}, s.ctx.Err()
+		}
 		s.done = true
 		return ports.PCMChunk{}, io.EOF
 	}
