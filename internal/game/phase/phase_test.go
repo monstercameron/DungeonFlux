@@ -14,7 +14,7 @@ func TestDefinitions_registerCanonicalPhases(t *testing.T) {
 		t.Fatalf("phase count = %d, want %d", len(got), len(want))
 	}
 	for index, phase := range got {
-		wantStub := phase.ID == vocab.StateCombat
+		wantStub := false
 		if phase.ID != want[index] || phase.Stub != wantStub {
 			t.Fatalf("phase %d = %#v", index, phase)
 		}
@@ -41,8 +41,9 @@ func TestMachine_dispatchesCanonicalEvents(t *testing.T) {
 		{"resolution line", domain.LineDone{}, vocab.StateExploration},
 		{"leave", domain.Act{Move: vocab.MoveLeave}, vocab.StateHookEvent},
 		{"stranger line", domain.LineDone{}, vocab.StateCombat},
-		{"combat line", domain.LineDone{}, vocab.StateCliffhanger},
-		{"cliffhanger line", domain.LineDone{}, vocab.StateEnd},
+		{"combat attack", domain.Act{Seat: 1, Move: vocab.MoveAttack, Target: "thrall"}, vocab.StateCombat},
+		{"combat skip", domain.HostCmd{Cmd: vocab.HostSkip}, vocab.StateCliffhanger},
+		{"combat outcome line", domain.LineDone{}, vocab.StateEnd},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

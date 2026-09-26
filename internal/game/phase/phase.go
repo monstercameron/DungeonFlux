@@ -3,6 +3,7 @@ package phase
 import (
 	"github.com/monstercameron/DungeonFlux/internal/core/fsm"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
+	"github.com/monstercameron/DungeonFlux/internal/game/combat"
 	"github.com/monstercameron/DungeonFlux/internal/game/phase/check"
 	"github.com/monstercameron/DungeonFlux/internal/game/phase/cliffhanger"
 	"github.com/monstercameron/DungeonFlux/internal/game/phase/conversation"
@@ -10,6 +11,7 @@ import (
 	"github.com/monstercameron/DungeonFlux/internal/game/phase/hook"
 	"github.com/monstercameron/DungeonFlux/internal/game/phase/opening"
 	"github.com/monstercameron/DungeonFlux/internal/game/phase/resolution"
+	"github.com/monstercameron/DungeonFlux/internal/game/rules"
 	"github.com/monstercameron/DungeonFlux/internal/game/rules/dice"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
@@ -49,7 +51,7 @@ var phaseDefinitions = []Definition{
 	{ID: vocab.StateCheck, Stub: false},
 	{ID: vocab.StateResolution, Stub: false},
 	{ID: vocab.StateHookEvent, Stub: false},
-	{ID: vocab.StateCombat, Stub: true},
+	{ID: vocab.StateCombat, Stub: false},
 	{ID: vocab.StateCliffhanger, Stub: false},
 	{ID: vocab.StateEnd, Stub: false},
 }
@@ -65,6 +67,8 @@ type Machine struct {
 	check            check.Machine
 	resolution       resolution.Machine
 	hook             hook.Machine
+	combat           combat.State
+	combatDice       *dice.Roller
 	cliffhanger      cliffhanger.Machine
 }
 
@@ -135,11 +139,76 @@ func (m *Machine) stepHost(cmd domain.HostCmd) (Result, error) {
 }
 
 func (m *Machine) stepPhase(event domain.Event) (Result, error) {
+	if m.State() == vocab.StateCombat {
+		return m.stepCombat(event)
+	}
 	phaseEvent := eventForDomain(m.State(), event)
 	if phaseEvent == "" {
 		return Result{}, &fsm.Rejection{State: m.State(), Event: event.Kind(), Reason: fsm.ReasonUnknownEvent}
 	}
 	return m.step(phaseEvent)
+}
+
+func (m *Machine) stepCombat(event domain.Event) (Result, error) {
+	if action, ok := event.(domain.Act); ok {
+		if err := m.applyCombatAction(action); err != nil {
+			return Result{}, err
+		}
+		return Result{Paused: m.paused}, nil
+	}
+	if _, ok := event.(domain.LineDone); ok && m.combat.Phase != combat.Done {
+		if line := event.(domain.LineDone); line.UtteranceID == "" || line.UtteranceID == "combat-outcome" {
+			if _, err := m.combat.ResolveEnd(combat.ReasonSkip, 0); err != nil {
+				return Result{}, err
+			}
+			return m.step(eventCliffhanger)
+		}
+		return Result{}, &fsm.Rejection{State: m.State(), Event: event.Kind(), Reason: fsm.ReasonGuardRejected}
+	}
+	phaseEvent := eventForDomain(m.State(), event)
+	if phaseEvent == "" {
+		return Result{}, &fsm.Rejection{State: m.State(), Event: event.Kind(), Reason: fsm.ReasonUnknownEvent}
+	}
+	return m.step(phaseEvent)
+}
+
+func (m *Machine) applyCombatAction(action domain.Act) error {
+	if action.Move == vocab.MoveMove {
+		_, err := m.combat.Move(combat.Cell{X: action.Cell.C, Y: action.Cell.R})
+		return err
+	}
+	if action.Move == vocab.MoveAttack {
+		result, err := m.combat.Attack(m.combatDice, string(action.Target))
+		if err != nil {
+			return err
+		}
+		if result.Outcome.HPAfter <= 0 {
+			_, err = m.combat.ResolveEnd(combat.ReasonHPZero, result.Seat)
+			return err
+		}
+		m.combat.Phase = combat.PCTurn
+		return m.finishCombatTurn()
+	}
+	if action.Move == vocab.MoveEndTurn {
+		return m.finishCombatTurn()
+	}
+	return &fsm.Rejection{State: m.State(), Event: eventForDomain(m.State(), action), Reason: fsm.ReasonUnknownEvent}
+}
+
+func (m *Machine) finishCombatTurn() error {
+	if m.combat.Phase != combat.PCTurn {
+		return nil
+	}
+	if err := m.combat.EndPlayerTurn(); err != nil {
+		return err
+	}
+	if m.combat.Phase != combat.EnemyTurn {
+		return nil
+	}
+	if _, err := m.combat.EnemyTurn(m.combatDice, 1200); err != nil {
+		return err
+	}
+	return m.combat.EndEnemyTurn()
 }
 
 func (m *Machine) step(event vocab.EventKind) (Result, error) {
@@ -217,6 +286,18 @@ func (m *Machine) route(event vocab.EventKind) error {
 	case vocab.StateHookEvent:
 		if event == eventCombat {
 			_, _ = m.hook.Step(domain.LineDone{})
+			var err error
+			m.combat, err = combat.New(combatConfig())
+			if err != nil {
+				return err
+			}
+			m.combatDice = newDice()
+			return m.combat.Start()
+		}
+	case vocab.StateCombat:
+		if event == eventSkip && m.combat.Phase != combat.Done {
+			_, err := m.combat.ResolveEnd(combat.ReasonSkip, 0)
+			return err
 		}
 	case vocab.StateCliffhanger:
 		if event == eventCliffhanger {
@@ -239,6 +320,20 @@ func (m *Machine) route(event vocab.EventKind) error {
 }
 
 func newDice() *dice.Roller { return dice.New([]byte("dungeonflux-check")) }
+
+func combatConfig() combat.Config {
+	return combat.Config{
+		PCs: [2]combat.Participant{
+			{Seat: 1, ID: "pc-1", Build: combatBuild(rules.Paladin), Position: combat.Cell{X: 1, Y: 0}, HP: 10, MaxHP: 10, AC: 14},
+			{Seat: 2, ID: "pc-2", Build: combatBuild(rules.Rogue), Position: combat.Cell{X: 2, Y: 0}, HP: 10, MaxHP: 10, AC: 14},
+		},
+		Thrall: rules.Thrall("thrall"), Grid: combat.Grid{Cols: 4, Rows: 4},
+	}
+}
+
+func combatBuild(class rules.Class) rules.Build {
+	return rules.Build{Class: class, AttackBonus: 5, HP: 10, MaxHP: 10, AC: 14}
+}
 
 func definition() fsm.Def {
 	states := make([]fsm.State, 0, len(phaseDefinitions))
