@@ -1,5 +1,10 @@
 package dm
 
+import (
+	"strconv"
+	"strings"
+)
+
 import dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 
 // DamageView is the visible damage portion of a dice result.
@@ -23,6 +28,44 @@ type DiceView struct {
 	Crit     bool
 	Damage   *DamageView
 	Locale   string
+}
+
+// DicePresentation describes the stable visual state of a dice overlay.
+// Keeping this decision outside the browser makes preview and live snapshots
+// use exactly the same hierarchy.
+type DicePresentation struct {
+	StateClass string
+	FaceLabel  string
+	ResultText string
+	IsRolling  bool
+	IsSuccess  bool
+	IsFailure  bool
+}
+
+// PresentDice converts a wire-facing dice view into renderer-friendly copy.
+func PresentDice(view DiceView) DicePresentation {
+	state := strings.ToLower(strings.TrimSpace(view.State))
+	presentation := DicePresentation{StateClass: "is-" + state}
+	switch state {
+	case "rolling":
+		presentation.FaceLabel = "…"
+		presentation.IsRolling = true
+	case "offered":
+		presentation.FaceLabel = "?"
+	default:
+		presentation.FaceLabel = formatD20(view.D20)
+	}
+	presentation.ResultText = strings.TrimSpace(view.Outcome)
+	presentation.IsSuccess = strings.EqualFold(presentation.ResultText, "success")
+	presentation.IsFailure = strings.EqualFold(presentation.ResultText, "failure") || strings.EqualFold(presentation.ResultText, "fail")
+	return presentation
+}
+
+func formatD20(value int32) string {
+	if value < 1 || value > 20 {
+		return "—"
+	}
+	return strconv.Itoa(int(value))
 }
 
 // DiceViewFromProto copies the dice fields needed by the TV renderer.

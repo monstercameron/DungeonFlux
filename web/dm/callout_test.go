@@ -7,8 +7,14 @@ import (
 )
 
 func TestNewCalloutView_HidesEmptyText(t *testing.T) {
-	if got := NewCalloutView(""); got.Visible || got.Text != "" {
+	if got := NewCalloutView("  "); got.Visible || got.Text != "" {
 		t.Fatalf("empty callout = %#v", got)
+	}
+}
+
+func TestNewCalloutView_TrimsPresentationCopy(t *testing.T) {
+	if got := NewCalloutView("  DM steering: hook  "); got.Text != "DM steering: hook" || !got.Visible {
+		t.Fatalf("trimmed callout = %#v", got)
 	}
 }
 

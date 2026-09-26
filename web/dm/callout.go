@@ -1,5 +1,7 @@
 package dm
 
+import "strings"
+
 import dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 
 // CalloutView is the browser-owned projection of the TV steering callout.
@@ -10,6 +12,7 @@ type CalloutView struct {
 
 // NewCalloutView creates a callout projection, hiding empty copy.
 func NewCalloutView(text string) CalloutView {
+	text = strings.TrimSpace(text)
 	return CalloutView{Text: text, Visible: text != ""}
 }
 

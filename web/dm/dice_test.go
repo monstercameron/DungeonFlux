@@ -35,6 +35,39 @@ func TestDiceViewFromProto_UnknownEnumsAreEmpty(t *testing.T) {
 	}
 }
 
+func TestPresentDice_StatesHaveReadableVisuals(t *testing.T) {
+	tests := []struct {
+		name      string
+		state     string
+		d20       int32
+		wantFace  string
+		wantRoll  bool
+		wantClass string
+	}{
+		{name: "offered", state: "offered", wantFace: "?", wantClass: "is-offered"},
+		{name: "rolling", state: "rolling", wantFace: "…", wantRoll: true, wantClass: "is-rolling"},
+		{name: "resolved", state: "resolved", d20: 17, wantFace: "17", wantClass: "is-resolved"},
+		{name: "invalid result", state: "resolved", d20: 21, wantFace: "—", wantClass: "is-resolved"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := PresentDice(DiceView{State: test.state, D20: test.d20})
+			if got.FaceLabel != test.wantFace || got.IsRolling != test.wantRoll || got.StateClass != test.wantClass {
+				t.Fatalf("presentation = %#v", got)
+			}
+		})
+	}
+}
+
+func TestPresentDice_ClassifiesOutcome(t *testing.T) {
+	if got := PresentDice(DiceView{Outcome: "success"}); !got.IsSuccess || got.IsFailure {
+		t.Fatalf("success presentation = %#v", got)
+	}
+	if got := PresentDice(DiceView{Outcome: "FAIL"}); !got.IsFailure || got.IsSuccess {
+		t.Fatalf("failure presentation = %#v", got)
+	}
+}
+
 func TestTimerViewFromProto_CopiesFields(t *testing.T) {
 	got := TimerViewFromProto(&dungeonfluxv1.Timer{Seat: "2", RemainingMs: 1200, TotalMs: 3000, Frozen: true})
 	if got.Seat != "2" || got.RemainingMS != 1200 || got.TotalMS != 3000 || !got.Frozen {
