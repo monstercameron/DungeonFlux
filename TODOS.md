@@ -349,7 +349,7 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   why: Live test: the 27 MB uncompressed WASM bundle takes 10-18 s to start in the browser, which phones on venue Wi-Fi cannot afford.
   lane: ORCH · block: 8–11 · paths: `scripts/buildweb.ps1`, `scripts/buildweb/**`, `internal/wire/web*.go` · depends: WEB-007, BASE-020
   done when: buildweb builds with -trimpath -ldflags="-s -w", writes .wasm.gz (and .br via a Go encoder if one is vendored; otherwise gzip only) using a small Go tool under scripts/buildweb/; the server serves the precompressed file with Content-Encoding by Accept-Encoding and an ETag (no-cache kept, so 304s avoid re-downloads); report sizes before/after; boot time measured in Edge.
-  status: claimed luna
+  status: committed a2f1b10
 
 - [x] BASE-007 · internal/wire skeleton and cmd/server skeleton
   why: The server binary must start from hour 1 with fakes, flags (-config, -port, -data-dir, -seed), and graceful shutdown.
@@ -453,7 +453,7 @@ SRD 5.2.1 rules the demo uses: deterministic dice, checks, templates, and the co
   why: Developer decision (2026-09-26): players choose their class as a third creation option, per the D&D (SRD 5.2.1) class list, replacing R-D7's random draw from four templates.
   lane: L-ENG · block: 8–11 · paths: `internal/game/rules/build*.go`, `internal/game/rules/class*.go` · depends: RULES-003
   done when: Barbarian, Bard, Cleric, Druid, Fighter, Monk, Paladin, Ranger, Rogue, Sorcerer, Warlock, and Wizard each have a level-1 demo template (hit die and HP, AC, primary ability order for the constrained random build, one attack, Persuasion proficiency where the SRD grants it or an expertise note); BuildHero accepts any of them; DrawClass remains only as the timeout fallback; table tests per class.
-  status: claimed luna
+  status: committed a1a3831
 
 ## 6. Content
 
@@ -511,7 +511,7 @@ The fixed one-shot: NPCs, beats, prompts, schemas, canned lines, the tavern nav 
   why: The phone and TV need display labels, one-line role descriptions, and i18n keys for the class move and the 12 classes.
   lane: L-CONTENT · block: 8–11 · paths: `internal/content/classes*.go`, `internal/i18n/catalog/**` · depends: CONT-008, I18N-003, I18N-010
   done when: label and reason for move class; for each class a name and a one-line demo-friendly role blurb in en and es; I18N-011 parity passes.
-  status: claimed luna
+  status: committed 6e24f12
 
 ## 7. Engine: root, phase dispatcher, and nested flows
 
@@ -653,7 +653,7 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: Live play-through stalls in opening: with fake adapters and no canned audio assets, PlayCanned never posts line_done, nothing logs effect execution, and the opening never advances; later phases will hit the same class of gap.
   lane: ORCH (integration) · block: 8–11 · paths: `internal/voice/out/**`, `internal/llmexec/**`, `internal/media/**`, `internal/wire/execs*.go`, `internal/wire/adapters*.go`, `internal/wire/fake*.go`, `internal/wire/sim_test.go` · depends: BASE-016, E2E-004
   done when: in fake mode every line/canned/prerender/media effect completes with plausible fake durations (line_first_audio then line_done after about 1-2 s; missing assets fall back to fake PCM or silence instead of stalling) and each effect execution logs one Info record; a new wire test starts the real server with config/fake.json, joins two phones through SessionService, drives creation with phone Acts, then plays to End using only phone Acts/Says and host commands (no debug shortcuts except dice force), asserting each phase; the same run works live on port 18170 with dfctl watching.
-  status: claimed luna
+  status: committed 23ff374
 
 ## 8. Engine phases (one package each)
 
@@ -1055,13 +1055,13 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: Developer decision: gRPC is the only transport after boot, so images (UI art, scene stills, portraits, QR) must reach clients through a gRPC AssetService instead of HTTP /assets routes.
   lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/assets.proto`, `gen/**`, `internal/api/assets*.go`, `internal/wire/assets*.go`, `internal/wire/wire.go` · depends: INT-002, BASE-008, OPS-020
   done when: AssetService has Get (server stream of chunks by logical name or sha256, with content type and size) and Manifest (logical names to sha, type, size for preloading); the server reads the asset store; wire loads every manifest entry (including ui/*) into the store at start and registers the service on the tunnel; HTTP /assets stays only as a debug fallback; bufconn tests; a Go client fetches ui/title_bg from a live server.
-  status: open (launch after INT-002: gen/)
+  status: claimed luna
 
 - [ ] INT-005 · player names and lobby metadata reach the TV
   why: Live test after INT-001: the TV shows Joined seats but as Player 1/2, the room code as "/p", and a broken QR, because JoinRequest has no player name field and wire never passes room code, join URL, and QR URL into the engine's lobby View.
   lane: ORCH (integration) · block: 8–11 · paths: `proto/dungeonflux/v1/common.proto`, `gen/**`, `internal/api/session*.go`, `internal/api/project*.go`, `internal/wire/lobby*.go`, `internal/wire/wire.go`, `web/shell/join*.go` · depends: INT-002, ENG-017, ENG-018, BASE-021
   done when: JoinRequest gains player_name; the phone sends it; session posts it in domain.Join; wire passes lobby data (room code, LAN join URL, QR URL) to the engine via ENG-017's option; projection fills DMView.lobby; live check: TV shows Aria and Bram, the real room code, the join URL, and a QR image that loads.
-  status: claimed luna
+  status: committed 9414fcd
 
 - [ ] INT-006 · server streams all DM audio over gRPC: voice, music, ambience, SFX
   why: Developer request (2026-09-26): all table audio reaches the DM client through gRPC; today AudioService.Listen carries only TTS PCM frames, so music, ambience, and sound effects have no path.
@@ -1505,7 +1505,7 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   why: Live run: when the TV shows the end card, the phone still shows the player sheet.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/end*.go`, `web/phone/screen*.go` · depends: PHONE-018
   done when: at End the phone shows the outcome, the character's final state, thanks, and the SRD attribution link; preview fixture plus live check.
-  status: claimed luna
+  status: committed 1255ffd
 
 - [ ] PHONE-020 · phone class picker (third creation choice)
   why: Players choose a class on the phone after species and gender.
@@ -1635,13 +1635,13 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   why: The TV screen must look right on any display the venue has (16:9 TV, 21:9 ultrawide, 16:10 laptop, 4:3 projector, portrait monitor), not just 1920x1080.
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/screen*.go`, `web/dm/theme*.go`, `web/dm/aspect*.go` · depends: DM-016, DM-017
   done when: the stage fills any viewport with safe-area insets and per-aspect layout rules (captions, seat rail, dice, combat HUD reposition; backgrounds use cover with focal points; ultrawide gets side vignettes, 4:3 stacks panels, portrait stacks vertically); an ?aspect= override forces a ratio for testing; preview fixtures screenshotted at 1920x1080, 2560x1080, 1920x1200, 1440x1080, 1080x1920 all look intentional.
-  status: claimed luna
+  status: committed a38807a
 
 - [ ] DM-019 · TV creation layer shows each player's class choice
   why: The TV should show species, gender, and now class as players pick them.
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/creation*.go` · depends: DM-017, ENG-019
   done when: each seat card shows species, gender, and class as they arrive (class crest when available), then the rolled build; preview fixture and live check.
-  status: claimed luna
+  status: committed b5a43a4
 
 - [ ] DM-020 · TV title and lobby screen with the generated art
   why: The first thing on the TV must look like the concept title screen: painted harbor background, the DungeonFlux wordmark, a framed QR, and parchment panels.
@@ -1951,6 +1951,11 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   lane: L-OPS · paths: `scripts/generate-supersplat-colliders.ps1` · depends: OPS-019
   done when: a PowerShell script uses the official pinned SplatTransform tool to generate scene-aligned voxel colliders locally, records generation provenance, supports both scene profiles, and the lane gate passes.
   status: done b9af9fc (renumbered from OPS-020/OPS-022 to avoid concurrent ID collisions; scoped gate failures 0)
+- [ ] OPS-SPLAT-002 · expand collider coverage across scene walkways
+  why: The developer requests grid coverage across all visible walkable terrain, including foreground paths outside the initial battle crop.
+  lane: L-OPS · paths: `scripts/generate-supersplat-colliders.ps1` · depends: OPS-SPLAT-001
+  done when: canonical colliders include the main visible paths and surrounding lawn in both scenes, generation defaults reproduce those bounds, provenance and binary sizes are verified, and the lane gate passes.
+  status: claimed Codex 2026-09-26
 ## 25. Test server, gates, and checkpoints
 
 Keeping the build honest: per-commit checks, the 30-minute full gate, checkpoints, and e2e tests.
