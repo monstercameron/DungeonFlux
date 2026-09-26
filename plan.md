@@ -13,7 +13,7 @@ Status: planning, demo spec under adversarial review (started 2026-09-26)
 
 A 3-minute live demo, built in 24 hours by one developer using Claude Code.
 
-**Spec index by lane.** Every lane also reads §0.18.1, §0.18.2, §0.18.7, and §0.18.8. The same lists are the "Binding sections" column of the lane table (§0.18.9) and item 4 of `CLAUDE.md`.
+**Spec index by lane.** Every lane also reads §0.18.1, §0.18.2, §0.18.7, and §0.18.8. The same lists are the "Binding sections" column of the lane table (§0.18.9) and item 4 of the `AGENTS.md` outline (§0.18.9).
 | Lane | Sections to read |
 |---|---|
 | ORCH | §0.4, §0.5, §0.6, §0.12 walk test, all of §0.18 |
@@ -23,17 +23,17 @@ A 3-minute live demo, built in 24 hours by one developer using Claude Code.
 | L-COMBAT | §0.5 phase machine, scopes, turn timers, and Skip; §0.18.4 scope tree and catalogue; §0.20; §0.21.1–§0.21.3; §0.21.6 |
 | L-RT | §0.5 runtime rules, voice line timing, turn timers, and Pause; §0.18.4 scope tree and catalogue; §0.18.5 |
 | L-STORE | §0.4 storage, §0.6 event log line, §0.10, §0.18.5 storage |
-| L-API | §0.5 legal moves and host commands, §0.6, §0.11 rooms and joining, §0.18.4 `View` and `ports.Engine`, §0.18.5 gRPC mount, §0.21.6 |
+| L-API | §0.5 legal moves and host commands, §0.6, §0.11 rooms and joining, §0.18.4 `View` (with its timer rule) and `ports.Engine`, §0.18.5 gRPC mount, §0.21.6 |
 | L-VIN | §0.5 push-to-talk, §0.6 `Talk` and `Say`, §0.9 microphone capture and voice pipeline, §0.10, §0.16 |
 | L-VOUT | §0.5 runtime rule 5 and voice line timing, §0.6 `Listen`, §0.9 TTS and playback, §0.10, §0.15 TTS row, §0.16 |
 | L-LLM | §0.8, §0.10, §0.15, §0.16, §0.18.3 model chains and role table |
 | L-CONTENT | §0.7, §0.8, §0.17 prompts, §0.19 style tokens, §0.20 templates, §0.21.1, §0.21.2 (the thrall), §0.21.4 (the nav layer) |
 | L-MEDIA | §0.9 images and video, §0.15 video and image rows, §0.17, §0.19 sidecar metadata, §0.21.5 |
-| L-WEB-SHELL | §0.4 stack, §0.6, §0.9 microphone capture, §0.11 |
-| L-WEB-PHONE | §0.5 legal moves, push-to-talk, and turn timers; §0.6 `PhoneView`; §0.9 typed input; §0.21.3 phone moves; §0.21.6 `PhoneView.combat` |
+| L-WEB-SHELL | §0.4 stack, §0.6, §0.9 microphone capture and TTS and playback (the DM-audio slice, `web/shell/audio`), §0.11 |
+| L-WEB-PHONE | §0.5 legal moves (including the Creation pickers), push-to-talk, and turn timers; §0.20 build model; §0.6 `PhoneView`; §0.9 typed input; §0.21.3 phone moves; §0.21.6 `PhoneView.combat` |
 | L-WEB-DM | §0.5 turn timers (the TV bar); §0.6 `DMView`; §0.9 TTS and playback; §0.17 browser fallbacks; §0.19 mixer rules; §0.21.4 FLAT fallback; §0.21.6 `DMView` combat fields |
 | L-WEB-HOST | §0.5 host commands, §0.6 `HostView`, §0.13 |
-| L-WEB-SPLAT | §0.4 (the JavaScript exception); §0.17 splat camera presets; §0.21.4; §0.21.6 `Token` and `battlefield` |
+| L-WEB-SPLAT | §0.4 (the JavaScript exception); §0.17 splat camera presets; §0.21.3; §0.21.4; §0.21.5; §0.21.6 `Token` and `battlefield` |
 
 ### 0.1 Goal and assumed decisions
 The demo shows an AI dungeon master running a table from a laptop and two phones. The engine decides every outcome; the AI writes and voices the content; generated art, voice, and video feature the players' own characters.
@@ -52,7 +52,7 @@ These are the developer's decisions. Each has a default that the rest of section
 | D8 | Splat rendering | **Decided:** the PlayCanvas engine on a canvas the DM page owns, outside the GWC root (§0.21.4). The SuperSplat viewer is rejected: no documented control API, no way to add scene objects or read camera matrices, and a DOM overlay cannot be occluded. This is an explicit exception to the Go-first rule, limited to `web/splat` (§0.4) | If the hour-5 splat spike fails, the FLAT renderer (pure GWC, §0.21.4) is used and no JavaScript ships |
 | D9 | Model hosting | Cloud by default, with hooks for local models: every port can take a local adapter (an OpenAI-compatible local LLM server such as llama.cpp on the X2, whisper.cpp for STT, a local TTS) through the same role table | Local models are never on the demo's critical path unless the hour-0 test shows they win |
 | D10 | Latency priority | Lowest latency is preferred, but not at any cost: a slower option that is more reliable or better sounding may win | Deadlines in §0.16 stay; experiments such as Qwen on Cerebras are adopted only by their rule |
-| D11 | Character creation | **Simple:** each player picks a species and a gender on the phone; class, ability scores, and skills are assigned at random by the engine's dice (constrained so every character is legal and has Persuasion +4 for the demo check). The second seat's class is drawn per R-D7 (§0.21.2), so every pair includes a paladin or a rogue | — |
+| D11 | Character creation | **Simple, random within constraints that preserve the combat odds** (the §0.20 build model): each player picks a species and a gender on the phone and taps Roll my hero. The engine's seeded dice draw the class (R-D7, §0.21.2, so every pair includes a paladin or a rogue), then assign ability scores and skills at random under fixed constraints: the ability that drives the class's main weapon attack keeps its template value, Charisma is always 14, Persuasion is always proficient (+4), and HP and AC follow the rolled Con and Dex. Species and gender are cosmetic: they drive the portrait, the name, and the narration; species traits are displayed, not executed | — |
 | D12 | Seedance provider | **Segmind Seedance 2.0 Mini** (cheapest verified: $0.0176/s at 480p, $0.0378/s at 720p; first and last frame; 4 s minimum), fallback **EvoLink Seedance 2.0 Mini** (same parameters; its rate is a 60%-off promotion, so the list price is the worst case), then fal Seedance 2.0 Fast (§0.15). The live clip and the combat billboard loops are always 480p | If Mini's quality or latency fails the hour-2 gate (from the L-OPS samples), fal Fast becomes primary at 480p; its 720p list price is $1.21 per 5 s, and its 480p price is read at hour 2 |
 | D13 | Audio extras | **Yes:** music, ambience, and sound effects (§0.19) | — |
 
@@ -62,16 +62,16 @@ Speech rate for budgeting: 2.5 words per second. Caps: opening ≤ 40 words, NPC
 | Time | Beat | Budget (seconds, planned / slot) | Presenter line |
 |---|---|---|---|
 | 0:00–0:10 | **Lobby.** The phones are already on `/p` and joined (§0.11). The TV shows the title, the QR code, and both seats. Each player taps "Ready"; the host starts from the host device. | 6 / 10 | "Each player joined by scanning this code. No accounts, no app." |
-| 0:10–0:40 | **Creation, both seats in parallel.** Each player taps a species, a gender, and "Roll my hero". The engine rolls the class (R-D7, §0.21.2), abilities, and skills (Cha 14, Persuasion +4); `character_flavor` names each hero; full-body portrait previews resolve on the TV. A seat locks when its portrait is Ready or 22 s after its Roll (`seat_deadline`); `creation_timeout` is 30 s. Each lock submits that seat's combat billboard loops. | Taps ≈ 5, portrait ≤ 22 → locked by ≈ 0:37 → 26 / 30 | "Pick a species and a gender; the engine rolls a legal hero and paints them." |
+| 0:10–0:40 | **Creation, both seats in parallel.** Each player taps a species, a gender, and "Roll my hero". The engine rolls the class (R-D7, §0.21.2), then abilities and skills within the §0.20 build model (attack bonus fixed, Cha 14, Persuasion +4); `character_flavor` names each hero; full-body portrait previews resolve on the TV. A seat locks when its portrait is Ready or 22 s after its Roll (`seat_deadline`); `creation_timeout` is 30 s. Each lock submits that seat's combat billboard loops. | Taps ≈ 5, portrait ≤ 22 → locked by ≈ 0:37 → 26 / 30 | "Pick a species and a gender; the engine rolls a legal hero and paints them." |
 | 0:40–1:05 | **Opening.** The pre-made establishing clip (5 s) plays and cross-fades into the layered scene: background, both PC cut-outs, Mother Vell. The DM narrates. | Clip 5 + narration ≈ 16 → 21 / 25 | (silent) |
 | 1:05–1:40 | **Conversation (Player 1).** P1 taps "Talk to Mother Vell", speaks, and she answers evasively in her voice. The phone shows **Persuade +4 vs DC 10** (75% to succeed). P1 taps it; the d20 rolls on the TV; she reveals the clue. | Tap 1, speech 4, release to voice ≈ 3, reply ≈ 10, tap and dice 4, reveal ≈ 10 → 32 / 35 | During the dice: "The engine rolls. She doesn't know the secret." |
 | 1:40–2:00 | **Hook event (Player 2).** P2 taps "Leave". A stranger arrives (pre-made clip, sound sting); the TV shows "DM steering: personal hook → {P2's hook}". His pre-rendered line, built on P2's hook, ends "…it followed me from the river." | Tap 1, clip 5, line ≈ 12 → 18 / 20 | During the clip: "Watch the DM use their backstory." |
-| 2:00–2:40 | **Combat.** Cross-fade to the splat of the same tavern (`COMBAT_EST`, combat sting); the drowned thrall on the grid. Fixed order: seat 1 → thrall → seat 2 → seat 1. Each PC taps Attack; the hero walks the path; the d20 rolls on the TV; the billboards play attack and hit; HP bars move; the thrall slams once. The fight ends when the thrall drops, or at its second turn, when the bell tolls and it flees. One outcome line. | Entry 3, PC 5, thrall 4, PC 5, PC 5, end 2, outcome ≈ 8 → 32 / 40; `combat_cap` 30 s | During `COMBAT_EST`: "Now it's a fight. The engine runs every roll." |
+| 2:00–2:40 | **Combat.** Cross-fade to the splat of the same tavern (`COMBAT_EST`, combat sting); the drowned thrall on the grid. Fixed order: seat 1 → thrall → seat 2 → seat 1. Each PC taps Attack; the hero walks the path; the d20 rolls on the TV; the billboards play attack and hit; HP bars move at contact; the thrall slams once. The fight ends when the thrall drops, or at its second turn, when the bell tolls and it flees. One outcome line. | Entry 3, PC 6 (tap ≈ 3, walk ≤ 1, contact and recovery 2), thrall 3, PC 6, PC 5 (no walk), `outcome_delay` 1.5, outcome ≈ 8 → 33 / 40; `combat_cap` 30 s (≈ 23 s used to `done`, §0.21.3) | During `COMBAT_EST`: "Now it's a fight. The engine runs every roll." |
 | 2:40–3:00 | **Cliffhanger.** The live clip of both characters if Ready, otherwise the generic clip or the animated still; the pre-rendered narration; the end card. | ≈ 16 / 20 | Over the end card, only if the live clip played: "That clip didn't exist two minutes ago." Otherwise: "Every line you heard was written live." |
 
-Planned total: 6 + 26 + 21 + 32 + 18 + 32 + 16 = 151 s (≈ 2:31) of planned activity inside 3:00 of slots; the 29 s of slack sits inside the beats.
+Planned total: 6 + 26 + 21 + 32 + 18 + 33 + 16 = 152 s (≈ 2:32) of planned activity inside 3:00 of slots; the 28 s of slack sits inside the beats.
 
-If the Persuade roll fails, Mother Vell refuses and the clue moves to the stranger (the "clue relocation" steering level); the stranger's line then carries the clue. The combat always ends: the thrall drops in ≈ 84% of runs with the allowed class pairs, the bell ends the rest, and `combat_cap` (30 s) and host Skip are the backstops (§0.21.2). Every path reaches the cliffhanger with the clue delivered, so a failed roll never breaks the demo.
+If the Persuade roll fails, Mother Vell refuses and the clue moves to the stranger (the "clue relocation" steering level); the stranger's line then carries the clue. The combat always ends: the thrall drops in ≈ 83% of runs (the R-D7-weighted mean, §0.21.2), the bell ends the rest, and `combat_cap` (30 s) and host Skip are the backstops (§0.21.2). Every path reaches the cliffhanger with the clue delivered, so a failed roll never breaks the demo.
 
 ### 0.3 Scope
 **In:** one room, one DM screen, two phones, one host device; four level-1 templates; the fixed one-shot in §0.7; one layered scene; one NPC and one stranger; voice conversation with the NPC; one Persuasion check; one steering event; one combat encounter (one enemy, the drowned thrall) on a Gaussian-splat battlefield with a movement grid and video billboards (§0.21); pre-emptive cliffhanger video; theme music, ambience, and sound effects.
@@ -83,8 +83,8 @@ If the Persuade roll fails, Mother Vell refuses and the clue moves to the strang
 - **Static media over plain HTTPS:** images, clips, music, and effects are immutable files served by the same Go server at `/assets/{sha256}.{ext}`. They are fetched, not streamed, so gRPC is not used for them.
 - **One process** on the laptop: gRPC services, the engine, model adapters, the asset store, and the static file server.
 - **One WASM binary** for all three clients, routed by path: `/dm`, `/p` (phone), `/host`. One build and one cached download.
-- **The only JavaScript is `web/splat`** (the D8 exception): one ES module, `web/splat/js/df-splat.mjs` (with `js/status_visuals.mjs`), and the vendored PlayCanvas engine, loaded on `/dm` only. The phone and host routes never load it, and with the FLAT renderer (§0.21.4) no JavaScript runs at all. Archtest enforces the boundary (§0.18.2).
-- **Storage: SQLite** (one file, `dungeonflux.db`, WAL mode), through a pure-Go driver (`modernc.org/sqlite`) so no C toolchain is needed on Windows ARM64. All writes go through one writer goroutine in `internal/store/sqlite` (§0.18.5); the room loop orders event-log appends, and asset, cache, and recording rows go straight to the writer. That matches SQLite's single-writer model. Live game state is held in memory and is always rebuildable from the event log.
+- **The only JavaScript is `web/splat`** (the D8 exception): one ES module, `web/splat/js/df-splat.mjs` (with `js/status_visuals.mjs`), and the vendored PlayCanvas engine, loaded on `/dm` only. The phone and host routes never load it, and with the FLAT renderer (§0.21.4) no JavaScript runs at all. Archtest enforces the boundary (§0.18.2). Go packages under `web/` may call browser APIs through `syscall/js` (microphone capture, Web Audio, the splat bridge); `web/splat/js/df-splat.mjs` and the vendored engine are the only hand-written or third-party JavaScript besides `wasm_exec.js`.
+- **Storage: SQLite** (one file, `artifacts/runtime/<instance>/dungeonflux.db`, WAL mode; `<instance>` is `show` for ORCH runs and the stage and the lane ID for a lane's dev server, so parallel servers never share a database, §0.18.5), through a pure-Go driver (`modernc.org/sqlite`) so no C toolchain is needed on Windows ARM64. All writes go through one writer goroutine in `internal/store/sqlite` (§0.18.5); the room loop orders event-log appends, and asset, cache, and recording rows go straight to the writer. That matches SQLite's single-writer model. Live game state is held in memory and is always rebuildable from the event log.
   | Table | Holds |
   |---|---|
   | `runs` | one row per run, written once at run start: id, start time, run mode, one-shot version, dice `seed`, `features` (the flags copied into `game.Options`), `config_hash` |
@@ -95,7 +95,7 @@ If the Persuade roll fails, Mother Vell refuses and the clue moves to the strang
   | `cache` | cache mode: adapter, input hash → response (text, or an asset sha256) |
   | `recordings` | sequence mode: adapter, phase, seat, call index → response and TTS audio asset |
 
-  Asset bytes (images, clips, audio) stay on disk under `assets/`, named by sha256; SQLite holds only their metadata. **Restart-resume is out of the demo.** A server crash mid-show is handled as Reset plus the backup video. Everything is still persisted (the event log, characters, cache, and recordings survive), so a run can be inspected or replayed afterwards. Resuming a live run from the log is post-demo work.
+  Asset bytes (images, clips, audio) stay on disk under `artifacts/runtime/<instance>/assets/`, named by sha256; SQLite holds only their metadata. The HTTP route stays `/assets/{sha256}.{ext}`; only the disk location is under `artifacts/`. Build-time media live in `artifacts/runtime/buildtime/` with L-OPS's `manifest.json`, and `media` copies them into the instance's asset store by sha256 at start-up (idempotent). The repo-root `assets/` holds committed concept art only (`assets/concept/`); nothing generated is written there. **Restart-resume is out of the demo.** A server crash mid-show is handled as Reset plus the backup video. Everything is still persisted (the event log, characters, cache, and recordings survive), so a run can be inspected or replayed afterwards. Resuming a live run from the log is post-demo work.
 - **Repo layout:** see §0.18.2 (package layout and dependency rule).
 - **No DM agent in the demo.** The engine owns every transition. Each state that needs words calls one content prompt (§0.8) that returns plain streamed text. Post-demo, the agent with tools (section 4a) replaces these prompts as an `AgentTurn` work effect (§0.18.6).
 - **Backend architecture, coding standards, and the parallel lane plan: §0.18 (binding).**
@@ -112,8 +112,8 @@ One table-driven machine type in Go (states, accepted events, guards, actions). 
    | `run` (root) | Reset only | Every asset slot (portraits, the cliffhanger still and the cliffhanger clip); every runtime pre-render (both stranger-line variants per seat and their TTS, both cliffhanger variants and their TTS, the three combat-outcome variants and their TTS); the combat billboard loop slots. Nudge lines are rendered at build time, so only their playback is scoped (phase) |
    | `check` (one Check machine instance, child of `run`) | Never (its own transitions are internal); the scope is cancelled when the phase machine leaves Resolution, when it leaves Conversation other than to Check, or on Reset | The outcome line (`npc_reveal` or `npc_refuse`) and its TTS, started at `act persuade`; the scope spans Check and Resolution |
    | phase (the phase machine, `session`, child of `run`) | Every non-internal phase transition | Everything else: phase timers, live model and TTS streams, the voice-line queue and playback of every line (including pre-rendered ones), push-to-talk instances, clip playback timers |
-   | `combat` (one Combat machine instance, child of the phase scope, §0.21.3) | Every non-internal combat transition | The per-state combat timers: `combat_intro`, `attack_resolved`, `enemy_resolved`, and the combat `turn_timer`. `combat_cap` is phase-scoped, so it spans every combat state and is cancelled when `end` is entered |
-| per-utterance key (under phase) | The utterance's own outcome | The speculative `npc_reply` for that utterance and its TTS |
+   | `combat` (one Combat machine instance, child of the phase scope, §0.21.3) | Every non-internal combat transition | The per-state combat timers: `combat_intro`, `attack_resolved`, `enemy_resolved`, `outcome_delay`, and the combat `turn_timer`. `combat_cap` is phase-scoped, so it spans every combat state and is cancelled when `done` is entered |
+   | per-utterance key (under phase) | The utterance's own outcome | The speculative `npc_reply` for that utterance and its TTS |
 
    **Leaving a phase cancels only phase-scoped work** (context cancel of the phase subtree); `run` and `check` work continue. Effects emitted by a transition's action carry the target state's epoch. Any event carrying an older epoch for its scope is dropped. Skip, timeouts, and host commands therefore never leave orphaned work behind, and pre-emptive work started in one phase survives into the phase that uses it. **A self-transition (`Conversation → Conversation`) is internal:** it does not increment `epoch` and does not re-run entry actions, so the reply it queues is not cancelled.
 4. **Completion events carry identity.** `line_done{utterance_id}`, `line_failed{utterance_id}`, `clip_done{asset_id}`. A state accepts only the IDs it started itself.
@@ -151,7 +151,7 @@ stateDiagram-v2
 **Where events come from** (the typed catalogue, with every effect, is §0.18.4)
 | Event | Source |
 |---|---|
-| `host_start`, `host_reset`, `host_pause`, `host_resume`, `host_skip`, `host_force_d20`, `host_safe_mode`, `host_timer_add`, `host_timers_off` | `HostService.Command` (authenticated by the host token); logged in `events` like any event |
+| `host_start`, `host_reset`, `host_pause`, `host_resume`, `host_skip`, `host_force_d20`, `host_safe_mode`, `host_timer_add`, `host_timers_off`, `host_splat_off` | `HostService.Command` (authenticated by the host token); logged in `events` like any event, so replay reproduces them. `host_splat_off` sets the engine flag `splat_off`: the battlefield projects FLAT from the next snapshot, with no reload |
 | `act {move_id}` | `SessionService.Act` from the phone, or the voice pipeline's `MOVE` result (§0.9); rejected unless the move is in that seat's current legal moves. `ready`, `species`, `gender`, and `roll_hero` are `act` moves, as are the combat moves `attack` (with `target_id`), `move` (with `cell`), and `end_turn` (§0.21.3) |
 | `talk_start`, `talk_end`, `say`, `stream_closed` | `VoiceService.Talk` and `SessionService.Say` (voice/in); `stream_closed` also from any dropped `Watch` or `Listen` |
 | `utterance_final`, `stt_error` | Derived by the engine from the voice pipeline's results (§0.9): `utterance_final` when an utterance is dispatched as `DIALOGUE` (from `interpreted`, or the keyword matcher when `interpret` fails); `stt_error` from `Transcribe`. There is no speech in Creation (D11) |
@@ -164,19 +164,19 @@ stateDiagram-v2
 | `turn_nudge`, `turn_expired{stage}` | The spotlight seat's turn timer, `turn_timer` (see Turn timers): pausable, frozen while talking or listening. In Conversation it is also the idle timer: stage 1 of `turn_expired` sets `idle_elapsed` |
 | `idle_elapsed` | The Conversation idle flag timer, used only when turn timers are off (`TIMERS_OFF` or feature `turn_timers` false): 20 s with the turn timer's start, restart, and freeze rules; sets `idle_elapsed` |
 | `asset_ready`, `asset_failed` | Media adapters |
-| `combat_intro`, `attack_resolved`, `enemy_resolved` | Combat-scoped server timers: 3 s, 2 s, and 3 s (§0.21.3) |
-| `turn_expired` in Combat | The combat turn timer: 10 s per PC turn, combat scope, no nudge; the DM acts `attack{thrall}` |
+| `combat_intro`, `attack_resolved`, `enemy_resolved`, `outcome_delay` | Combat-scoped server timers: 3 s; walk (path cells × 250 ms) + 2.0 s (1.2 s to contact, then 0.8 s); the same rule for the thrall's turn; 1.5 s at `done` entry (§0.21.3) |
+| `turn_expired` in Combat | The combat turn timer: 10 s per PC turn, combat scope, no nudge; the DM acts `attack{thrall}` if it is legal, otherwise `end_turn` |
 | `combat_cap` | Server timer, 30 s from Combat entry (pausable, phase scope); not stopped by `TIMERS_OFF` |
-| `report{SPLAT_READY}`, `report{SPLAT_FAILED}` | The DM client's splat module (§0.21.4); `SPLAT_FAILED` switches the battlefield to FLAT |
+| `report{SPLAT_READY}`, `report{SPLAT_FAILED}` | The DM client's splat module (§0.21.4); `SPLAT_READY` sets `splat_ready`, which decides the mode at Combat entry (§0.21.3); `SPLAT_FAILED` switches the battlefield to FLAT |
 
 **Transition actions**
 | Transition | Action |
 |---|---|
 | Lobby → Creation | Start `creation_timeout` (30 s). Draw both seats' classes with the seeded dice per R-D7 (§0.21.2), so the draw does not depend on which seat taps first; each class is revealed at that seat's `roll_hero` |
-| Creation, on `act roll_hero{species, gender}` for a seat | The engine rolls the build with its seeded dice (§0.20): the class drawn at Lobby → Creation (R-D7); the standard array assigned at random except Charisma, which is always 14; skills drawn at random from the class and background lists, with Persuasion always proficient. It then starts `character_flavor` (name, look, hook) and the portrait in parallel (the full-body portrait prompt uses species, gender, class, and the campaign's global art style, so it does not wait for the LLM); the seat's pickers grey out ("Building your hero…") |
-| Creation, on `pc_locked` for a seat | Start that seat's `stranger_lines` (two variants) and their TTS pre-renders, and that seat's billboard loops (`GenerateBillboardLoops`, deadline `combat.end` entry, §0.21.5), all in the `run` scope (they survive Creation's exit). On the second `pc_locked`, also start `combat_outcomes` (`PrerenderSet`, three variants) and their TTS in the `run` scope |
+| Creation, on `act roll_hero` for a seat (after its `species{id}` and `gender{id}` picks) | The engine rolls the build with its seeded dice under the §0.20 build model: the class drawn at Lobby → Creation (R-D7); the ability that drives the class's main weapon attack keeps its template value and Charisma is always 14; the other standard-array values and the background increases go to the remaining abilities at random (Con from the two highest remaining values, the 8 never on Dex); HP and AC follow the rolled Con and Dex; Persuasion is always proficient and the other skills are drawn at random from the class and background lists. Species and gender are cosmetic. It then starts `character_flavor` (name, look, hook) and the portrait in parallel (the full-body portrait prompt uses species, gender, class, and the campaign's global art style, so it does not wait for the LLM); the seat's pickers grey out ("Building your hero…") |
+| Creation, on `pc_locked` for a seat | Start that seat's `stranger_lines` (two variants) and their TTS pre-renders, and that seat's billboard loops (`GenerateBillboardLoops`, deadline `combat.done` entry, §0.21.5), all in the `run` scope (they survive Creation's exit). On the second `pc_locked`, also start `combat_outcomes` (`PrerenderSet`, three variants) and their TTS in the `run` scope |
 | Creation, on `creation_timeout` | For each unlocked seat: keep a `character_flavor` result if one has returned, otherwise apply the seat's default character (seat 1: paladin default, seat 2: rogue default); use the template fallback portrait if the portrait is not Ready; then emit `pc_locked`. The "both seats locked" guard remains the only exit |
-| Creation → Opening | Play the establishing clip; start streaming the opening text; the narration audio starts at the clip's `clip_done`. In the `run` scope: composite the cliffhanger still and start the cliffhanger clip slot (deadline: Cliffhanger entry); generate both cliffhanger variants and their TTS |
+| Creation → Opening | Play the establishing clip; start streaming the opening text; the narration audio starts at the clip's `clip_done`. In the `run` scope: composite the cliffhanger still and start the cliffhanger clip slot (deadline: Cliffhanger entry); generate both cliffhanger variants and their TTS. From here the view carries `DMView.battlefield` with `visible: false`, so the splat loads hidden (§0.21.5) |
 | Opening → Exploration | Spotlight → seat 1; start the turn timer |
 | Conversation (entry) | Create the `check` instance in Offered; start the turn timer (or, with turn timers off, the `idle_elapsed` flag timer); `idle_elapsed = false` |
 | Conversation, on `utterance_final` | `npc_turns++`; restart the turn timer; the NPC reply for that utterance (already speculatively streaming, §0.9) is released into the voice queue (`ReleaseLine`); if no reply stream exists for the utterance, `npc_reply` starts now |
@@ -185,7 +185,7 @@ stateDiagram-v2
 | Conversation → Exploration (`step_away`) | Cancel the `check` scope; spotlight unchanged |
 | Resolution → Exploration | Cancel the `check` scope; spotlight → the other seat; start the turn timer |
 | Exploration → HookEvent | `hook_delivered[seat] = true`. If `clue_found` is false, set `clue_holder = stranger` (covers both a failed roll and Player 1 leaving first). Play the stranger clip; show the callout "DM steering: personal hook → {hook}", plus "clue relocated" when `clue_holder = stranger`; the stranger-line variant for (seat, `clue_holder`) starts at the clip's `clip_done`. On that line's `line_done`, `clue_found = true` |
-| HookEvent → Combat | Create the `combat` instance in `intro` and run its entry actions (§0.21.3): tokens at their spawn cells, the battlefield visible (splat, or FLAT after `SPLAT_FAILED`), camera `COMBAT_EST`, `STING_COMBAT_START` then `COMBAT_SKIRMISH_LOOP`, `combat_intro` (3 s, combat scope). Start `combat_cap` (30 s, pausable, phase scope) |
+| HookEvent → Combat | Create the `combat` instance in `intro` and run its entry actions (§0.21.3): tokens at their spawn cells, the battlefield visible (SPLAT only if `SPLAT_READY` has been received and neither `SPLAT_FAILED` nor `host_splat_off` has, otherwise FLAT; §0.21.3), camera `COMBAT_EST`, `STING_COMBAT_START` then `COMBAT_SKIRMISH_LOOP`, `combat_intro` (3 s, combat scope). Start `combat_cap` (30 s, pausable, phase scope) |
 | Combat → Cliffhanger | A Down PC goes to 1 HP; hide the battlefield and cross-fade to the cliffhanger. The cliffhanger clip slot (`run` scope, started at Creation → Opening) reaches its deadline. Play the live cliffhanger clip if its slot is Ready, otherwise the generic cliffhanger clip, otherwise the animated composite still; play the cliffhanger variant for how the clue was found (from Mother Vell or from the stranger). The end card follows `line_done`; the clip is not waited on |
 
 **Spotlight rule:** seat 1 has the spotlight when Exploration is first entered. It passes only on Resolution → Exploration (a completed conversation). Creation has no spotlight; in Combat the active seat follows the fixed turn order (R-D1), not the spotlight.
@@ -202,12 +202,12 @@ stateDiagram-v2
 | State | Spotlight seat | Other seat |
 |---|---|---|
 | Lobby | Ready [`ready`] | same |
-| Creation | Pick a species [`species`] and a gender [`gender`], then Roll my hero [`roll_hero`] (once) | same (parallel) |
+| Creation | Pick a species [`species{id}`] and a gender [`gender{id}`], each one `MoveView` with `options[{id, label}]` (species: `human`, `elf`, `dwarf`, `halfling`, `orc`, `tiefling`, `dragonborn`, `gnome`, `goliath`, the nine SRD 5.2.1 species; gender: `female`, `male`, `nonbinary`); the id travels in `ActRequest.arg`, and a new pick replaces the old one until Roll. Then Roll my hero [`roll_hero`] (once, enabled when both are picked) | same (parallel) |
 | Opening | none | none |
 | Exploration | Talk to Mother Vell [`talk_vell`] (greyed "She's told you what she knows" or "She won't say more" once `conversation_done`); Leave [`leave`] | Greyed: "Waiting for {name}" |
 | Conversation | Hold to speak [`ptt`]; Type a message [`say`]; Persuade +4 vs DC 10 [`persuade`] (greyed "Talk to her first" until one NPC turn or idle); Step away [`step_away`]. Push-to-talk and Persuade are greyed "Mother Vell is speaking" while any voice line is queued or speaking | Greyed: "Waiting for {name}" |
 | Combat `pc_turn` | Active seat: Attack the drowned thrall [`attack`] with the preview "+5 to hit · AC 8 · 90% · 1d8+3" (greyed "No path to the thrall"); Move [`move`] (flag `combat_move_ui`; a mini grid of reachable cells; greyed "No movement left"); End turn [`end_turn`]. A Down seat is skipped and sees "You're down, the others fight on" | Greyed: "Waiting for {name}", with the preview visible |
-| Combat `intro`, `rolling`, `enemy_turn`, `end` | none; status text "Brace yourself" / "Rolling…" / "The thrall moves" / "…" | same |
+| Combat `intro`, `rolling`, `enemy_turn`, `done` | none; status text "Brace yourself" / "Rolling…" / "The thrall moves" / "…" | same |
 | Check, Resolution, HookEvent, Cliffhanger, End | none | none |
 
 **Host commands per state**
@@ -220,7 +220,7 @@ stateDiagram-v2
 | Conversation | Acts `persuade`, bypassing its guard (the queued line is cut) |
 | Check | Fires `roll_resolved` now; the pending dice timer is cancelled with the epoch |
 | Combat (`intro`, `pc_turn`, `rolling`, `enemy_turn`) | Ends the fight as FLED (reason SKIP): the thrall flees, then the outcome line plays |
-| Combat (`end`) | Fires `line_done{combat_outcome}` now |
+| Combat (`done`) | Fires `line_done{combat_outcome}` now (cancelling `outcome_delay` if it is still running) |
 | End | Same as Reset |
 
 Pause freezes every epoch timer (including line timers and their caps and the timers of lines still being generated), suspends the DM screen's audio context, and pauses clips, billboard videos, and the splat module (§0.21.4); Resume restarts them where they stopped. On `host_pause`, any seat in Recording is sent `TalkStop` and goes to Failed (a Pause-induced Failed does not count toward the two-STT-failures rule in §0.9); a voice dispatch that arrives during Pause is held and evaluated on Resume. Skip and Reset while paused **auto-resume first**, then act, so a new state never starts frozen. `host_force_d20{n}` does not resume; it only sets the next roll. `host_safe_mode{on}` switches every adapter to sequence replay (§0.10).
@@ -230,7 +230,7 @@ Pause freezes every epoch timer (including line timers and their caps and the ti
 |---|---|---|---|
 | Exploration (spotlight seat) | 20 s | The DM speaks the nudge line "The rain won't wait." and the phone pulses | The DM acts for the seat, as host Skip does in Exploration (`talk_vell` if available, otherwise `leave`) |
 | Conversation (spotlight seat) | 20 s without an accepted utterance | Mother Vell speaks the nudge line "Well? Speak or drink." | Stage 1: sets `idle_elapsed`; Persuade enables and is highlighted; the timer re-arms for 15 s. Stage 2: the DM acts `persuade` for the seat. This act bypasses the `npc_turns` part of the guard but not the rest (no utterance in flight, no line queued or speaking); since the countdown is frozen whenever either holds, both are clear when stage 2 fires |
-| Combat (active seat in `pc_turn`) | 10 s per PC turn | No nudge line; the ring and the bar pulse amber at 6 s | The DM acts `attack{thrall}` for the seat (§0.21.3) |
+| Combat (active seat in `pc_turn`) | 10 s per PC turn | No nudge line; the ring and the bar pulse amber at 6 s | The DM acts `attack{thrall}` for the seat if it is legal, otherwise `end_turn` (§0.21.3) |
 | Creation | No per-seat turn timer; `creation_timeout` covers it | — | — |
 | Check, Resolution, HookEvent, Cliffhanger, Opening, Lobby, End | None | — | — |
 
@@ -241,7 +241,7 @@ Rules:
 - **Nudge lines are name-free**, so they are rendered at build time with the canned lines (§0.9) and played through the voice queue like any line.
 - **Host commands:** `TIMER_ADD{seconds}` adds time to the running timer; `TIMERS_OFF` stops turn timers for the rest of the run, including the combat turn timer but not `combat_cap`. Both are logged as ordinary events in `events`; neither edits `runs`.
 - **With turn timers off** (`TIMERS_OFF`, or feature `turn_timers` false), a separate 20 s `idle_elapsed` flag timer still runs in Conversation, with the same start, restart, and freeze rules, no nudge, and no auto-act, so Persuade still enables after 20 s idle.
-- **Ownership:** timer rules in the engine, L-ENG (hours 11–14), and the combat turn timer, L-COMBAT; the phone ring, L-WEB-PHONE; the TV bar, L-WEB-DM; the nudge-line renders, L-OPS.
+- **Ownership:** timer rules in the engine, L-ENG (hours 8–11), and the combat turn timer, L-COMBAT; the phone ring, L-WEB-PHONE; the TV bar, L-WEB-DM; the nudge-line renders, L-OPS.
 
 Post-demo, the same mechanism implements §3c's spotlight slice (90–180 s) and the 45 s combat turn timer with Dodge on expiry.
 
@@ -251,7 +251,7 @@ Post-demo, the same mechanism implements §3c's spotlight slice (90–180 s) and
 | Push-to-talk (per phone, owned by the server; the phone renders its state) | Idle → Recording (`TalkStart`; rejected while PTT is disabled or the game is paused) → Transcribing (`TalkEnd`, or after 12 s of recording, when the server sends `TalkStop` so the phone stops its recorder and sends its final chunk and `TalkEnd`; the server waits up to 500 ms for them, then transcribes what arrived, or goes to Failed if the first chunk is missing) → Idle on **every** outcome: `utterance_final`, a `MOVE` dispatch, `UNCLEAR`, a dropped event, or an error. Recording or Transcribing → Failed on `stt_error` (including an empty transcript) or `stream_closed` (partial audio discarded) → Idle, and the phone shows "Didn't catch that. Try again, or type it" with the text box opened (§0.9 typed input). The button uses pointer capture, `touch-callout: none`, and `user-select: none` |
 | Voice line (DM screen queue) | Held (`StartLine` with `Hold`; not in the queue) → Queued (`ReleaseLine`, or `StartLine` without `Hold`) → Speaking (playback start) → Done (`line_done`); or Failed (`line_failed`) → Canned → Done; a held line can also be Dropped (`DropLine`) |
 | Check | Offered (created on entering Conversation) → Rolling (`act persuade`) → Resolved (`roll_resolved`). Its transitions are internal (no epoch bump); its scope is a child of `run` and ends when the phase machine leaves Resolution, or leaves Conversation other than to Check (rule 3) |
-| Combat | `intro` → `pc_turn` → `rolling` → `enemy_turn` → `end` (§0.21.3); created on HookEvent → Combat as a child of the phase machine; its scope is `combat/<n>`, whose epoch bumps on every non-internal combat transition |
+| Combat | `intro` → `pc_turn` → `rolling` → `enemy_turn` → `done` (§0.21.3); created on HookEvent → Combat as a child of the phase machine; its scope is `combat/<n>`, whose epoch bumps on every non-internal combat transition |
 | Asset slot (each generated asset) | Pending → Ready (`asset_ready`) or Failed (`asset_failed`) → Fallback. **Deadline:** each slot has a deadline event (the portrait's is `seat_deadline`, with `creation_timeout` as the backstop; clips and lines use the entry of the state that needs them). A slot still Pending at its deadline goes to Fallback, and the late result is discarded |
 | Seat | Connected → Dropped (stream closed) → Connected (`Join` with the seat token from `localStorage`); the phase machine does not wait for a dropped seat, since Skip and timeouts cover it |
 
@@ -267,8 +267,8 @@ Post-demo, the same mechanism implements §3c's spotlight slice (90–180 s) and
 | Conversation | `session.play/scene.active` (mode `social`), with `session.play/scene.active/check.offered` |
 | Check | `session.play/scene.active/check.rolling` |
 | Resolution | `session.play/scene.active/check.resolved` |
-| HookEvent | `session.play/scene.active` with a `steer{rung: personal_hook}` event (an intervention beat, not a separate state in §3c) |
-| Combat | `session.play/scene.active/combat.{intro, pc_turn, rolling, enemy_turn, end}` |
+| HookEvent | `session.play/scene.active` (mode `intervention`), entered with a logged `steer{rung: personal_hook}` (an intervention beat, not a separate state in §3c) |
+| Combat | `session.play/scene.active/combat.{intro, pc_turn, rolling, enemy_turn, done}` |
 | Cliffhanger | `session.wrap/wrap.cliffhanger` |
 | End | `session.closed` |
 
@@ -285,22 +285,22 @@ The event log's `machine` field takes `run`, `session`, `scene`, `check`, `comba
 | `SessionService.Report` | unary | `ReportRequest{seat_token, kind: PLAYBACK_DONE\|CLIP_ENDED\|SPLAT_READY\|SPLAT_FAILED, id}` → `ReportResponse{}` (DM client only; see `line_done` and §0.21.4) |
 | `VoiceService.Talk` | bidi stream | up: `TalkStart{seat_token, mime_type}`, `AudioChunk{seq, data}` every 100 ms, `TalkEnd{}` → down: `ChunkAck{seq}`, `Transcript{text, final}`, `TalkStop{reason}` (12 s cap or PTT disabled), `TalkError{message}` |
 | `AudioService.Listen` | server stream | `ListenRequest{seat_token}` (DM only) → `stream AudioMessage`, one of `AudioFrame{utterance_id, speaker, seq, sample_rate, pcm_s16le, final}` or `AudioCancel{utterance_id \| all}` |
-| `HostService.Command` | unary | `HostCommand{host_token, command: START\|PAUSE\|RESUME\|FORCE_D20{n}\|SAFE_MODE{on}\|SKIP\|RESET\|TIMER_ADD{seconds}\|TIMERS_OFF}` → `HostAck{ok, reason}` |
+| `HostService.Command` | unary | `HostCommand{host_token, command: START\|PAUSE\|RESUME\|FORCE_D20{n}\|SAFE_MODE{on}\|SKIP\|RESET\|TIMER_ADD{seconds}\|TIMERS_OFF\|SPLAT_OFF}` → `HostAck{ok, reason}` |
 
 **Rooms and seats:** the server creates one fixed room at start-up, with its code, the host token, and the DM token printed in the server log. The DM screen opens `/dm?t={dm_token}` (the kiosk launch command carries it) and stores the token in `localStorage`. The DM screen's `Join(kind=DM)` attaches to that room and never replaces it, so reloading the DM tab reattaches without breaking any seat. Phones join with the room code (from the QR URL) and receive a seat token, stored in `localStorage` so a new tab or reload rejoins the same seat. The host device joins with the host token. `Watch` streams double as heartbeats: the server sends a snapshot at least every 5 s, and a client that sees nothing for 10 s reconnects.
 
 **ScreenState** is a full snapshot sent on every change (never a diff), throttled to 10 per second while narration text streams, projected per client:
 - Common: `version`, `phase`, `spotlight_seat`, `paused`.
-- `DMView`: `background_url`, `layers[{id, url, x, y, scale, highlight}]`, `clip{url, offset_ms, playing, then: STILL}` (offset from the pausable clip timer, so a reloaded DM tab seeks to the right point, including after a pause), `narration{speaker, text_so_far}`, `subtitle{player_number, text}`, `dice{state: OFFERED|ROLLING|RESOLVED, d20, modifier, dc, outcome (only when RESOLVED)}` (for attacks also `kind: ATTACK`, `vs_label`, `crit`, and `damage`, §0.21.6), `turn_timer{seat, remaining_ms, total_ms, frozen}`, `callout{text}`, `build_cards[{player_number, name, class, portrait_url}]`, `shot{id, fallback}` (the §0.17 shot ID and whether its browser fallback is playing), `music{track_id, url, loop_start_ms, loop_end_ms, bpm, level, duck, cue}` (the §0.19 track, its loop points, its level and duck level, and `cue` for a one-shot or stinger start), `ambience_url`, `sfx[{id, url}]`; in Combat, `battlefield`, `tokens[]`, `highlights[]`, `turn_order[]`, `round`, and `combat_banner`; in every state, `preload[]` (§0.21.6).
-- `PhoneView`: `character{name, class, persuasion_modifier, portrait_url, hook_text}`, `moves[{move_id, label, enabled, reason}]`, `ptt{enabled, state: IDLE\|RECORDING\|TRANSCRIBING\|FAILED}`, `turn_timer{remaining_ms, total_ms, frozen}`, `status_text`; in Combat, `combat{…}` and the move preview fields (`moves[].preview`, `target_id`, `cell`, §0.21.6).
-- `HostView`: the DM view plus `event_log_tail[]`, `asset_slots[{name, state}]`, `run_mode`, `next_d20`, `combat_cap_remaining_ms`.
+- `DMView`: `background_url`, `layers[{id, url, x, y, scale, highlight}]`, `clip{url, offset_ms, playing, then: STILL}` (offset from the pausable clip timer, so a reloaded DM tab seeks to the right point, including after a pause), `narration{speaker, text_so_far}`, `subtitle{player_number, text}`, `dice{state: OFFERED|ROLLING|RESOLVED, d20, modifier, dc, outcome (only when RESOLVED)}` (for attacks also `kind: ATTACK`, `vs_label`, `crit`, and `damage`, §0.21.6), `turn_timer{seat, remaining_ms, total_ms, frozen}`, `callout{text}`, `build_cards[{player_number, name, class, portrait_url}]`, `shot{id, fallback}` (the §0.17 shot ID and whether its browser fallback is playing), `music{track_id, url, loop_start_ms, loop_end_ms, bpm, level, duck, cue}` (the §0.19 track, its loop points, its level and duck level, and `cue` for a one-shot or stinger start), `ambience_url`, `sfx[{id, url}]`; `battlefield` from Opening entry (with `visible: false` until Combat; the second spoiler-rule exception, below); in Combat, `tokens[]`, `highlights[]`, `turn_order[]`, `round`, `combat_banner`, and `contact_at`; in every state, `preload[]` (§0.21.6). Timer fields and `clip.offset_ms` are extrapolated by `api` between snapshots (§0.18.4).
+- `PhoneView`: `character{name, class, persuasion_modifier, portrait_url, hook_text}`, `moves[{move_id, label, enabled, reason, options[{id, label}]}]` (`options` only for the Creation pickers `species` and `gender`), `ptt{enabled, state: IDLE\|RECORDING\|TRANSCRIBING\|FAILED}`, `turn_timer{remaining_ms, total_ms, frozen}`, `status_text`; in Combat, `combat{…}` and the move preview fields (`moves[].preview`, `target_id`, `cell`, §0.21.6).
+- `HostView`: the DM view plus `event_log_tail[]` (built by `api` from the call records, §0.18.7), `asset_slots[{name, state}]`, `run_mode`, `next_d20`, `combat_cap_remaining_ms`.
 
-**Spoiler rule:** asset URLs appear in a view only after the state that shows them is entered. The one exception is `DMView.preload[]`, which carries the next reachable state's asset URLs so the DM client can decode them hidden (§0.21.5); they are fetched but not shown.
+**Spoiler rule:** asset URLs appear in a view only after the state that shows them is entered. There are two stated exceptions, both for hidden loading on the DM client: `DMView.preload[]`, which carries the next reachable state's asset URLs so the DM client can decode them hidden, and `DMView.battlefield`, sent with `visible: false` from Opening entry so the splat loads during Opening and Exploration (§0.21.5, §0.21.6). Both are fetched but not shown until their state is entered.
 
 **Schemas**
-- `Template{id, class, species, background, abilities[6], prof_bonus, save_profs[], skill_profs{skill: none|prof|expertise}, hp_max, ac, speed, equipment[], features[], fallback_portrait_url, default_name, default_look, default_hook}`; the four SRD 5.2.1 templates (paladin, rogue, bard, cleric) and their stat blocks are in §0.20. The engine computes the Persuasion modifier (+4 for all four); it is never stored. At DC 10 the check succeeds 75% of the time.
+- `Template{id, class, species, background, abilities[6], prof_bonus, save_profs[], skill_profs{skill: none|prof|expertise}, hp_max, ac, speed, equipment[], features[], fallback_portrait_url, default_name, default_look, default_hook}`; the four SRD 5.2.1 templates (paladin, rogue, bard, cleric) and their stat blocks are in §0.20. A template is the class baseline; the rolled build (§0.20 build model) replaces its abilities, saves, skills, HP, and AC. The engine computes the Persuasion modifier (+4 for every build); it is never stored. At DC 10 the check succeeds 75% of the time.
 - `CheckOffer`, `RollRecord`, `CheckOutcome`: §0.20.
-- `Character{seat_id, template_id, name, species, gender, look (≤ 40 words; display only, shown on the build card), hook{text, stranger_line_found, stranger_line_not_found}, portrait_url, voice_id}`. The portrait is one full-body image with a transparent background: the combat billboards use it whole, and the build card, the scene cut-out, and the cliffhanger composite crop it to three-quarter body (faces ≥ 8% of frame height after the crop, §0.21.5).
+- `Character{seat_id, template_id, build{abilities[6], save_profs[], skill_profs, hp_max, ac}, name, species (cosmetic), gender (cosmetic), look (≤ 40 words; display only, shown on the build card), hook{text, stranger_line_found, stranger_line_not_found}, portrait_url, voice_id}`. The portrait is one full-body image with a transparent background: the combat billboards use it whole, and the build card, the scene cut-out, and the cliffhanger composite crop it to three-quarter body (faces ≥ 8% of frame height after the crop, §0.21.5).
 - `Asset{sha256, url, kind: IMAGE|CLIP|AUDIO, duration_ms?, width?, height?}`.
 - `OneShot{premise, location{background_url, establishing_clip{url, duration_ms}, ambience_url}, npc{id, name, voice_id, persona, public_facts[], gated_clue{skill, dc, text}, portrait_url}, stranger{id, name, voice_id, portrait_url, arrival_clip{url, duration_ms}}, cliffhanger_brief, theme_url, encounter{enemy: Creature, battlefield_id, trigger: after_stranger_line, loops{idle, attack, hit, fall}}}`. The drowned thrall's stat block is in §0.21.2; the battlefield's nav layer in §0.21.4.
 - Combat: `AttackOutcome` and the `Act` fields (§0.21.6); `Token` and `Battlefield` (the splat module's `Init`, `Scene`, and `Token` messages and `DMView.battlefield`, §0.21.4 and §0.21.6).
@@ -316,6 +316,23 @@ The event log's `machine` field takes `run`, `session`, `scene`, `check`, `comba
 - **Art style (locked for every image and clip):** painterly dark-fantasy illustration, lamplight and river fog, non-photorealistic. Non-photoreal matters: the video model rejects inputs that look like real faces.
 - **Mood references:** the seven images in `assets/concept/` (§3i) are art-direction references only (palette, typography, framing, panel styling, mood). Nothing in the game's flow, features, or rules derives from them.
 - **Cliffhanger brief:** the tower bell tolls midnight, every lantern in the tavern goes out, and whoever rang it knows the PCs' names.
+- **Canned lines** (name-free, rendered to TTS at build time by L-OPS, §0.9; played on `line_failed` or `prerender_failed`, and the nudges on `turn_nudge`; word caps from §0.2):
+
+  | Line | Voice | Text | Words |
+  |---|---|---|---|
+  | `opening` | DM | "Rain hammers the Drowned Lantern. The lamplighter vanished last night, and the river is rising. Two travellers shake off the wet at the bar, where Mother Vell watches with her one good eye." | 33 / 40 |
+  | `npc_reply` (evasive) | Mother Vell | "Lots of folk drink here, love. I don't keep a ledger of faces, and I don't answer questions for free." | 20 / 25 |
+  | `npc_reveal` | Mother Vell | "Fine. They dragged him toward the old bell tower. And at midnight that bell rang, though nobody's climbed it in years." | 21 / 25 |
+  | `npc_refuse` | Mother Vell | "Nice try. I've buried better talkers than you. Drink up or move along; I've nothing more to say." | 18 / 25 |
+  | `stranger_lines` clue found | Courier | "A letter, for one of you. The seal's river-soaked, and I didn't read it. Whatever was in that water, it followed me from the river." | 25 / 30 |
+  | `stranger_lines` clue relocated | Courier | "A letter, for one of you. They say the lamplighter was dragged to the old bell tower. Something wet and dead guarded it, and it followed me from the river." | 30 / 30 |
+  | `cliffhanger` found via Mother Vell | DM | "Midnight. The tower bell Mother Vell warned of tolls, and every lantern in the tavern gutters out. In the dark it rings again, slow and patient. Whoever pulls that rope already knows your names." | 34 / 40 |
+  | `cliffhanger` found via the stranger | DM | "Midnight. The courier's letter falls open as the tower bell tolls, and every lantern in the tavern gutters out. Inside, in wet ink, are your names. The bell rings again." | 30 / 40 |
+  | `combat_outcomes` `slain_by_seat1` | DM | "The opening blow found it, and the last one too. The thrall collapses into a pool of river water." | 19 / 20 |
+  | `combat_outcomes` `slain_by_seat2` | DM | "A second blow finishes what the first began. The thrall sags, and the river takes back its own." | 18 / 20 |
+  | `combat_outcomes` `fled` | DM | "Far off, the tower bell tolls once. The thrall turns mid-swing and lurches into the rain, toward the tower." | 19 / 20 |
+  | Nudge, Exploration | DM | "The rain won't wait." | 4 |
+  | Nudge, Conversation | Mother Vell | "Well? Speak or drink." | 4 |
 
 ### 0.8 Content prompts
 Every prompt whose output is spoken returns plain text, streamed, with a word cap, so text streams straight into TTS. Prompts that are not spoken live return JSON and are not streamed: `character_flavor`, `interpret`, and the two-variant pre-render prompts `stranger_lines` and `cliffhanger` (`{found_via_npc, found_via_stranger}`), and the three-variant `combat_outcomes` (`{slain_by_seat1, slain_by_seat2, fled}`), whose variants are then rendered to TTS separately.
@@ -337,9 +354,9 @@ The clue text is added to the NPC's prompt only after the engine resolves the ch
 **When each asset is made**
 | Moment | Assets |
 |---|---|
-| Build time (L-OPS background jobs, started in hour 0, running through hour 11) | Location background (the tavern interior still, with the window and the bell tower visible, §0.17); NPC and stranger portraits with cut-outs; establishing clip (`EST_WIDE_PUSH`: tavern interior, end frame = the layered scene's exact crop); stranger arrival clip (`ARRIVAL_DOOR_STATIC`: the courier's cut-out composited into the doorway still); the tall tower still for `CLIFF_GENERIC_TOWER`; four fallback template portraits and cut-outs; sound-effect library (dice, success, failure, door, ambience loop, stranger sting, cliffhanger hit, and the combat effects of §0.21.5); the 12 music tracks of §0.19; a generic cliffhanger clip (first fallback when the live clip is late, ahead of the animated still); the two name-free turn-timer nudge lines ("The rain won't wait." in the DM's voice, "Well? Speak or drink." in Mother Vell's); and **canned lines** with TTS for every spoken prompt (opening, an evasive reply, a reveal, a refusal, two stranger lines, two cliffhangers, three combat outcomes), used on `line_failed` or `prerender_failed`; and the combat assets of §0.21.5 (the battlefield still; the World Labs Marble splat, converted to SOG, with its nav layer; the thrall still, cut-out, and four billboard loops; the chroma latency samples). **Tools**, all under `scripts/buildtime/`: curl for every vendor call (including World Labs Marble); `splat-transform` for SPZ → SOG; ffmpeg for loudness normalisation (`loudnorm`), Opus encoding, crops, and zero-crossing loop cuts; a beat tracker (aubio, or librosa if aubio has no Windows ARM64 build) for BPM and downbeats; and a small Go compositor (`image/draw`) for cut-out composites and crops. Not the Go adapters, which do not exist yet in hour 0. The developer picks takes at the block checkpoints (hours 2, 5, 8, 11); an unpicked asset uses take 1 |
+| Build time (L-OPS background jobs, started in hour 0, running through hour 11) | Location background (the tavern interior still, with the window and the bell tower visible, §0.17); NPC and stranger portraits with cut-outs; establishing clip (`EST_WIDE_PUSH`: tavern interior, end frame = the layered scene's exact crop); stranger arrival clip (`ARRIVAL_DOOR_STATIC`: the courier's cut-out composited into the doorway still); the tall tower still for `CLIFF_GENERIC_TOWER`; four fallback template portraits and cut-outs; sound-effect library (dice, success, failure, door, ambience loop, stranger sting, cliffhanger hit, and the combat effects of §0.21.5); the 12 music tracks of §0.19; a generic cliffhanger clip (first fallback when the live clip is late, ahead of the animated still); the two name-free turn-timer nudge lines ("The rain won't wait." in the DM's voice, "Well? Speak or drink." in Mother Vell's); and **canned lines** with TTS for every spoken prompt (opening, an evasive reply, a reveal, a refusal, two stranger lines, two cliffhangers, three combat outcomes; the texts are in §0.7), used on `line_failed` or `prerender_failed`; and the combat assets of §0.21.5 (the battlefield still; the World Labs Marble splat, converted to SOG, with its nav layer; the thrall still, cut-out, and four billboard loops; the chroma latency samples). **Tools**, all under `scripts/buildtime/`: curl for every vendor call (including World Labs Marble); `splat-transform` for SPZ → SOG; ffmpeg for loudness normalisation (`loudnorm`), Opus encoding, crops, and zero-crossing loop cuts; a beat tracker (aubio, or librosa if aubio has no Windows ARM64 build) for BPM and downbeats; and a small Go compositor (`image/draw`) for cut-out composites and crops. Not the Go adapters, which do not exist yet in hour 0. The developer picks takes at the block checkpoints (hours 2, 5, 8, 11); an unpicked asset uses take 1 |
 | At each seat's `roll_hero` in Creation | `character_flavor` and the portrait, in parallel (the portrait prompt uses species, gender, class, and the global art style) |
-| At each `pc_locked` | Both stranger-line variants for that seat and their TTS audio; that seat's billboard loops (`GenerateBillboardLoops`: seat 1 idle, attack, hit; seat 2 idle, attack; 4 s, 480p, 9:16; deadline `combat.end` entry; §0.21.5) |
+| At each `pc_locked` | Both stranger-line variants for that seat and their TTS audio; that seat's billboard loops (`GenerateBillboardLoops`: seat 1 idle, attack, hit; seat 2 idle, attack; 4 s, 480p, 9:16; deadline `combat.done` entry; §0.21.5) |
 | At the second `pc_locked` | Opening narration (live, phase scope); in the `run` scope: cliffhanger still (both cut-outs composited over the background in Go, no model); cliffhanger clip (image-to-video from that still at 480p, ≈ 120 s window); both cliffhanger narration variants and their TTS; the three `combat_outcomes` variants and their TTS |
 | Live | STT per utterance; `npc_reply` text and streamed TTS; at `act persuade`, `npc_reveal` / `npc_refuse` text and TTS (`check` scope, held until `roll_resolved`) |
 
@@ -419,9 +436,9 @@ The hour-by-hour schedule is the lane plan in §0.18.9 (the only schedule; it in
 
 If hour 14 arrives without the full script, cut in this order (each is a feature flag, §0.18.3): the phone's movement grid (`combat_move_ui`; Attack still approaches on its own, R-D3), then sequence mode and Safe Mode (`sequence_mode`; canned lines and the cache still cover failures), then turn timers (`turn_timers`; the `idle_elapsed` flag timer stays, and `combat_cap` still ends the fight), then the live PC billboard loops (`live_pc_loops`; portrait tweens), then live video (`live_video`; use the generic clip), then the splat (`splat`; the FLAT renderer, §0.21.4), then music (`music`; keep effects). Voice and the combat mechanics with a HUD are never cut. The phone mirror is cut outright, not flagged: the TV turn strip, the attack preview, and the dice replace it (§0.21.6).
 
-**Walk-test staging:** hours 1–5 need only paths 1–3, 7, and 8 (the machine itself; until L-COMBAT lands, Combat is a stub state that ends on `line_done{combat_outcome}`). Each later block adds the paths for what it builds: Creation paths and the pure combat-machine paths (26–34 and 37, L-COMBAT in `sim`) at hour 8, voice and line paths at hour 11, the rest (including the turn-timer and scope paths 24 and 25 and the wired combat paths 35, 36, and 38) by hour 14.
+**Walk-test staging:** hours 1–5 need only paths 7 and 8 plus a stubbed path 1. Every phase state exists from hour 5, but Check, Resolution, HookEvent, Cliffhanger, and Combat are stubs: each exits on its own completion event or on Skip and starts no work effects (Combat ends on `line_done{combat_outcome}`). Hour 8 adds the real Check, Resolution, HookEvent, and Cliffhanger transitions (L-ENG), so paths 1–3 run in full, plus paths 6 and 9; and the pure combat-machine paths 26–34 and 37 (L-COMBAT, in a `sim` harness that stubs `combat_cap` and the outcome line, since the phase wiring lands at 11–14). Hour 11 adds the voice and line paths, path 5, and the turn-timer path 24 (turn timers land at 8–11). Hour 14 adds the rest: path 25, the wired combat paths 35, 36, and 38, and a re-run of 26–34 and 37 against the real `combat_cap` and outcome line.
 
-**Working with Claude Code:** parallel lanes with disjoint file ownership, run by an orchestrator that owns the shared contracts and commits per lane (§0.18.8–§0.18.9). The project `CLAUDE.md` follows the outline in §0.18.9. Each lane ends with `scripts/gate.ps1 -Lane <name>`; the orchestrator runs the full gate and the walk test, a real-phone check at hours 2, 8, and 14, and commits.
+**Working with Claude Code:** parallel lanes with disjoint file ownership, run by an orchestrator that owns the shared contracts and commits per lane (§0.18.8–§0.18.9). The project `AGENTS.md` follows the outline in §0.18.9, and `CLAUDE.md` is a one-line pointer to it. Each lane ends with `scripts/gate.ps1 -Lane <name>`; the orchestrator runs the full gate and the walk test, a real-phone check at hours 2, 8, and 14, and commits.
 
 **The walk test** drives the phase machine with fake adapters and scripted events, and must pass for these paths:
 1. Happy path (roll succeeds).
@@ -453,8 +470,8 @@ If hour 14 arrives without the full script, cut in this order (each is a feature
 27. The thrall survives to T4: the bell tolls at the start of its second turn → FLED (BELL); the `fled` line plays.
 28. A forced 20 on T1 is a critical hit (every damage die twice, R-09); with a scripted seed whose damage kills, the combat ends SLAIN before the thrall acts.
 29. A forced critical slam drops seat 1: Down, its T4 is skipped (`turn_ended{SKIPPED_DOWN}`), the bell → FLED, and seat 1 enters Cliffhanger at 1 HP.
-30. No taps in Combat: each combat turn timer attacks for its seat, and the combat ends by `combat_cap` (30 s) at the latest.
-31. Skip in every combat state: FLED (SKIP) from `intro`, `pc_turn`, `rolling`, and `enemy_turn`; `line_done{combat_outcome}` from `end`; no stale `attack_resolved` or `enemy_resolved` fires afterwards.
+30. No taps in Combat: each combat turn timer attacks for its seat (or ends the turn when no attack is legal), and the combat ends by `combat_cap` (30 s) at the latest.
+31. Skip in every combat state: FLED (SKIP) from `intro`, `pc_turn`, `rolling`, and `enemy_turn`; `line_done{combat_outcome}` from `done`; no stale `attack_resolved` or `enemy_resolved` fires afterwards.
 32. Pause during `rolling` and during `enemy_turn`: every combat timer, including `combat_cap`, stays frozen while paused and resumes where it stopped.
 33. A `move` to a blocked cell is rejected; an `attack` from range approaches along the shortest legal path, then attacks (R-D3).
 34. An `attack` from the seat that is not active is rejected with a reason.
@@ -466,7 +483,7 @@ If hour 14 arrives without the full script, cut in this order (each is a feature
 Each path must end in End, no state may be entered more than 3 times, and no path may take more than 5 minutes of simulated time.
 
 ### 0.13 Stage runbook
-**Before the show:** charge everything; tether and hotspot up; phones pre-loaded and joined once; DM browser launched with the kiosk autoplay flag and no resume overlay showing; ElevenLabs quota and the OpenAI, Gemini, Segmind, EvoLink, and fal spend caps checked; the splat preloads on the TV; backup video on the desktop; Focus on.
+**Before the show:** charge everything; tether and hotspot up; phones pre-loaded and joined once; DM browser launched with the kiosk autoplay flag and no resume overlay showing; ElevenLabs quota and the OpenAI, Gemini, Segmind, EvoLink, and fal spend caps checked; the splat loaded on this TV in the last rehearsal (every run loads it hidden from Opening entry, §0.21.5); backup video on the desktop; Focus on.
 
 **Failure matrix**
 | Failure | Response |
@@ -480,7 +497,7 @@ Each path must end in End, no state may be entered more than 3 times, and no pat
 | The fight should end on seat 2's attack | Force a 20 before seat 2 taps: a critical hit, which kills in most runs; the bell and Skip cover the rest |
 | Seat 1 is about to drop | Force a 1 before the thrall's turn (its slam misses) |
 | Any combat hitch | Skip: the thrall flees (FLED, SKIP), then the outcome line plays (§0.5) |
-| The splat is black or stuttering | Automatic: the 100k variant on `LOW_FPS`, then FLAT on `SPLAT_FAILED`. Otherwise set `features.splat=false` and reload the DM tab |
+| The splat is black or stuttering | Automatic: the 100k variant on `LOW_FPS`, then FLAT on `SPLAT_FAILED`. Otherwise the host sends `SPLAT_OFF` (`host_splat_off`, an engine flag, logged and replayable), which switches the projection to FLAT from the next snapshot (no reload) |
 | The billboard loops are late | Nothing: the portrait tweens are the expected path (§0.21.5) |
 | Internet is lost | STT fails, so players type; typed input still needs the LLM and TTS, so the host switches on Safe Mode (recorded replies include their TTS audio) if sequence mode was built; if it was cut, play the backup video. The LAN keeps working per §0.11 |
 | The server process crashes | Reset and play the backup video (restart-resume is post-demo, §0.4) |
@@ -522,7 +539,7 @@ Researched 2026-09-26 from vendor documentation fetched that day; third-party fi
 
 Per-run LLM cost: ≈ $0.01–0.02 (Luna plus Gemini) versus ≈ $0.02–0.03 for the previous Claude setup. LLM cost stops mattering; latency and prose quality decide. Every LLM adapter sits behind one interface (`ports.LLM`: `StreamText` and `JSON`, §0.18.3) with a per-role chain `[primary, hedged fallback, recording]`; the canned line is engine policy on `line_failed` (§0.10), so swapping vendors changes only the chain.
 
-**Latency experiment: Qwen 3.8 27B on Cerebras (researched 2026-09-26; run after hour 11, like Jev).** The developer accepts a higher cost for lower latency on the spoken lines and `interpret`. Model ID `qwen-3.8-27b`, public Shared Inference, marked Production since 2026-09-03 (it replaced `gemma-4-31b` the same day; the shared tier has no SLA and no migration window). Dense 27B, 128k context and 40k output on paid tiers. Endpoint `https://api.cerebras.ai/v1`, OpenAI-compatible Chat Completions only; Go uses `openai-go/v3` with `option.WithBaseURL` and `Chat.Completions.NewStreaming` (a separate path from Luna's Responses adapter).
+**Latency experiment: Qwen 3.8 27B on Cerebras (researched 2026-09-26; run after the hour-14 gate, like Jev).** The developer accepts a higher cost for lower latency on the spoken lines and `interpret`. Model ID `qwen-3.8-27b`, public Shared Inference, marked Production since 2026-09-03 (it replaced `gemma-4-31b` the same day; the shared tier has no SLA and no migration window). Dense 27B, 128k context and 40k output on paid tiers. Endpoint `https://api.cerebras.ai/v1`, OpenAI-compatible Chat Completions only; Go uses `openai-go/v3` with `option.WithBaseURL` and `Chat.Completions.NewStreaming` (a separate path from Luna's Responses adapter).
 
 | Fact | Value | Effect |
 |---|---|---|
@@ -530,14 +547,14 @@ Per-run LLM cost: ≈ $0.01–0.02 (Luna plus Gemini) versus ≈ $0.02–0.03 fo
 | Speed | ≈ 1,850 tok/s (V); 890–1,100 tok/s and 0.64 s TTFT (A); not tracked by Artificial Analysis | A 30-word line completes almost at first token; TTFT p90 must be measured |
 | Structured output | `json_schema` with `strict: true`, enums, non-root `anyOf`; no `oneOf`/`allOf`; 5,000-character schema limit; `tools` and `response_format` cannot be combined | `interpret` schema: nullable `move_id` as `anyOf [enum, null]` |
 | Price | $0.99 in / $1.49 out per MTok; automatic caching (128-token blocks, 5 min TTL) with **no discount** | ≈ $0.016 per run against ≈ $0.002 on Luna (≈ $0.45 over 30 runs) |
-| Rate limits | Free: 5 RPM, 1M tokens/day. Developer (after the first credit purchase): 300 RPM, 150K uncached TPM, 750K total TPM | Buy credits before hour 11 |
+| Rate limits | Free: 5 RPM, 1M tokens/day. Developer (after the first credit purchase): 300 RPM, 150K uncached TPM, 750K total TPM | Buy credits before hour 14 |
 | Quality | Artificial Analysis Intelligence Index 20 in non-reasoning mode (34 at `xhigh`); IFBench 79.5 (V); no creative-writing benchmark | Prose quality decided by the blind test |
 | Sampling (Qwen card) | Non-thinking: temperature 0.7, top_p 0.8, presence_penalty up to 1.5 (may cause language mixing) | Start with presence_penalty 0.5 |
 | Moderation | No documented output moderation layer on Cerebras; refusals come only from the model | Included in the hour-0 violent-fantasy check |
 
 **Chains if adopted:** spoken lines Qwen/Cerebras → Luna `none` (hedged at 1.0 s without a first token) → Haiku 4.5 (hedged at 1.5 s) → recording; the canned line stays engine policy on `line_failed`. `interpret`: Qwen and Luna raced, first schema-valid answer wins, 2.0 s timeout → keyword matcher → `DIALOGUE`. `character_flavor` and the pre-renders are unchanged. The nearest alternative on Cerebras, `gpt-oss-120b` ($0.35 / $0.75; reasoning cannot be turned off; Artificial Analysis TTFT 0.47 s), is an `interpret` racer only if Qwen fails its JSON test.
 
-**Adoption rule** (after hour 11, when the full script runs; 20 warm and 5 cold runs per model over the tether; 10 fixed spoken-line prompts and 30 labelled `interpret` transcripts collected in rehearsal). Spoken lines: TTFT p90 ≤ 1.0 s and at least 0.3 s better than Luna, word-cap compliance ≥ 95%, zero reasoning leakage, and a blind prose rating within 0.3 of Luna (or ≥ 45% pairwise wins or ties). `interpret`: 100% schema-valid, `move_id` accuracy ≥ Luna, total p90 ≤ 1.0 s. Missing any condition keeps it out of that role's chain; adoption is a config edit to the §0.18.3 role table.
+**Adoption rule** (after the hour-14 gate, when the full script runs; 20 warm and 5 cold runs per model over the tether; 10 fixed spoken-line prompts and 30 labelled `interpret` transcripts collected in rehearsal). Spoken lines: TTFT p90 ≤ 1.0 s and at least 0.3 s better than Luna, word-cap compliance ≥ 95%, zero reasoning leakage, and a blind prose rating within 0.3 of Luna (or ≥ 45% pairwise wins or ties). `interpret`: 100% schema-valid, `move_id` accuracy ≥ Luna, total p90 ≤ 1.0 s. Missing any condition keeps it out of that role's chain; adoption is a config edit to the §0.18.3 role table.
 
 **Video provider (decided 2026-09-26, D12).** Researched from each provider's pricing page on 2026-09-26 (± = secondary source only):
 | Provider / model | 5 s at 480p | 5 s at 720p | First + last frame | Notes |
@@ -597,7 +614,7 @@ Seedance on every host blocks real-looking faces; stylized portraits pass. Media
 
 **Optional: Jev (TypeSafe AI) for the classification half of `interpret`.** Researched 2026-09-26 (docs.typesafe.ai, typesafe.ai, Cloudflare Workers AI model page). Jev (`jev-1.13.0`) is a "System One" decision model: it answers typed questions (`choice`, `score`, `noul`) about a given state with calibrated probabilities, and **cannot generate text**. Endpoint `POST https://api.typesafe.ai/v1/systemone`, bearer auth, no official Go SDK (plain `net/http`). Vendor-claimed latency 70–500 ms (no independent measurement found); $0.042 per million input tokens. Early access, and **new signups were paused on 2026-09-22**.
 - **Fit:** only `interpret`'s `kind` and `move_id`, as two `choice` questions whose options are built from the seat's legal moves on each request (an invented move is impossible, and the confidence score maps to `UNCLEAR`). It cannot produce `clean_text`, so subtitles would show the raw transcript. It does not fit `character_flavor` or any spoken line.
-- **Use only if an account already exists:** pinned to `jev-1.13.0`, a link before Luna with a 1.0 s link timeout; on error, 429/529, or timeout, fall through to Luna `interpret` within the remaining 2.5 s budget. Test after hour 11: 30 calls over the tether for p50/p90, and about 30 rehearsal transcripts through both Jev and Luna to compare accuracy. No key by hour 11 → drop it.
+- **Use only if an account already exists:** pinned to `jev-1.13.0`, a link before Luna with a 1.0 s link timeout; on error, 429/529, or timeout, fall through to Luna `interpret` within the remaining 2.5 s budget. Test after the hour-14 gate: 30 calls over the tether for p50/p90, and about 30 rehearsal transcripts through both Jev and Luna to compare accuracy. No key by hour 14 → drop it.
 
 **SDKs:** Anthropic `github.com/anthropics/anthropic-sdk-go` (official); OpenAI `github.com/openai/openai-go/v3` (official); ElevenLabs has no official Go SDK (plain HTTP and WebSocket, or the community `plexusone/elevenlabs-go`); fal and BytePlus are plain REST.
 
@@ -609,7 +626,7 @@ Seedance on every host blocks real-looking faces; stylized portraits pass. Media
 5. First-audio time for TTS over WebSocket (with `auto_mode=true`) versus HTTP on the demo network.
 6. Scribe v2 round trip for 3–5 s clips (the real-phone round trip is L-SPIKE's hour-2 gate).
 7. Moderation: a violent fantasy prompt through image, video, and sound effects.
-8. First-token timing only, over the tether: `gpt-6-luna` at `none`, `claude-haiku-4-5`, and `gemini-3.8-flash` at `LOW`. Qwen and Jev are tested after hour 11.
+8. First-token timing only, over the tether: `gpt-6-luna` at `none`, `claude-haiku-4-5`, and `gemini-3.8-flash` at `LOW`. Qwen and Jev are tested after the hour-14 gate.
 9. Combat (§0.21.10): World Labs API access, real time, and `semantics_metadata`; `splat-transform` SPZ → SOG; Seedance Mini on flat green at 4 s, 480p, 9:16 (key quality, face filter, image input, and price on Segmind); Chrome on the X2: WebGL2 fps with 500k and 100k Gaussians plus 3 videos.
 
 ### 0.16 Engine timing inputs
@@ -626,7 +643,7 @@ Researched 2026-09-26. Labels: V vendor, IB independent benchmark, A anecdotal, 
 | `stranger_lines`, `cliffhanger`, `combat_outcomes` (`gemini-3.8-flash` `LOW`, two- or three-variant JSON ≈ 300 tokens) | Unknown at `LOW` (5–20 s, E) | Unknown | Unknown | Low | 20 s (pre-render, not on stage path) | `gpt-6-luna` `low`, then the recording; the canned pair or trio on `prerender_failed` | At `pc_locked` / second lock-in, ≥ 60 s before use |
 | Portrait (gpt-image-2.5-flare, low, 1024x1536, transparent) | 8–12 s (E) | 20–25 s (E) | ≈ 140 s (IB outlier at high quality) | Low | `seat_deadline` 22 s | Template portrait | On the seat's `roll_hero` |
 | Cliffhanger clip (Seedance 2.0 Mini on Segmind, 5 s, 480p; timing assumed as for Fast until the hour-2 samples) | 60–120 s (E) | ≈ 180 s (E) | > 5 min | Low | Cliffhanger entry (≈ 120 s after the second lock) | Generic pre-rendered cliffhanger clip, then the animated still | At the second lock-in |
-| PC billboard loop (Segmind Mini, 4 s, 480p, 9:16; ≈ 6 clips at once at the second lock) | 60–120 s (E) | ≈ 180 s (E) | > 5 min | Low | `combat.end` entry (first needed ≈ 85–95 s after the lock; swapped in at the next idle once Ready) | Portrait tween | At each `pc_locked` |
+| PC billboard loop (Segmind Mini, 4 s, 480p, 9:16; ≈ 6 clips at once at the second lock) | 60–120 s (E) | ≈ 180 s (E) | > 5 min | Low | `combat.done` entry (first needed ≈ 85–95 s after the lock; swapped in at the next idle once Ready) | Portrait tween | At each `pc_locked` |
 | World Labs Marble world (`marble-1.1`, from an image) | ≈ 5 min (V) | Unknown | Unknown | Medium | Build time only | FLAT renderer | Hour 0 |
 | Splat load and decode (500k SOG ≈ 5–10 MB over the LAN) | Unknown (E: a few seconds) | Unknown | Unknown | Low | Combat entry (preloaded hidden from Opening entry) | The 100k variant, then FLAT | Opening entry |
 | STT (Scribe v2 batch, 4 s clip) | 0.8–1.5 s (E) | ≈ 2.5 s (E) | Unknown | Low | 3 s per link, 5 s total | `gpt-transcribe` with a compressed upload | On `TalkEnd` |
@@ -789,12 +806,15 @@ A package may import only what its row allows (plus the standard library and lis
 | 4 | `internal/store/sqlite` | Schema and migrations; single-writer goroutine; implements the store ports | ports, domain, vocab, `modernc.org/sqlite` | L-STORE |
 | 5 | `internal/runtime` | Room event loop, effect runner, scope tree and contexts, pausable and freezable timers, inbox, run seed from `crypto/rand` | domain, ports (`Engine`), clock, vocab | L-RT |
 | 5 | `internal/replay` | Rebuild state from a log; determinism check | game, sim, ports, domain | L-STORE (consumes `game` through its exported `Step` only) |
-| 5 | `internal/api` (+ `api/project`, `api/hub`) | gRPC services, per-client `ScreenState` projection, Watch hub (latest-only, 10/s, 5 s heartbeat), Listen hub (implements `ports.AudioOut`) | gen, runtime, domain (`View`), ports (`Engine`), vocab | L-API |
+| 5 | `internal/api` (+ `api/project`, `api/hub`) | gRPC services, per-client `ScreenState` projection, Watch hub (latest-only, 10/s, 5 s heartbeat), Listen hub (implements `ports.AudioOut`) | gen, runtime, domain (`View`), ports (`Engine`), vocab, clock (timer extrapolation) | L-API |
 | 6 | `internal/config`, `internal/wire`, `cmd/server` | Typed config and loader; composition root; `main` | as named | ORCH |
 | — | `internal/archtest`, `internal/fakes` | Dependency and purity rules; scriptable fakes for every port, including `fakes.Engine` (scripted `View`s and `StepOut`s) | anything / ports, domain | ORCH |
-| — | `web/{shell,phone,dm,host}` | The GWC WASM app | gen, vocab; `web/dm` also imports the `web/splat` Go wrapper | L-WEB-* |
+| — | `web/{shell,phone,dm,host}` | The GWC WASM app; `web/shell/audio` is the `Listen` client and PCM scheduler (the DM-audio slice, L-WEB-SHELL) | gen, vocab; `web/dm` also imports `web/shell/audio` and the `web/splat` Go wrapper | L-WEB-* |
 | — | `web/splat` | The splat bridge (§0.21.4): a Go wrapper that marshals the typed `Init`, `Scene`, and `Pause` messages (its `js.FuncOf` callback only pushes to a Go channel); `js/df-splat.mjs`, `js/status_visuals.mjs`, and the vendored engine `vendor/playcanvas.mjs` | gen, vocab, `syscall/js`, the vendored PlayCanvas engine | L-WEB-SPLAT |
 | — | `scripts/buildtime/`, `scripts/spike/`, `scripts/gate.ps1` | Build-time asset jobs and tools (§0.9); the throwaway hour 0–2 spike; the lane gate | — | L-OPS / L-SPIKE / ORCH |
+| — | `config/` | Run configs (for example `config/fake.json`) | — | ORCH |
+| — | `artifacts/` | All generated output, gitignored except `.gitkeep`: builds, WASM, test and coverage output, logs, screenshots, spike output, the runtime stores `artifacts/runtime/<instance>/` (`dungeonflux.db` and `assets/`), and `artifacts/runtime/buildtime/` (AGENTS.md §4) | — | Any lane, inside its own subfolder; L-OPS owns `artifacts/runtime/buildtime/` |
+| — | `AGENTS.md`, `CLAUDE.md`, `.gitignore`, `.gitattributes` | Agent rules (`CLAUDE.md` is a one-line pointer to `AGENTS.md`) and repo config | — | ORCH |
 
 Purity rules checked by archtest: `game`, `fsm`, `domain`, `content`, and `sim` may not import `net`, `os`, `database/sql`, `log/slog`, `math/rand`, `math/rand/v2`, `crypto/rand`, or `sync`; may use package `time` only for the `time.Duration` type (the AST scan rejects every other `time.` selector, including `time.Now`, `time.Sleep`, and `time.After`); and may not use the `go` statement. The run seed is generated in `runtime` and passed in (§0.18.1). Adapters never import another adapter, `runtime`, `store`, `game`, or `modelchain`. `game/combat` follows the same purity rules as `game`. JavaScript files (`.js`, `.mjs`) and the vendored PlayCanvas engine may exist only under `web/splat` (D8), and `syscall/js` may be imported only by `web/splat` and by the existing media code in `web/shell` and `web/dm` (microphone capture and the Web Audio scheduler, §0.9).
 
@@ -1021,7 +1041,7 @@ func WithTrace(log *slog.Logger) Option                    // one "call" record 
 
 The same decorator pattern (`Middleware[P] func(P) P`) wraps `TTS`, `STT`, `ImageGen`, and `VideoGen`. A chain errors only when every link has failed; the executor then posts `line_failed`, `flavor_failed`, `prerender_failed`, `interpret_failed`, or `stt_error`, and the engine applies the canned line, seat default, canned pair or trio, `DIALOGUE`, or the text box. The recording is the chain's last link, never the canned line.
 
-**Role table in config** (a vendor swap is a config edit; the Qwen-on-Cerebras experiment and Jev, §0.15, are added here as links if adopted after hour 11; `hedge_after` is a duration, `0` for a race, or `sequential`):
+**Role table in config** (a vendor swap is a config edit; the Qwen-on-Cerebras experiment and Jev, §0.15, are added here as links if adopted after the hour-14 gate; `hedge_after` is a duration, `0` for a race, or `sequential`):
 
 ```json
 {
@@ -1040,7 +1060,7 @@ The same decorator pattern (`Middleware[P] func(P) P`) wraps `TTS`, `STT`, `Imag
   "stt":   {"links": ["elevenlabs:scribe_v2", "openai:gpt-transcribe"], "hedge_after": "sequential", "link_timeout": "3s", "deadline": "5s"},
   "image": {"links": ["openai:gpt-image-2.5-flare", "openai:gpt-image-2.5-sunburst"]},
   "video": {"links": ["segmind:seedance-2.0-mini", "evolink:seedance-2.0-mini", "fal:bytedance/seedance-2.0/fast/image-to-video", "fal:fal-ai/kling-video/v3/turbo/standard/image-to-video"], "poll": "2s", "resolution": "480p"},
-  "server": {"allowed_origins": ["https://dm.{domain}", "https://dm.{domain}:8443"]},
+  "server": {"allowed_origins": ["https://dm.{domain}", "https://dm.{domain}:8443"], "data_dir": "artifacts/runtime/show"},
   "features": {"live_video": true, "live_pc_loops": true, "splat": true, "combat_move_ui": true, "music": true, "sequence_mode": true, "turn_timers": true, "jev": false, "budget_enforce": false},
   "run_mode": "live"
 }
@@ -1083,7 +1103,7 @@ type StepOut struct {
 | `run` | — | Reset only (a new run and a new seed) | Asset slots (`slot/<name>/<seat>`: portraits, the cliffhanger still, the cliffhanger clip); `CharacterFlavor`; runtime pre-renders (`PrerenderSet` for stranger lines, cliffhanger variants, and combat-outcome variants, and their TTS); billboard loop slots (`slot/bb_<clip>/<seat>`, from `GenerateBillboardLoops`) |
 | `check/<n>` | `run` | Never; destroyed by `CancelScope` on Resolution → Exploration, on Conversation → Exploration, or with `run` | The outcome line (`StartLine` for `npc_reveal` or `npc_refuse`, held) and its TTS |
 | `session` (the phase machine) | `run` | Every non-internal phase transition | Phase timers (`creation_timeout`, `seat_deadline/<seat>`, `turn_timer`, `idle_elapsed`, `roll_resolved`, `combat_cap`, line and clip timers); live lines and their TTS; the voice-line queue and every playback (including pre-rendered, canned, and nudge lines); `ptt/<seat>` instances; `Transcribe` and `Interpret` |
-| `combat/<n>` (the Combat machine, §0.21.3) | `session` | Every non-internal combat transition; destroyed with `session` when the phase machine leaves Combat, or with `run` | The per-state combat timers: `combat_intro`, `attack_resolved`, `enemy_resolved`, and the combat `turn_timer` |
+| `combat/<n>` (the Combat machine, §0.21.3) | `session` | Every non-internal combat transition; destroyed with `session` when the phase machine leaves Combat, or with `run` | The per-state combat timers: `combat_intro`, `attack_resolved`, `enemy_resolved`, `outcome_delay`, and the combat `turn_timer` |
 | Key under `session` | `session` | — (cancelled by `CancelKey` or with `session`) | Per-utterance work: the speculative `npc_reply` and its TTS |
 
 Transition actions run after the epoch bump, so their effects carry the target state's epoch. The engine drops any timer or result event whose scope's epoch is older than that scope's current epoch, or whose scope instance no longer exists.
@@ -1091,7 +1111,7 @@ Transition actions run after the epoch bump, so their effects carry the target s
 **Event and effect catalogue.** `domain/events.go` and `domain/effects.go` transcribe this table in hour 0–1, before any lane starts; `vocab` holds the kind constants. Timer events are all `domain.TimerFired{Name, Stage}` with the name shown. Derived events are raised inside the engine within the same `Step` (never through the inbox) and are logged as `derived` notes.
 | Name | Class | `domain` type | Source (events) or executor (effects) | Scope |
 |---|---|---|---|---|
-| `host_start`, `host_reset`, `host_pause`, `host_resume`, `host_skip`, `host_force_d20`, `host_safe_mode`, `host_timer_add`, `host_timers_off` | External | `HostCmd{Cmd vocab.HostCmd, N int, On bool, Seconds int}` | api `HostService.Command` (host token checked in api) | — |
+| `host_start`, `host_reset`, `host_pause`, `host_resume`, `host_skip`, `host_force_d20`, `host_safe_mode`, `host_timer_add`, `host_timers_off`, `host_splat_off` (sets the engine flag `splat_off`; logged and replayable) | External | `HostCmd{Cmd vocab.HostCmd, N int, On bool, Seconds int}` | api `HostService.Command` (host token checked in api) | — |
 | `join` | External | `Join{Seat, Kind}` | api `SessionService.Join` (seat, host, or DM token checked in api) | — |
 | `act` (moves `ready`, `species`, `gender`, `roll_hero`, `talk_vell`, `persuade`, `step_away`, `leave`, `attack`, `move`, `end_turn`) | External | `Act{Seat, Move vocab.MoveID, Arg string, Target EntityID, Cell Cell}` | api `SessionService.Act`; also derived from a `MOVE` dispatch | — |
 | `say` | External | `Say{Seat, UtteranceID, Text}` | api `SessionService.Say` | — |
@@ -1106,10 +1126,11 @@ Transition actions run after the epoch bump, so their effects carry the target s
 | `idle_elapsed` | Timer | `TimerFired{"idle_elapsed"}` | the flag timer used when turn timers are off, 20 s | session |
 | `roll_resolved` | Timer | `TimerFired{"roll_resolved"}` | `StartTimer` at `act persuade`, 3 s | session |
 | `combat_intro` | Timer | `TimerFired{"combat_intro"}` | `StartTimer` at `combat.intro` entry, 3 s | combat |
-| `attack_resolved` | Timer | `TimerFired{"attack_resolved"}` | `StartTimer` at an accepted `attack` (or the combat turn timer's auto-attack), 2 s | combat |
-| `enemy_resolved` | Timer | `TimerFired{"enemy_resolved"}` | `StartTimer` at `combat.enemy_turn` entry, 3 s | combat |
-| `turn_expired` (Combat) | Timer | `TimerFired{"turn_timer/expired"}` | The combat turn timer at 10 s of a PC turn; no nudge | combat |
-| `combat_cap` | Timer | `TimerFired{"combat_cap"}` | `StartTimer` at HookEvent → Combat, 30 s, pausable; not stopped by `TIMERS_OFF`; cancelled on entering `combat.end` | session (spans every combat state) |
+| `attack_resolved` | Timer | `TimerFired{"attack_resolved"}` | `StartTimer` at an accepted `attack` (or the combat turn timer's auto-attack), walk (path cells × 250 ms) + 2.0 s: 1.2 s from the end of the walk to contact, then 0.8 s | combat |
+| `enemy_resolved` | Timer | `TimerFired{"enemy_resolved"}` | `StartTimer` at `combat.enemy_turn` entry, walk + 2.0 s (as `attack_resolved`) | combat |
+| `turn_expired` (Combat) | Timer | `TimerFired{"turn_timer/expired"}` | The combat turn timer at 10 s of a PC turn; no nudge; the engine acts `attack{thrall}` if it is legal, otherwise `end_turn` | combat |
+| `combat_cap` | Timer | `TimerFired{"combat_cap"}` | `StartTimer` at HookEvent → Combat, 30 s, pausable; not stopped by `TIMERS_OFF`; cancelled on entering `combat.done` | session (spans every combat state) |
+| `outcome_delay` | Timer | `TimerFired{"outcome_delay"}` | `StartTimer` at `combat.done` entry, 1.5 s; on it the `combat_outcome` variant starts through the voice queue | combat |
 | Line and clip timers | Timer | `TimerFired{"line/<utterance_id>"}`, `TimerFired{"line_cap/<utterance_id>"}`, `TimerFired{"clip/<asset_id>"}` | Voice line timing and clip timing (§0.5) | session |
 | `transcribed` | Result | `Transcribed{UtteranceID, Text}` | `Transcribe` | session |
 | `stt_error` | Result | `STTError{UtteranceID, Kind}` | `Transcribe` (including an empty transcript) | session |
@@ -1154,6 +1175,7 @@ package domain
 // api/project turns it into DMView, PhoneView, and HostView (§0.6); it is safe to retain.
 type View struct {
 	Version   uint64
+	At        time.Duration // env.At of the Step that built it; the reference time for every timer below
 	Path      vocab.StateID // "session.play/scene.active"
 	Paused    bool
 	Spotlight SeatID
@@ -1162,7 +1184,7 @@ type View struct {
 	Seats     []SeatView
 	Scene     SceneView
 	Dice      *DiceView // nil outside Check, Resolution, and Combat
-	Combat    *CombatView // nil outside Combat: battlefield, tokens, highlights, turn order, round, banner, cap remaining (§0.21.6)
+	Combat    *CombatView // nil outside Combat: battlefield, tokens, highlights, turn order, round, banner, contact_at, cap remaining as a TimerView (§0.21.6)
 	Preload   []string    // the next reachable state's asset URLs, decoded hidden (§0.21.5)
 	Callout   string
 	Music     MusicView
@@ -1186,7 +1208,7 @@ type SeatView struct {
 type SceneView struct {
 	BackgroundURL string
 	Layers        []LayerView // id, url, x, y, scale, highlight
-	Clip          *ClipView   // url, offset_ms, playing, then
+	Clip          *ClipView   // url, offset_ms (at At), playing, then
 	Shot          ShotView    // id, fallback
 	Narration     NarrationView
 	Subtitle      *SubtitleView
@@ -1195,7 +1217,8 @@ type SceneView struct {
 }
 
 type TimerView struct {
-	RemainingMS, TotalMS int
+	DeadlineAt           time.Duration // since run start; meaningful only when not Frozen and not Paused
+	RemainingMS, TotalMS int           // RemainingMS at View.At
 	Frozen               bool
 }
 
@@ -1210,6 +1233,8 @@ type MusicView struct {
 
 // DiceView, ShotView, SlotView, and the other small views mirror the §0.6 fields one to one.
 ```
+
+**Timers in the view.** Every timer in `View` (the turn timer, the combat cap, and `CombatView.ContactAt`) is `{DeadlineAt, RemainingMS, Frozen}` (plus `TotalMS` for the ring and the bar), computed by the engine at `env.At` from its own `StartTimer`, `FreezeTimer`, `ThawTimer`, `PauseAll`, and `ResumeAll` bookkeeping, so the engine stays pure; `api` extrapolates between snapshots with its clock (remaining = `RemainingMS` minus the time since it received the view, unless `Frozen` or `Paused`), and does the same for the clip's `offset_ms` (while `playing`) and `HostView.combat_cap_remaining_ms`.
 
 ```go
 package ports
@@ -1346,7 +1371,7 @@ func Handle[E domain.Effect](r *Runner, fn Executor[E]) // registered only in wi
 - **Seed and Reset:** `runtime` generates the 32-byte run seed from `crypto/rand` and passes it in `domain.Run` to `newGame` and to `ports.Runs.Start`. The engine answers `host_reset` with a `NewRun` control effect; the runner cancels `run`, draws a new seed, starts a new `runs` row, replaces `eng` through `newGame`, and resets `start`.
 - **Timers:** `runtime/timers` is a pausable timer set on `clock.Clock`; `PauseAll` records each pausable timer's remaining time and `ResumeAll` re-arms them; `FreezeTimer` and `ThawTimer` do the same for one named timer; a fired timer posts `timer_fired{Name}` with its scope.
 - **Audio bypasses the loop:** `voice/out` writes frames straight to `ports.AudioOut`; the Listen hub drops frames of cancelled utterances. Only `line_first_audio`, `line_audio_final`, and `line_failed` go through the inbox.
-- **Storage:** `store/sqlite` opens one write handle (`SetMaxOpenConns(1)`; DSN `file:dungeonflux.db?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(1)&_txlock=immediate`; modernc v1.57 parses `_txlock` and applies `busy_timeout` first. If the pinned version rejects `_txlock`, the writer drops it and opens each transaction with `BEGIN IMMEDIATE` on its dedicated `*sql.Conn`) fed by one writer goroutine, plus a read pool. The room loop orders event-log appends; asset, cache, and recording rows go straight to the writer.
+- **Storage:** the data dir comes from config (`server.data_dir`, default `artifacts/runtime/show`) and holds `dungeonflux.db` and `assets/`; `cmd/server` takes `-config`, `-port`, and `-data-dir`, so each lane's dev server runs on its own port (§0.18.8 rule 23) and its own instance (`-data-dir artifacts/runtime/<LANE>`). `store/sqlite` opens one write handle (`SetMaxOpenConns(1)`; DSN `file:<data_dir>/dungeonflux.db?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(1)&_txlock=immediate`; modernc v1.57 parses `_txlock` and applies `busy_timeout` first. If the pinned version rejects `_txlock`, the writer drops it and opens each transaction with `BEGIN IMMEDIATE` on its dedicated `*sql.Conn`) fed by one writer goroutine, plus a read pool. The room loop orders event-log appends; asset, cache, and recording rows go straight to the writer.
 - **gRPC mount:** `mux.Handle("/grpc", grpctunnel.Wrap(gs, grpctunnel.WithAllowedOrigins(cfg.Server.AllowedOrigins...), grpctunnel.WithNativeGRPCTransport()))`, where the origins include the port: `https://dm.{domain}` (the show, on 443) and `https://dm.{domain}:8443` (ORCH development); beside `/assets/` (immutable file server), `/tts/` (fallback), and the brotli WASM. Tokens travel in request messages, so native transport's lack of header forwarding does not matter. pprof only on loopback.
 - **Determinism and replay:** `internal/sim` runs `Engine.Step` against a virtual-time queue and answers each work effect from a script (success after N ms, error, or nothing), with no goroutines or clock. Every walk-test path (§0.12) is a `sim` script asserting End, at most 3 entries per state, and at most 5 minutes of simulated time. `replay.Check(log)` feeds logged envelopes back through `Step` and diffs the effects; it runs against rehearsal logs. Room-level tests use `testing/synctest` or `clock.Fake`; neither sleeps.
 
@@ -1362,7 +1387,7 @@ func Handle[E domain.Effect](r *Runner, fn Executor[E]) // registered only in wi
 - **Panics:** none outside `main` and startup registration; the runner recovers executor panics, logs the stack, and posts the effect's failure event.
 - **Context:** first parameter of every function that does I/O or blocks; only `main` and tests create root contexts (tests use `t.Context()`); the engine never sees a context.
 - **Logging:** `log/slog` with `slog.NewMultiHandler(jsonFile, textConsole)` built in `main`; loggers passed in and narrowed with `With`. Fields: `run`, `room`, `seq`, `machine`, `epoch`, `state`, `event`, `utterance_id`, `asset_id`, `role`, `vendor`, `model`, `link`, `ttft_ms`, `dur_ms`, `err_kind`, `request_id`. Info for transitions and calls, Warn for fallbacks, Error for failed invariants. Never log keys, raw audio, or full prompts (a prompt hash is allowed).
-- **Observability:** every adapter call writes one `call` record with `httptrace` timings (DNS, connect, TLS, first byte, first token, done); the host view's `event_log_tail` reads the same records, and the §0.16 measurement protocol uses this path.
+- **Observability:** every adapter call writes one `call` record with `httptrace` timings (DNS, connect, TLS, first byte, first token, done); `api` owns `HostView.event_log_tail` and builds it by reading these call records (newest first), and the §0.16 measurement protocol uses this path.
 
 #### 0.18.8 Coding rules for agents
 **Structure**
@@ -1385,7 +1410,7 @@ func Handle[E domain.Effect](r *Runner, fn Executor[E]) // registered only in wi
 11. Table-driven with `t.Run(tc.name, ...)`; names like `TestStep_Conversation_rejectsPersuadeWhileSpeaking`.
 12. Fakes from `internal/fakes` or hand-written in `_test.go`; no mocking frameworks, no `time.Sleep`, no real network (adapter tests use `httptest.Server` with fixtures in `testdata/`).
 13. Paid or live calls only behind `//go:build live` and `DF_LIVE=1`, and never in any gate.
-14. Test artifacts go to `t.ArtifactDir()` or `t.TempDir()`, never the repo.
+14. Test artifacts go to `t.ArtifactDir()` or `t.TempDir()`; `go test -artifacts` runs with `-outputdir artifacts/test/<LANE>/` and cover profiles go to `artifacts/coverage/<LANE>/`; nothing else is written in the tree.
 
 **Generated code**
 
@@ -1397,7 +1422,7 @@ func Handle[E domain.Effect](r *Runner, fn Executor[E]) // registered only in wi
 
 **Ownership**
 
-17. Edit only your lane's files (§0.18.9). The orchestrator owns shared contracts: `go.mod`/`go.sum`, `proto/`, `gen/`, `vocab`, `domain`, `ports`, `clock`, `config`, `wire`, `cmd`, `fakes`, `archtest`, `httpx`, `CLAUDE.md`, `scripts/gate.ps1`. (`internal/core/fsm` belongs to L-ENG.)
+17. Edit only your lane's files (§0.18.9). The orchestrator owns shared contracts: `go.mod`/`go.sum`, `proto/`, `gen/`, `vocab`, `domain`, `ports`, `clock`, `config`, `wire`, `cmd`, `fakes`, `archtest`, `httpx`, `config/`, `AGENTS.md`, `CLAUDE.md`, `.gitignore`, `.gitattributes`, `scripts/gate.ps1`. (`internal/core/fsm` belongs to L-ENG.)
 18. To change a contract, list it under "Contract requests" in your final report with the exact Go signature or proto diff and the reason. Until it lands, block that item and continue, or use an unexported lane-local stand-in named in the report. Never add a symbol to a shared package.
 19. Prefer adding a new caller or function over changing an existing shared callee's signature.
 
@@ -1408,7 +1433,7 @@ func Handle[E domain.Effect](r *Runner, fn Executor[E]) // registered only in wi
 
 **Forbidden**
 
-22. Killing processes you did not start (no `taskkill /IM`, no `Stop-Process -Name`; stop only PIDs you launched); `git commit`, `git stash`, `git worktree`, `git checkout -- .`, or any branch operation; probe or scratch files in the repo; `fmt.Println` or leftover debug logs; edits to another lane's files; network calls in unit tests; paid API calls; hand-editing generated code; disabling a gate or skipping a test to pass.
+22. Killing processes you did not start (no `taskkill /IM`, no `Stop-Process -Name`; stop only PIDs you launched); `git commit`, `git push`, `git stash`, `git worktree`, `git checkout -- .`, `git reset --hard`, `git clean`, or any branch operation; probe or scratch files in the repo; `fmt.Println` or leftover debug logs; edits to another lane's files; network calls in unit tests; paid API calls; hand-editing generated code; disabling a gate or skipping a test to pass.
 
 **Local servers**
 
@@ -1424,41 +1449,41 @@ This is the only build schedule (§0.12 points here), including the combat lanes
 | Lane | Owns | Consumes | Binding sections (the Spec index at the top of §0) |
 |---|---|---|---|
 | ORCH | The files in rule 17; `internal/wire/e2e_test.go` | — | §0.4, §0.5, §0.6, §0.12 walk test, all of §0.18 |
-| L-OPS | `scripts/buildtime/**` (including the Marble, `splat-transform`, and nav-authoring scripts), `assets/buildtime/manifest.json` | §0.9 build-time list, §0.17 shots, §0.19 tracks, vendor consoles | §0.7, §0.9 build-time row, §0.14, §0.15 hour-0 list, §0.16, §0.17, §0.19, §0.21.5, §0.21.10 |
+| L-OPS | `scripts/buildtime/**` (including the Marble, `splat-transform`, and nav-authoring scripts), `artifacts/runtime/buildtime/**` (the build-time media and `manifest.json`) | §0.9 build-time list, §0.17 shots, §0.19 tracks, vendor consoles | §0.7, §0.9 build-time row, §0.14, §0.15 hour-0 list, §0.16, §0.17, §0.19, §0.21.5, §0.21.10 |
 | L-SPIKE | `scripts/spike/**` (a throwaway module with its own proto; never imported) | GoGRPCBridge `pkg/grpctunnel`, vendor STT and TTS HTTP | §0.6 `Talk` and `Listen`, §0.9 microphone capture and TTS playback, §0.11, §0.15 STT and TTS rows |
 | L-ENG | `internal/core/fsm/**`, `internal/game/**` except `internal/game/combat/**`, `internal/sim/**` | domain, vocab | §0.5, §0.6 schemas, §0.8 "When" column, §0.10 sequence index, §0.12 walk test, §0.18.4, §0.20, §0.21.2 (R-D7) |
 | L-COMBAT | `internal/game/combat/**` (carved out of L-ENG; same purity rules) | fsm, domain, vocab, `game/rules` (dice, rulings) | §0.5 phase machine, scopes, turn timers, and Skip; §0.18.4 scope tree and catalogue; §0.20; §0.21.1–§0.21.3; §0.21.6 |
 | L-RT | `internal/runtime/**` | domain, ports (`Engine`, `Inbox`, `AudioOut`, `EventLog`, `Runs`), clock, `fakes` | §0.5 runtime rules, voice line timing, turn timers, and Pause; §0.18.4 scope tree and catalogue; §0.18.5 |
 | L-STORE | `internal/store/**`, `internal/replay/**` | ports, domain; `game.Step` for replay only | §0.4 storage, §0.6 event log line, §0.10, §0.18.5 storage |
-| L-API | `internal/api/**` | gen, runtime, ports (`Engine`), `domain.View`, `fakes` | §0.5 legal moves and host commands, §0.6, §0.11 rooms and joining, §0.18.4 `View` and `ports.Engine`, §0.18.5 gRPC mount, §0.21.6 |
+| L-API | `internal/api/**` | gen, runtime, ports (`Engine`), `domain.View`, `fakes` | §0.5 legal moves and host commands, §0.6, §0.11 rooms and joining, §0.18.4 `View` (with its timer rule) and `ports.Engine`, §0.18.5 gRPC mount, §0.21.6 |
 | L-VIN | `internal/voice/in/**`, `internal/adapters/stt/**` | ports, content glossary | §0.5 push-to-talk, §0.6 `Talk` and `Say`, §0.9 microphone capture and voice pipeline, §0.10, §0.16 |
 | L-VOUT | `internal/voice/out/**`, `internal/adapters/tts/**` | ports (`AudioOut`, `AssetWriter`) | §0.5 runtime rule 5 and voice line timing, §0.6 `Listen`, §0.9 TTS and playback, §0.10, §0.15 TTS row, §0.16 |
 | L-LLM | `internal/modelchain/**`, `internal/budget/**`, `internal/llmexec/**`, `internal/adapters/llm/**` | ports, content | §0.8, §0.10, §0.15, §0.16, §0.18.3 model chains and role table |
 | L-CONTENT | `internal/content/**` | domain, §0.7, §0.8, §0.17 | §0.7, §0.8, §0.17 prompts, §0.19 style tokens, §0.20 templates, §0.21.1, §0.21.2 (the thrall), §0.21.4 (the nav layer) |
 | L-MEDIA | `internal/media/**`, `internal/adapters/{image,video,sound}/**` | ports (`Assets`; implements `AssetWriter`) | §0.9 images and video, §0.15 video and image rows, §0.17, §0.19 sidecar metadata, §0.21.5 |
-| L-WEB-SHELL / PHONE / DM / HOST | `web/shell/**`, `web/phone/**`, `web/dm/**`, `web/host/**` | gen, vocab | Shell: §0.4 stack, §0.6, §0.9 microphone capture, §0.11. Phone: §0.5 legal moves, push-to-talk, and turn timers; §0.6 `PhoneView`; §0.9 typed input; §0.21.3 phone moves; §0.21.6 `PhoneView.combat`. DM: §0.5 turn timers; §0.6 `DMView`; §0.9 TTS and playback; §0.17 browser fallbacks; §0.19 mixer rules; §0.21.4 FLAT fallback; §0.21.6 `DMView` combat fields. Host: §0.5 host commands, §0.6 `HostView`, §0.13 |
-| L-WEB-SPLAT | `web/splat/**` (the Go wrapper, `js/df-splat.mjs`, `js/status_visuals.mjs`, `vendor/`) and port 18114 | gen, vocab, the vendored PlayCanvas engine; the SOG files and thrall loops from L-OPS; `battlefield_tavern.json` from L-CONTENT | §0.4 (the JavaScript exception); §0.17 splat camera presets; §0.21.4; §0.21.6 `Token` and `battlefield` |
+| L-WEB-SHELL / PHONE / DM / HOST | `web/shell/**`, `web/phone/**`, `web/dm/**`, `web/host/**` | gen, vocab | Shell: §0.4 stack, §0.6, §0.9 microphone capture and TTS and playback (the DM-audio slice, `web/shell/audio`), §0.11. Phone: §0.5 legal moves (including the Creation pickers), push-to-talk, and turn timers; §0.20 build model; §0.6 `PhoneView`; §0.9 typed input; §0.21.3 phone moves; §0.21.6 `PhoneView.combat`. DM: §0.5 turn timers; §0.6 `DMView`; §0.9 TTS and playback; §0.17 browser fallbacks; §0.19 mixer rules; §0.21.4 FLAT fallback; §0.21.6 `DMView` combat fields. Host: §0.5 host commands, §0.6 `HostView`, §0.13 |
+| L-WEB-SPLAT | `web/splat/**` (the Go wrapper, `js/df-splat.mjs`, `js/status_visuals.mjs`, `vendor/`) and port 18114 | gen, vocab, the vendored PlayCanvas engine; the SOG files and thrall loops from L-OPS; `battlefield_tavern.json` from L-CONTENT | §0.4 (the JavaScript exception); §0.17 splat camera presets; §0.21.3; §0.21.4; §0.21.5; §0.21.6 `Token` and `battlefield` |
 
 | Hours | ORCH | Lane agents (≤ 7 at once) and the gate that ends the block |
 |---|---|---|
-| 0–1 | Contracts only: `go.mod` (Go 1.26, pinned deps, tool directives), proto and `gen`, vocab, domain (transcribing the §0.18.4 catalogue and `View`), ports (including `Engine` and `AssetWriter`), clock, `gate.ps1`, `CLAUDE.md`; the combat contracts (move IDs `attack`, `move`, `end_turn`; `vocab.StatusID`; the `ActRequest` fields and `Report` kinds; `AttackOutcome`, `Token`, `Battlefield`, `OneShot.encounter`; the combat rows of the catalogue) | L-OPS: build-time asset jobs and the hour-0 latency samples running with curl (plus §0.11 network setup by the developer), including the combat jobs: the battlefield still → World Labs Marble ×2 → `splat-transform` to SOG, the thrall still and billboard loops, the four combat tracks and combat effects, and the chroma latency samples (§0.21.5, §0.21.10); the name-free canned and nudge lines. L-SPIKE: starts (below). 2 agents |
-| 1–5 | ORCH track, hours 1–3: fakes first (including `fakes.Engine`, by hour 2), then archtest, httpx, config, wire and `cmd` skeletons, `doc.go` stubs. Hours 3–5: integrate. Checkpoints at hours 2 and 5 | L-OPS (to hour 5; see below). L-SPIKE (to hour 2): a throwaway proto under `scripts/spike/` on grpctunnel proving real-phone `MediaRecorder` → `Talk` → batch STT and PCM → `Listen` playback on both phones; **hour-2 gate: a spoken phrase from each phone comes back as the right transcript and PCM plays on the DM tab**, so the iOS container-header risk surfaces at hour 2. At the same checkpoint the developer decides the portrait gate and the clip gate from the L-OPS curl samples (§0.9). L-ENG: fsm with tests (hours 1–3), then the phase table (Combat as a stub state), epochs and scopes, Skip, Pause, sim; walk paths 1–3, 7, 8. L-RT: room, runner, scope tree, pausable timers (against `fakes.Engine`). L-WEB-SHELL + PHONE: router, gRPC client, join, PTT recorder, text box. L-WEB-SPLAT: the `df-splat.mjs` module, the Go bridge, chroma-keyed billboards, the grid, camera presets, and the `?debug` pick mode, against the L-OPS Marble output. L-VOUT (hours 2–5): ElevenLabs WS adapter + PCM to Listen, porting the spike's playback path. L-API (hours 2–5): Join/Watch/Act/Say/Report/Host, projection from `domain.View` (including the build cards and partial previews), Watch and Listen hubs. Agents at once: 6 in hour 1–2, 7 in hours 2–5. L-STORE moves to hours 5–8 and L-VIN to hours 8–11, since Creation has no speech (D11). **Gate:** two phones join; the walk subset passes; the production `Listen` path reproduces the hour-2 spike's playback. **Splat spike at hour 5:** the Marble tavern, 3 video billboards, and the grid on the TV at a 5th-percentile fps ≥ 30, with a billboard occluded by a table; on failure the demo uses FLAT only (`splat` off) and L-WEB-SPLAT stops |
-| 5–8 | Wire Creation executors | L-ENG: Creation taps, the R-D7 class draw, defaults, `creation_timeout`; paths 5, 6. L-COMBAT: the §0.21.2 rules and the combat machine in `sim`; combat paths 26–34 and 37. L-STORE: schema, writer, event log, runs. L-LLM: openai adapter, chain, `character_flavor` executor. L-CONTENT: `character_flavor` prompt and schema, templates, glossary; the thrall and `battlefield_tavern.json` (the nav layer, authored with the L-OPS script and the L-WEB-SPLAT pick mode). L-MEDIA: image adapter, asset files, `AssetWriter`, slot executor, partials, the chroma composite. L-WEB-DM: layers and build cards; the FLAT renderer. 7 agents. **Gate:** both characters appear from taps (D11); the combat `sim` paths pass |
-| 8–11 | Wire line executors | L-LLM: streaming, anthropic adapter, hedge and race semantics, first-token and link timeouts, keyword link. L-VOUT: line queue, hold/release/drop, AudioCancel, `line_audio_final`. L-CONTENT: `npc_reply`, `interpret`, `opening`; 1 h of tuning. L-ENG: Conversation and dispatch; voice and typed-input paths. L-VIN: assembler and Scribe adapter (porting the spike's capture path), interpret path, `Say`. L-WEB-DM: PCM scheduler, mixer, ducking; the combat HUD (turn strip, HP bars, attack dice, banner). L-API: the combat projection (§0.21.6) and the `Act` fields `target_id` and `cell`. 7 agents. **Gate:** end-to-end spoken exchange; combat runs on the DM in FLAT mode from phone taps (the machine started directly in a fake-config run; phase wiring lands at 11–14) |
-| 11–14 | Full `e2e_test` | L-ENG: Check (with the `check` scope), Resolution, HookEvent, Cliffhanger, steering, host commands, turn timers (`turn_timer`, freeze and thaw, nudges, the `idle_elapsed` flag timer, `TIMER_ADD`, `TIMERS_OFF`); the HookEvent → Combat → Cliffhanger rows; all non-combat walk paths. L-COMBAT: phase wiring with L-ENG (`combat_cap`, Skip and Pause in combat), the combat turn timer; combat paths 35, 36, 38. L-LLM: gemini adapter, `PrerenderSet`. L-CONTENT: stranger, cliffhanger, reveal, refuse, `combat_outcomes`, canned manifest (pointing at the L-OPS canned assets). L-VOUT: pre-render TTS to `AssetWriter`, canned and nudge playback. L-WEB-DM: dice, callouts, the turn-timer bar. L-WEB-SPLAT: DM integration, preload, the `LOW_FPS` swap, the `SPLAT_FAILED` report. 7 agents. The Qwen and Jev experiments (§0.15) run after this block's gate, on rehearsal transcripts. **Hard line: the full script, including combat (on the splat or FLAT), runs with voice by hour 14** |
-| 14–17 | Safe Mode wiring | L-MEDIA: compositor, video adapters and poller, slot deadlines, shot library, `GenerateBillboardLoops`. L-STORE: cache, recordings, `replay.Check`. L-LLM: record, replay, and cache decorators on every port. L-WEB-HOST: host buttons. L-WEB-PHONE: the turn-timer ring; the mini grid if `combat_move_ui`. 5 agents. **Gate:** the clip and the billboard loops play or fall back; Safe Mode replays a rehearsal |
+| 0–1 | Contracts only: `go.mod` (Go 1.26, pinned deps, tool directives), proto and `gen`, vocab, domain (transcribing the §0.18.4 catalogue and `View`), ports (including `Engine` and `AssetWriter`), clock, `gate.ps1`, `AGENTS.md` and the one-line `CLAUDE.md`, `config/fake.json`, `.gitignore` (with `artifacts/`) and `.gitattributes`; the combat contracts (move IDs `attack`, `move`, `end_turn`; `vocab.StatusID`; the `ActRequest` fields and `Report` kinds; `AttackOutcome`, `Token`, `Battlefield`, `OneShot.encounter`; the combat rows of the catalogue) | L-OPS: build-time asset jobs and the hour-0 latency samples running with curl (plus §0.11 network setup by the developer), including the combat jobs: the battlefield still → World Labs Marble ×2 → `splat-transform` to SOG, the thrall still and billboard loops, the four combat tracks and combat effects, and the chroma latency samples (§0.21.5, §0.21.10); the name-free canned and nudge lines. L-SPIKE: starts (below). 2 agents |
+| 1–5 | ORCH track, hours 1–3: fakes first (including `fakes.Engine`, by hour 2), then archtest, httpx, config, wire and `cmd` skeletons, `doc.go` stubs. Hours 3–5: integrate. Checkpoints at hours 2 and 5 | L-OPS (to hour 5; see below). L-SPIKE (to hour 2): a throwaway proto under `scripts/spike/` on grpctunnel proving real-phone `MediaRecorder` → `Talk` → batch STT and PCM → `Listen` playback on both phones; **hour-2 gate: a spoken phrase from each phone comes back as the right transcript and PCM plays on the DM tab**, so the iOS container-header risk surfaces at hour 2. At the same checkpoint the developer decides the portrait gate and the clip gate from the L-OPS curl samples (§0.9) and crops the splat floaters in SuperSplat (part of the L-OPS checkpoint, §0.21.4). L-ENG: fsm with tests (hours 1–3), then the phase table with every state (Check, Resolution, HookEvent, Cliffhanger, and Combat as stubs), epochs and scopes, Skip, Pause, sim; walk paths 7, 8, and a stubbed path 1. L-RT: room, runner, scope tree, pausable timers (against `fakes.Engine`). L-WEB-SHELL + PHONE (one agent): router, gRPC client, join, and the DM-audio slice `web/shell/audio` (the `Listen` client and the PCM scheduler with the 150 ms jitter lead and `AudioCancel` handling, porting the spike's playback path; §0.9); the PTT recorder and the text box move to L-WEB-PHONE at 8–11. L-WEB-SPLAT: the `df-splat.mjs` module, the Go bridge, chroma-keyed billboards, the grid, camera presets, and the `?debug` pick mode, against the L-OPS Marble output, with a provisional grid (8 × 6 cells of 1.524 m on the Marble ground plane from `metric_scale_factor` and `ground_plane_offset`, every cell walkable); `battlefield_tavern.json` replaces it at 5–8. L-VOUT (hours 2–5): ElevenLabs WS adapter + PCM to Listen, porting the spike's playback path. L-API (hours 2–5): Join/Watch/Act/Say/Report/Host, projection from `domain.View` (including the build cards and partial previews), Watch and Listen hubs. Agents at once: 6 in hour 1–2, 7 in hours 2–5. L-STORE moves to hours 11–14 (until then `wire` uses the in-memory event log, runs, and asset rows from `internal/fakes`) and L-VIN to hours 8–11, since Creation has no speech (D11). **Gate:** two phones join; the walk subset (paths 7, 8, and the stubbed path 1) passes; the production `Listen` path (L-VOUT to `web/shell/audio` on the DM tab) reproduces the hour-2 spike's playback. **Splat spike at hour 5:** the Marble tavern, 3 video billboards, and the grid on the TV at a 5th-percentile fps ≥ 30, with a billboard occluded by a table; on failure the demo uses FLAT only (`splat` off) and L-WEB-SPLAT stops |
+| 5–8 | Wire Creation executors | L-ENG: Creation taps and the §0.20 build model, the R-D7 class draw, defaults, `creation_timeout`; the real Check (with the `check` scope), Resolution, HookEvent, and Cliffhanger transitions; paths 1–3, 6, 9. L-COMBAT: the §0.21.2 rules and the combat machine, with a `sim` harness that stubs `combat_cap` and the outcome line; combat paths 26–34 and 37 (re-run unstubbed at hour 14). L-LLM: openai adapter, chain, `character_flavor` executor. L-CONTENT: `character_flavor` prompt and schema, templates and the build-model data, glossary; the `npc_reply`, `interpret`, and `opening` prompts and schemas (tuned at 11–14); the thrall and `battlefield_tavern.json` (the nav layer, authored with the L-OPS script and the L-WEB-SPLAT pick mode; it replaces the provisional grid). L-MEDIA: image adapter, asset files, `AssetWriter`, slot executor, partials, the chroma composite. L-WEB-DM: layers and build cards; the FLAT renderer. L-WEB-PHONE: the Creation pickers (species and gender `options`, Roll my hero, the build card). 7 agents. **Gate:** both characters appear from taps (D11); paths 1–3 pass in full; the combat `sim` paths pass |
+| 8–11 | Wire line executors | L-LLM: streaming, anthropic adapter, hedge and race semantics, first-token and link timeouts, keyword link. L-VOUT: line queue, hold/release/drop, AudioCancel, `line_audio_final`. L-ENG: Conversation and dispatch; turn timers (`turn_timer`, freeze and thaw, nudges, the `idle_elapsed` flag timer, `TIMER_ADD`, `TIMERS_OFF`); paths 5, 24, and the voice and typed-input paths. L-VIN: assembler and Scribe adapter (porting the spike's capture path), interpret path, `Say`. L-WEB-DM: the mixer and ducking on the `web/shell/audio` scheduler; the combat HUD (turn strip, HP bars, attack dice, banner, contact timing). L-WEB-PHONE: the Conversation moves (the PTT recorder, the text box, Persuade, Step away), Attack with its preview, and End turn. L-API: the combat projection (§0.21.6), the `Act` fields `target_id` and `cell`, and the `View` timer extrapolation (§0.18.4). 7 agents. **Gate:** end-to-end spoken exchange; combat runs on the DM in FLAT mode from phone taps (the machine started directly in a fake-config run; phase wiring lands at 11–14) |
+| 11–14 | Full `e2e_test` | L-ENG: steering, host commands (including `host_splat_off`); the HookEvent → Combat → Cliffhanger rows; all non-combat walk paths. L-COMBAT: phase wiring with L-ENG (`combat_cap`, `outcome_delay`, Skip and Pause in combat), the combat turn timer; combat paths 35, 36, 38, and 26–34 and 37 re-run without the `sim` stubs. L-LLM: gemini adapter, `PrerenderSet`. L-CONTENT: stranger, cliffhanger, reveal, refuse, `combat_outcomes`, canned manifest (pointing at the L-OPS canned assets); 1 h of tuning. L-VOUT: pre-render TTS to `AssetWriter`, canned and nudge playback. L-WEB-DM: dice, callouts, the turn-timer bar. L-STORE: schema, writer, event log, runs (replacing the in-memory fakes in `wire`). 7 agents. The hour-14 script runs on FLAT; the splat joins at 14–17. The Qwen and Jev experiments (§0.15) start after this block's gate, on rehearsal transcripts. **Hard line: the full script, including combat (on the splat or FLAT), runs with voice by hour 14** |
+| 14–17 | Safe Mode wiring | L-MEDIA: compositor, video adapters and poller, slot deadlines, shot library, `GenerateBillboardLoops`. L-STORE: cache, recordings, `replay.Check`. L-LLM: record, replay, and cache decorators on every port. L-WEB-HOST: host buttons. L-WEB-PHONE: the turn-timer ring; the mini grid if `combat_move_ui`. L-WEB-SPLAT: DM integration, the battlefield from Opening entry, the SPLAT/FLAT mode rule (§0.21.3), the `LOW_FPS` swap, the `SPLAT_FAILED` report. 6 agents. **Gate:** the clip and the billboard loops play or fall back; Safe Mode replays a rehearsal |
 | 17–20 | Observability pass | L-WEB-DM: sound and visuals. L-MEDIA: sound effects and music wiring. L-WEB-SPLAT: status visuals, camera polish. **Gate:** a rehearsal-quality run |
 | 20–23 | Fixes only, one lane at a time on request | Rehearsals; record the backup video. **Done when:** five clean runs in a row, backup video saved |
 | 23–24 | Sleep or buffer | — |
 
-**L-OPS after hour 5.** The L-OPS agent hands in at hour 5, with every job submitted and the name-free canned and nudge lines rendered (text from §0.5 and §0.7). The remaining jobs (music takes, clip retries, downloads, post-processing) run unattended in the `scripts/buildtime` runner it started, which is a process, not an agent, and finish by hour 11 (§0.9). The developer picks takes at the checkpoints (hours 5, 8, 11) from its manifest. If a job needs a script change, the orchestrator relaunches L-OPS for one block in place of the lowest-priority lane of that block, so the limit of seven holds.
+**L-OPS after hour 5.** The L-OPS agent hands in at hour 5, with every job submitted and the name-free canned and nudge lines rendered (text from §0.5 and §0.7). The remaining jobs (music takes, clip retries, downloads, post-processing) run unattended in the `scripts/buildtime` runner it started, which is a process, not an agent, and finish by hour 11 (§0.9). The developer picks takes at the checkpoints (hours 5, 8, 11) from its manifest (`artifacts/runtime/buildtime/manifest.json`). Because `artifacts/` is gitignored and build-time media cannot be regenerated identically, the developer zips `artifacts/runtime/buildtime/` to cloud storage outside git at every checkpoint (hours 2, 5, 8, 11). If a job needs a script change, the orchestrator relaunches L-OPS for one block in place of the lowest-priority lane of that block, so the limit of seven holds.
 
 Merge order within a block: contracts, fsm, store, runtime, adapters, modelchain/llmexec, content, media, voice, game, combat, api, wire, web (splat before dm). Per lane, the orchestrator runs the lane gate then the full gate; a failing lane is sent back, not fixed by the orchestrator. The §0.12 cut order is feature flags: `combat_move_ui`, then `sequence_mode`, then `turn_timers`, then `live_pc_loops`, then `live_video`, then `splat` (FLAT), then `music`.
 
-**`CLAUDE.md` outline:** (1) read first: §0.5, §0.6, §0.8, §0.18, §0.21 are binding and section 0 overrides sections 1–7; (2) what the repo is, with the §0.18.2 table; (3) architecture in brief (pure `Step` behind `ports.Engine`, effects out and result events in, one room loop, the scope tree and epochs, ports and adapters, role chains from config); (4) the lane table above, so each lane finds its owned paths and its binding sections; (5) shared contracts, the §0.18.4 catalogue, and how to write a contract request; (6) the 24 coding rules verbatim; (7) the gate command and "green or not done"; (8) testing: fakes, `sim`, synctest, the `live` tag, never paid tests, the race gate in WSL2; (9) local runs: the port table, `-config config/fake.json`, "stop what you started"; (10) forbidden actions verbatim; (11) the hand-in format; (12) vendor notes (Luna reasoning `none`, Gemini `LOW` minimum, flattened first frames, `music_v2_5` set explicitly, `auto_mode=true` on `stream-input`, never drop the header chunk).
+**`AGENTS.md` and `CLAUDE.md`.** `CLAUDE.md` is one line, "Read AGENTS.md first", so every agent reads the same rules. `AGENTS.md` (ORCH) follows this outline: (1) read first: §0.5, §0.6, §0.8, §0.18, §0.21 are binding and section 0 overrides sections 1–7; (2) what the repo is, with the §0.18.2 table; (3) architecture in brief (pure `Step` behind `ports.Engine`, effects out and result events in, one room loop, the scope tree and epochs, ports and adapters, role chains from config); (4) the lane table above, so each lane finds its owned paths and its binding sections; (5) shared contracts, the §0.18.4 catalogue, and how to write a contract request; (6) the 24 coding rules verbatim; (7) the gate command and "green or not done"; (8) testing: fakes, `sim`, synctest, the `live` tag, never paid tests, the race gate in WSL2; (9) local runs: the port table, `-config config/fake.json`, `-port`, `-data-dir artifacts/runtime/<LANE>`, "stop what you started", and every generated file under `artifacts/`; (10) forbidden actions verbatim; (11) the hand-in format; (12) vendor notes (Luna reasoning `none`, Gemini `LOW` minimum, flattened first frames, `music_v2_5` set explicitly, `auto_mode=true` on `stream-input`, never drop the header chunk).
 
 #### 0.18.10 Changes to the rest of section 0
-All changes this section required were applied in place across section 0 in round 8; none are pending.
+All changes this section required were applied in place across section 0 in rounds 8 and 9; none are pending.
 
 ### 0.19 Music library (demo)
 Researched 2026-09-26 (ElevenLabs Music API reference and guides, pricing, terms; adaptive game-music and speech-intelligibility references). Labels: V vendor, I independent, A anecdotal, E estimate. The post-demo library and adaptive design are §3f; sources in Appendix A.7.
@@ -1503,8 +1528,8 @@ Researched 2026-09-26 (ElevenLabs Music API reference and guides, pricing, terms
 | `STING_STRANGER` | Stranger clip start | Stinger 6 s | Free, D phrygian | Full; tavern drops to 0.15 | SFX stranger sting |
 | `STING_COMBAT_START` | Combat entry (2:00), over `COMBAT_EST` | Stinger 4 s | 160, D minor | Full; the tavern loop fades out under it | SFX door burst |
 | `COMBAT_SKIRMISH_LOOP` | Combat (2:00–2:40) | Loop 96 s + 12 s return (§3f's `COMBAT_STANDARD_LOOP` without stems) | 160, D minor | 0.5; ducked to 0.2 under the outcome line | `THEME_MAIN` at 0.3 |
-| `STING_VICTORY` | Thrall slain (`combat.end`, SLAIN) | Stinger 6 s | Free, D major | Full | SFX success |
-| `STING_BELL_TOLL` | Thrall flees (`combat.end`, FLED) | Stinger 4 s | Free, D | Full | SFX cliffhanger hit |
+| `STING_VICTORY` | Thrall slain (`combat.done`, SLAIN) | Stinger 6 s | Free, D major | Full | SFX success |
+| `STING_BELL_TOLL` | Thrall flees (`combat.done`, FLED) | Stinger 4 s | Free, D | Full | SFX cliffhanger hit |
 | `CLIFF_TENSION_BED` | Cliffhanger narration (2:40–2:58) | One-shot 24 s, fades over 300 ms at `line_done` | 60, D phrygian | 0.3 | Silence plus ambience |
 | `STING_CLIFF_HIT` | `line_done{cliffhanger}` | Stinger 6 s | Free, D | Full | SFX cliffhanger hit |
 | `END_CARD_THEME` | End card | One-shot 24 s: a 12 s audio-reference chunk of the theme plus a generated 12 s ending | 80, D dorian | 0.7 | `THEME_MAIN` fading over 4 s |
@@ -1556,24 +1581,39 @@ Researched 2026-09-26 from the SRD 5.1 and SRD 5.2.1 PDFs (read directly), the O
 
 **Ruleset.** The demo uses **SRD 5.2.1** (CC-BY-4.0). The mechanics the demo engine executes are one ability check and the §0.21.2 combat subset; every other feature below is shown on the build card but not executed. The end card and an `/about` route carry the SRD 5.2.1 attribution verbatim: "This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode." `/about` also carries the modified-material notice for the drowned thrall (§0.21.2): "The drowned thrall is adapted from the Zombie in the SRD 5.2.1; its hit points are fixed at 12 and Undead Fortitude is removed." "Dungeons & Dragons" and "D&D" are trademarks and are not used; "compatible with fifth edition" is allowed.
 
-**Templates.** All four: level 1, Proficiency Bonus +2, species Human (Speed 30 ft; Resourceful, Skillful, Versatile), the standard array 15, 14, 13, 12, 10, 8 plus the background increases (+2, +1), and the class's starting equipment option A. Every template has Charisma 14 (+2) and Persuasion proficiency (+2): **Persuasion +4**. No template starts with Heroic Inspiration. The Rogue's Expertise never goes on Persuasion (it would make +6).
+**Templates (the baseline).** All four: level 1, Proficiency Bonus +2, the standard array 15, 14, 13, 12, 10, 8 plus the background increases (+2, +1), and the class's starting equipment option A. The table below is each class's baseline build; rows marked † are rolled per character by the build model that follows it, and the rest are fixed. Every build has Charisma 14 (+2) and Persuasion proficiency (+2): **Persuasion +4**. No build starts with Heroic Inspiration. The Rogue's Expertise never goes on Persuasion (it would make +6). **Species traits (display only):** the baseline was researched as Human (Resourceful, Skillful, Versatile); the demo shows the chosen species' SRD 5.2.1 traits on the build card and executes none of them. Every build moves 30 ft (6 cells) whatever its species (the Goliath's 35 ft is shown, not used). The second origin feat in the table is part of the template, not a species trait, so the rogue keeps Tough (+2 HP) and the others Alert (display only).
 
 | | Paladin | Rogue | Bard | Cleric |
 |---|---|---|---|---|
 | Background (increases) | Soldier (Str +2, Con +1) | Criminal (Dex +2, Con +1) | Acolyte (Cha +2, Wis +1) | Acolyte (Wis +2, Int +1) |
-| Str Dex Con Int Wis Cha | 17 10 14 8 12 14 | 8 17 14 10 12 14 | 8 15 14 10 14 14 | 10 12 13 9 17 14 |
-| Saves (proficient) | Wis +3, Cha +4 | Dex +5, Int +2 | Dex +4, Cha +4 | Wis +5, Cha +4 |
-| Skills | Athletics, Intimidation (bg); Persuasion, Insight (class); Perception (Skillful) | Sleight of Hand, Stealth (bg, both Expertise); Persuasion, Deception, Investigation, Acrobatics (class); Perception (Skillful) | Persuasion, Performance, Deception (class); Insight, Religion (bg); Perception (Skillful) | Insight, Religion (bg); Persuasion, Medicine (class); Perception (Skillful) |
-| Origin feats | Savage Attacker (bg), Alert (Versatile) | Alert (bg), Tough (Versatile) | Magic Initiate (Cleric) (bg), Alert (Versatile) | Magic Initiate (Cleric) (bg), Alert (Versatile) |
-| HP / AC | 12 / 18 (Chain Mail, Shield) | 12 / 14 (Leather + Dex) | 10 / 13 (Leather + Dex) | 9 / 16 (Chain Shirt + Dex, Shield) |
+| Str Dex Con Int Wis Cha † (attack ability and Cha fixed) | 17 10 14 8 12 14 | 8 17 14 10 12 14 | 8 15 14 10 14 14 | 10 12 13 9 17 14 |
+| Saves (proficient) † (from the rolled abilities) | Wis +3, Cha +4 | Dex +5, Int +2 | Dex +4, Cha +4 | Wis +5, Cha +4 |
+| Skills † (bg skills and Persuasion fixed) | Athletics, Intimidation (bg); Persuasion, Insight (class); Perception (Skillful) | Sleight of Hand, Stealth (bg, both Expertise); Persuasion, Deception, Investigation, Acrobatics (class); Perception (Skillful) | Persuasion, Performance, Deception (class); Insight, Religion (bg); Perception (Skillful) | Insight, Religion (bg); Persuasion, Medicine (class); Perception (Skillful) |
+| Origin feats | Savage Attacker (bg), Alert (template) | Alert (bg), Tough (template) | Magic Initiate (Cleric) (bg), Alert (template) | Magic Initiate (Cleric) (bg), Alert (template) |
+| HP / AC † | 12 / 18 (Chain Mail, Shield) | 12 / 14 (Leather + Dex) | 10 / 13 (Leather + Dex) | 9 / 16 (Chain Shirt + Dex, Shield) |
 | Main weapon | Longsword +5, 1d8+3 slashing | Shortsword +5, 1d6+3 piercing; Sneak Attack 1d6 | Dagger +4, 1d4+2 piercing | Mace +2, 1d6 bludgeoning |
 | Level-1 features (display only) | Lay On Hands (5), Spellcasting (2 slots), Weapon Mastery | Expertise, Sneak Attack, Thieves' Cant, Weapon Mastery | Bardic Inspiration (d6, 2 uses), Spellcasting | Spellcasting, Divine Order (Thaumaturge) |
 | **Persuasion** | **+4** | **+4** | **+4** | **+4** |
 
-Seat defaults (§0.5): seat 1 paladin, seat 2 rogue. Classes are drawn per R-D7 (§0.21.2). SRD 5.1 fallback, if the developer keeps 5.1: all four as Human (+1 to every ability) with base Cha 13 → 14, background Acolyte or none, Persuasion from the class list.
+**Build model** (D11: random within constraints that preserve the combat odds). At `roll_hero` the engine's seeded dice (Dice, below) build the character in this order:
+1. Class: the one drawn at Lobby → Creation (R-D7, §0.21.2).
+2. Fixed abilities: the ability that drives the main weapon attack keeps its template value (paladin Str 17 = 15 + 2; rogue Dex 17 = 15 + 2; bard Dex 15; cleric Str 10, so the mace stays +2), and Charisma is always 14 (the bard's is 12 + the Acolyte +2).
+3. The other four standard-array values go to the other four abilities at random, with two guards that keep the combat odds: Con is drawn from the two highest remaining values, and the lowest remaining value (8) never goes to Dex. The background increase not yet used goes at random to one of the background's other listed abilities that is not fixed (Soldier: +1 on Dex or Con; Criminal: +1 on Con or Int; Acolyte: for the bard +1 on Int or Wis, for the cleric +2 and +1 on Int and Wis in random order).
+4. HP = the class's hit-die maximum + the rolled Con modifier (+2 for the rogue's Tough); AC from the class's armour and the rolled Dex (only the cleric's changes: Chain Shirt 13 + Dex modifier up to +2 + Shield 2). Saves follow the rolled abilities.
+5. Skills: the background's two skills (fixed by SRD 5.2.1); Persuasion as one class pick, always; the class's other picks drawn at random from its list without duplicates; the rogue's two Expertise picks drawn from its proficient skills other than Persuasion. Perception (Skillful) is shown only for a Human.
+6. Species and gender (the seat's `species{id}` and `gender{id}` picks) are cosmetic: they go to `character_flavor`, the portrait prompt, and the narration, and the build card shows the species traits.
+
+| Class | Fixed | Rolled | HP | AC | Thrall hits seat 1 | Seat 1 drops (§0.21.2) |
+|---|---|---|---|---|---|---|
+| Paladin | Str 17, Cha 14 | Con 12–14; Dex, Int, Wis from the rest | 11–12 (baseline 12) | 18 | 30% | 1.6–2.2% |
+| Rogue | Dex 17, Cha 14 | Con 12–14; Str, Int, Wis from the rest | 11–12 (baseline 12) | 14 | 50% | 1.6–2.2% |
+| Bard | Dex 15, Cha 14 | Con 13–14; Str, Int, Wis from the rest | 9–10 (baseline 10) | 13 | 55% | 2.8–9.6% |
+| Cleric | Str 10, Cha 14 | Con 13 or 15; Dex 12, 13, or 15; Int, Wis from the rest | 9–10 (baseline 9) | 16–17 (baseline 16) | 35–40% | 2.8–7.7% |
+
+Seat defaults (§0.5): seat 1 paladin, seat 2 rogue, each with its baseline build. Classes are drawn per R-D7 (§0.21.2). SRD 5.1 fallback, if the developer keeps 5.1: all four as Human (+1 to every ability) with base Cha 13 → 14, background Acolyte or none, Persuasion from the class list.
 
 **Check resolution**
-- Modifier = Cha modifier + Proficiency Bonus (if proficient) + circumstantial bonuses (none in the demo) = +4. The engine computes it from the template; it is never stored.
+- Modifier = Cha modifier + Proficiency Bonus (if proficient) + circumstantial bonuses (none in the demo) = +4. The engine computes it from the build; it is never stored.
 - Total = kept d20 + modifier; success if total ≥ DC.
 - **Natural 1 and 20 are not automatic on ability checks** (SRD 5.2.1 "D20 Tests"). The engine records `natural` for the narration's tone only. At +4 vs DC 10 the outcome is the same either way.
 - Advantage: none in the demo (Mother Vell is Indifferent). The engine supports `adv: -1|0|+1` (two dice, keep higher or lower; they cancel and do not stack).
@@ -1587,6 +1627,7 @@ Seat defaults (§0.5): seat 1 paladin, seat 2 rogue. Classes are drawn per R-D7 
 - The n-th draw: `u = LE64(SHA-256(seed ‖ LE64(n) ‖ LE32(k))[0:8])` for k = 0, 1, …; the first u below `floor(2^64 / sides) × sides` is accepted (no modulo bias); face = `u % sides + 1`. Each die advances the counter `n` by one.
 - Why: standard library only, output fixed across Go versions, any draw can be jumped to, and no RNG object lives in the engine state.
 - `host_force_d20{n}`: accepted in every state and while paused; `n` outside 1..20 is rejected with a reason; sets `forced_next_d20` (overwriting any earlier value); the next d20 uses `n` (with advantage, `n` is the kept face and the other die is drawn normally); the counter still advances, so later rolls match an unforced run; logged with `source: FORCED`; shown in `HostView.next_d20`; survives Pause; cleared by Reset.
+- **Stage seed:** development runs use a fresh `crypto/rand` seed; the show uses the rehearsed seed, passed with `--seed <hex>` (the host view shows which), so the class draw (R-D7), dice, and sequence-mode recordings match rehearsal. `host_force_d20` still overrides individual rolls.
 - Replay re-derives every roll from `runs.seed` and the logged counters and compares with the logged `RollRecord`; a mismatch fails the walk test.
 
 **What the Check machine emits**
@@ -1626,7 +1667,7 @@ Decided 2026-09-26 (D7, D8, and D11 as amended by R-D7) and researched the same 
 #### 0.21.1 Story and shape
 - The courier was followed. His line (§0.8 `stranger_lines`) ends on "…it followed me from the river." At that line's `line_done`, a **drowned thrall** breaks through the door (`encounter{id: thrall_pursuit}`).
 - The thrall is bound to the tower bell. If it is still standing at the start of its second turn, the bell tolls once and it lurches out toward the tower. This is content policy (SRD 5.2.1 has no end-of-combat rule; §3g R-15), and it sets up the cliffhanger.
-- At most 4 turns, 32 s planned in a 40 s slot; a 30 s `combat_cap` timer guarantees the end.
+- At most 4 turns, 33 s planned in a 40 s slot; a 30 s `combat_cap` timer guarantees the end.
 
 #### 0.21.2 Rules subset (SRD 5.2.1 plus demo rulings)
 **Executed:** fixed turn order; grid movement along a path (8-connected, diagonals cost 1 per R-08, blocked cells from the nav layer); one weapon attack per PC turn (d20 + modifier vs AC); a natural 20 is a critical hit (every damage die twice, R-09); a natural 1 misses; Sneak Attack; the thrall's slam; HP, Bloodied, Unconscious, Defeated, Fled; `host_force_d20` applies to the next d20 of any kind, including attack rolls.
@@ -1644,12 +1685,14 @@ Decided 2026-09-26 (D7, D8, and D11 as amended by R-D7) and researched the same 
 
 R-D1–R-D7 are stored with §3g's rulings in `internal/game/rules/rulings` (§0.20).
 
-**Drowned thrall** (a homebrew variant of the SRD 5.2.1 Zombie, noted in `/about`, §0.20). Source Zombie: CR 1/4, AC 8, HP 15, Speed 20 ft, Str 13 Dex 6 Con 16 Int 3 Wis 6 Cha 5, Slam +3 for 5 (1d8+1) bludgeoning, Undead Fortitude. Demo changes: **HP 12, fixed**; **Undead Fortitude removed**; the Bloodied tint at ≤ 6 HP.
+**Drowned thrall** (a homebrew variant of the SRD 5.2.1 Zombie, noted in `/about`, §0.20). Source Zombie: CR 1/4, AC 8, HP 15, Speed 20 ft, Str 13 Dex 6 Con 16 Int 3 Wis 6 Cha 5, Slam +3 for 5 (1d8+1) Bludgeoning (checked against the SRD 5.2.1 PDF text, p. 343), Undead Fortitude. Demo changes: **HP 12, fixed**; **Undead Fortitude removed**; the Bloodied tint at ≤ 6 HP.
 
 **Odds vs AC 8:** paladin longsword +5 (90%) 1d8+3; rogue shortsword +5 (90%) 1d6+3, plus 1d6 Sneak Attack; bard dagger +4 (85%) 1d4+2; cleric mace +2 (75%) 1d6.
-**Thrall slam:** vs the paladin's AC 18, 30% (seat 1 drops 1.6% of the time); the rogue's AC 14, 50% (1.6%); the bard's AC 13, 55% (2.8%); the cleric's AC 16, 40% (7.7%). With the fixed spawn cells, the thrall always attacks seat 1.
+**Thrall slam** (at the §0.20 baseline builds): vs the paladin's AC 18, 30% (seat 1 drops 1.6% of the time); the rogue's AC 14, 50% (1.6%); the bard's AC 13, 55% (2.8%); the cleric's AC 16, 40% (7.7%). With the fixed spawn cells, the thrall always attacks seat 1, and it acts at most once (T2), so only seat 1's AC and HP matter.
 
-When the fight ends (exact over the dice; T1 seat 1, T2 thrall, T3 seat 2, T4 seat 1, then the bell):
+**Rolled builds.** The build model (§0.20) fixes every attack bonus and damage expression, so the PC attack odds above and the T1 column below do not change with the roll. The thrall's hit chance and seat 1's drop odds vary slightly with seat 1's rolled AC and HP: paladin 30%, 1.6–2.2%; rogue 50%, 1.6–2.2%; bard 55%, 2.8–9.6%; cleric 35–40%, 2.8–7.7%. A drop moves a run from T4 to the bell (and, with a rogue in seat 2, removes Sneak Attack on T3), so a row's T3, T4, and bell columns shift by at most the change in drop odds (≤ 6.8 points, bard-first rows). R-D4 and host force-d20 bound the effect as before.
+
+When the fight ends (exact over the dice at the baseline builds; T1 seat 1, T2 thrall, T3 seat 2, T4 seat 1, then the bell):
 | Seat 1 / seat 2 | Ends T1 | Ends T3 | Ends T4 | Bell (flees) |
 |---|---|---|---|---|
 | paladin / rogue | 2.8% | 78.8% | 14.3% | 4.1% |
@@ -1662,47 +1705,51 @@ When the fight ends (exact over the dice; T1 seat 1, T2 thrall, T3 seat 2, T4 se
 | bard / rogue | 0 | 71.2% | 15.3% | 13.5% |
 | cleric / paladin | 0.1% | 33.3% | 25.7% | 40.8% |
 | cleric / rogue | 0.1% | 58.8% | 17.5% | 23.6% |
-| Mean over the allowed pairs | 1.3% | 48.3% | 34.7% | 15.8% |
+| Mean, weighted by R-D7 (paladin- or rogue-first pairs 1/12 each, bard- or cleric-first pairs 1/8 each) | 1.1% | 49.0% | 32.7% | 17.3% |
 
-Without R-D7, a bard and cleric pair flees in 58–70% of runs. HP 12 was chosen over HP 10, which gives a 25% chance that a seat-1 paladin ends the fight alone. The thrall acts in 98.7% of runs. Every outcome ends by T4; wall time is ≤ 30 s plus the outcome line. To end the fight on seat 2's attack, the host forces a 20 before seat 2's tap (a critical hit, which kills in most runs; the bell and Skip cover the rest); to protect seat 1, the host forces a 1 before the thrall's turn.
+Without R-D7, a bard and cleric pair flees in 58–70% of runs. HP 12 was chosen over HP 10, which gives a 25% chance that a seat-1 paladin ends the fight alone. The thrall acts in ≈ 98.9% of runs. Every outcome ends by T4; wall time to `done` is ≤ 30 s (`combat_cap`), then the 1.5 s `outcome_delay` and the outcome line. To end the fight on seat 2's attack, the host forces a 20 before seat 2's tap (a critical hit, which kills in most runs; the bell and Skip cover the rest); to protect seat 1, the host forces a 1 before the thrall's turn.
 
 #### 0.21.3 Combat machine (child of `scene.active`)
-State IDs: `session.play/scene.active/combat.{intro, pc_turn, rolling, enemy_turn, end}`. The Combat phase of §0.5 creates one `combat/<n>` instance, a child of the phase machine's `session` scope (§0.18.4). Its epoch bumps on every non-internal combat transition, so its per-state timers (`combat_intro`, `attack_resolved`, `enemy_resolved`, and the combat `turn_timer`) never outlive their state. `combat_cap` is started by the phase transition HookEvent → Combat in the `session` scope, so it spans every combat state; entering `end` cancels it. The outcome-line pre-renders are `run`-scoped (started at the second `pc_locked`).
+State IDs: `session.play/scene.active/combat.{intro, pc_turn, rolling, enemy_turn, done}`. The Combat phase of §0.5 creates one `combat/<n>` instance, a child of the phase machine's `session` scope (§0.18.4). Its epoch bumps on every non-internal combat transition, so its per-state timers (`combat_intro`, `attack_resolved`, `enemy_resolved`, `outcome_delay`, and the combat `turn_timer`) never outlive their state. `combat_cap` is started by the phase transition HookEvent → Combat in the `session` scope, so it spans every combat state; entering `done` cancels it. The outcome-line pre-renders are `run`-scoped (started at the second `pc_locked`).
 ```mermaid
 stateDiagram-v2
     state next <<choice>>
     HookEvent --> intro: line_done{stranger}
     intro --> pc_turn: timer combat_intro (3 s) [next = PC]
     pc_turn --> pc_turn: act move{cell} [active seat, cell reachable] (internal)
-    pc_turn --> rolling: act attack{t} / turn_timer expiry (auto attack{thrall})
-    pc_turn --> next: act end_turn
-    rolling --> end: timer attack_resolved (2 s) [thrall HP ≤ 0] (SLAIN)
+    pc_turn --> rolling: act attack{t} / turn_timer expiry (auto attack{thrall} if legal)
+    pc_turn --> next: act end_turn / turn_timer expiry [no legal attack] (auto end_turn)
+    rolling --> done: timer attack_resolved (walk + 2 s) [thrall HP ≤ 0] (SLAIN)
     rolling --> next: timer attack_resolved [else]
     next --> enemy_turn: [thrall's turn, first time]
-    next --> end: [thrall's turn, second time] (FLED, BELL)
+    next --> done: [thrall's turn, second time] (FLED, BELL)
     next --> pc_turn: [PC can act]
     next --> next: [PC Down] (log turn_started and turn_ended, skip)
-    enemy_turn --> next: timer enemy_resolved (3 s)
-    intro --> end: combat_cap (30 s) or host_skip (FLED, CAP or SKIP)
-    pc_turn --> end: combat_cap or host_skip
-    rolling --> end: combat_cap or host_skip
-    enemy_turn --> end: combat_cap or host_skip
-    end --> Cliffhanger: line_done{combat_outcome}
+    enemy_turn --> next: timer enemy_resolved (walk + 2 s)
+    intro --> done: combat_cap (30 s) or host_skip (FLED, CAP or SKIP)
+    pc_turn --> done: combat_cap or host_skip
+    rolling --> done: combat_cap or host_skip
+    enemy_turn --> done: combat_cap or host_skip
+    done --> Cliffhanger: line_done{combat_outcome}
 ```
 (`next` is a choice pseudo-state, not logged as a state.)
 
+**Battlefield mode.** The engine decides the mode at Combat entry: SPLAT only if `report{SPLAT_READY}` has been received in this run and neither `SPLAT_FAILED` nor `host_splat_off` has, otherwise FLAT. The mode holds for the fight, except that `SPLAT_FAILED` or `host_splat_off` switches it to FLAT at any time. A DM tab reloaded mid-combat renders FLAT from the snapshot until its splat module sends `ready` (after `init` and the current `scene`), then switches back to SPLAT; the engine's mode does not change, and the repeated `SPLAT_READY` is idempotent.
+
 | Transition | Actions |
 |---|---|
-| HookEvent → intro | Place the tokens at their spawn cells; `battlefield.visible`; camera `COMBAT_EST` (3 s); music `STING_COMBAT_START`, then `COMBAT_SKIRMISH_LOOP`; start `combat_intro` (3 s, combat scope); `combat_cap` (30 s, pausable, phase scope) is started by the phase transition; log `combat_started` |
+| HookEvent → intro | Place the tokens at their spawn cells; `battlefield.visible` in the mode above; camera `COMBAT_EST` (3 s); music `STING_COMBAT_START`, then `COMBAT_SKIRMISH_LOOP`; start `combat_intro` (3 s, combat scope); `combat_cap` (30 s, pausable, phase scope) is started by the phase transition; log `combat_started` |
 | → pc_turn | Camera `TURN_FOCUS{token}`; the combat `turn_timer` (10 s); compute the reachable cells and the attack preview; log `turn_started` |
-| pc_turn, on `attack{t}` | Validate (active seat, action unused, target alive, path exists); `moved{path}`; roll the d20 (the forced d20 if set) and the damage; log `attack_made{AttackOutcome}`, `damage_applied`, `status_applied`; animations attack and hit (or fall); `IMPACT` on a hit; start `attack_resolved` (2 s) |
-| enemy_turn entry | R-D6 tactic; roll the slam; apply damage; Down at 0 HP; the `KO` preset if a PC drops; start `enemy_resolved` (3 s) |
-| → end | The epoch bump cancels the per-state timers; `CancelTimer{combat_cap}`. SLAIN: thrall `fall`, `STING_VICTORY`, camera `VICTORY`. FLED: `STING_BELL_TOLL`; the thrall slides to the door and fades. After 1.5 s the pre-rendered `combat_outcome` variant (`slain_by_seat1`, `slain_by_seat2`, or `fled`) plays through the voice queue; log `combat_ended` |
-| end → Cliffhanger | A Down PC goes to 1 HP; hide the battlefield; cross-fade to the cliffhanger clip or still (§0.5 Combat → Cliffhanger) |
+| pc_turn, on `attack{t}` | Validate (active seat, action unused, target alive, path exists); `moved{path}`; roll the d20 (the forced d20 if set) and the damage; log `attack_made{AttackOutcome}`, `damage_applied`, `status_applied`; the walk (path cells × 250 ms), then the first 2 s of the attack loop, with contact at 1.2 s; at contact the target plays the first 2 s of its hit loop (or fall), `IMPACT` fires on a hit, and the banner and HP bars update (the view carries `contact_at`, §0.21.6); start `attack_resolved` (walk + 1.2 s + 0.8 s) |
+| enemy_turn entry | R-D6 tactic (a walk only if no PC is adjacent); roll the slam; apply damage with the same contact timing as an attack; Down at 0 HP; the `KO` preset if a PC drops; start `enemy_resolved` (walk + 1.2 s + 0.8 s) |
+| → done | The epoch bump cancels the per-state timers; `CancelTimer{combat_cap}`. SLAIN: thrall `fall`, `STING_VICTORY`, camera `VICTORY`. FLED: `STING_BELL_TOLL`; the thrall slides to the door and fades. Start `outcome_delay` (1.5 s, combat scope); on it the pre-rendered `combat_outcome` variant (`slain_by_seat1`, `slain_by_seat2`, or `fled`) plays through the voice queue. Log `combat_ended` |
+| done → Cliffhanger | A Down PC goes to 1 HP; hide the battlefield; cross-fade to the cliffhanger clip or still (§0.5 Combat → Cliffhanger) |
 
-**Phone moves.** In `intro`, `rolling`, `enemy_turn`, and `end` there are none; the status text reads "Brace yourself", "Rolling…", "The thrall moves", or "…". In `pc_turn`, the active seat sees **Attack the drowned thrall** [`attack{thrall}`] with the preview "+5 to hit · AC 8 · 90% · 1d8+3" (greyed "No path to the thrall"); **Move** [`move{cell}`] behind the flag `combat_move_ui` (a mini grid of reachable cells; greyed "No movement left"); and **End turn** [`end_turn`]. The other seat sees a greyed "Waiting for {name}" with the preview visible. A Down seat is skipped and sees "You're down, the others fight on".
+**Loop trim and timing.** The 4 s attack and hit loops play only their first 2 s (the swing's contact frame is at ≈ 1.2 s), then the token returns to idle; fall and flee hold their last frame; the portrait tweens (§0.21.4) use the same contact time. With taps at ≈ 3 s, walks of ≤ 4 cells, and the thrall adjacent to seat 1 after T1, the fight reaches `done` at ≈ 23 s (entry 3 + 6 + 3 + 6 + 5), so `combat_cap` stays at 30 s: it ends the fight only when taps average more than ≈ 5 s, where the 10 s turn timer already sets the pace.
 
-**Timers, Pause, Skip.** The combat `turn_timer` runs 10 s per PC turn, pulses amber at 6 s (no voice line), and on expiry the DM acts `attack{thrall}`. It is frozen while a voice line is queued or speaking and during Pause. `TIMERS_OFF` disables turn timers but not `combat_cap`. Pause freezes every combat timer, including the cap, and the DM client sends `pause` to the splat module. Host Skip in any combat state before `end` ends the fight as FLED (SKIP); in `end`, Skip fires `line_done{combat_outcome}`; in HookEvent, Skip leads to Combat. A phone that drops on its turn is covered by the turn timer.
+**Phone moves.** In `intro`, `rolling`, `enemy_turn`, and `done` there are none; the status text reads "Brace yourself", "Rolling…", "The thrall moves", or "…". In `pc_turn`, the active seat sees **Attack the drowned thrall** [`attack{thrall}`] with the preview "+5 to hit · AC 8 · 90% · 1d8+3" (greyed "No path to the thrall"); **Move** [`move{cell}`] behind the flag `combat_move_ui` (a mini grid of reachable cells; greyed "No movement left"); and **End turn** [`end_turn`]. The other seat sees a greyed "Waiting for {name}" with the preview visible. A Down seat is skipped and sees "You're down, the others fight on".
+
+**Timers, Pause, Skip.** The combat `turn_timer` runs 10 s per PC turn, pulses amber at 6 s (no voice line), and on expiry the DM acts `attack{thrall}` if it is legal, otherwise `end_turn`. It is frozen while a voice line is queued or speaking and during Pause. `TIMERS_OFF` disables turn timers but not `combat_cap`. Pause freezes every combat timer, including the cap, and the DM client sends `pause` to the splat module. Host Skip in any combat state before `done` ends the fight as FLED (SKIP); in `done`, Skip fires `line_done{combat_outcome}`; in HookEvent, Skip leads to Combat. A phone that drops on its turn is covered by the turn timer.
 
 **Walk-test paths** 26–38 are listed in §0.12.
 
@@ -1714,7 +1761,7 @@ Decision: **the PlayCanvas engine on a canvas the DM page owns** (not the SuperS
 | Grid and billboards | The overlay needs camera matrices (not exposed) and always draws on top | Same scene, correct depth |
 | Risk | Fails the §3b depth requirement | One ≈ 500-line JS module against a pinned engine |
 
-**Depth.** Splats render sorted and alpha-blended in the transparent pass, testing but not writing depth (`depthWrite=false` is required [S7, S20]). Billboards are opaque alpha-tested quads that write depth (a ShaderMaterial keys #00B140 with spill suppression, alpha test 0.5) in the World opaque pass before the splats, so occlusion is correct both ways. The grid is a transparent line mesh at y = 0.02 m, drawn after the splats (depth test on, write off), on walkable cells only. Billboards rotate about Y only and flip their UVs when the target is on the screen's right. Video textures: one muted, looping, `playsInline` HTMLVideoElement per clip, uploaded each frame [S9].
+**Depth.** Splats render sorted and alpha-blended in the transparent pass, testing but not writing depth (`depthWrite=false` is required [S7, S20]). Billboards are opaque alpha-tested quads that write depth (a ShaderMaterial keys #00B140 with spill suppression, alpha test 0.5) in the World opaque pass before the splats, so occlusion is correct both ways. The grid is a transparent line mesh at y = 0.02 m, drawn after the splats (depth test on, write off), on walkable cells only. Because splats write no depth, splat geometry never occludes the grid (only billboards do); this is acceptable because walkable cells avoid furniture. Billboards rotate about Y only and flip their UVs when the target is on the screen's left (every loop swings toward screen right, §0.17). Video textures: one muted, looping, `playsInline` HTMLVideoElement per clip, uploaded each frame [S9].
 
 **Device.** WebGL2 by default (WebGPU is supported [S5], but its GPU-sort path has a static-camera flicker bug [S8]); unified rendering [S6]; the engine version pinned at hour 0 (2.18.x at research time [S4]) and vendored as `web/splat/vendor/playcanvas.mjs` (an orchestrator-approved dependency, §0.18.8 rule 10).
 
@@ -1743,7 +1790,7 @@ type Token struct {
 	ID, Kind, Name string
 	Cell           [2]int
 	Path           [][2]int          // animated at 250 ms/cell when AnimSeq advances
-	FacingR        bool              // flip UV
+	FlipU          bool              // mirror the UVs: the target is on the screen's left
 	HeightM        float64           // 1.8
 	Clips          map[string]string // idle, attack, hit, fall; empty = portrait tween
 	Portrait       string
@@ -1757,31 +1804,31 @@ type Pause struct{ On bool } // type:"pause"; type:"dispose" has no fields
 ```
 The module keeps no game state and makes no decisions; a reloaded DM tab sends `init` and then the current `scene`. `LOW_FPS` means a 5th-percentile fps under 30 for 3 s; the module swaps to `lite_url` once, and if that also fails, Go reports `Report{SPLAT_FAILED}` and the DM renders FLAT.
 
-**Grid registration.** World Labs returns `metric_scale_factor` and `ground_plane_offset` [S14]. The SPZ is converted to SOG with `splat-transform` [S11] (PlayCanvas loads .ply and .sog, not .spz [S4]); floaters are cropped in SuperSplat. The nav layer `internal/content/battlefield_tavern.json` holds the transform; an 8 × 6 grid of 1.524 m cells; the walkable cells; spawn cells for seat 1, seat 2, and the thrall; the door; the camera definitions; and `flat{image_url, floor_quad_px[4]}`. It is authored at build time (≈ 20 min) with the `?debug` pick mode.
+**Grid registration.** World Labs returns `metric_scale_factor` and `ground_plane_offset` [S14]. The SPZ is converted to SOG with `splat-transform` [S11] (PlayCanvas loads .ply and .sog, not .spz [S4]); floaters are cropped in SuperSplat by the developer at the hour-2 checkpoint (part of the L-OPS checkpoint). The nav layer `internal/content/battlefield_tavern.json` holds the transform; an 8 × 6 grid of 1.524 m cells; the walkable cells; spawn cells for seat 1, seat 2, and the thrall; the door; the camera definitions; and `flat{image_url, floor_quad_px[4]}`. It is authored at build time (≈ 20 min) with the `?debug` pick mode.
 
 **Camera presets:** the demo values are in §0.17 (TACTICAL pitch **35–40°**, not §3e's 55–60°, because a world made from one still degrades far from the source view).
 
-**Performance** (X2 → TV at 1920 × 1080, pixel ratio 1): 5th-percentile fps ≥ 45 as the target and ≥ 30 as the floor; ≤ 500k Gaussians (100k fallback); ≤ 3 playing 480p video textures; the splat preloaded hidden at Opening entry (the SOG is ≈ 5–10 MB over the LAN).
+**Performance** (X2 → TV at 1920 × 1080, pixel ratio 1): 5th-percentile fps ≥ 45 as the target and ≥ 30 as the floor; ≤ 500k Gaussians (100k fallback); ≤ 3 playing 480p video textures; the splat loaded hidden from Opening entry (`DMView.battlefield` with `visible: false`, §0.21.5; the SOG is ≈ 5–10 MB over the LAN).
 
-**FLAT fallback** (L-WEB-DM, pure GWC and Go): used on `SPLAT_FAILED` or `features.splat=false`. The battlefield still is the background; the grid is an SVG homography of `floor_quad_px`; tokens are transparent portrait cut-outs scaled by row with CSS tweens (idle breathing 1.00 ↔ 1.015 over 3 s; attack lunge 30 px and 4° over 250 ms; hit recoil and a red flash; fall rotates 80° and desaturates; flee slides and fades); camera presets become CSS scale and translate.
+**FLAT fallback** (L-WEB-DM, pure GWC and Go): used on `SPLAT_FAILED`, when `features.splat=false` at run start, or on the host command `SPLAT_OFF` (`host_splat_off`: an engine flag, logged and replayable; takes effect in the next snapshot, no reload). The battlefield still is the background; the grid is an SVG homography of `floor_quad_px`; tokens are transparent portrait cut-outs scaled by row with CSS tweens (idle breathing 1.00 ↔ 1.015 over 3 s; attack lunge 30 px and 4° over 250 ms; hit recoil and a red flash; fall rotates 80° and desaturates; flee slides and fades); camera presets become CSS scale and translate.
 
 #### 0.21.5 Assets and pre-generation
 Video prices are Segmind Seedance 2.0 Mini (D12): $0.0176/s at 480p.
 | Asset | When | How | Time |
 |---|---|---|---|
 | Battlefield still | Build, hour 0 | gpt-image high: "high three-quarter view, about 35°, of the tavern's main floor; open planked floor in the centre; tables pushed to the walls; door on the left; no people" + STYLE ($0.04) | < 1 min |
-| Battlefield splat | Build, hours 0–1 | World Labs `POST /marble/v1/worlds:generate`, `marble-1.1`, image input, 2 attempts; SPZ at 500k and 100k → `splat-transform` → SOG; crop; nav layer (≈ $1.26 × 2 ≈ $2.52, §0.15) | ≈ 5 min each (Draft ≈ 20 s, third party) |
+| Battlefield splat | Build, hours 0–1 | World Labs `POST /marble/v1/worlds:generate`, `marble-1.1`, image input, 2 attempts; SPZ at 500k and 100k → `splat-transform` → SOG; floater crop (the developer, in SuperSplat, at the hour-2 checkpoint); nav layer (≈ $1.26 × 2 ≈ $2.52, §0.15) | ≈ 5 min each (Draft ≈ 20 s, third party) |
 | Thrall still and cut-out | Build | gpt-image full body, transparent ($0.04) | < 1 min |
 | Thrall loops `BB_LOOP_{idle, attack, hit, fall}` | Build | Segmind Seedance 2.0 Mini, 480p, 4 s, 9:16, first frame = the cut-out on #00B140; idle pinned (end frame = first frame); 2 attempts (16 s × 2 × $0.0176 ≈ $0.56) | 60–180 s each, in parallel |
 | Chroma latency samples | Hour 0 | 3 × 4 s at 480p on Segmind Mini (≈ $0.21) | — |
-| PC loops (PC 1 idle, attack, hit; PC 2 idle, attack) | At each `pc_locked` | Go composites the full-body portrait onto #00B140, 480 × 854, feet at 90% of the height; Segmind Seedance 2.0 Mini, 4 s, 480p, no audio; slot deadline = `combat.end` entry (20 s × $0.0176 ≈ $0.35 per run) | Needed ≈ 85–95 s after the lock; p50 60–120 s, p90 ≈ 180 s → ≈ 50% ready. The portrait tween is the expected path unless Mini's hour-0 latency beats it |
+| PC loops (PC 1 idle, attack, hit; PC 2 idle, attack) | At each `pc_locked` | Go composites the full-body portrait onto #00B140, 480 × 854, feet at 90% of the height; Segmind Seedance 2.0 Mini, 4 s, 480p, no audio; slot deadline = `combat.done` entry (20 s × $0.0176 ≈ $0.35 per run) | Needed ≈ 85–95 s after the lock; p50 60–120 s, p90 ≈ 180 s → ≈ 50% ready. The portrait tween is the expected path unless Mini's hour-0 latency beats it |
 | Combat outcome lines | At the second `pc_locked` | `combat_outcomes` pre-render (`gemini-3.8-flash`, `LOW`): `{slain_by_seat1, slain_by_seat2, fled}`, ≤ 20 words each, then TTS (< $0.02) | Ready ≥ 60 s before use |
 | Music | Build | `COMBAT_SKIRMISH_LOOP` (§3f's `COMBAT_STANDARD_LOOP` without stems: 160 BPM, D minor, 96 s + a 12 s return), `STING_COMBAT_START` 4 s, `STING_VICTORY` 6 s, `STING_BELL_TOLL` 4 s ("one deep bell toll in D, long decay"): ≈ 2.1 min × 3 takes ≈ $0.95 | Within the 2 concurrent music jobs |
 | Sound effects | Build | Sword slash, blade hit, mace thud, dagger stab, miss whoosh, slam impact, thrall groan, splash collapse, wet footsteps, door burst (≈ $0.10) | < 1 min |
 
 **Portraits** (§0.9) are **full body** on a transparent background; the cliffhanger composite and the layered scene crop them to three-quarter body, with faces ≥ 8% of the frame height after the crop.
 **Concurrency.** At the second lock ≈ 6 clips run at once (5 PC loops, 3 of them possibly still running from the first lock, plus the cliffhanger clip). Per provider: Segmind publishes no concurrency cap (a 406 means insufficient reserved credit), so hour 0 tests 3–5 concurrent jobs; EvoLink's limit is read in hour 0; fal allows 2 until credits are bought, so fal needs credits only if it becomes primary. ElevenLabs: 8 TTS jobs start at the second lock; the pre-renders queue behind the opening if the verified limit is 6.
-**Preload.** `DMView` gets `preload[]`: the URLs of the next reachable state's assets, decoded hidden. They are fetched but not shown, a stated exception to the spoiler rule (§0.6).
+**Preload.** Two stated exceptions to the spoiler rule (§0.6). `DMView.preload[]` carries the next reachable state's image, clip, and audio URLs, decoded hidden. The battlefield is not in `preload[]`: `DMView.battlefield` itself is sent from Opening entry with `visible: false`, and the DM client sends the splat module `init` from it at once, so the SOG loads and decodes during Opening and Exploration and `SPLAT_READY` normally arrives long before Combat entry (§0.21.3). Both are fetched but not shown until their state is entered.
 **Flag `live_pc_loops`** stays on for every run: at Segmind Mini's rate the five loops cost ≈ $0.35 per run (§0.14). It is off only when cutting (§0.12).
 
 #### 0.21.6 Contracts
@@ -1792,9 +1839,9 @@ message Cell { int32 c = 1; int32 r = 2; }
 ```
 Move IDs add `attack` (`target_id`), `move` (`cell`), and `end_turn`.
 
-`DMView` adds `battlefield{mode: SPLAT|FLAT, visible, scene_url, lite_url, flat_image_url, grid, camera{preset, focus_token_id, seq}}`, `tokens[]` (the `Token` fields plus `hp`, `hp_max`, `active`), `highlights[]`, `turn_order[{token_id, name, portrait_url, hp, hp_max, active, done}]`, and `round`; `dice` gains `kind: CHECK|ATTACK`, `vs_label` ("AC 8"), `crit`, and `damage{dice, faces[], bonus, total, type}`; `combat_banner{text}` ("HIT · 7 slashing", "CRITICAL", "MISS"); `preload[]`. `PhoneView` adds `combat{token_id, hp, hp_max, statuses[], my_turn, move_left_cells, mini_grid{cols, rows, walkable[], reachable[], me, thrall}}`; `moves[]` gains `preview{modifier, vs, p_success, damage}`, `target_id`, and `cell`. `HostView` adds `combat_cap_remaining_ms`. The TV turn strip, the attack preview, and the dice replace the phone mirror, which is removed.
+`DMView` adds `battlefield{mode: SPLAT|FLAT, visible, scene_url, lite_url, transform, cameras, grid, flat{image_url, floor_quad_px[4]}, camera{preset, focus_token_id, seq}}` (the nav layer's fields, so the splat module's `Init` and the FLAT renderer are built from the view alone; sent from Opening entry with `visible: false`, a stated exception to the spoiler rule, §0.6 and §0.21.5), `tokens[]` (the `Token` fields plus `hp`, `hp_max`, `active`), `highlights[]`, `turn_order[{token_id, name, portrait_url, hp, hp_max, active, done}]`, and `round`; `dice` gains `kind: CHECK|ATTACK`, `vs_label` ("AC 8"), `crit`, and `damage{dice, faces[], bonus, total, type}`; `combat_banner{text}` ("HIT · 7 slashing", "CRITICAL", "MISS"); `contact_at` (the run time of the current attack's or slam's contact: DM and phone clients keep the previous HP and show no banner until then, extrapolated like timers, §0.18.4); `preload[]`. `PhoneView` adds `combat{token_id, hp, hp_max, statuses[], my_turn, move_left_cells, mini_grid{cols, rows, walkable[], reachable[], me, thrall}}`; `moves[]` gains `preview{modifier, vs, p_success, damage}`, `target_id`, and `cell`. `HostView` adds `combat_cap_remaining_ms` (extrapolated by `api`, §0.18.4). The TV turn strip, the attack preview, and the dice replace the phone mirror, which is removed.
 
-Engine facts (log notes): `combat_started`, `turn_started{token}`, `moved{token, path}`, `attack_made{AttackOutcome}`, `damage_applied{target, amount, hp_after}`, `status_applied{token, status}`, `status_removed`, `turn_ended{token, reason: ACTED|END_TURN|TIMEOUT|SKIPPED_DOWN}`, `combat_ended{outcome: SLAIN|FLED, by_seat, reason: HP_ZERO|BELL|CAP|SKIP}`. Timers: `combat_intro`, `attack_resolved`, `enemy_resolved`, `combat_cap`, and the combat `turn_timer`. Work effects: `GenerateBillboardLoops{Seat, Clips}` (L-MEDIA: the composite, then one `GenerateClip` per loop, each an asset slot) and `PrerenderSet{Role: combat_outcomes, Variants}`, which generalises and replaces `PrerenderPair`. All are in the §0.18.4 catalogue.
+Engine facts (log notes): `combat_started`, `turn_started{token}`, `moved{token, path}`, `attack_made{AttackOutcome}`, `damage_applied{target, amount, hp_after}`, `status_applied{token, status}`, `status_removed`, `turn_ended{token, reason: ACTED|END_TURN|TIMEOUT|SKIPPED_DOWN}`, `combat_ended{outcome: SLAIN|FLED, by_seat, reason: HP_ZERO|BELL|CAP|SKIP}`. Timers: `combat_intro`, `attack_resolved`, `enemy_resolved`, `outcome_delay`, `combat_cap`, and the combat `turn_timer`. Host command: `host_splat_off`. Work effects: `GenerateBillboardLoops{Seat, Clips}` (L-MEDIA: the composite, then one `GenerateClip` per loop, each an asset slot) and `PrerenderSet{Role: combat_outcomes, Variants}`, which generalises and replaces `PrerenderPair`. All are in the §0.18.4 catalogue.
 ```go
 type AttackOutcome struct {
 	AttackID                 string
@@ -1831,7 +1878,7 @@ Merged into §0.18.9 (the lanes L-COMBAT and L-WEB-SPLAT, the §0.18.2 package r
 | Cost creep | Vendor spend caps; the `live_pc_loops` flag |
 
 #### 0.21.9 Stage runbook additions
-Merged into the §0.13 failure matrix. In short: to end the fight on seat 2's attack, force a 20 before seat 2 taps; to protect seat 1, force a 1 before the thrall's turn; for any combat hitch, Skip (FLED, then the outcome line); if the splat is black or stuttering, FLAT is automatic, and otherwise set `features.splat=false` and reload the DM tab.
+Merged into the §0.13 failure matrix. In short: to end the fight on seat 2's attack, force a 20 before seat 2 taps; to protect seat 1, force a 1 before the thrall's turn; for any combat hitch, Skip (FLED, then the outcome line); if the splat is black or stuttering, FLAT is automatic, and otherwise the host sends `SPLAT_OFF` (`host_splat_off`), which switches to FLAT from the next snapshot with no reload.
 
 #### 0.21.10 Hour-0 checks
 World Labs Marble API access, real generation time, and `semantics_metadata`; `splat-transform` SPZ → SOG; Seedance on flat green (key quality, face filter); Segmind Mini's image input and 480p price; the 9:16 aspect; Chrome on the X2: WebGL2 fps with 500k and 100k Gaussians plus 3 videos. These are item 9 of the §0.15 hour-0 list.
@@ -2016,7 +2063,7 @@ What this needs, and the open problems:
 
 ## 3c. Gameplay phases and the engine's state hierarchy (post-demo)
 
-Researched 2026-09-26 from the SRD 5.1 and 5.2 texts, The Alexandrian (three-clue rule, node-based design, scene framing, progress clocks), Sly Flourish (pacing, combat speed), Dungeon World (fronts, GM moves), Blades in the Dark (clocks, downtime), BG3's turn-based mode, Jackbox design principles, and the FIREBALL and CALYPSO papers on LLM game masters. Sources: Appendix A.5. The demo machine in §0.5 is one instance of this hierarchy (one act, one scene, no combat); the mapping is in §0.5.
+Researched 2026-09-26 from the SRD 5.1 and 5.2 texts, The Alexandrian (three-clue rule, node-based design, scene framing, progress clocks), Sly Flourish (pacing, combat speed), Dungeon World (fronts, GM moves), Blades in the Dark (clocks, downtime), BG3's turn-based mode, Jackbox design principles, and the FIREBALL and CALYPSO papers on LLM game masters. Sources: Appendix A.5. The demo machine in §0.5 is one instance of this hierarchy (one act, one scene, one combat encounter); the mapping is in §0.5.
 
 ### Phase catalogue
 Durations are real-table figures from Sly Flourish unless marked *(est.)*. The SRD labels name where each phase was researched; the source used in code for each subsystem is the §3g table.
@@ -2845,6 +2892,7 @@ Ranking: DM agent and tools, then TTS, LLM role split, NPC generator, plot struc
 | 5 | 7.0 / 10 | All round-4 blockers fixed; voice `persuade` blocked by its own in-flight utterance and a rejected voice MOVE lost its reply; `all_before_epoch` unimplementable; host commands during Pause undefined; five stale cross-references; hours 2–5 overloaded |
 | 6 | 7.3 / 10 | §0.16 figures not propagated into §0.9/§0.10/§0.14; the cached prefix included the gated clue; hour 0–1 held ≈ 3 h of work; `interpret` on the conversation critical path; path-ID mapping inconsistent with §3c; Pause, Force d20, and TalkStop expiry gaps |
 | 7 | 6.6 / 10 | Contract catalogue missing; the epoch rule cancelled pre-emptive work (stranger lines, cliffhanger clip, outcome line) at phase exits; two schedules (§0.12 and §0.18.9); about 15 contradictions (chains, STT timeouts, turn timer vs `conversation_idle`, clip resolution, track count, path IDs); hour 0–1 overloaded. Round 8: scope tree, event and effect catalogue, `domain.View` and `ports.Engine`, L-SPIKE, one schedule, one chain |
+| 8 | 7.0 / 10 | Build model contradiction (random vs fixed stats); gates depended on later blocks; View timers, battlefield contract, SPLAT_OFF semantics; end/done naming; combat timing vs loops. Round 9: the §0.20 build model, restaged blocks and walk paths, the `View` timer rule, `DMView.battlefield` from Opening entry, `host_splat_off` and `outcome_delay` in the catalogue, `done` everywhere, contact timing, canned-line texts, and the `artifacts/` paths from AGENTS.md |
 
 Combat merged into §0 (§0.21) after round 7.
 

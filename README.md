@@ -1,10 +1,17 @@
 # DungeonFlux
 
+**An AI dungeon master for a table of friends. Built for ShellHacks 2026.**
+
+<p align="center">
+  <a href="https://monstercameron.github.io/DungeonFlux/"><strong>&rarr; See the project site: the three-minute demo, how it's built, and the concept art</strong></a><br>
+  <a href="https://monstercameron.github.io/DungeonFlux/">monstercameron.github.io/DungeonFlux</a> &middot; <a href="https://monstercameron.github.io/DungeonFlux/devlog.html">Devlog</a> &middot; <a href="plan.md">Plan</a>
+</p>
+
 DungeonFlux is an AI dungeon master for tabletop role-playing under fifth-edition fantasy rules. A group of friends sits in one room. A laptop, or the TV it is connected to, is the dungeon master's screen. Each player's phone is their character sheet and controller. The AI runs the game: it writes the story, narrates it aloud, and plays everyone the party meets.
 
-![Title screen concept, a moonlit river town with a tavern lit up along the water](assets/concept/title-screen-concept.jpg)
+[![Title screen concept, a moonlit river town with a tavern lit up along the water](assets/concept/title-screen-concept.jpg)](https://monstercameron.github.io/DungeonFlux/)
 
-Images throughout this document are concept art for the look and feel; the game's screens will differ in detail.
+Images throughout this document are concept art for the look and feel; the game's screens will differ in detail. Select the image to open the project site.
 
 ## The idea
 
@@ -69,3 +76,16 @@ The demo is one scene. The plan beyond it is the full game:
 - **Full campaigns** with multiple acts, written by the dungeon master around the characters the players create, with a cast and locations that stay consistent as the story grows.
 - **Full combat**, extending the demo's fight with initiative, spells, reactions, and conditions, all driven from the phone, which still shows only the options that are legal on that turn.
 - **Memory across sessions**, so the characters the party has met remember what was said and promised, and each session can open with a recap of the last one.
+
+## See it
+
+The project site walks through the three-minute demo beat by beat, shows how the system is built, and keeps a devlog of how the project is being planned and built with a team of AI agents.
+
+<p align="center">
+  <a href="https://monstercameron.github.io/DungeonFlux/"><strong>&rarr; Open the DungeonFlux site</strong></a><br>
+  <a href="https://monstercameron.github.io/DungeonFlux/devlog.html">Read the devlog</a> &middot; <a href="plan.md">Read the full plan</a>
+</p>
+
+---
+
+Rules material: this work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.

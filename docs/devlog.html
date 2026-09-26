@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DungeonFlux devlog</title>
+<meta name="description" content="The DungeonFlux development timeline: process notes, issues, discoveries, and decisions from an AI dungeon master planned and built with a team of coding and research agents for ShellHacks 2026.">
+<meta name="theme-color" content="#0b1528">
+<link rel="canonical" href="https://monstercameron.github.io/DungeonFlux/devlog.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="DungeonFlux">
+<meta property="og:title" content="DungeonFlux devlog">
+<meta property="og:description" content="Process notes, issues, discoveries, and decisions from building an AI dungeon master with a team of agents.">
+<meta property="og:url" content="https://monstercameron.github.io/DungeonFlux/devlog.html">
+<meta property="og:image" content="https://monstercameron.github.io/DungeonFlux/assets/title-screen-concept.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b1528'/%3E%3Cg fill='none' stroke='%23e0b061' stroke-width='3' stroke-linejoin='round'%3E%3Cpath d='M32 6 55 19v26L32 58 9 45V19z'/%3E%3Cpath d='M32 6 20 38h24zM20 38 9 19M44 38l11-19M20 38l12 20 12-20M9 45l11-7M55 45l-11-7'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="script.js" defer></script>
+<script src="devlog.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="weather" aria-hidden="true"></div>
+
+<header class="site-header">
+  <div class="bar">
+    <a class="brand" href="index.html" aria-label="DungeonFlux home">
+      <svg class="brand-die" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round"><path d="M32 6 55 19v26L32 58 9 45V19z"/><path d="M32 6 20 38h24zM20 38 9 19M44 38l11-19M20 38l12 20 12-20M9 45l11-7M55 45l-11-7"/></g></svg>
+      <span>Dungeon<span class="flux">Flux</span></span>
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+      <span class="nav-toggle-lines" aria-hidden="true"></span>
+      <span class="visually-hidden">Menu</span>
+    </button>
+    <nav id="site-nav" class="site-nav" aria-label="Site">
+      <ul>
+        <li><a href="index.html#bet">The bet</a></li>
+        <li><a href="index.html#demo">The demo</a></li>
+        <li><a href="index.html#built">How it's built</a></li>
+        <li><a href="devlog.html" aria-current="page">Devlog</a></li>
+        <li><a class="nav-gh" href="https://github.com/monstercameron/DungeonFlux">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="section devlog">
+  <div class="wrap devlog-wrap">
+    <header class="section-head">
+      <p class="devlog-meta">Devlog &middot; ShellHacks 2026</p>
+      <h1 class="devlog-title">The DungeonFlux timeline</h1>
+      <p class="section-intro">DungeonFlux is planned and built with a team of agents: one orchestrating session hands research, design, and code to subagents that work in parallel, and an adversarial critic scores the plan after every round. This timeline records what happened along the way: how the process worked, the issues that came up, the things we found out, and the decisions that followed. Newest entries are at the top.</p>
+    </header>
+
+    <nav class="devlog-filters" aria-label="Filter entries" hidden>
+      <button type="button" class="chip is-on" data-filter="all" aria-pressed="true">All</button>
+      <button type="button" class="chip" data-filter="process" aria-pressed="false">Process</button>
+      <button type="button" class="chip" data-filter="issue" aria-pressed="false">Issue</button>
+      <button type="button" class="chip" data-filter="discovery" aria-pressed="false">Discovery</button>
+      <button type="button" class="chip" data-filter="decision" aria-pressed="false">Decision</button>
+      <button type="button" class="chip" data-filter="milestone" aria-pressed="false">Milestone</button>
+    </nav>
+
+    <ol class="timeline" reversed>
+<!--
+  HOW TO ADD AN ENTRY (see AGENTS.md, "Devlog"):
+  Copy the template below, paste it directly under the NEW-ENTRIES marker (newest first), and fill it in.
+  - id: "e-YYYYMMDD-short-slug" (unique, used as the anchor)
+  - data-kind: one of process | issue | discovery | decision | milestone
+  - time: ISO date (and time if known), e.g. 2026-09-26 or 2026-09-26T21:40-04:00
+  - who: the lane or agent (ORCH, L-ENG, research agent, critic, developer)
+  - 50–250 words; facts, cause, fix, and what it means for the project; link commits, plan sections, or files.
+  Template:
+      <li class="entry" data-kind="issue" id="e-20260926-example">
+        <div class="entry-head">
+          <time datetime="2026-09-26">Sep 26, 2026</time>
+          <span class="kind">Issue</span>
+          <span class="who">L-ENG</span>
+        </div>
+        <h2 class="entry-title"><a href="#e-20260926-example">Short, specific title</a></h2>
+        <p>What happened, why, what was done, and what it changes.</p>
+      </li>
+-->
+<!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+
+      <li class="entry" data-kind="process" id="e-20260926-devlog-timeline">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Process</span><span class="who">ORCH</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-devlog-timeline">The devlog becomes a timeline that agents append to</a></h2>
+        <p>The first devlog was a single essay. It is now this timeline, with one entry per event and a fixed template, so any agent can add a note about a hard issue or a useful discovery without restructuring the page. <code>AGENTS.md</code> now tells every agent when to write an entry. During parallel work, lanes put their entries in their hand-in report and the orchestrator appends them, so two lanes never edit this file at once.</p>
+      </li>
+
+      <li class="entry" data-kind="issue" id="e-20260926-network-cert">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Issue</span><span class="who">Editor agent</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-network-cert">A network error stopped an editor agent mid-task</a></h2>
+        <p>The agent applying the round-8 critic fixes died with a self-signed certificate error just before it ran its edit script. Because research and editing were split, nothing was half-written: the plan was untouched. Instead of starting a new agent from scratch, the orchestrator resumed the same agent with its context intact and told it to re-read the plan and skip anything already applied. Resuming saved the agent's full read of a 2,900-line plan.</p>
+      </li>
+
+      <li class="entry" data-kind="milestone" id="e-20260926-pages-live">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Milestone</span><span class="who">ORCH</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-pages-live">The project site goes live</a></h2>
+        <p>A site agent built this static site in <code>docs/</code> from the README, the plan, and the concept art, and checked it at 1440, 1024, 768, and 375 px. The orchestrator committed it, enabled GitHub Pages from <code>/docs</code>, set the repository description, homepage, and topics, and confirmed the page and its assets return 200.</p>
+      </li>
+
+      <li class="entry" data-kind="process" id="e-20260926-agents-md">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Process</span><span class="who">Rules agent</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-agents-md">AGENTS.md and an artifacts folder keep parallel agents tidy</a></h2>
+        <p>Before any code exists, the repository has a rulebook for the coding agents: lane ownership, a gate command that defines "done", a hand-in format, and a list of forbidden actions (no commits by lanes, no killing processes by name, no paid API calls in tests, no stray files). Every generated file goes under <code>artifacts/</code>, including the runtime database and generated media, so parallel dev servers each get their own copy. A <code>.gitattributes</code> forces LF line endings because this machine converts to CRLF by default.</p>
+      </li>
+
+      <li class="entry" data-kind="issue" id="e-20260926-webp">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Issue</span><span class="who">ORCH</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-webp">Concept images did not show in the README viewer</a></h2>
+        <p>The README linked the concept art as <code>.webp</code> files, and the viewer in use did not render them. The images were converted to JPG with ffmpeg, the links were updated, and one image was opened to confirm it decodes. The WebP originals stay alongside.</p>
+      </li>
+
+      <li class="entry" data-kind="decision" id="e-20260926-concept-art">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Decision</span><span class="who">Developer</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-concept-art">Concept art guides the look, not the design</a></h2>
+        <p>When the concept images arrived, the orchestrator started reading features into them: a class picker, an objective tracker, a Continue button. The developer corrected it: the images are art direction only. They set palette, type, framing, and mood, and nothing in the game's flow or rules derives from them. The rule is now written into the plan and into the orchestrator's notes.</p>
+      </li>
+
+      <li class="entry" data-kind="discovery" id="e-20260926-stat-contradiction">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Discovery</span><span class="who">Critic, round 8</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-stat-contradiction">Random stats and fixed combat odds could not both be true</a></h2>
+        <p>After combat was merged, one section rolled character stats at random while another used fixed templates, and the combat probability table depended on the fixed version. The fix kept both goals: each class's attack ability keeps its template value and Charisma is always 14, while the other scores and the skills are rolled. Attack bonuses stay fixed, so the odds table holds; only hit points and armour class vary a little.</p>
+      </li>
+
+      <li class="entry" data-kind="milestone" id="e-20260926-combat-merge">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Milestone</span><span class="who">Combat design agent</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-combat-merge">Combat enters the demo, and it always ends on time</a></h2>
+        <p>The developer moved combat into the three-minute demo. The design agent found a fight that fits 40 seconds: a drowned thrall follows the courier in, turns run in a fixed order, and the enemy is a lighter zombie variant tuned so the fight usually ends in about two rounds. If it runs long, the tower bell tolls and the creature flees; a 30-second cap and a host Skip back that up. The agent computed the exact distribution of when the fight ends for every pair of starting classes, which led to a rule that the second character's class is drawn so every pair can finish the fight.</p>
+      </li>
+
+      <li class="entry" data-kind="decision" id="e-20260926-playcanvas">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Decision</span><span class="who">Combat design agent</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-playcanvas">The battlefield renders in the PlayCanvas engine, not the SuperSplat viewer</a></h2>
+        <p>The first idea was to embed the SuperSplat viewer in a frame. Research showed it has no documented message interface, no way to add objects to the scene, and no exposed camera, so a grid and character billboards drawn over it could never pass behind a table. Rendering everything in one PlayCanvas scene fixes that: the splat is drawn without writing depth, the billboards are opaque and do, so occlusion works in both directions. It is the one JavaScript exception in a Go-first project.</p>
+      </li>
+
+      <li class="entry" data-kind="discovery" id="e-20260926-cheapest-video">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Discovery</span><span class="who">Research agent</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-cheapest-video">The same video model costs fourteen times less from another host</a></h2>
+        <p>A provider comparison found the video model the plan uses on a host charging about $0.19 for a five-second 720p clip, against $1.21 on the original host, with first- and last-frame support intact. The per-run cost of the demo fell from about $1.37 to about $0.35 before combat clips. The cheaper host is now the primary, with the original as a fallback if quality or speed disappoints in testing.</p>
+      </li>
+
+      <li class="entry" data-kind="discovery" id="e-20260926-status-poses">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Discovery</span><span class="who">Research agent</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-status-poses">Five poses cover every status effect</a></h2>
+        <p>Generating a clip for every condition on every character would cost about $52 per character. The status-effect research showed that only a handful need a different body pose (prone, down, bound, cowering, staggered); everything else is a tint, aura, or particle effect the browser draws over a neutral clip. That brings the cost to about $2.50 per character, and it keeps effects out of the green-screen colour.</p>
+      </li>
+
+      <li class="entry" data-kind="issue" id="e-20260926-epoch">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Issue</span><span class="who">Critic, round 7</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-epoch">A cancellation rule threw away the demo's own pre-made work</a></h2>
+        <p>The engine cancels everything a game phase started when that phase ends, so nothing stale can fire later. The critic noticed this also cancelled the work started early on purpose: the stranger's lines, the cliffhanger clip, and the dice outcome line. The fix was a scope tree: work that must outlive a phase belongs to the whole run, the dice outcome belongs to the check, and only phase work dies with the phase.</p>
+      </li>
+
+      <li class="entry" data-kind="process" id="e-20260926-parallel">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Process</span><span class="who">Developer</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-parallel">Stop queueing agents; run them together</a></h2>
+        <p>The orchestrator had been running one subagent at a time and queued new requests behind the running one. The developer asked for parallel runs instead. From then on, independent research agents ran four or five at once in the background while the conversation continued. Agents that write files were kept on separate files, and only one agent edits the plan at a time.</p>
+      </li>
+
+      <li class="entry" data-kind="discovery" id="e-20260926-self-transition">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Discovery</span><span class="who">Critic, round 4</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-self-transition">A rule meant to prevent stale events cancelled every NPC reply</a></h2>
+        <p>Each state change bumps a counter that cancels work from the previous state. A conversation turn was modelled as a transition from Conversation back to Conversation, so every player line bumped the counter and cancelled the reply it had just queued. Self-transitions are now internal and bump nothing, and per-line work is keyed by the line's own ID.</p>
+      </li>
+
+      <li class="entry" data-kind="discovery" id="e-20260926-audio-state">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Discovery</span><span class="who">Critic, round 4</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-audio-state">Audio already sent to the TV is state too</a></h2>
+        <p>The server could cancel a voice line, but audio already queued in the TV's browser kept playing, so a skipped line overlapped the next one. The server now sends an explicit cancel message down the audio stream, and the TV stops every buffer for that line and drops any late frames.</p>
+      </li>
+
+      <li class="entry" data-kind="issue" id="e-20260926-no-code">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Issue</span><span class="who">Developer</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-no-code">"See if we can" meant research, not a prototype</a></h2>
+        <p>Asked to see whether browser microphone audio could stream to the Go backend through the gRPC bridge, the orchestrator started writing a spike: a proto, a server, and a WebAssembly client. The developer stopped it: this was a planning phase. The code was deleted unrun, and the question was answered by reading the bridge's source instead. It supports client and bidirectional streaming, so one gRPC stream per push-to-talk press works. The spike moved into the build plan as the first test of the first hours.</p>
+      </li>
+
+      <li class="entry" data-kind="process" id="e-20260926-critic-loop">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Process</span><span class="who">Critic agents</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-critic-loop">An adversarial critic scores the plan after every round</a></h2>
+        <p>A critic agent reads the whole plan, scores it on a fixed rubric (consistency, contracts, feasibility, latency, reliability, state machines, media, clarity), and is told to verify each claimed fix instead of trusting it. Scores so far: 3.5, 6.0, 6.2, 6.4, 7.0, 7.3, 6.6, 7.0. The two drops came right after large additions, and each pointed at exactly where the new material did not fit. The loop runs until the plan scores at least 8.</p>
+      </li>
+
+      <li class="entry" data-kind="process" id="e-20260926-research-swarm">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Process</span><span class="who">ORCH</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-research-swarm">How the research agents were briefed</a></h2>
+        <p>Each research request from the developer was one line. The orchestrator turned it into a brief that could stand alone: which plan sections to read, the exact deliverables, read-only access, a source for every fact, a label on every figure (vendor, independent benchmark, anecdote, or estimate), and a section ready to paste into the plan. About fourteen research agents covered model APIs, latency, language-model vendors, a low-latency host, a classification model, the cheapest video host, costs, gameplay phases, rules, status effects, camera shots, music, backend architecture, and combat.</p>
+      </li>
+
+      <li class="entry" data-kind="decision" id="e-20260926-state-machines">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Decision</span><span class="who">Developer</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-state-machines">State machines own every phase</a></h2>
+        <p>The game runs as explicit state machines in Go. The language models never move the game between phases; they only write content inside a state, and their tool calls become events the machine can reject. This single decision resolved several critic findings at once: legal moves come straight from the machine, the story's steering became an engine rule, and every run can be replayed from its event log.</p>
+      </li>
+
+      <li class="entry" data-kind="milestone" id="e-20260926-first-plan">
+        <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Milestone</span><span class="who">Developer</span></div>
+        <h2 class="entry-title"><a href="#e-20260926-first-plan">From an empty folder to a plan</a></h2>
+        <p>The project started as an empty folder and a plan file. The first decisions came from a few rounds of questions: a table of friends in one room, the free fifth-edition rules, a laptop on the TV as the dungeon master's screen, phones as character sheets, the AI writing the story and a funnel steering it, voice conversations with characters, and a three-minute live demo built in 24 hours.</p>
+      </li>
+
+    </ol>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-grid">
+    <div>
+      <p class="footer-mark">Dungeon<span class="flux">Flux</span></p>
+      <p>Built for ShellHacks 2026.</p>
+      <p><a href="https://github.com/monstercameron/DungeonFlux">github.com/monstercameron/DungeonFlux</a></p>
+    </div>
+    <div class="legal">
+      <p>This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by Wizards of the Coast LLC, available at <a href="https://www.dndbeyond.com/srd">https://www.dndbeyond.com/srd</a>. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at <a href="https://creativecommons.org/licenses/by/4.0/legalcode">https://creativecommons.org/licenses/by/4.0/legalcode</a>.</p>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

@@ -13,6 +13,7 @@ Rules for every coding agent in this repo. Read it in full before your first edi
 8. No paid or live API calls in any test or gate. Live tests sit behind `//go:build live` plus `DF_LIVE=1`, and verification never runs them.
 9. Kill only the PIDs you started. Use only your lane's port. Stop your server before you hand in.
 10. Go first. JavaScript exists only in `web/splat` (plus the stock `wasm_exec.js`).
+11. Hit something hard, surprising, or instructive? Write a devlog entry (section 9) in your hand-in.
 
 ## 1. What this repo is
 Planning stage. DungeonFlux is an AI dungeon-master demo: a Go server, one GoWebComponents WASM client (`/dm`, `/p`, `/host`), and gRPC over WebSocket through GoGRPCBridge. It is built in 24 hours by parallel Claude Code lane agents under one orchestrator (plan §0.18.9: at most seven lane agents at once).
@@ -78,7 +79,7 @@ Everything not meant to be committed goes here. Create the subfolder you need. N
 | `artifacts/runtime/buildtime/` | L-OPS build-time media and `manifest.json` |
 | `artifacts/tmp/` | Scratch. Anything here may be deleted at any time |
 
-**Runtime store decision.** The SQLite file and the sha256 asset store live under `artifacts/runtime/<instance>/`, where `<instance>` is `show` for ORCH runs and the stage, and your lane ID (for example `L-API`) for a lane's dev server, so parallel servers never share a database. The HTTP route stays `/assets/{sha256}.{ext}`; only the disk location changes. `assets/` at the root holds committed art only. plan.md still says `dungeonflux.db` and `assets/` at the root (§0.4, §0.18.5) and `assets/buildtime/manifest.json` (§0.18.9); the orchestrator will update the plan. Until then, this file wins on paths.
+**Runtime store decision.** The SQLite file and the sha256 asset store live under `artifacts/runtime/<instance>/`, where `<instance>` is `show` for ORCH runs and the stage, and your lane ID (for example `L-API`) for a lane's dev server, so parallel servers never share a database. The HTTP route stays `/assets/{sha256}.{ext}`; only the disk location changes. `assets/` at the root holds committed art only. plan §0.4, §0.18.5, and §0.18.9 match these paths.
 
 **Tests** write only to `t.TempDir()` or `t.ArtifactDir()`. Adapter fixtures are committed under the package's `testdata/`.
 
@@ -176,5 +177,40 @@ Contract requests: <exact Go signature or proto diff + reason, or "none">
 Lane-local stand-ins: <unexported names standing in for pending contracts, or "none">
 Known gaps: <what is missing or fragile, and why>
 Artifacts: <paths under artifacts/ worth looking at>
+Devlog entries: <zero or more entries in the section 9 template, or "none">
 ```
 ORCH runs your lane gate and the full gate, then commits with explicit paths (`git add <paths>; git commit -m "<LANE>: <what>"`). A failing lane is sent back, not fixed by ORCH.
+
+## 9. Devlog: record hard issues and discoveries
+The devlog is a public timeline at `docs/devlog.html` (live at https://monstercameron.github.io/DungeonFlux/devlog.html). It is how this project shows its agentic process, so write entries generously for anything a future agent or a reader would learn from.
+
+**Write an entry when** you:
+- hit a bug or failure whose cause was not obvious (include the symptom, the cause, and the fix);
+- discover a fact that changed the design or a number in the plan (a vendor limit, a latency, a price, an API quirk, a rules detail);
+- find the plan wrong, contradictory, or impossible as written, and what replaced it;
+- make a decision with a real trade-off;
+- learn something about the process itself (how agents were briefed, coordinated, resumed, or recovered);
+- reach a milestone (a gate passed, a first end-to-end run, a live demo).
+
+Skip routine work (a clean gate, a rename, a formatting pass).
+
+**Who writes it where:**
+- **Lanes do not edit `docs/devlog.html`.** Put entries in the "Devlog entries" field of your hand-in. ORCH appends them, so parallel lanes never collide on the file.
+- **ORCH and single-writer agents** (developer-approved) add entries directly: paste the template directly under the `<!-- NEW-ENTRIES ... -->` marker, newest first. Never reorder or rewrite past entries except to fix a factual error, and say so in the entry.
+
+**Entry rules:**
+- `kind` is one of `process`, `issue`, `discovery`, `decision`, `milestone`.
+- `id` is `e-YYYYMMDD-short-slug`, unique (it is the link anchor).
+- `time` is an ISO date, with time and offset if known (`2026-09-26T21:40-04:00`).
+- `who` is the lane or role (`ORCH`, `L-ENG`, `critic`, `developer`).
+- 50–250 words of plain declarative prose: what happened, why, what was done, what it changes. Numbers beat adjectives. Link the commit, plan section, or file.
+- Escape HTML (`&amp;`, `&lt;`, `&gt;`). No secrets, keys, tokens, private URLs, or personal data. No hype words, no emoji.
+
+**Template:**
+```html
+<li class="entry" data-kind="issue" id="e-20260926-short-slug">
+  <div class="entry-head"><time datetime="2026-09-26">Sep 26, 2026</time><span class="kind">Issue</span><span class="who">L-ENG</span></div>
+  <h2 class="entry-title"><a href="#e-20260926-short-slug">Short, specific title</a></h2>
+  <p>What happened, why, what was done, and what it changes.</p>
+</li>
+```
