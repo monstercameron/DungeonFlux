@@ -665,7 +665,7 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: INT-006 streams table audio over gRPC, but the engine's existing music and ambience cues (ENG-012) never emit INT-006's sound effect, so no music or ambience plays on the DM.
   lane: L-ENG · block: 11–14 · paths: `internal/game/cues*.go`, `internal/game/audio_table*.go` · depends: ENG-012, INT-006, OPS-024, OPS-026
   done when: each phase and scene transition emits the table-wide sound effects (music track with crossfade at bar, ambience bed, stingers) targeted at the DM, using manifest names from the build-time audio; Step tests assert cue effects per phase.
-  status: claimed luna
+  status: committed 7116fb6
 
 - [ ] INT-001 · lobby seats and join data reach the TV end to end
   why: Live test: two phones joined (engine View version advanced) but dfctl view --dm shows {"dm":{}} and the TV still shows Waiting to join, room code "/p", and a broken QR, because proto DMView has no seats or lobby fields and the projection never fills them.
@@ -1085,7 +1085,7 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: staticcheck fails the internal/api gate on host.go:72 (a value of tag is never used), which every API lane reports as a blocker.
   lane: L-API · block: 11–14 · paths: `internal/api/host*.go` · depends: API-007
   done when: the tag value is used or removed with behaviour unchanged; staticcheck clean on internal/api; tests pass.
-  status: claimed luna
+  status: committed 7955c33
 
 - [ ] INT-004 · assets over gRPC: AssetService, server, and art loading
   why: Developer decision: gRPC is the only transport after boot, so images (UI art, scene stills, portraits, QR) must reach clients through a gRPC AssetService instead of HTTP /assets routes.
@@ -1329,7 +1329,7 @@ Portraits, stills, clips, and their worker pool with per-vendor concurrency.
   why: The reference sheet must look like the concept art style and show the hero from several angles on a neutral background so image and video pipelines can condition on it.
   lane: L-MEDIA · block: 11–14 · paths: `internal/media/reference*.go`, `internal/adapters/image/openai/reference*.go`, `internal/content/prompts/reference*.go` · depends: ENG-022, MEDIA-002, MEDIA-001
   done when: an executor generates one turnaround sheet (front, three-quarter, side, back; full body; same outfit and palette; neutral #0f1117-adjacent background; no text) through the Images API adapter with the species/gender/class/flavor prompt and the concept style, crops it into per-angle images with image/draw, stores sheet and crops as assets, posts asset_ready with ids per angle, falls back to species/class template art on failure or timeout, and costs are recorded in the budget ledger; fake mode returns a generated placeholder sheet; fixture and synctest tests; no live calls in tests.
-  status: claimed luna
+  status: committed d3e9bd3
 
 - [ ] MEDIA-012 · image and video pipelines condition on the character reference
   why: Portraits, composed stills, clips, and combat billboard loops must reuse the locked hero's reference so the character stays consistent across the demo.
@@ -1435,13 +1435,13 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   why: Screens need image URLs; with assets on gRPC the shell must fetch bytes, build Blob URLs, cache them, and preload the manifest at boot.
   lane: L-WEB-SHELL · block: 8–11 · paths: `web/shell/assets*.go` · depends: INT-004
   done when: an exported loader (usable by web/dm and web/phone via a small interface) returns a Blob URL for a logical name or sha, dedupes in-flight fetches, preloads ui/* at boot with progress, never blocks the JS loop; tested natively for cache logic; live check shows the title art.
-  status: claimed luna
+  status: committed 40f1168
 
 - [ ] WEB-016 · DM Web Audio mixer for streamed channels
   why: The DM client must play the gRPC audio stream as a real mix: music and ambience beds, SFX on top, voice always clear.
   lane: L-WEB-SHELL · block: 11–14 · paths: `web/shell/audio/**` · depends: INT-006, WEB-004
   done when: a Web Audio graph with per-channel gain nodes decodes streamed encoded chunks (MediaSource or decodeAudioData on complete segments) and voice PCM, applies play/stop/crossfade/loop/gain commands, ducks music and ambience about 8 dB under voice, and starts after the existing Enable table audio tap; no blocking in JS callbacks; native tests for the mix-state logic; live check in the browser.
-  status: claimed luna
+  status: committed 8fc2367
 
 - [ ] WEB-017 · preview query parsing and phone staticcheck
   why: PHONE-021 found that the shell's previewName parses location.search with its leading '?', so ?preview= fixture URLs fall back to the join screen (likely also DM-021's blocked screenshots), and staticcheck fails on the unused srdAttributionURL in web/phone/end.go.
@@ -1583,7 +1583,7 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   why: Developer request (2026-09-26): the server streams short one-off effects to individual player phones (your dice rattle when you roll, a chime when it is your turn, a heartbeat when you are down, a whispered hint only you hear).
   lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/audio*.go` · depends: INT-006, WEB-016
   done when: after the first tap the phone opens its own AudioService.Listen with its seat token, plays sfx-channel clips targeted at its seat (or all phones) with a small Web Audio graph (volume, haptic vibrate where supported), respects a mute toggle and prefers-reduced-motion for haptics, never blocks the JS loop; the cue catalogue (MEDIA-010) gains per-seat cues for roll, your turn, damage, down, and success/failure; native tests for queue logic; live check in the browser.
-  status: open (launch after INT-006 and WEB-016)
+  status: claimed luna
 
 - [ ] PHONE-023 · phone combat screen matches the phone concepts
   why: ORCH review of the combat preview (artifacts/screenshots/L-WEB-SHELL/phone-preview.png): the phone's combat turn screen is unstyled default HTML buttons on a bare page.
@@ -1749,7 +1749,37 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   why: Six DM concept lanes worked in parallel in web/dm: their layer hooks in mount_wasm.go are stranded in mixed uncommitted hunks (DM-024 HUD, DM-025 dialogue), and sibling edits broke each other's WASM builds (dividerBackground redeclared, combat_wasm.go syntax), so none could take final screenshots.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/**` · depends: DM-020, DM-021, DM-022, DM-023, DM-024, DM-025, WEB-015
   done when: GOOS=js GOARCH=wasm go build ./web/... passes; every layer (title/lobby, creation, scene, HUD, dialogue, dice/callouts, combat, cliffhanger/end) is registered once in the DM screen; the art resolves through dm.ArtURL once WEB-015 lands; Edge screenshots of every preview fixture at 1920x1080 and 2560x1080, compared side by side with the concepts; web/dm >= 70%.
+  status: superseded by DM-027..DM-031 (developer: DM screen must match the concepts; layout-first rebuild)
+
+- [ ] DM-027 · DM layout system (fixed 16:9 canvas), ornate components, and the title/lobby screen matched to its concept
+  why: Developer: the DM screen looks nothing like the concepts; the concepts use a fixed 16:9 composition of full-bleed painted art with ornate gold-framed panels at exact positions, while the current screens stack full-width boxes.
+  lane: L-WEB-DM · block: 11–14 · paths: `web/dm/**` · depends: DM-020, WEB-015
+  done when: a 1920x1080 design canvas scaled to fit any viewport with a separate cover background layer; shared components (OrnatePanel, TitlePlate, GoldButton, DarkButton, PortraitCard, SpeakerCaption, ActionButton, LocationTitle) in web/dm/components*.go; the title/lobby screen laid out per the ORCH spec measured from ui-tv-title-screen-join-lobby.jpg with the QR square and loaded via the asset loader and the room code in spaced letters; Edge screenshots at 1920x1080 and 2560x1080 next to the concept.
   status: claimed luna
+
+- [ ] DM-028 · conversation screen laid out on the canvas per the barkeep-dialogue concept
+  why: Conversation is the heart of the demo; it must look like ui-tv-tavern-barkeep-dialogue-choices.jpg.
+  lane: L-WEB-DM · block: 11–14 · paths: `web/dm/dialogue*.go` · depends: DM-027
+  done when: full-bleed scene, small title plate, location title, centered speaker caption, and a choice row from legal moves per the ORCH spec; screenshots next to the concept.
+  status: open (after DM-027)
+
+- [ ] DM-029 · exploration HUD laid out on the canvas per the exploration-HUD concept
+  why: Exploration must look like ui-tv-sunken-halls-exploration-hud.jpg: party column, objective panel, narration panel, action bar.
+  lane: L-WEB-DM · block: 11–14 · paths: `web/dm/hud*.go` · depends: DM-027
+  done when: layout per the ORCH spec with real View data; screenshots next to the concept.
+  status: open (after DM-027)
+
+- [ ] DM-030 · opening scene and creation screens laid out per their concepts
+  why: The opening and creation must look like ui-tv-opening-scene-drowned-lantern-tavern.jpg and ui-tv-character-creation-phone-picker.jpg.
+  lane: L-WEB-DM · block: 11–14 · paths: `web/dm/scene*.go`, `web/dm/text*.go`, `web/dm/clip*.go`, `web/dm/creation*.go` · depends: DM-027
+  done when: both screens built from the shared components and matching their concepts; screenshots next to the concepts.
+  status: open (after DM-027)
+
+- [ ] DM-031 · check, combat, cliffhanger, and end screens on the canvas
+  why: The dice check, FLAT combat, cliffhanger, and end card must share the same ornate language as the concepts.
+  lane: L-WEB-DM · block: 11–14 · paths: `web/dm/dice*.go`, `web/dm/callout*.go`, `web/dm/combat*.go`, `web/dm/end*.go` · depends: DM-027
+  done when: each screen per the ORCH spec section 6 using the shared components and generated art; screenshots at 1920x1080 and 2560x1080.
+  status: open (after DM-027)
 
 ## 21. Host
 
@@ -2046,7 +2076,7 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   why: OPS-025's live run produced no accepted track: six ElevenLabs results were rejected at about 169 BPM against a requested 80, which is beatcheck reading double time, and four failed with HTTP 422 seed errors (fixed there); scripts/buildtime coverage is 66.4%, below the floor.
   lane: L-OPS · block: 11–14 · paths: `scripts/buildtime/beatcheck/**`, `scripts/buildtime/music*.go` · depends: OPS-025, OPS-013
   done when: beatcheck accepts a measured tempo within ±3% of the target or of its double or half and reports the folded BPM; click-track tests cover 2x and 0.5x; the music job reruns live for the 12 tracks (at most 2 concurrent) and registers accepted tracks with BPM and loop points under the manifest lock; scripts/buildtime back to >= 70%.
-  status: claimed luna
+  status: committed 15cc1b9
 
 - [x] OPS-019 · PowerShell SuperSplat manifest and complete LOD downloader
   why: The developer needs a reproducible local copy of every LOD and texture referenced by the supplied SuperSplat scene.
