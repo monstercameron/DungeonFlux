@@ -6,6 +6,15 @@ import (
 )
 
 func TestBuildHeroTemplatesAndDeterminism(t *testing.T) {
+	wantHitDie := map[Class]int{Barbarian: 12, Bard: 8, Cleric: 8, Druid: 8, Fighter: 10, Monk: 8, Paladin: 10, Ranger: 10, Rogue: 8, Sorcerer: 6, Warlock: 8, Wizard: 6}
+	wantAttack := map[Class]WeaponAttack{
+		Barbarian: {"Greataxe", "1d12+3", "slashing", 5}, Bard: {"Dagger", "1d4+2", "piercing", 4},
+		Cleric: {"Mace", "1d6", "bludgeoning", 2}, Druid: {"Scimitar", "1d6+3", "slashing", 5},
+		Fighter: {"Longsword", "1d8+3", "slashing", 5}, Monk: {"Quarterstaff", "1d6+3", "bludgeoning", 5},
+		Paladin: {"Longsword", "1d8+3", "slashing", 5}, Ranger: {"Longbow", "1d8+3", "piercing", 5},
+		Rogue: {"Shortsword", "1d6+3", "piercing", 5}, Sorcerer: {"Dagger", "1d4+3", "piercing", 5},
+		Warlock: {"Light Crossbow", "1d8+3", "piercing", 5}, Wizard: {"Dagger", "1d4+3", "piercing", 5},
+	}
 	for _, class := range Classes() {
 		a, err := BuildHero(dice.New([]byte("same")), class, "human", "female")
 		if err != nil {
@@ -21,8 +30,11 @@ func TestBuildHeroTemplatesAndDeterminism(t *testing.T) {
 		if a.Abilities.Charisma != 14 || a.PersuasionBonus != 4 || !a.PersuasionProficient || len(a.Skills) == 0 {
 			t.Fatalf("invalid %s build: %#v", class, a)
 		}
-		if a.HitDie < 6 || a.HP < 11 || a.HP > 12 || a.Attack.Name == "" || len(a.PrimaryAbilities) == 0 {
+		if a.HitDie != wantHitDie[class] || a.HP < 11 || a.HP > 12 || a.Attack != wantAttack[class] || len(a.PrimaryAbilities) == 0 {
 			t.Fatalf("incomplete %s template: %#v", class, a)
+		}
+		if len(a.SaveProficiencies) != 2 || a.SkillProficiencies["persuasion"] != "proficient" {
+			t.Fatalf("missing proficiencies for %s: %#v", class, a)
 		}
 	}
 }
@@ -45,6 +57,23 @@ func TestDrawClassRulingAndValidation(t *testing.T) {
 		}
 		if class != Paladin && class != Rogue {
 			t.Fatalf("class=%s", class)
+		}
+	}
+}
+
+func TestBuildHeroConstrainedRolls(t *testing.T) {
+	for _, class := range Classes() {
+		for seed := byte(0); seed < 32; seed++ {
+			build, err := BuildHero(dice.New([]byte{seed}), class, "human", "nonbinary")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if build.Abilities.Constitution < 12 {
+				t.Fatalf("%s constitution=%d", class, build.Abilities.Constitution)
+			}
+			if build.Abilities.Dexterity == 8 {
+				t.Fatalf("%s dexterity received the lowest roll", class)
+			}
 		}
 	}
 }

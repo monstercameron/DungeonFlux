@@ -70,3 +70,53 @@ func TestAttackValidationAndFlee(t *testing.T) {
 		t.Fatalf("fled=%#v", creature)
 	}
 }
+
+func TestAttackOddsAndSneakAttackRulings(t *testing.T) {
+	classes := []struct {
+		class  Class
+		bonus  int
+		want   int
+		weapon string
+	}{
+		{Paladin, 5, 18, "1d8"}, {Rogue, 5, 18, "1d6"}, {Bard, 4, 17, "1d4"}, {Cleric, 2, 15, "1d6"},
+	}
+	for _, tc := range classes {
+		t.Run(string(tc.class), func(t *testing.T) {
+			hits := 0
+			for face := 1; face <= 20; face++ {
+				r := dice.New([]byte(tc.class))
+				if err := r.ForceD20(face); err != nil {
+					t.Fatal(err)
+				}
+				out, err := Attack(r, "odds", "pc", "thrall", tc.bonus, 8, tc.weapon, 0, "slashing", 12, 0)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if out.Hit {
+					hits++
+				}
+			}
+			if hits != tc.want {
+				t.Fatalf("hits=%d, want %d", hits, tc.want)
+			}
+		})
+	}
+
+	r := dice.New([]byte("sneak"))
+	if err := r.ForceD20(20); err != nil {
+		t.Fatal(err)
+	}
+	out, err := Attack(r, "rogue", "pc", "thrall", 5, 8, "1d6", 3, "piercing", 12, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !CanSneakAttack(true, false) || CanSneakAttack(false, false) || CanSneakAttack(true, true) {
+		t.Fatal("R-D5 eligibility mismatch")
+	}
+	if err := ApplySneakAttack(r, &out, true); err != nil {
+		t.Fatal(err)
+	}
+	if len(out.Damage) != 2 || out.Damage[1].Dice != "2d6" || out.Damage[1].Source != "sneak_attack" {
+		t.Fatalf("critical sneak damage=%#v", out.Damage)
+	}
+}

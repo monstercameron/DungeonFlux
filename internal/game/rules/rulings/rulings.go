@@ -6,6 +6,37 @@ import (
 	"github.com/monstercameron/DungeonFlux/internal/game/rules/dice"
 )
 
+// Ruling identifies a named demo deviation or combat rule.
+type Ruling string
+
+const (
+	// RulingD4 identifies the Down and stabilization rule.
+	RulingD4 Ruling = "R-D4"
+	// RulingD5 identifies the Rogue Sneak Attack rule.
+	RulingD5 Ruling = "R-D5"
+	// Ruling09 identifies critical damage dice doubling.
+	Ruling09 Ruling = "R-09"
+	// RulingClassTemplate identifies the all-class demo template adjustment.
+	RulingClassTemplate Ruling = "R-CLASS-TEMPLATE"
+)
+
+// DemoRuling describes a rule that is useful to combat logs and review tools.
+type DemoRuling struct {
+	ID   Ruling
+	Text string
+}
+
+// DemoRulings returns the combat and class-template rulings used by this
+// package. A fresh slice is returned so callers can retain or annotate it.
+func DemoRulings() []DemoRuling {
+	return []DemoRuling{
+		{ID: RulingD4, Text: "At zero HP a PC is Down and Prone; combat stabilizes it at 1 HP."},
+		{ID: RulingD5, Text: "A Rogue adds 1d6 when the other PC is adjacent and the target is not Down."},
+		{ID: Ruling09, Text: "A natural 20 doubles every damage die, including Sneak Attack."},
+		{ID: RulingClassTemplate, Text: "The twelve-class demo fixes Persuasion proficiency and keeps HP in the 11-12 combat band."},
+	}
+}
+
 // Term is one labelled contribution to a check modifier.
 type Term struct {
 	Label string

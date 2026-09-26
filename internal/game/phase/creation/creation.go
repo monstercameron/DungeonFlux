@@ -281,7 +281,19 @@ func deadlineSeat(name string) (domain.SeatID, bool) {
 
 func copySeat(seat SeatState) SeatState {
 	seat.Build.Skills = append([]string(nil), seat.Build.Skills...)
+	seat.Build.SaveProficiencies = append([]string(nil), seat.Build.SaveProficiencies...)
+	if seat.Build.SkillProficiencies != nil {
+		seat.Build.SkillProficiencies = mapsClone(seat.Build.SkillProficiencies)
+	}
 	return seat
+}
+
+func mapsClone(values map[string]string) map[string]string {
+	clone := make(map[string]string, len(values))
+	for key, value := range values {
+		clone[key] = value
+	}
+	return clone
 }
 
 func background(class rules.Class) string {

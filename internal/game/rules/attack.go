@@ -47,6 +47,12 @@ type AttackOutcome struct {
 	Total, HPBefore, HPAfter int
 }
 
+// CanSneakAttack reports whether R-D5 grants a Rogue's extra 1d6.
+// The other PC must be adjacent to the target, and the target must not be Down.
+func CanSneakAttack(allyAdjacent, targetDown bool) bool {
+	return allyAdjacent && !targetDown
+}
+
 // CreatureState is the mutable combat data that pure rule helpers update.
 type CreatureState struct {
 	ID            string
@@ -75,7 +81,7 @@ func Attack(source *dice.Roller, attackID, attacker, target string, modifier, ac
 		natural = kept.Face
 	}
 	roll := rulings.RollRecord{RollID: attackID + "-" + strconv.FormatUint(kept.Counter, 10), Counter: kept.Counter, Die: 20, Faces: append([]int(nil), faces...), Kept: kept.Face, Adv: adv, Source: origin}
-	out := AttackOutcome{AttackID: attackID, Attacker: attacker, Target: target, Roll: roll, Modifier: modifier, AC: ac, Natural: natural, HPBefore: hpBefore, HPAfter: hpBefore}
+	out := AttackOutcome{AttackID: attackID, Attacker: attacker, Target: target, Roll: roll, Modifier: modifier, Breakdown: []rulings.Term{{Label: "attack", Value: modifier}}, AC: ac, Natural: natural, HPBefore: hpBefore, HPAfter: hpBefore}
 	out.Crit = kept.Face == 20
 	out.Hit = kept.Face != 1 && (out.Crit || kept.Face+modifier >= ac)
 	if !out.Hit {
@@ -92,6 +98,34 @@ func Attack(source *dice.Roller, attackID, attacker, target string, modifier, ac
 	out.Damage, out.Total = damage, total
 	out.HPAfter = max(0, hpBefore-total)
 	return out, nil
+}
+
+// ApplySneakAttack appends R-D5's extra 1d6 to a successful attack.
+// Critical hits double the extra damage die under R-09. The outcome is updated
+// in place so the combat machine can emit one complete AttackOutcome.
+func ApplySneakAttack(source *dice.Roller, outcome *AttackOutcome, eligible bool) error {
+	if source == nil {
+		return errors.New("dice source is nil")
+	}
+	if outcome == nil || !eligible || !outcome.Hit {
+		return nil
+	}
+	count := 1
+	if outcome.Crit {
+		count = 2
+	}
+	damageType := "piercing"
+	if len(outcome.Damage) > 0 && outcome.Damage[0].Type != "" {
+		damageType = outcome.Damage[0].Type
+	}
+	damage, total, err := rollDamage(source, count, 6, 0, damageType, "sneak_attack")
+	if err != nil {
+		return err
+	}
+	outcome.Damage = append(outcome.Damage, damage...)
+	outcome.Total += total
+	outcome.HPAfter = max(0, outcome.HPBefore-outcome.Total)
+	return nil
 }
 
 // Slam resolves the drowned thrall's +3, 1d8+1 bludgeoning attack.

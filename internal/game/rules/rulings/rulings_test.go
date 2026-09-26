@@ -57,3 +57,15 @@ func TestRulingsValidationAndModifiers(t *testing.T) {
 		t.Fatal("invalid advantage should fail")
 	}
 }
+
+func TestDemoRulingsExposeCombatSurface(t *testing.T) {
+	rows := DemoRulings()
+	if len(rows) != 4 || rows[0].ID != RulingD4 || rows[1].ID != RulingD5 || rows[2].ID != Ruling09 || rows[3].ID != RulingClassTemplate {
+		t.Fatalf("rulings=%#v", rows)
+	}
+	for _, row := range rows {
+		if row.Text == "" {
+			t.Fatalf("empty ruling=%#v", row)
+		}
+	}
+}

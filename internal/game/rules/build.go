@@ -48,9 +48,12 @@ type Build struct {
 	HP, MaxHP, AC        int
 	HitDie               int
 	PrimaryAbilities     []string
+	SaveProficiencies    []string
+	SkillProficiencies   map[string]string
 	AttackAbility        string
 	AttackBonus          int
 	Attack               WeaponAttack
+	SneakAttack          bool
 	PersuasionBonus      int
 	PersuasionProficient bool
 	PersuasionExpertise  bool
@@ -70,7 +73,7 @@ func BuildHero(source *dice.Roller, class Class, species, gender string) (Build,
 	abilities := template.Baseline
 	// Shuffle the non-fixed scores in a deterministic way. The fixed attack
 	// ability and Charisma remain unchanged, preserving the demo odds.
-	values := []int{8, 10, 12, 13, 14}
+	values := []int{8, 10, 12, 14}
 	for i := len(values) - 1; i > 0; i-- {
 		draw, err := source.Roll(i + 1)
 		if err != nil {
@@ -78,11 +81,20 @@ func BuildHero(source *dice.Roller, class Class, species, gender string) (Build,
 		}
 		values[i], values[draw.Face-1] = values[draw.Face-1], values[i]
 	}
+	constrainValues(template.RollOrder, values)
 	applyRolled(&abilities, template.RollOrder, values)
 	hp, ac := derived(template, abilities)
+	skills := make(map[string]string, len(template.Skills))
+	for _, skill := range template.Skills {
+		skills[skill] = "proficient"
+	}
+	for _, skill := range template.Expertise {
+		skills[skill] = "expertise"
+	}
 	return Build{Class: class, Species: species, Gender: gender, Abilities: abilities,
 		HP: hp, MaxHP: hp, AC: ac, HitDie: template.HitDie, PrimaryAbilities: append([]string(nil), template.PrimaryAbilities...),
-		AttackAbility: template.AttackAbility, AttackBonus: template.Attack.Bonus, Attack: template.Attack,
+		SaveProficiencies: append([]string(nil), template.SaveProficiencies...), SkillProficiencies: skills,
+		AttackAbility: template.AttackAbility, AttackBonus: template.Attack.Bonus, Attack: template.Attack, SneakAttack: template.SneakAttack,
 		PersuasionBonus: rulings.AbilityModifier(abilities.Charisma) + rulings.ProficiencyBonus(1), PersuasionProficient: true,
 		PersuasionNote: template.PersuasionNote, Skills: append([]string(nil), template.Skills...)}, nil
 }
@@ -123,6 +135,36 @@ func applyRolled(a *AbilityScores, order []string, values []int) {
 			a.Wisdom = value
 		}
 	}
+}
+
+func constrainValues(order []string, values []int) {
+	con := indexOf(order, "con")
+	if con >= 0 && values[con] < 12 {
+		for index, value := range values {
+			if value >= 12 {
+				values[con], values[index] = values[index], values[con]
+				break
+			}
+		}
+	}
+	dex := indexOf(order, "dex")
+	if dex >= 0 && values[dex] == 8 {
+		for index, value := range values {
+			if value != 8 {
+				values[dex], values[index] = values[index], values[dex]
+				break
+			}
+		}
+	}
+}
+
+func indexOf(values []string, wanted string) int {
+	for index, value := range values {
+		if value == wanted {
+			return index
+		}
+	}
+	return -1
 }
 
 func derived(template classTemplate, a AbilityScores) (int, int) {
