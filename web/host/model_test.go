@@ -27,8 +27,30 @@ func TestCommandFor_carriesEachAction(t *testing.T) {
 }
 
 func TestActionLabels_returnsStageControlsInOrder(t *testing.T) {
-	want := []string{"Start", "Pause", "Resume", "Skip", "Reset", "Force d20 = 1", "Force d20 = 20"}
+	want := []string{"Start", "Pause", "Resume", "Skip", "Reset", "Force d20 = 1", "Force d20 = 20", "Safe Mode", "Turn timers", "Splat"}
 	if got := actionLabels(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("actionLabels() = %v, want %v", got, want)
+	}
+}
+
+func TestSnapshotFromState_projectsHostViewAndPause(t *testing.T) {
+	state := &df.ScreenState{Phase: "combat", Paused: true, View: &df.ScreenState_Host{Host: &df.HostView{RunMode: "live", LogTail: []string{"warn"}}}}
+	snapshot := snapshotFromState(state)
+	if snapshot.View.GetLogTail()[0] != "warn" || snapshot.Status != "Paused" || !snapshot.Connected {
+		t.Fatalf("snapshot = %+v", snapshot)
+	}
+}
+
+func TestSnapshotFromState_handlesMissingState(t *testing.T) {
+	snapshot := snapshotFromState(nil)
+	if snapshot.Status != "Waiting for the room" || snapshot.Connected {
+		t.Fatalf("snapshot = %+v", snapshot)
+	}
+}
+
+func TestCommandForToggle_setsOnFlag(t *testing.T) {
+	command := commandForToggle(hostActions[7], "token", true)
+	if !command.GetOn() || command.GetHostToken() != "token" {
+		t.Fatalf("command = %+v", command)
 	}
 }

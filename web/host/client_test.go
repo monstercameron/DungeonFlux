@@ -40,6 +40,13 @@ func TestHostClientCommand_delegatesToService(t *testing.T) {
 	}
 }
 
+func TestHostClientWatch_withoutSessionClosesChannel(t *testing.T) {
+	client := &hostClient{}
+	if _, ok := <-client.watch(context.Background(), "token"); ok {
+		t.Fatal("watch returned a message without a session")
+	}
+}
+
 func TestTransportDialOption_returnsOption(t *testing.T) {
 	if transportDialOption("endpoint") == nil {
 		t.Fatal("transportDialOption() returned nil")
