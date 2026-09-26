@@ -553,6 +553,12 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   done when: game.State owns a phase.Machine and routes every domain event to it (creation species/gender/roll_hero/ready Acts, PCLocked, TimerFired, LineDone, Transcribed, Interpreted, asset and prerender events, combat Acts); effects from phase packages are returned from Step; LegalMoves and View come from the active phase with reasons; host and debug handling keep working; a Step test and internal/wire E2E-003 drive lobby to End on fakes without skipping; walk tests and archtest stay green.
   status: claimed luna
 
+- [ ] ENG-016 · creation legal moves reflect built and locked seats
+  why: After roll_hero a seat still lists species and gender as legal, and after ready it still lists species, gender, and ready; the phone would offer moves the engine rejects.
+  lane: L-ENG · block: 8–11 · paths: `internal/game/legal*.go`, `internal/game/phase/creation/legal*.go` · depends: ENG-015
+  done when: before roll: species, gender, roll_hero once both picked; after roll: ready only; after ready: none; greyed moves carry reasons; table test per seat state.
+  status: claimed luna
+
 ## 8. Engine phases (one package each)
 
 Each phase is a separate subpackage with its own table, registered into the top table.
@@ -918,6 +924,12 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   lane: L-API · block: 8–11 · paths: `internal/api/session*.go` · depends: API-014
   done when: a reattaching client resumes its Watch through the session path; the locale field is either used (stored on the seat for I18N-004) or removed; staticcheck clean on internal/api; E2E path 12 runs instead of skipping.
   status: committed a904299
+
+- [ ] API-016 · debug Events and Logs RPCs stream real records
+  why: ORCH review found DebugService.Events and Logs return immediately with no records, so dfctl events and dfctl logs are empty even though the event log and the slog ring buffer exist.
+  lane: L-API · block: 8–11 · paths: `internal/api/debug/events*.go`, `internal/api/debug/logs*.go`, `internal/api/debug/reads.go` · depends: API-011, STORE-003, API-013, E2E-004
+  done when: Events streams EventLog records since SEQ and follows new ones while the stream is open; Logs streams the ring buffer filtered by level and follows; bufconn tests; dfctl events --since 0 shows the run.
+  status: open
 
 ## 14. LLM layer
 
@@ -1566,6 +1578,12 @@ Keeping the build honest: per-commit checks, the 30-minute full gate, checkpoint
   lane: ORCH · block: 8–11 · paths: `internal/wire/e2e_test.go` · depends: E2E-001, ENG-014, COMBAT-008, BASE-011
   done when: the test drives lobby → creation → opening → conversation → check → resolution → hook → combat → cliffhanger → End through dfctl only, on fakes, asserting the phase trace; any engine stall is reported with the exact event and state as a follow-up todo request.
   status: committed 5df13ea (stalls in creation: engine root does not use the phase dispatcher -> ENG-015)
+
+- [ ] E2E-004 · server path stalls in creation although the engine alone reaches Opening
+  why: A direct game.State test (both seats species, gender, roll_hero, ready) reaches Opening, but the same Acts sent through the debug service to a wire-built server leave the room in creation for 3 s; the composition (room engine vs the engine the debug service reads, the inbox the Runner posts to, NewGame replacement, or effect results) loses or diverts events.
+  lane: ORCH · block: 8–11 · paths: `internal/wire/**`, `internal/api/debug/**` · depends: ENG-015, BASE-017, E2E-003
+  done when: the root cause is found and fixed in wire or api/debug (one source of truth for the room's current engine, reads serialized through the room loop instead of racing it, one inbox shared by room, runner, timers, and debug service); TestE2E_DfctlRunThroughLobby runs lobby to End without skipping on fakes.
+  status: claimed luna
 
 - [ ] SPIKE-001 · Spike proto and grpctunnel echo
   why: The riskiest path (phone mic over the tunnel, PCM back) is proven with a throwaway proto first.
