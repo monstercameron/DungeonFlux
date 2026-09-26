@@ -27,6 +27,22 @@ func TestMusicModelFromView_NilMusicIsEmpty(t *testing.T) {
 	}
 }
 
+func TestMusicModel_NormalizesLoopAndLevel(t *testing.T) {
+	model := MusicModelFromView(&dungeonfluxv1.DMView{Music: &dungeonfluxv1.Music{
+		TrackId: "theme", Url: "theme.opus", LoopStartMs: -20, LoopEndMs: 10, Level: 2,
+	}})
+	if model.LoopStartMS != 0 || model.LoopEndMS != 10 || model.DisplayLevel() != 1 || !model.Active() {
+		t.Fatalf("normalized music = %#v", model)
+	}
+}
+
+func TestMusicModel_InactiveWithoutURL(t *testing.T) {
+	model := MusicModel{TrackID: "theme"}
+	if model.Active() {
+		t.Fatal("track without URL reported active")
+	}
+}
+
 func TestMusicBarDurationMS_UsesFourFour(t *testing.T) {
 	if got := MusicBarDurationMS(80); got != 3000 {
 		t.Fatalf("bar = %d ms", got)

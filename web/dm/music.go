@@ -18,13 +18,27 @@ type MusicModel struct {
 	Cue         string
 }
 
+// Active reports whether the view contains a playable music track.
+func (m MusicModel) Active() bool { return m.TrackID != "" && m.URL != "" }
+
+// DisplayLevel clamps a mixer level for a stable indicator width.
+func (m MusicModel) DisplayLevel() float32 {
+	if m.Level < 0 {
+		return 0
+	}
+	if m.Level > 1 {
+		return 1
+	}
+	return m.Level
+}
+
 // MusicModelFromView projects the music portion of a DM view.
 func MusicModelFromView(view *dungeonfluxv1.DMView) MusicModel {
 	if view == nil || view.GetMusic() == nil {
 		return MusicModel{}
 	}
 	music := view.GetMusic()
-	return MusicModel{
+	model := MusicModel{
 		TrackID:     music.GetTrackId(),
 		URL:         music.GetUrl(),
 		LoopStartMS: music.GetLoopStartMs(),
@@ -34,6 +48,12 @@ func MusicModelFromView(view *dungeonfluxv1.DMView) MusicModel {
 		Duck:        music.GetDuck(),
 		Cue:         music.GetCue(),
 	}
+	model.LoopStartMS = nonNegative(model.LoopStartMS)
+	model.LoopEndMS = nonNegative(model.LoopEndMS)
+	if model.LoopEndMS > 0 && model.LoopEndMS < model.LoopStartMS {
+		model.LoopEndMS = model.LoopStartMS
+	}
+	return model
 }
 
 // MusicBarDurationMS returns the duration of one 4/4 bar for a valid tempo.

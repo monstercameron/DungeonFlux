@@ -12,6 +12,11 @@ type ClipModel struct {
 	Locale      string
 }
 
+// ClipStartSeconds returns the non-negative seek position for a browser video.
+func (m ClipModel) ClipStartSeconds() float64 {
+	return float64(m.OffsetMS) / 1000
+}
+
 // ClipModelFromView selects video when its asset is ready and a still otherwise.
 func ClipModelFromView(view *dungeonfluxv1.DMView) ClipModel {
 	if view == nil {

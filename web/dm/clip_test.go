@@ -40,3 +40,9 @@ func TestClipModelFromView_NilIsFallback(t *testing.T) {
 		t.Fatalf("nil clip model = %#v", got)
 	}
 }
+
+func TestClipModel_ClipStartSecondsUsesMilliseconds(t *testing.T) {
+	if got := (ClipModel{OffsetMS: 1250}).ClipStartSeconds(); got != 1.25 {
+		t.Fatalf("start seconds = %v", got)
+	}
+}
