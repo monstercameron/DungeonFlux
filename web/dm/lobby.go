@@ -79,8 +79,14 @@ func (l *ListenAudio) Handle(message *dungeonfluxv1.AudioMessage) error {
 	if cancel := message.GetCancel(); cancel != nil {
 		if cancel.GetAll() {
 			l.scheduler.Cancel("")
+			if player, ok := l.player.(interface{ Cancel(string) }); ok {
+				player.Cancel("")
+			}
 		} else {
 			l.scheduler.Cancel(cancel.GetUtteranceId())
+			if player, ok := l.player.(interface{ Cancel(string) }); ok {
+				player.Cancel(cancel.GetUtteranceId())
+			}
 		}
 		return nil
 	}

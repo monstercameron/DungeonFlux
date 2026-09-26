@@ -11,7 +11,7 @@ import (
 )
 
 func registerRoutes(parseRouter *router.Router, client *Client) {
-	parseRouter.GoRegisterRoute(string(RouteDM), dm.LobbyComponent(dm.NewLobbyModel("DEMO", "")))
+	parseRouter.GoRegisterRoute(string(RouteDM), dm.Mount("/grpc"))
 	if client == nil {
 		parseRouter.GoRegisterRoute(string(RoutePhone), unavailable("Player client unavailable"))
 	} else {

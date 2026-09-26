@@ -144,9 +144,18 @@ func screenView(props screenProps) ui.Node {
 		if player != nil {
 			_ = player.Apply(music, 0)
 		}
-		return func() {}
+		return func() {
+			if player != nil {
+				player.Stop()
+			}
+		}
 	}, music)
-	return compose(snapshot, dmRoomCode())
+	unlock := ui.UseEvent(func() {
+		if player := musicPlayer.Get(); player != nil {
+			_ = player.Resume()
+		}
+	})
+	return compose(snapshot, dmRoomCode(), unlock)
 }
 
 func dmToken() string {
@@ -162,30 +171,31 @@ func dmToken() string {
 	return value.String()
 }
 
-func compose(state *dungeonfluxv1.ScreenState, roomCode string) ui.Node {
+func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handler) ui.Node {
 	view := state.GetDm()
 	layers := SelectLayers(state)
 	children := make([]ui.Node, 0, len(layers))
 	for _, layer := range layers {
 		switch layer {
 		case LayerLobby:
-			children = append(children, ui.CreateElement(LobbyComponent(NewLobbyModel(roomCode, ""))))
+			children = append(children, LobbyComponent(NewLobbyModel(roomCode, ""))(router.Attrs{}))
 		case LayerScene:
-			children = append(children, ui.CreateElement(SceneComponent, view))
+			children = append(children, SceneComponent(view)(router.Attrs{}))
 		case LayerCallout:
-			children = append(children, ui.CreateElement(CalloutComponent, CalloutViewFromDMView(view)))
+			children = append(children, CalloutComponent(CalloutViewFromDMView(view))(router.Attrs{}))
 		case LayerClip:
-			children = append(children, ui.CreateElement(ClipComponent, ClipModelFromView(view)))
+			children = append(children, ClipComponent(ClipModelFromView(view))(router.Attrs{}))
 		case LayerDice:
-			children = append(children, ui.CreateElement(DiceComponent, DiceViewFromDMView(view)))
+			children = append(children, DiceComponent(DiceViewFromDMView(view))(router.Attrs{}))
 		case LayerTimer:
-			children = append(children, ui.CreateElement(TimerComponent, TimerViewFromDMView(view)))
+			children = append(children, TimerComponent(TimerViewFromDMView(view))(router.Attrs{}))
 		case LayerCombat:
-			children = append(children, ui.CreateElement(CombatComponent, view))
+			children = append(children, CombatComponent(view)(router.Attrs{}))
 		case LayerEnd:
-			children = append(children, ui.CreateElement(EndCardComponent, NewEndCardModel()))
+			children = append(children, EndCardComponent(NewEndCardModel())(router.Attrs{}))
 		}
 	}
+	children = append(children, html.Button(html.Props{Type: "button", Class: "df-dm-audio-unlock", OnClick: unlock}, html.Text("Enable table audio")))
 	return html.Main(html.Props{Class: "df-dm-screen", Role: "main"}, children...)
 }
 

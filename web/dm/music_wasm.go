@@ -53,23 +53,27 @@ func (p *MusicPlayer) Apply(next MusicModel, elapsedMS int64) error {
 		return nil
 	}
 	request := js.Global().Get("fetch").Invoke(next.URL)
-	then := js.FuncOf(func(_ js.Value, args []js.Value) any {
+	var then js.Func
+	then = js.FuncOf(func(_ js.Value, args []js.Value) any {
+		defer then.Release()
 		if len(args) == 0 {
 			return nil
 		}
 		return args[0].Call("arrayBuffer")
 	})
 	request = request.Call("then", then)
-	then.Release()
-	decode := js.FuncOf(func(_ js.Value, args []js.Value) any {
+	var decode js.Func
+	decode = js.FuncOf(func(_ js.Value, args []js.Value) any {
+		defer decode.Release()
 		if len(args) == 0 {
 			return nil
 		}
 		return p.context.Call("decodeAudioData", args[0])
 	})
 	request = request.Call("then", decode)
-	decode.Release()
-	ready := js.FuncOf(func(_ js.Value, args []js.Value) any {
+	var ready js.Func
+	ready = js.FuncOf(func(_ js.Value, args []js.Value) any {
+		defer ready.Release()
 		if len(args) > 0 && p.current.TrackID == next.TrackID && p.current.URL == next.URL {
 			p.loaded[next.URL] = args[0]
 			p.schedule(args[0], next, transition)
@@ -77,7 +81,6 @@ func (p *MusicPlayer) Apply(next MusicModel, elapsedMS int64) error {
 		return nil
 	})
 	request.Call("then", ready)
-	ready.Release()
 	return nil
 }
 
@@ -92,6 +95,17 @@ func (p *MusicPlayer) Stop() {
 	p.source = js.Undefined()
 	p.current = MusicModel{}
 	p.activeLevel = 0
+}
+
+// Resume unlocks the browser audio context after a user gesture.
+func (p *MusicPlayer) Resume() error {
+	if p == nil || !p.context.Truthy() {
+		return fmt.Errorf("dm: nil music player")
+	}
+	if promise := p.context.Call("resume"); promise.Truthy() {
+		return nil
+	}
+	return fmt.Errorf("dm: audio context could not resume")
 }
 
 func (p *MusicPlayer) schedule(buffer js.Value, model MusicModel, transition MusicTransition) {
@@ -109,16 +123,16 @@ func (p *MusicPlayer) schedule(buffer js.Value, model MusicModel, transition Mus
 	source.Call("start", start)
 	if oldSource.Truthy() && transition.Crossfade {
 		end := start + float64(transition.DurationMS)/1000
-		oldGain.Call("gain").Call("setValueCurveAtTime", equalPowerCurve(oldLevel, false), start, end-start)
-		gain.Call("gain").Call("setValueCurveAtTime", equalPowerCurve(model.Level, true), start, end-start)
+		oldGain.Get("gain").Call("setValueCurveAtTime", equalPowerCurve(oldLevel, false), start, end-start)
+		gain.Get("gain").Call("setValueCurveAtTime", equalPowerCurve(model.Level, true), start, end-start)
 		oldSource.Call("stop", end)
 	} else if oldSource.Truthy() {
 		p.setGain(gain, 0)
-		gain.Call("gain").Call("linearRampToValueAtTime", model.Level, start+musicFadeSeconds)
+		gain.Get("gain").Call("linearRampToValueAtTime", model.Level, start+musicFadeSeconds)
 		oldSource.Call("stop", start)
 	} else {
 		p.setGain(gain, 0)
-		gain.Call("gain").Call("linearRampToValueAtTime", model.Level, start+musicFadeSeconds)
+		gain.Get("gain").Call("linearRampToValueAtTime", model.Level, start+musicFadeSeconds)
 	}
 	p.source, p.gain = source, gain
 	p.activeLevel = model.Level
@@ -126,7 +140,7 @@ func (p *MusicPlayer) schedule(buffer js.Value, model MusicModel, transition Mus
 
 func (p *MusicPlayer) setGain(gain js.Value, level float32) {
 	if gain.Truthy() {
-		gain.Call("gain").Set("value", level)
+		gain.Get("gain").Set("value", level)
 	}
 }
 
