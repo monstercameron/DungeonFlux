@@ -1599,11 +1599,11 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   done when: the Marble job requests and downloads .ply (and .sog when the API offers it) directly; SPZ request flags, SPZ URL fields, and scripts/buildtime/spz are removed; the manifest records only .ply/.sog assets with metric_scale_factor and ground_plane_offset; 100k decimation, if needed, operates on PLY.
   status: committed 0b2fb50 (Marble exports PLY at full and 100k; no SOG export offered)
 
-- [ ] OPS-019 · PowerShell SuperSplat manifest and complete LOD downloader
+- [x] OPS-019 · PowerShell SuperSplat manifest and complete LOD downloader
   why: The developer needs a reproducible local copy of every LOD and texture referenced by the supplied SuperSplat scene.
   lane: L-OPS · paths: `scripts/download-supersplat.ps1` · depends: none
   done when: discovers the public scene manifest, mirrors every referenced file without escaping the destination, records provenance and hashes, and passes offline fixture tests plus a complete download of cb2fddd6.
-  status: claimed Codex 2026-09-26
+  status: done 8e30c98
 
 ## 25. Test server, gates, and checkpoints
 
