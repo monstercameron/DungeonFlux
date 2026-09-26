@@ -41,6 +41,9 @@ func (s *State) Move(cell Cell) (MoveResult, error) {
 	if err := s.SetParticipant(pc); err != nil {
 		return MoveResult{}, err
 	}
+	s.clearPaths()
+	s.setAction(pc.ID, "walk", path)
+	s.setReachHighlights(pc)
 	return MoveResult{Seat: pc.Seat, Path: path}, nil
 }
 
@@ -83,6 +86,22 @@ func (s *State) Attack(source *dice.Roller, target string) (AttackResult, error)
 	if outcome.Hit && outcome.Total > 0 {
 		rules.ApplyDamage(&s.Thrall, outcome.Total)
 	}
+	s.clearPaths()
+	s.setAction(pc.ID, "attack", path)
+	if outcome.Hit {
+		anim := "hit"
+		if s.Thrall.HP <= 0 {
+			anim = "fall"
+		}
+		s.setAction(s.Thrall.ID, anim, nil)
+		s.setContact(1200, 2000)
+		s.setCamera("IMPACT", s.Thrall.ID, false, 250)
+		s.setShake(12, 250)
+	} else {
+		s.clearContact()
+		s.setCamera("TURN_FOCUS", pc.ID, true, 250)
+	}
+	s.clearHighlights()
 	pc.ActionUsed = true
 	if err := s.SetParticipant(pc); err != nil {
 		return AttackResult{}, err
@@ -100,6 +119,7 @@ func (s *State) Bell() error {
 		return errors.New("bell is available only during a player turn")
 	}
 	s.Phase = Done
+	s.finishPresentation(false)
 	return nil
 }
 
@@ -116,9 +136,8 @@ func (s State) approach(start Cell, limit int) ([]Cell, Cell, bool) {
 	return bestPath, bestCell, bestPath != nil
 }
 
-// ThrallCell returns the current thrall location. The initial child-machine
-// contract uses the origin; the enemy lane may add tactical relocation later.
-func (s State) ThrallCell() Cell { return Cell{} }
+// ThrallCell returns the current engine-owned thrall location.
+func (s State) ThrallCell() Cell { return s.ThrallPosition }
 
 func weaponAttack(source *dice.Roller, pc Participant, thrall rules.CreatureState) (rules.AttackOutcome, error) {
 	notation, bonus, damageType := weapon(pc.Build.Class)

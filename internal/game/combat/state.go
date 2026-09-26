@@ -36,6 +36,45 @@ type Grid struct {
 	Walkable map[Cell]bool
 }
 
+// TokenPresentation contains renderer-only facts for the latest token action.
+type TokenPresentation struct {
+	Path    []Cell
+	Anim    string
+	AnimSeq uint64
+}
+
+// CameraPresentation describes the engine-selected combat camera.
+type CameraPresentation struct {
+	Preset       string
+	FocusTokenID string
+	Follow       bool
+	DurationMS   int64
+	Seq          uint64
+}
+
+// Highlight contains an engine-selected set of cells for the renderer.
+type Highlight struct {
+	Kind  string
+	Cells []Cell
+}
+
+// ShakePresentation is a one-shot camera impact request.
+type ShakePresentation struct {
+	AmplitudePX float64
+	DurationMS  int64
+	Seq         uint64
+}
+
+// Presentation is the deterministic combat rendering state.
+type Presentation struct {
+	Tokens         map[string]TokenPresentation
+	Highlights     []Highlight
+	Camera         CameraPresentation
+	Shake          ShakePresentation
+	ContactMS      int64
+	ContactTotalMS int64
+}
+
 // IsWalkable reports whether cell is inside the grid and available for travel.
 func (g Grid) IsWalkable(cell Cell) bool {
 	if cell.X < 0 || cell.Y < 0 || cell.X >= g.Cols || cell.Y >= g.Rows {
@@ -77,13 +116,15 @@ type Config struct {
 
 // State is the pure mutable data for one combat child machine.
 type State struct {
-	Phase       Phase
-	PCs         [2]Participant
-	Thrall      rules.CreatureState
-	Grid        Grid
-	TurnSeat    int
-	ThrallTurns int
-	TurnNumber  int
+	Phase          Phase
+	PCs            [2]Participant
+	Thrall         rules.CreatureState
+	Grid           Grid
+	ThrallPosition Cell
+	TurnSeat       int
+	ThrallTurns    int
+	TurnNumber     int
+	Presentation   Presentation
 }
 
 // NewState creates a combat in intro with the fixed PC 1, thrall, PC 2 order.
@@ -91,9 +132,12 @@ func NewState(config Config) (State, error) {
 	if err := validateConfig(config); err != nil {
 		return State{}, err
 	}
-	return State{
+	state := State{
 		Phase: Intro, PCs: config.PCs, Thrall: config.Thrall, Grid: config.Grid,
-	}, nil
+		ThrallPosition: config.SpawnCell,
+	}
+	state.initPresentation()
+	return state, nil
 }
 
 // New is an alias for NewState for callers that construct the child machine.
@@ -111,6 +155,8 @@ func (s *State) Start() error {
 	s.TurnSeat = 1
 	s.TurnNumber = 1
 	s.resetAction()
+	s.setCamera("TURN_FOCUS", s.PCs[0].ID, true, 500)
+	s.setReachHighlights(s.PCs[0])
 	return nil
 }
 
@@ -125,12 +171,16 @@ func (s *State) EndPlayerTurn() error {
 	if s.TurnSeat == 1 {
 		s.Phase = EnemyTurn
 		s.TurnNumber++
+		s.clearHighlights()
+		s.setCamera("TURN_FOCUS", s.Thrall.ID, true, 500)
 		return nil
 	}
 	s.Phase = PCTurn
 	s.TurnSeat = 1
 	s.TurnNumber++
 	s.resetAction()
+	s.setCamera("TURN_FOCUS", s.PCs[0].ID, true, 500)
+	s.setReachHighlights(s.PCs[0])
 	return nil
 }
 
@@ -147,6 +197,8 @@ func (s *State) EndEnemyTurn() error {
 	s.TurnSeat = 2
 	s.TurnNumber++
 	s.resetAction()
+	s.setCamera("TURN_FOCUS", s.PCs[1].ID, true, 500)
+	s.setReachHighlights(s.PCs[1])
 	return nil
 }
 

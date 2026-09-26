@@ -2,6 +2,7 @@ package game
 
 import (
 	"github.com/monstercameron/DungeonFlux/internal/domain"
+	"github.com/monstercameron/DungeonFlux/internal/game/combat"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
 
@@ -55,6 +56,21 @@ func BattlefieldViewFrom(source domain.Battlefield, reports BattlefieldReports, 
 		Grid:      cloneGrid(source.Grid),
 		Flat:      source.Flat,
 	}
+}
+
+// BattlefieldViewFromCombat combines authored navigation data with the
+// engine-owned combat scene state. The renderer receives this snapshot and
+// does not calculate paths, targets, or camera choices.
+func BattlefieldViewFromCombat(source domain.Battlefield, reports BattlefieldReports, visible bool, state combat.State) *domain.BattlefieldView {
+	view := BattlefieldViewFrom(source, reports, visible)
+	combatView := CombatViewFrom(state, 0, 0, 0)
+	view.Tokens = append([]domain.TokenView(nil), combatView.Tokens...)
+	view.Highlights = append([]domain.HighlightView(nil), combatView.Highlights...)
+	view.TurnOrder = append([]domain.TurnEntry(nil), combatView.TurnOrder...)
+	view.Round = combatView.Round
+	presentation := state.Presentation.Camera
+	view.Camera = domain.CameraView{Preset: presentation.Preset, FocusTokenID: domain.TokenID(presentation.FocusTokenID), Seq: presentation.Seq}
+	return view
 }
 
 func cloneCameras(source map[string]domain.CameraDef) map[string]domain.CameraDef {

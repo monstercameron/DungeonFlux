@@ -61,6 +61,7 @@ func (s *State) ResolveEnd(reason EndReason, slainBySeat int) (EndResult, error)
 		stabilize(&s.PCs[i])
 	}
 	s.Phase = Done
+	s.finishPresentation(result.Outcome == Slain)
 	return result, nil
 }
 

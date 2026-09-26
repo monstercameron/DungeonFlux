@@ -67,3 +67,25 @@ func TestCombatViewAt_UsesMaterializedTimers(t *testing.T) {
 		t.Fatalf("materialized timers = %#v", got)
 	}
 }
+
+func TestCombatViewFrom_ProjectsEnginePresentation(t *testing.T) {
+	state := combat.State{
+		Phase: combat.PCTurn, TurnSeat: 1, TurnNumber: 2,
+		PCs:    [2]combat.Participant{{Seat: 1, ID: "pc-1", Position: combat.Cell{X: 1, Y: 1}, HP: 8, MaxHP: 10}, {Seat: 2, ID: "pc-2", HP: 10, MaxHP: 10}},
+		Thrall: rules.CreatureState{ID: "thrall", HP: 12, MaxHP: 12},
+	}
+	state.Presentation.Tokens = map[string]combat.TokenPresentation{
+		"pc-1": {Anim: "walk", Path: []combat.Cell{{X: 2, Y: 1}}},
+		"pc-2": {Anim: "idle"}, "thrall": {Anim: "idle"},
+	}
+	state.Presentation.Highlights = []combat.Highlight{{Kind: "reach", Cells: []combat.Cell{{X: 0, Y: 1}, {X: 1, Y: 0}}}}
+	state.Presentation.ContactMS = 900
+	state.Presentation.ContactTotalMS = 2000
+	got := CombatViewFrom(state, 0, 0, 0)
+	if got.Tokens[0].Kind != "pc" || got.Tokens[0].Anim != "walk" || len(got.Tokens[0].Path) != 1 {
+		t.Fatalf("token presentation = %#v", got.Tokens[0])
+	}
+	if len(got.Highlights) != 1 || len(got.Highlights[0].Cells) != 2 || got.Contact.RemainingMS != 900 {
+		t.Fatalf("combat presentation = %#v", got)
+	}
+}

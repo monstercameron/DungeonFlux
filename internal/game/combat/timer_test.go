@@ -80,6 +80,7 @@ func TestState_turnTimerActionChoosesAttackOrEndTurn(t *testing.T) {
 	}
 	c.Grid.Walkable = map[Cell]bool{{X: 0}: true}
 	s.Grid = c.Grid
+	s.ThrallPosition = Cell{X: 2}
 	action, err = s.TurnTimerAction()
 	if err != nil || action != AutoEndTurn {
 		t.Fatalf("illegal fallback = %v, %v", action, err)

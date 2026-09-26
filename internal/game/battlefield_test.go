@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
+	"github.com/monstercameron/DungeonFlux/internal/game/combat"
+	"github.com/monstercameron/DungeonFlux/internal/game/rules"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
 
@@ -68,5 +70,27 @@ func TestBattlefieldViewFrom_ProjectsOpeningBattlefield(t *testing.T) {
 	combat := BattlefieldViewFrom(source, BattlefieldReports{}, true)
 	if combat.Mode != BattlefieldModeFlat || !combat.Visible {
 		t.Fatalf("combat fallback view = %#v", combat)
+	}
+}
+
+func TestBattlefieldViewFromCombat_UsesEngineCameraAndScene(t *testing.T) {
+	state, err := combat.NewState(combat.Config{
+		PCs:    [2]combat.Participant{{Seat: 1, ID: "pc-1", HP: 10, MaxHP: 10}, {Seat: 2, ID: "pc-2", HP: 10, MaxHP: 10}},
+		Thrall: rules.Thrall("thrall"),
+		Grid:   combat.Grid{Cols: 2, Rows: 2},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := state.Start(); err != nil {
+		t.Fatal(err)
+	}
+	source := domain.Battlefield{Grid: domain.Grid{Cols: 2, Rows: 2, Walkable: []bool{true, true, true, true}}}
+	view := BattlefieldViewFromCombat(source, BattlefieldReports{SplatReady: true}, true, state)
+	if view.Mode != BattlefieldModeSplat || !view.Visible || view.Camera.Preset != "TURN_FOCUS" || view.Camera.FocusTokenID != "pc-1" {
+		t.Fatalf("combat battlefield = %#v", view)
+	}
+	if len(view.Tokens) != 3 || len(view.Highlights) != 1 || view.Round != 1 {
+		t.Fatalf("combat scene = %#v", view)
 	}
 }

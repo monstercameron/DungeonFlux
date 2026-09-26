@@ -1,6 +1,10 @@
 package combat
 
-import "sort"
+import (
+	"sort"
+
+	"github.com/monstercameron/DungeonFlux/internal/domain"
+)
 
 // GridFromSupportedCells creates the engine grid from scene-collider cells.
 // Invalid and duplicate cells are ignored so the engine cannot target terrain.
@@ -14,7 +18,23 @@ func GridFromSupportedCells(cols, rows int, cells []Cell) Grid {
 	return grid
 }
 
-// Distance returns the shortest four-way path length between walkable cells.
+// GridFromBattlefield converts the authored content grid into engine pathing.
+// The row-major walkable set is the same source projected to the renderer.
+func GridFromBattlefield(source domain.Battlefield) Grid {
+	grid := Grid{Cols: source.Grid.Cols, Rows: source.Grid.Rows, Walkable: make(map[Cell]bool)}
+	for row := 0; row < grid.Rows; row++ {
+		for column := 0; column < grid.Cols; column++ {
+			index := row*grid.Cols + column
+			if index >= len(source.Grid.Walkable) || !source.Grid.Walkable[index] {
+				continue
+			}
+			grid.Walkable[Cell{X: column, Y: row}] = true
+		}
+	}
+	return grid
+}
+
+// Distance returns the shortest eight-way path length between walkable cells.
 func Distance(grid Grid, from, to Cell) (int, bool) {
 	path, ok := Path(grid, from, to)
 	if !ok {
@@ -23,7 +43,7 @@ func Distance(grid Grid, from, to Cell) (int, bool) {
 	return len(path) - 1, true
 }
 
-// Path returns the shortest four-way path between walkable cells.
+// Path returns the shortest eight-way path between walkable cells.
 func Path(grid Grid, from, to Cell) ([]Cell, bool) {
 	if !grid.IsWalkable(from) || !grid.IsWalkable(to) {
 		return nil, false
@@ -35,7 +55,7 @@ func Path(grid Grid, from, to Cell) ([]Cell, bool) {
 		if current == to {
 			return reversePath(parents, from, to), true
 		}
-		for _, next := range neighbours(current) {
+		for _, next := range neighbors(current) {
 			if !grid.IsWalkable(next) {
 				continue
 			}
@@ -51,10 +71,6 @@ func Path(grid Grid, from, to Cell) ([]Cell, bool) {
 
 func (g Grid) inBounds(cell Cell) bool {
 	return cell.X >= 0 && cell.Y >= 0 && cell.X < g.Cols && cell.Y < g.Rows
-}
-
-func neighbours(cell Cell) [4]Cell {
-	return [4]Cell{{X: cell.X, Y: cell.Y - 1}, {X: cell.X + 1, Y: cell.Y}, {X: cell.X, Y: cell.Y + 1}, {X: cell.X - 1, Y: cell.Y}}
 }
 
 func reversePath(parents map[Cell]Cell, from, to Cell) []Cell {

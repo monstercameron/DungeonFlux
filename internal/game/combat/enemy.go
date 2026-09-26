@@ -37,7 +37,18 @@ func (s *State) EnemyTurn(source *dice.Roller, contactMS int) (EnemyResult, erro
 	}
 	result.TargetSeat = target.Seat
 	result.Path = path
+	s.clearPaths()
+	anim := "attack"
+	if len(path) > 0 {
+		anim = "walk"
+	}
+	s.setAction(s.Thrall.ID, anim, path)
+	s.clearHighlights()
+	if len(path) > 0 {
+		s.ThrallPosition = path[len(path)-1]
+	}
 	if len(path) > 0 && !adjacent(path[len(path)-1], target.Position) {
+		s.clearContact()
 		return result, nil
 	}
 	outcome, err := rules.Slam(source, "slam-"+target.ID, target.ID, target.AC, target.HP, 0)
@@ -53,6 +64,23 @@ func (s *State) EnemyTurn(source *dice.Roller, contactMS int) (EnemyResult, erro
 		if err := s.SetParticipant(target); err != nil {
 			return EnemyResult{}, err
 		}
+	}
+	if outcome.Hit {
+		targetAnim := "hit"
+		if target.HP <= 0 {
+			targetAnim = "down"
+		}
+		s.setAction(target.ID, targetAnim, nil)
+		s.setContact(int64(contactMS), int64(contactMS)+800)
+		if target.HP <= 0 {
+			s.setCamera("KO", target.ID, false, 400)
+		} else {
+			s.setCamera("IMPACT", target.ID, false, 250)
+		}
+		s.setShake(12, 250)
+	} else {
+		s.clearContact()
+		s.setCamera("TURN_FOCUS", s.Thrall.ID, true, 250)
 	}
 	return result, nil
 }

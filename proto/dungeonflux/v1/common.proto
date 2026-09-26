@@ -150,12 +150,30 @@ message Battlefield {
   FlatBattlefield flat = 7;
   repeated Camera cameras = 8;
   Camera camera = 9;
+  repeated Highlight highlights = 10;
+  int64 contact_in_ms = 11;
+  Shake shake = 12;
 }
 message Grid { Cell origin = 1; float cell_m = 2; int32 cols = 3; int32 rows = 4; repeated Cell walkable = 5; }
 message FlatBattlefield { string image_url = 1; repeated float floor_quad_px = 2; }
-message Camera { string preset = 1; string focus_token_id = 2; uint64 seq = 3; }
-message Token { string token_id = 1; string name = 2; string portrait_url = 3; Cell cell = 4; int32 hp = 5; int32 hp_max = 6; bool active = 7; repeated string statuses = 8; }
-message Highlight { Cell cell = 1; string kind = 2; }
+message Camera { string preset = 1; string focus_token_id = 2; uint64 seq = 3; bool follow = 4; int64 duration_ms = 5; }
+message Shake { float amplitude_px = 1; int64 duration_ms = 2; uint64 seq = 3; }
+message Token {
+  string token_id = 1;
+  string name = 2;
+  string portrait_url = 3;
+  Cell cell = 4;
+  int32 hp = 5;
+  int32 hp_max = 6;
+  bool active = 7;
+  repeated string statuses = 8;
+  string kind = 9;
+  repeated Cell path = 10;
+  string anim = 11;
+  uint64 anim_seq = 12;
+  map<string, string> clips = 13;
+}
+message Highlight { Cell cell = 1; string kind = 2; repeated Cell cells = 3; }
 message TurnOrderEntry { string token_id = 1; string name = 2; string portrait_url = 3; int32 hp = 4; int32 hp_max = 5; bool active = 6; bool done = 7; }
 message CombatView { string token_id = 1; int32 hp = 2; int32 hp_max = 3; repeated string statuses = 4; bool my_turn = 5; int32 move_left_cells = 6; MiniGrid mini_grid = 7; int64 contact_in_ms = 8; }
 message MiniGrid { int32 cols = 1; int32 rows = 2; repeated Cell walkable = 3; repeated Cell reachable = 4; Cell me = 5; Cell thrall = 6; }
@@ -185,6 +203,8 @@ message DMView {
   Text notice = 22;
   repeated LobbySeat seats = 23;
   Lobby lobby = 24;
+  int64 contact_in_ms = 25;
+  Shake shake = 26;
 }
 message CharacterFlavor {
   string name = 1;

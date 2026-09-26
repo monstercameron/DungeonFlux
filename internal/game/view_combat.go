@@ -20,9 +20,16 @@ func CombatViewFrom(source combat.State, snapshotAt, contactAt, contactTotal tim
 		Round:     source.TurnNumber,
 		Contact:   contactTimer(snapshotAt, contactAt, contactTotal),
 	}
+	if view.Contact == (domain.TimerView{}) && source.Presentation.ContactMS > 0 {
+		view.Contact = domain.TimerView{Name: "contact", RemainingMS: source.Presentation.ContactMS, TotalMS: source.Presentation.ContactTotalMS}
+	}
 	view.Tokens = append(view.Tokens, participantToken(source.PCs[0], source))
 	view.Tokens = append(view.Tokens, thrallToken(source))
 	view.Tokens = append(view.Tokens, participantToken(source.PCs[1], source))
+	view.Highlights = make([]domain.HighlightView, 0, len(source.Presentation.Highlights))
+	for _, highlight := range source.Presentation.Highlights {
+		view.Highlights = append(view.Highlights, domain.HighlightView{Kind: highlight.Kind, Cells: toDomainCells(highlight.Cells)})
+	}
 	view.TurnOrder = turnOrder(source)
 	return view
 }
@@ -37,29 +44,46 @@ func CombatViewAt(source combat.State, contact, cap domain.TimerView) domain.Com
 }
 
 func participantToken(participant combat.Participant, source combat.State) domain.TokenView {
+	visual := source.Presentation.Tokens[participant.ID]
 	return domain.TokenView{
 		ID:     domain.TokenID(participant.ID),
-		Kind:   "PC",
+		Kind:   "pc",
 		Name:   participant.ID,
 		Cell:   domain.Cell{C: participant.Position.X, R: participant.Position.Y},
+		Path:   toDomainCells(visual.Path),
 		HP:     participant.HP,
 		HPMax:  participant.MaxHP,
 		Active: source.Phase == combat.PCTurn && source.TurnSeat == participant.Seat,
+		Anim:   visual.Anim,
 		Status: conditionStatus(participant.Conditions),
 	}
 }
 
 func thrallToken(source combat.State) domain.TokenView {
+	visual := source.Presentation.Tokens[source.Thrall.ID]
 	return domain.TokenView{
 		ID:     domain.TokenID(source.Thrall.ID),
-		Kind:   "THRALL",
+		Kind:   "thrall",
 		Name:   source.Thrall.ID,
 		Cell:   domain.Cell{},
+		Path:   toDomainCells(visual.Path),
 		HP:     source.Thrall.HP,
 		HPMax:  source.Thrall.MaxHP,
 		Active: source.Phase == combat.EnemyTurn,
+		Anim:   visual.Anim,
 		Status: conditionStatus(source.Thrall.Conditions),
 	}
+}
+
+func toDomainCells(cells []combat.Cell) []domain.Cell {
+	if len(cells) == 0 {
+		return nil
+	}
+	out := make([]domain.Cell, len(cells))
+	for index, cell := range cells {
+		out[index] = domain.Cell{C: cell.X, R: cell.Y}
+	}
+	return out
 }
 
 func turnOrder(source combat.State) []domain.TurnEntry {

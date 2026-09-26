@@ -116,5 +116,6 @@ func (s *State) Skip() error {
 		return nil
 	}
 	s.Phase = Done
+	s.finishPresentation(s.Thrall.HP <= 0)
 	return nil
 }

@@ -1,6 +1,10 @@
 package combat
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/monstercameron/DungeonFlux/internal/domain"
+)
 
 func TestGridFromSupportedCellsAndPath(t *testing.T) {
 	grid := GridFromSupportedCells(3, 2, []Cell{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 1, Y: 1}, {X: 2, Y: 1}, {X: 2, Y: 2}})
@@ -8,11 +12,11 @@ func TestGridFromSupportedCellsAndPath(t *testing.T) {
 		t.Fatalf("supported cells were not normalized: %#v", grid.Walkable)
 	}
 	path, ok := Path(grid, Cell{X: 0, Y: 0}, Cell{X: 2, Y: 1})
-	if !ok || len(path) != 4 || path[0] != (Cell{X: 0, Y: 0}) || path[len(path)-1] != (Cell{X: 2, Y: 1}) {
+	if !ok || len(path) != 3 || path[0] != (Cell{X: 0, Y: 0}) || path[len(path)-1] != (Cell{X: 2, Y: 1}) {
 		t.Fatalf("unexpected path: %v, %v", path, ok)
 	}
 	distance, ok := Distance(grid, Cell{X: 0, Y: 0}, Cell{X: 2, Y: 1})
-	if !ok || distance != 3 {
+	if !ok || distance != 2 {
 		t.Fatalf("unexpected distance: %d, %v", distance, ok)
 	}
 }
@@ -35,5 +39,20 @@ func TestSortedCells(t *testing.T) {
 		if got[index] != want[index] {
 			t.Fatalf("SortedCells() = %v, want %v", got, want)
 		}
+	}
+}
+
+func TestGridFromBattlefield_usesRowMajorWalkableCells(t *testing.T) {
+	source := domain.Battlefield{Grid: domain.Grid{Cols: 3, Rows: 2, Walkable: []bool{
+		true, false, true,
+		false, true, true,
+	}}}
+	got := GridFromBattlefield(source)
+	if !got.IsWalkable(Cell{X: 2, Y: 1}) || got.IsWalkable(Cell{X: 1, Y: 0}) {
+		t.Fatalf("battlefield grid = %#v", got.Walkable)
+	}
+	path, ok := Path(got, Cell{X: 0, Y: 0}, Cell{X: 2, Y: 1})
+	if !ok || len(path) != 3 {
+		t.Fatalf("battlefield diagonal path = %v, %v", path, ok)
 	}
 }
