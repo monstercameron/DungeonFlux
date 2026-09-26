@@ -345,6 +345,12 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   done when: the QR PNG is stored in the asset store under its sha256 name (or served by a dedicated /join-qr.png route) and the View's QR reference resolves with 200; wire passes room code and the preferred LAN join URL to the engine constructor per ENG-017; wire test fetches the QR.
   status: committed d5e5624
 
+- [ ] BASE-022 · smaller, compressed WASM bundle
+  why: Live test: the 27 MB uncompressed WASM bundle takes 10-18 s to start in the browser, which phones on venue Wi-Fi cannot afford.
+  lane: ORCH · block: 8–11 · paths: `scripts/buildweb.ps1`, `scripts/buildweb/**`, `internal/wire/web*.go` · depends: WEB-007, BASE-020
+  done when: buildweb builds with -trimpath -ldflags="-s -w", writes .wasm.gz (and .br via a Go encoder if one is vendored; otherwise gzip only) using a small Go tool under scripts/buildweb/; the server serves the precompressed file with Content-Encoding by Accept-Encoding and an ETag (no-cache kept, so 304s avoid re-downloads); report sizes before/after; boot time measured in Edge.
+  status: claimed luna
+
 - [x] BASE-007 · internal/wire skeleton and cmd/server skeleton
   why: The server binary must start from hour 1 with fakes, flags (-config, -port, -data-dir, -seed), and graceful shutdown.
   lane: ORCH · block: 1–5 · paths: `internal/wire/**`, `cmd/server/**` · depends: BASE-002, BASE-005
