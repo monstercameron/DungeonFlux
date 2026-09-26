@@ -174,6 +174,9 @@ func (s *SessionServer) joinPhone(ctx context.Context, request *df.JoinRequest) 
 				locale = "en"
 			}
 			s.mu.Unlock()
+			if !s.postPhoneJoin(ctx, seat.id, locale) {
+				return nil, status.Error(codes.ResourceExhausted, "room inbox is full")
+			}
 			response := joinResponse(seat)
 			response.Locale = locale
 			return response, nil
@@ -203,7 +206,7 @@ func (s *SessionServer) joinPhone(ctx context.Context, request *df.JoinRequest) 
 	}
 	s.locales[token] = locale
 	s.mu.Unlock()
-	if !s.inbox.Post(ctx, domain.Envelope{Event: domain.Join{Seat: id, JoinKind: "phone", Locale: locale}}) {
+	if !s.postPhoneJoin(ctx, id, locale) {
 		s.mu.Lock()
 		delete(s.seats, token)
 		delete(s.locales, token)
@@ -213,6 +216,10 @@ func (s *SessionServer) joinPhone(ctx context.Context, request *df.JoinRequest) 
 	response := joinResponse(seat)
 	response.Locale = locale
 	return response, nil
+}
+
+func (s *SessionServer) postPhoneJoin(ctx context.Context, seat domain.SeatID, locale string) bool {
+	return s.inbox.Post(ctx, domain.Envelope{Event: domain.Join{Seat: seat, JoinKind: "phone", Locale: locale}})
 }
 
 func joinResponse(seat seatSession) *df.JoinResponse {

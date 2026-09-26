@@ -30,11 +30,14 @@ func TestSessionServer_JoinPhoneAllocatesAndRestoresSeat(t *testing.T) {
 	if restored.String() != first.String() {
 		t.Fatalf("restored = %v, first = %v", restored, first)
 	}
-	if len(inbox.Calls) != 1 {
-		t.Fatalf("join events = %d, want one for initial join", len(inbox.Calls))
+	if len(inbox.Calls) != 2 {
+		t.Fatalf("join events = %d, want one for each phone join", len(inbox.Calls))
 	}
-	if event, ok := inbox.Calls[0].Envelope.Event.(domain.Join); !ok || event.Seat != 1 {
-		t.Fatalf("join event = %#v", inbox.Calls[0].Envelope.Event)
+	for i, call := range inbox.Calls {
+		event, ok := call.Envelope.Event.(domain.Join)
+		if !ok || event.Seat != 1 || event.JoinKind != "phone" || event.Locale != "en" {
+			t.Fatalf("join event %d = %#v", i, call.Envelope.Event)
+		}
 	}
 }
 
@@ -113,13 +116,20 @@ func TestSessionServer_TokenOnlyJoinReattachesPhoneAndKeepsLocale(t *testing.T) 
 	if reconnected.GetLocale() != "es" {
 		t.Fatalf("reattached locale = %q, want es", reconnected.GetLocale())
 	}
-	if len(inbox.Calls) != 1 {
-		t.Fatalf("reattach posted %d join events, want one", len(inbox.Calls))
+	if len(inbox.Calls) != 2 {
+		t.Fatalf("reattach posted %d join events, want one per phone join", len(inbox.Calls))
+	}
+	for i, call := range inbox.Calls {
+		event, ok := call.Envelope.Event.(domain.Join)
+		if !ok || event.Seat != 1 || event.JoinKind != "phone" || event.Locale != "es" {
+			t.Fatalf("reattach join event %d = %#v", i, call.Envelope.Event)
+		}
 	}
 }
 
 func TestSessionServer_TokenOnlyJoinRecognizesDMAndHost(t *testing.T) {
-	server, err := NewSessionServer(&fakes.FakeInbox{PostResult: true}, "ROOM", "HOST", "DM")
+	inbox := &fakes.FakeInbox{PostResult: true}
+	server, err := NewSessionServer(inbox, "ROOM", "HOST", "DM")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,6 +145,9 @@ func TestSessionServer_TokenOnlyJoinRecognizesDMAndHost(t *testing.T) {
 				t.Fatalf("token-only %s join: %v", token, err)
 			}
 		})
+	}
+	if len(inbox.Calls) != 0 {
+		t.Fatalf("non-phone joins posted %d events, want none", len(inbox.Calls))
 	}
 }
 
