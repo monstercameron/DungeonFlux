@@ -90,12 +90,24 @@ func TestE2E_Path21_LatestDMListenReplacesOlderStream(t *testing.T) {
 		t.Fatalf("second Listen: %v", err)
 	}
 
-	// ListenHub currently permits both subscribers and has no composition-root
-	// hook for publishing a frame. Keep the end-to-end assertion pending until
-	// the replacement policy is wired; this still proves both bridge streams
-	// can be opened against the real server.
-	_ = first
-	t.Skip("E2E-002 path 21 blocked by API-005 follow-up: latest DM Listen replacement")
+	// API-014: the newest DM Listen replaces the older stream, so the first
+	// stream must end promptly instead of receiving frames forever.
+	// ORCH measured this failing through the real AudioService (the first
+	// stream stays open); API-017 fixes it and removes this skip.
+	t.Skip("API-017: newest DM Listen does not replace the older stream through AudioService")
+	done := make(chan error, 1)
+	go func() {
+		_, err := first.Recv()
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("first Listen received a frame after replacement; want the stream closed")
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("first DM Listen stayed open after a newer DM Listen replaced it")
+	}
 }
 
 func buildPathApp(t *testing.T) (*App, config.Config) {
