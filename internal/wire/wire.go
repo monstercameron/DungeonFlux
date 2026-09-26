@@ -121,7 +121,7 @@ func Build(ctx context.Context, cfg config.Config, seed []byte) (*App, error) {
 	}
 	watch := api.NewWatchHub()
 	listen := api.NewListenHub()
-	runner, inbox, err := newExecutors(configForWire{config: cfg, logger: logger}, listen)
+	runner, inbox, err := newExecutors(configForWire{config: cfg, logger: logger, recordings: sqlite.NewRecordings(store)}, listen)
 	if err != nil {
 		_ = store.Close()
 		_ = logFile.Close()

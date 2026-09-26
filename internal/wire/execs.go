@@ -57,6 +57,7 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 	if err != nil {
 		return nil, nil, err
 	}
+	set.llm = sequenceLLM(cfg.config, set.llm, cfg.recordings)
 	inbox := &roomInbox{}
 	runner := runtime.NewRunner(inbox, cfg.logger)
 	assets := newAssetStore(cfg.config.Server.DataDir)
@@ -105,8 +106,9 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 }
 
 type configForWire struct {
-	config config.Config
-	logger *slog.Logger
+	config     config.Config
+	logger     *slog.Logger
+	recordings ports.Recordings
 }
 
 type assetStore struct{ root, buildtime string }
