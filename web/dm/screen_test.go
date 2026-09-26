@@ -48,3 +48,29 @@ func TestHasLayer(t *testing.T) {
 		t.Fatalf("HasLayer returned an incorrect result")
 	}
 }
+
+func TestPhaseName_NormalizesEmptyAndUnderscore(t *testing.T) {
+	cases := []struct {
+		name  string
+		state *dungeonfluxv1.ScreenState
+		want  string
+	}{
+		{name: "nil", want: "lobby"},
+		{name: "empty", state: &dungeonfluxv1.ScreenState{}, want: "lobby"},
+		{name: "hook event", state: &dungeonfluxv1.ScreenState{Phase: " Hook_Event "}, want: "hook-event"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := PhaseName(tc.state); got != tc.want {
+				t.Fatalf("PhaseName() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestFrameFromState_PreservesLayerOrder(t *testing.T) {
+	frame := FrameFromState(&dungeonfluxv1.ScreenState{Phase: "combat"})
+	if frame.Phase != "combat" || !HasLayer(frame.Layers, LayerTimer) {
+		t.Fatalf("frame = %#v", frame)
+	}
+}

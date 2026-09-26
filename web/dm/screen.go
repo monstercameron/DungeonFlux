@@ -63,6 +63,29 @@ func SelectLayers(state *dungeonfluxv1.ScreenState) []Layer {
 	}
 }
 
+// PhaseName returns a normalized phase name suitable for CSS state classes.
+func PhaseName(state *dungeonfluxv1.ScreenState) string {
+	if state == nil {
+		return "lobby"
+	}
+	phase := strings.ToLower(strings.TrimSpace(state.GetPhase()))
+	if phase == "" {
+		return "lobby"
+	}
+	return strings.ReplaceAll(phase, "_", "-")
+}
+
+// ScreenFrame describes the stable outer frame for one DM snapshot.
+type ScreenFrame struct {
+	Phase  string
+	Layers []Layer
+}
+
+// FrameFromState projects a wire snapshot into the frame state used by the UI.
+func FrameFromState(state *dungeonfluxv1.ScreenState) ScreenFrame {
+	return ScreenFrame{Phase: PhaseName(state), Layers: SelectLayers(state)}
+}
+
 // HasLayer reports whether a composition includes the requested surface.
 func HasLayer(layers []Layer, want Layer) bool {
 	for _, layer := range layers {
