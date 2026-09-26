@@ -1,0 +1,72 @@
+{
+  "mode": "SPLAT",
+  "scene_url": "/assets/battlefield-tavern-500k.sog",
+  "lite_url": "/assets/battlefield-tavern-100k.sog",
+  "transform": {
+    "scale": 1.0,
+    "offset_y": 0.0,
+    "rot_y_deg": 0.0,
+    "translate": [0.0, 0.0, 0.0]
+  },
+  "grid": {
+    "origin": [0.0, 0.0],
+    "cell_m": 1.524,
+    "cols": 8,
+    "rows": 6,
+    "walkable": [
+      false, false, true, true, true, true, false, false,
+      true, true, true, true, true, true, true, true,
+      true, true, true, true, true, true, true, true,
+      true, true, true, true, true, true, true, true,
+      true, true, true, true, true, true, true, true,
+      false, false, true, true, true, true, false, false
+    ]
+  },
+  "spawns": [
+    { "seat": 1, "cell": { "c": 1, "r": 3 } },
+    { "seat": 2, "cell": { "c": 1, "r": 4 } },
+    { "entity": "thrall", "cell": { "c": 3, "r": 3 } }
+  ],
+  "door": { "c": 7, "r": 3 },
+  "cameras": {
+    "COMBAT_EST": {
+      "position": [8.5, 8.0, 10.5],
+      "target": [5.3, 0.0, 4.6],
+      "fov": 45.0
+    },
+    "TACTICAL": {
+      "position": [7.0, 7.5, 9.0],
+      "target": [5.3, 0.0, 4.6],
+      "fov": 42.0
+    },
+    "TURN_FOCUS": {
+      "position": [6.2, 5.5, 7.0],
+      "target": [4.6, 0.9, 4.6],
+      "fov": 40.0
+    },
+    "IMPACT": {
+      "position": [5.8, 4.8, 6.3],
+      "target": [4.6, 0.9, 4.6],
+      "fov": 38.0
+    },
+    "KO": {
+      "position": [6.4, 5.0, 6.8],
+      "target": [4.6, 0.0, 4.6],
+      "fov": 40.0
+    },
+    "VICTORY": {
+      "position": [8.0, 7.0, 9.5],
+      "target": [5.3, 0.0, 4.6],
+      "fov": 44.0
+    }
+  },
+  "flat": {
+    "image_url": "/assets/battlefield-tavern-flat.webp",
+    "floor_quad_px": [
+      [210.0, 330.0],
+      [1710.0, 330.0],
+      [1880.0, 1020.0],
+      [40.0, 1020.0]
+    ]
+  }
+}
