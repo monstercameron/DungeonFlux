@@ -36,6 +36,6 @@ func (Real) AfterFunc(d time.Duration, f func()) Timer {
 
 type realTimer struct{ timer *time.Timer }
 
-func (t realTimer) C() <-chan time.Time { return t.timer.C }
-func (t realTimer) Stop() bool          { return t.timer.Stop() }
+func (t realTimer) C() <-chan time.Time        { return t.timer.C }
+func (t realTimer) Stop() bool                 { return t.timer.Stop() }
 func (t realTimer) Reset(d time.Duration) bool { return t.timer.Reset(d) }
