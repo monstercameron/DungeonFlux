@@ -54,6 +54,8 @@ func TestArchitecture_ImportRules(t *testing.T) {
 		{"web phone allows js", "web/phone", "syscall/js", true},
 		{"web host allows js", "web/host", "syscall/js", true},
 		{"web dm uses shell audio", "web/dm", "github.com/monstercameron/DungeonFlux/web/shell/audio", true},
+		{"web shell composes dm", "web/shell", "github.com/monstercameron/DungeonFlux/web/dm", true},
+		{"web dm rejects phone", "web/dm", "github.com/monstercameron/DungeonFlux/web/phone", false},
 		{"web phone rejects runtime", "web/phone", "github.com/monstercameron/DungeonFlux/internal/runtime", false},
 	}
 	for _, tc := range cases {
@@ -255,6 +257,8 @@ func allowedInternal(packagePath string) []string {
 		return []string{"internal/ports", "internal/domain", "internal/vocab", "internal/clock", "internal/httpx"}
 	case packagePath == "internal/config":
 		return nil
+	case packagePath == "web/shell":
+		return []string{"gen", "internal/domain", "internal/vocab", "web/shell", "web/splat", "web/dm", "web/phone", "web/host"}
 	case strings.HasPrefix(packagePath, "web/"):
 		return []string{"gen", "internal/domain", "internal/vocab", "web/shell", "web/splat"}
 	default:
