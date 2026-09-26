@@ -181,6 +181,12 @@ The skeleton everything else builds in: module, pinned tools, gate script, CI, a
   done when: when DF_DEBUG_TOKEN is unset the supervisor generates a random token per start with crypto/rand, writes it to artifacts/runtime/human/debug.token (gitignored, never logged), and passes it only in the child's environment; child stdout and stderr go to artifacts/logs/devserver/server-<start>.log and the last stderr line is copied into status.json last_error; tests cover both.
   status: committed 279e4ea
 
+- [ ] REPO-017 · load .env into the environment for the server, supervisor, and scripts
+  why: The developer keeps vendor keys in a gitignored .env (DF_* names from plan §0.22), but nothing reads it, so the human server, probe, and build-time jobs still see no keys.
+  lane: ORCH (delegated) · block: 8–11 · paths: `scripts/env.ps1`, `scripts/devserver/env*.go`, `.env.example` · depends: REPO-016
+  done when: scripts/env.ps1 dot-sources .env into the current PowerShell process (KEY=VALUE, # comments, no echo of values); the supervisor reads .env and passes DF_* keys only in the child's environment; .env.example lists every DF_* variable with empty values and one-line purposes; no value is ever logged or printed; tests use a temp .env with fake values.
+  status: claimed luna
+
 ## 2. Contracts
 
 The shared vocabulary, domain types, ports, and protobuf API every lane codes against. ORCH writes these first; lanes that need only vocab/domain start at 0:45.
