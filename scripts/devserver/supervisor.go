@@ -34,6 +34,9 @@ func runSupervisor(cfg configuration) error {
 		return fmt.Errorf("resolve repo: %w", err)
 	}
 	cfg.repoRoot = root
+	if err := loadDotEnv(root); err != nil {
+		return fmt.Errorf("load dotenv: %w", err)
+	}
 	cfg.buildDir = absolute(root, cfg.buildDir)
 	cfg.dataDir = absolute(root, cfg.dataDir)
 	if cfg.configPath == "" {

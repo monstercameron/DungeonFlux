@@ -79,6 +79,46 @@ func TestSupervisorChildEnvironmentPreservesProvidedToken(t *testing.T) {
 	}
 }
 
+func TestSupervisorChildEnvironmentLoadsOnlyDotenvDFValues(t *testing.T) {
+	s := testSupervisor(t)
+	if err := os.WriteFile(filepath.Join(s.cfg.repoRoot, ".env"), []byte("DF_OPENAI_API_KEY=fake-openai\nNOT_DF=do-not-pass\n# DF_GEMINI_API_KEY=comment\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("DF_OPENAI_API_KEY", "")
+	t.Setenv("DF_DEBUG_TOKEN", "provided-token")
+	if err := loadDotEnv(s.cfg.repoRoot); err != nil {
+		t.Fatal(err)
+	}
+	env, err := s.childEnvironment()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := environmentValue(env, "DF_OPENAI_API_KEY"); got != "fake-openai" {
+		t.Fatalf("dotenv key = %q", got)
+	}
+	if got := environmentValue(env, "NOT_DF"); got != "" {
+		t.Fatalf("non-DF dotenv key leaked into child environment: %q", got)
+	}
+}
+
+func TestReadDotEnvParsesCommentsQuotesAndExport(t *testing.T) {
+	path := filepath.Join(t.TempDir(), ".env")
+	contents := "# comment\nexport DF_OPENAI_API_KEY=\"fake value\"\nDF_EMPTY=\ninvalid line\nBAD-NAME=nope\n"
+	if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	values, err := readDotEnv(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if values["DF_OPENAI_API_KEY"] != "fake value" || values["DF_EMPTY"] != "" {
+		t.Fatalf("dotenv values = %#v", values)
+	}
+	if _, ok := values["BAD-NAME"]; ok {
+		t.Fatal("invalid variable name was accepted")
+	}
+}
+
 func TestStderrTailKeepsLastCompleteOrPartialLine(t *testing.T) {
 	var tail stderrTail
 	for _, data := range []string{"first\npart", "ial\nlast"} {
