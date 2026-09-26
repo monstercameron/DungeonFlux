@@ -1,0 +1,36 @@
+package dm
+
+import dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
+
+// ClipModel is the browser-independent playback choice for a DM clip.
+type ClipModel struct {
+	VideoURL    string
+	StillURL    string
+	OffsetMS    int64
+	Playing     bool
+	UseFallback bool
+}
+
+// ClipModelFromView selects video when its asset is ready and a still otherwise.
+func ClipModelFromView(view *dungeonfluxv1.DMView) ClipModel {
+	if view == nil {
+		return ClipModel{UseFallback: true}
+	}
+	model := ClipModel{StillURL: view.GetBackgroundUrl(), UseFallback: true}
+	clip := view.GetClip()
+	if clip == nil || clip.GetUrl() == "" {
+		return model
+	}
+	model.VideoURL = clip.GetUrl()
+	model.OffsetMS = nonNegative(clip.GetOffsetMs())
+	model.Playing = clip.GetPlaying()
+	model.UseFallback = clip.GetThen() == "STILL" || view.GetShot().GetFallback()
+	return model
+}
+
+func nonNegative(value int64) int64 {
+	if value < 0 {
+		return 0
+	}
+	return value
+}
