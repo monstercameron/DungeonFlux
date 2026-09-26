@@ -193,25 +193,51 @@ func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handle
 	for _, layer := range layers {
 		switch layer {
 		case LayerLobby:
-			children = append(children, LobbyComponent(NewLobbyModel(roomCode, ""))(router.Attrs{}))
+			children = appendLayer(children, layer, LobbyComponent(NewLobbyModel(roomCode, ""))(router.Attrs{}))
 		case LayerScene:
-			children = append(children, SceneComponent(view)(router.Attrs{}))
+			children = appendLayer(children, layer, SceneComponent(view)(router.Attrs{}))
 		case LayerCallout:
-			children = append(children, CalloutComponent(CalloutViewFromDMView(view))(router.Attrs{}))
+			children = appendLayer(children, layer, CalloutComponent(CalloutViewFromDMView(view))(router.Attrs{}))
 		case LayerClip:
-			children = append(children, ClipComponent(ClipModelFromView(view))(router.Attrs{}))
+			children = appendLayer(children, layer, ClipComponent(ClipModelFromView(view))(router.Attrs{}))
 		case LayerDice:
-			children = append(children, DiceComponent(DiceViewFromDMView(view))(router.Attrs{}))
+			children = appendLayer(children, layer, DiceComponent(DiceViewFromDMView(view))(router.Attrs{}))
 		case LayerTimer:
-			children = append(children, TimerComponent(TimerViewFromDMView(view))(router.Attrs{}))
+			children = appendLayer(children, layer, TimerComponent(TimerViewFromDMView(view))(router.Attrs{}))
 		case LayerCombat:
-			children = append(children, CombatComponent(view)(router.Attrs{}))
+			children = appendLayer(children, layer, CombatComponent(view)(router.Attrs{}))
 		case LayerEnd:
-			children = append(children, EndCardComponent(NewEndCardModel())(router.Attrs{}))
+			children = appendLayer(children, layer, EndCardComponent(NewEndCardModel())(router.Attrs{}))
 		}
 	}
-	children = append(children, html.Button(html.Props{Type: "button", Class: "df-dm-audio-unlock", OnClick: unlock}, html.Text("Enable table audio")))
-	return html.Main(html.Props{Class: "df-dm-screen", Role: "main"}, children...)
+	children = append(children, html.Button(html.Props{Type: "button", Class: "df-dm-audio-unlock", OnClick: unlock, Style: map[string]string{"position": "absolute", "right": "1rem", "top": "1rem", "z-index": "100"}}, html.Text("Enable table audio")))
+	stage := html.Div(html.Props{Class: "df-dm-stage", Style: map[string]string{"position": "relative", "width": "100%", "aspect-ratio": "16 / 9", "overflow": "hidden"}}, children...)
+	return html.Main(html.Props{Class: "df-dm-screen", Role: "main", Style: map[string]string{"width": "100%", "max-width": "1920px", "margin": "0 auto"}}, stage)
+}
+
+func appendLayer(children []ui.Node, layer Layer, content ui.Node) []ui.Node {
+	return append(children, html.Div(html.Props{Class: "df-dm-layer df-dm-layer-" + string(layer), Style: map[string]string{
+		"position": "absolute", "inset": "0", "z-index": layerZIndex(layer),
+	}}, content))
+}
+
+func layerZIndex(layer Layer) string {
+	switch layer {
+	case LayerCallout:
+		return "30"
+	case LayerDice, LayerTimer:
+		return "40"
+	case LayerCombat:
+		return "20"
+	case LayerEnd:
+		return "50"
+	case LayerScene:
+		return "10"
+	case LayerClip:
+		return "5"
+	default:
+		return "1"
+	}
 }
 
 func browserEndpoint(endpoint string) string {
