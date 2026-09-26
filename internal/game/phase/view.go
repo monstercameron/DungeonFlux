@@ -106,13 +106,6 @@ func creationSeatView(state creation.SeatState) domain.SeatView {
 	return seat
 }
 
-func reason(enabled bool, text string) string {
-	if enabled {
-		return text
-	}
-	return ""
-}
-
 func (m Machine) viewSeats() []domain.SeatView {
 	seats := cloneSeats(m.seats)
 	for index := range seats {

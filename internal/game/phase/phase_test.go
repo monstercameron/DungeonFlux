@@ -171,6 +171,39 @@ func TestMachine_DebugCombatAndPassiveCallbacks(t *testing.T) {
 	}
 }
 
+func TestMachine_CombatAttackEmitsSeatAudio(t *testing.T) {
+	machine, err := NewWithSeed(domain.OneShot{}, []byte("combat-audio"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := machine.Goto(vocab.StateCombat); err != nil {
+		t.Fatal(err)
+	}
+	if err := machine.ForceD20(20); err != nil {
+		t.Fatal(err)
+	}
+	result, err := machine.Step(domain.Act{Seat: 1, Move: vocab.MoveAttack, Target: "thrall"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !hasSound(result.Effects, "voicepack/1/attack_effort", "seat", 1) {
+		t.Fatalf("attack effects missing seat cue: %#v", result.Effects)
+	}
+	if !hasSound(result.Effects, "sfx_sword_slash", "dm", 0) {
+		t.Fatalf("attack effects missing table cue: %#v", result.Effects)
+	}
+}
+
+func hasSound(effects []domain.Effect, name, target string, seat domain.SeatID) bool {
+	for _, effect := range effects {
+		sound, ok := effect.(domain.PlaySound)
+		if ok && sound.Name == name && sound.Target == target && sound.Seat == seat {
+			return true
+		}
+	}
+	return false
+}
+
 func TestMachine_DebugControlsValidateAndReset(t *testing.T) {
 	machine, err := NewWithSeed(domain.OneShot{}, []byte("controls"))
 	if err != nil {

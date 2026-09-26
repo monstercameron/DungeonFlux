@@ -41,13 +41,14 @@ func (m *Machine) stepHook(event domain.Event) (Result, error) {
 
 func (m *Machine) stepCombat(event domain.Event) (Result, error) {
 	if action, ok := event.(domain.Act); ok {
-		if err := m.applyCombatAction(action); err != nil {
+		effects, err := m.applyCombatAction(action)
+		if err != nil {
 			return Result{}, err
 		}
 		if m.combat.Phase == combat.Done {
-			return m.transition(eventCliffhanger, nil)
+			return m.transition(eventCliffhanger, effects)
 		}
-		return Result{}, nil
+		return Result{Effects: effects}, nil
 	}
 	if line, ok := event.(domain.LineDone); ok && (line.UtteranceID == "" || line.UtteranceID == "combat-outcome") {
 		if m.combat.Phase != combat.Done {
@@ -60,43 +61,56 @@ func (m *Machine) stepCombat(event domain.Event) (Result, error) {
 	return m.passive(event)
 }
 
-func (m *Machine) applyCombatAction(action domain.Act) error {
+func (m *Machine) applyCombatAction(action domain.Act) ([]domain.Effect, error) {
 	if action.Move == vocab.MoveMove {
 		_, err := m.combat.Move(combat.Cell{X: action.Cell.C, Y: action.Cell.R})
-		return err
+		return nil, err
 	}
 	if action.Move == vocab.MoveAttack {
 		result, err := m.combat.Attack(m.combatDice, string(action.Target))
 		if err != nil {
-			return err
+			return nil, err
 		}
+		effects := combat.AttackAudio(result)
 		if result.Outcome.HPAfter <= 0 {
-			_, err = m.combat.ResolveEnd(combat.ReasonHPZero, result.Seat)
-			return err
+			end, endErr := m.combat.ResolveEnd(combat.ReasonHPZero, result.Seat)
+			if endErr != nil {
+				return nil, endErr
+			}
+			if end.Outcome == combat.Slain {
+				effects = append(effects, combat.VictoryAudio(end.SlainBySeat)...)
+			}
+			return effects, nil
 		}
 		m.combat.Phase = combat.PCTurn
-		return m.finishCombatTurn()
+		enemyEffects, err := m.finishCombatTurn()
+		return append(effects, enemyEffects...), err
 	}
 	if action.Move == vocab.MoveEndTurn {
 		return m.finishCombatTurn()
 	}
-	return fmt.Errorf("combat move %q is not accepted", action.Move)
+	return nil, fmt.Errorf("combat move %q is not accepted", action.Move)
 }
 
-func (m *Machine) finishCombatTurn() error {
+func (m *Machine) finishCombatTurn() ([]domain.Effect, error) {
 	if m.combat.Phase != combat.PCTurn {
-		return nil
+		return nil, nil
 	}
 	if err := m.combat.EndPlayerTurn(); err != nil {
-		return err
+		return nil, err
 	}
 	if m.combat.Phase != combat.EnemyTurn {
-		return nil
+		return nil, nil
 	}
-	if _, err := m.combat.EnemyTurn(m.combatDice, 1200); err != nil {
-		return err
+	result, err := m.combat.EnemyTurn(m.combatDice, 1200)
+	if err != nil {
+		return nil, err
 	}
-	return m.combat.EndEnemyTurn()
+	effects := combat.EnemyAudio(result)
+	if err := m.combat.EndEnemyTurn(); err != nil {
+		return nil, err
+	}
+	return effects, nil
 }
 
 func (m *Machine) stepCliffhanger(event domain.Event) (Result, error) {
