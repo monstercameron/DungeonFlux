@@ -303,6 +303,12 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   done when: live config builds every vendor adapter from env keys (fail fast naming the missing variable) behind modelchain and the budget ledger; ReleaseLine and DropLine reach voice/out, TalkStop reaches the Talk stream, and billboard loops resolve to build-time manifest assets; the effect-coverage test has no no-op entries except documented control effects.
   status: committed af502a6 (TalkStop waits on RT-010)
 
+- [ ] BASE-017 · wire passes WithNewGame and WithRoomState; TalkStop reaches the Talk stream
+  why: RT-010 added runtime.WithNewGame, but wire does not pass it (BASE-016 finished first), so host Reset still keeps the old engine; TalkStop is still a no-op in wire although runtime treats it as a control effect.
+  lane: ORCH · block: 8–11 · paths: `internal/wire/wire.go`, `internal/wire/room*.go`, `internal/wire/execs*.go` · depends: RT-010, BASE-016, API-009
+  done when: NewRoom gets WithNewGame (game.New with the one-shot and the given seed) and WithRoomState; TalkStop closes the seat's active Talk stream through the API; a wire test posts host Reset and sees a new run with a new seed and Lobby phase.
+  status: claimed luna
+
 - [x] BASE-007 · internal/wire skeleton and cmd/server skeleton
   why: The server binary must start from hour 1 with fakes, flags (-config, -port, -data-dir, -seed), and graceful shutdown.
   lane: ORCH · block: 1–5 · paths: `internal/wire/**`, `cmd/server/**` · depends: BASE-002, BASE-005
@@ -811,7 +817,7 @@ The room loop, runner, scope tree, inbox, timers, and executors registry that ru
   why: BASE-011 and RT-009 both report that a NewRun (reset) cancels scopes and timers but cannot swap in a fresh engine with the next seed, so host Reset and dfctl reset leave stale game state.
   lane: L-RT · block: 8–11 · paths: `internal/runtime/room*.go`, `internal/runtime/newrun*.go` · depends: RT-009, RT-007
   done when: a Room option (e.g. WithNewGame(func(seed []byte) ports.Engine)) is called on NewRun with RoomState's derived seed; the old engine is dropped, a fresh View is published, and the event log records the new run; synctest test proves Reset mid-conversation returns to Lobby with a new seed.
-  status: claimed luna
+  status: committed 4388912
 
 ## 13. API and streams
 
