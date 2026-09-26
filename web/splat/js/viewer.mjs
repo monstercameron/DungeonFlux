@@ -35,7 +35,9 @@ function setStatus(message, kind = "info") {
 }
 
 function gridLabel(grid) {
-  return `${Number(grid?.cols) || 0}×${Number(grid?.rows) || 0} grid`;
+  const playable = Array.isArray(grid?.walkable) ? grid.walkable.length : 0;
+  const excluded = Array.isArray(grid?.excluded) ? grid.excluded.length : 0;
+  return `${Number(grid?.cols) || 0}×${Number(grid?.rows) || 0} grid · ${playable} playable${excluded ? ` · ${excluded} terrain excluded` : ""}`;
 }
 
 function querySource() {
@@ -213,10 +215,11 @@ function profileSourceLabel(profile, source) {
 
 async function attachViewer(profile, source, bundle) {
     const levels = Math.max(1, Number(bundle.asset.resource?.octree?.lodLevels ?? 1));
+    const activeGrid = bundle.grid ?? profile?.grid ?? GRID;
     addLODOptions(profile, levels);
     const defaultLOD = profile?.lod === undefined ? 0 : Math.max(0, Math.min(levels - 1, Number(profile.lod)));
     const scene = createSplatEntity(pc, app, bundle, { layers: [WORLD_LAYER], lodRangeMin: defaultLOD, lodRangeMax: defaultLOD, name: "df-viewer-splat" });
-    const battleGrid = createBattleGrid(pc, app, profile?.grid ?? GRID, { name: "df-viewer-grid", lineWidth: 0.075, opacity: 0.95 });
+    const battleGrid = createBattleGrid(pc, app, activeGrid, { name: "df-viewer-grid", lineWidth: 0.075, opacity: 0.95 });
     gridEntity = battleGrid.entity;
     gridEntity.lodLevels = Number(bundle.asset.resource?.octree?.lodLevels ?? 0);
     if (profile?.transform) {
@@ -224,7 +227,7 @@ async function attachViewer(profile, source, bundle) {
     }
     if (battleGrid.layer?.id !== undefined && !camera.camera.layers.includes(battleGrid.layer.id)) camera.camera.layers = [...camera.camera.layers, battleGrid.layer.id];
     gridEntity.splatEntity = scene;
-    gridEntity.profile = profile;
+    gridEntity.profile = { ...(profile ?? {}), grid: activeGrid };
     gridEntity.sourceLabel = profileSourceLabel(profile, source);
     if (sourceInfoNode) {
       const info = profile?.source ?? {};
@@ -242,15 +245,15 @@ async function attachViewer(profile, source, bundle) {
     pickMode = installDebugPickMode({
       camera: camera.camera,
       canvas,
-      grid: profile?.grid ?? GRID,
+      grid: activeGrid,
       onPick: ({ c, r, selected, walkable }) => {
-        setStatus(`${gridEntity.sourceLabel}\n${gridLabel(profile?.grid ?? GRID)} · picked (${c}, ${r}) ${selected ? "on" : "off"}\n${cellsJSON(walkable)}`);
+        setStatus(`${gridEntity.sourceLabel}\n${gridLabel(activeGrid)} · picked (${c}, ${r}) ${selected ? "on" : "off"}\n${cellsJSON(walkable)}`);
       },
     });
     exportButton.style.display = pickMode.enabled ? "inline-block" : "none";
     const debugLabel = pickMode.enabled ? "debug picking enabled" : "";
     const streamLabel = bundle.streaming ? "Scene ready · streaming detail" : "Scene ready";
-    setStatus(`${gridEntity.sourceLabel}\n${gridLabel(profile?.grid ?? GRID)} · LOD ${defaultLOD} · ${debugLabel}${debugLabel ? " · " : ""}${streamLabel}`);
+    setStatus(`${gridEntity.sourceLabel}\n${gridLabel(activeGrid)} · LOD ${defaultLOD} · ${debugLabel}${debugLabel ? " · " : ""}${streamLabel}`);
 }
 
 async function start() {
@@ -265,7 +268,14 @@ async function start() {
   setStatus(`Loading ${source}\n${gridLabel(profile?.grid ?? GRID)} ready; debug picks: ${new URLSearchParams(window.location.search).has("debug") ? "on" : "off"}`);
   try {
     setupViewer(profile);
-    const bundle = await loadSplatBundle(pc, app, profile ?? source, { lodMetaURL: profile?.lod_meta_url, metaURL: profile?.meta_url });
+    const bundle = await loadSplatBundle(pc, app, profile ?? source, {
+      lodMetaURL: profile?.lod_meta_url,
+      metaURL: profile?.meta_url,
+      grid: profile?.grid,
+      voxelURL: profile?.voxel_collider_url,
+      transform: profile?.transform,
+      voxelOptions: profile?.voxel_collider_options,
+    });
     await attachViewer(profile, source, bundle);
   } catch (error) {
     setStatus(`Splat load failed: ${error?.message ?? error}`, "error");

@@ -205,8 +205,9 @@ function attachScene(state, message, bundle) {
   });
   applyTransform(entity, message.transform);
   let grid = null;
-  if (message.grid) {
-    grid = createBattleGrid(pc, app, message.grid, {
+  const activeGrid = bundle.grid ?? message.grid;
+  if (activeGrid) {
+    grid = createBattleGrid(pc, app, activeGrid, {
       name: "df-battle-grid", lineWidth: 0.075, opacity: 0.95,
     });
     if (grid.layer?.id !== undefined && !camera.camera.layers.includes(grid.layer.id)) {
@@ -243,6 +244,10 @@ async function initialize(message) {
     const bundle = await loadSplatBundle(pc, app, message.scene_url, {
       lodMetaURL: message.lod_meta_url,
       metaURL: message.meta_url,
+      grid: message.grid,
+      voxelURL: message.voxel_collider_url ?? message.voxel_collider?.url,
+      transform: message.transform,
+      voxelOptions: message.voxel_collider_options ?? message.voxel_collider,
     });
     if (runtime !== state) {
       if (!state.destroyed) {
@@ -256,6 +261,8 @@ async function initialize(message) {
       type: "ready",
       fps: 0,
       gaussians: splatCount(bundle.asset),
+      playable: bundle.grid?.walkable?.length ?? message.grid?.walkable?.length ?? 0,
+      terrain_excluded: bundle.grid?.excluded?.length ?? 0,
       device: "webgl2",
       streaming: bundle.streaming,
       status: bundle.streaming ? "manifest loaded; chunks stream on demand" : "scene loaded",

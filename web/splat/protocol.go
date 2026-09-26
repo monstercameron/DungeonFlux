@@ -29,15 +29,26 @@ type CameraDef struct {
 	Far      float64    `json:"far,omitempty"`
 }
 
+// VoxelCollider describes an explicit terrain occupancy resource and agent envelope.
+type VoxelCollider struct {
+	URL        string     `json:"url"`
+	FloorY     *float64   `json:"floor_y,omitempty"`
+	StepHeight *float64   `json:"step_height,omitempty"`
+	Height     *float64   `json:"height,omitempty"`
+	Inset      *float64   `json:"inset,omitempty"`
+	Transform  *Transform `json:"transform,omitempty"`
+}
+
 // Init loads the battlefield and configures its initial camera.
 type Init struct {
-	CanvasID  string               `json:"canvas_id"`
-	SceneURL  string               `json:"scene_url"`
-	LiteURL   string               `json:"lite_url"`
-	Transform Transform            `json:"transform"`
-	Grid      Grid                 `json:"grid"`
-	Cameras   map[string]CameraDef `json:"cameras"`
-	Device    string               `json:"device"`
+	CanvasID      string               `json:"canvas_id"`
+	SceneURL      string               `json:"scene_url"`
+	LiteURL       string               `json:"lite_url"`
+	Transform     Transform            `json:"transform"`
+	Grid          Grid                 `json:"grid"`
+	Cameras       map[string]CameraDef `json:"cameras"`
+	VoxelCollider *VoxelCollider       `json:"voxel_collider,omitempty"`
+	Device        string               `json:"device"`
 }
 
 // Cell is a zero-based column and row in the battlefield grid.
@@ -88,14 +99,16 @@ type Pause struct {
 
 // Event is a message emitted by the JavaScript module.
 type Event struct {
-	Type      string  `json:"type"`
-	Code      string  `json:"code,omitempty"`
-	Detail    string  `json:"detail,omitempty"`
-	FPS       float64 `json:"fps,omitempty"`
-	FPSP5     float64 `json:"fps_p5,omitempty"`
-	Gaussians int     `json:"gaussians,omitempty"`
-	Device    string  `json:"device,omitempty"`
-	Cell      *Cell   `json:"cell,omitempty"`
+	Type            string  `json:"type"`
+	Code            string  `json:"code,omitempty"`
+	Detail          string  `json:"detail,omitempty"`
+	FPS             float64 `json:"fps,omitempty"`
+	FPSP5           float64 `json:"fps_p5,omitempty"`
+	Gaussians       int     `json:"gaussians,omitempty"`
+	Playable        int     `json:"playable,omitempty"`
+	TerrainExcluded int     `json:"terrain_excluded,omitempty"`
+	Device          string  `json:"device,omitempty"`
+	Cell            *Cell   `json:"cell,omitempty"`
 }
 
 func envelope(kind string, value any) ([]byte, error) {

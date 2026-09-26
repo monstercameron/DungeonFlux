@@ -1,4 +1,5 @@
 import { createGridOverlay } from "./grid_overlay.mjs";
+import { loadVoxelCollider } from "./voxel_collider.mjs";
 
 const SCENE_EXTENSIONS = /(?:\.(?:ply|sog)|\/(?:meta|lod-meta)\.json)(?:$|[?#])/i;
 
@@ -26,16 +27,21 @@ export async function loadSplatBundle(pc, app, source, options = {}) {
   const metaURL = options.metaURL ?? source?.meta_url;
   const assetURLValue = lodMetaURL || sceneURL;
   const asset = await addAsset(app, pc, "df-splat-scene", assetURLValue, "gsplat");
-  let metadata = null;
-  if (metaURL) metadata = (await addAsset(app, pc, "df-splat-meta", metaURL, "json")).resource;
-  return {
-    asset,
-    sceneURL,
-    metaURL,
-    lodMetaURL: lodMetaURL ?? "",
-    metadata,
-    streaming: Boolean(lodMetaURL || /lod-meta\.json(?:$|[?#])/i.test(assetURLValue)),
-  };
+  try {
+    let metadata = null;
+    if (metaURL) metadata = (await addAsset(app, pc, "df-splat-meta", metaURL, "json")).resource;
+    const voxelConfig = source?.voxel_collider;
+    const voxelURL = options.voxelURL || source?.voxel_collider_url || source?.voxelColliderURL || voxelConfig?.url;
+    const colliderDeclared = Boolean(voxelConfig || source?.voxel_collider_url || source?.voxelColliderURL || options.voxelURL);
+    if (colliderDeclared && (!voxelURL || (voxelConfig !== undefined && (typeof voxelConfig !== "object" || Array.isArray(voxelConfig))))) throw new Error("voxel collider declaration must include a .voxel.json URL");
+    const collider = voxelURL ? await loadVoxelCollider(voxelURL, { ...(voxelConfig ?? {}), ...options.voxelOptions, transform: options.transform ?? voxelConfig?.transform ?? source?.transform }) : null;
+    const grid = collider && options.grid ? collider.filterGrid(options.grid, options.colliderOptions ?? options.voxelOptions) : options.grid ?? null;
+    return { asset, sceneURL, metaURL, lodMetaURL: lodMetaURL ?? "", metadata, collider, grid, streaming: Boolean(lodMetaURL || /lod-meta\.json(?:$|[?#])/i.test(assetURLValue)) };
+  } catch (error) {
+    app?.assets?.remove?.(asset);
+    asset.unload?.();
+    throw error;
+  }
 }
 
 /** Adds a unified GSplat component with optional manifest LOD bounds. */
@@ -99,11 +105,14 @@ export function battleProfile(search, baseURL = window.location.href) {
     const profile = JSON.parse(encoded);
     if (!profile || typeof profile !== "object" || Array.isArray(profile)) throw new Error("battle profile must be an object");
     const resolve = (url) => url ? new URL(url, baseURL).href : "";
+    const voxel = profile.voxel_collider && typeof profile.voxel_collider === "object" ? { ...profile.voxel_collider, url: resolve(profile.voxel_collider.url) } : profile.voxel_collider;
     return {
       ...profile,
       scene_url: resolve(profile.scene_url),
       meta_url: resolve(profile.meta_url),
       lod_meta_url: resolve(profile.lod_meta_url),
+      voxel_collider_url: resolve(profile.voxel_collider_url),
+      voxel_collider: voxel,
     };
   } catch (error) {
     throw new Error(`battle profile JSON failed: ${error?.message ?? error}`);
@@ -124,11 +133,14 @@ export async function loadBattleProfile(search, baseURL = window.location.href) 
       throw new Error("battle profile must be an object");
     }
     const resolve = (url) => url ? new URL(url, profileURL).href : "";
+    const voxel = profile.voxel_collider && typeof profile.voxel_collider === "object" ? { ...profile.voxel_collider, url: resolve(profile.voxel_collider.url) } : profile.voxel_collider;
     return {
       ...profile,
       scene_url: resolve(profile.scene_url),
       meta_url: resolve(profile.meta_url),
       lod_meta_url: resolve(profile.lod_meta_url),
+      voxel_collider_url: resolve(profile.voxel_collider_url),
+      voxel_collider: voxel,
     };
   } catch (error) {
     throw new Error(`battle profile failed: ${error?.message ?? error}`);
