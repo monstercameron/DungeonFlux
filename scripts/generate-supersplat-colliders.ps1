@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)] [ValidateSet('tavern','wooded')] [string] $SceneProfile,
+    [Parameter(Mandatory = $true)] [ValidateSet('cb2fddd6','64bb46d5')] [string] $SceneProfile,
     [Parameter(Mandatory = $true)] [string] $OutputDir,
     [string] $SourceDir = '',
     [string] $ToolPath = '',
