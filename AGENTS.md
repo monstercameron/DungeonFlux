@@ -338,9 +338,10 @@ ORCH only. `TODOS.md` is grouped by system, from the simplest foundations to the
 ```powershell
 git add -- internal/game/nested/check.go internal/game/nested/check_test.go   # your todo's files, named one by one
 git diff --cached --name-only        # must list exactly your todo's files, nothing else
-git commit -m "ENG-012: Check machine offered, rolling, resolved" -m "Co-Authored-By: Luna (Codex) <noreply@openai.com>"
+git commit --only -m "ENG-012: Check machine offered, rolling, resolved" -m "Co-Authored-By: Luna (Codex) <noreply@openai.com>" -- internal/game/nested/check.go internal/game/nested/check_test.go
 git show --stat --oneline HEAD       # confirm the commit holds only your files
 ```
+- **Always commit with `git commit --only ... -- <your files>`.** The index is shared by every worker, so a plain `git commit` also commits whatever another worker has staged at that moment (this happened in hour 0: an OPS-003 commit swallowed SPLAT-002's files). `--only` with an explicit pathspec commits exactly your files and leaves other agents' staged entries alone.
 - **If `git diff --cached` lists anything that is not yours** (another agent staged it), do not commit. Run `git restore --staged -- <your files>` to take back only your own entries, report the conflict, and stop. Never unstage or restore other agents' files.
 - **If `.git/index.lock` exists**, another commit is in progress: wait 2 seconds and retry, up to 30 times. Never delete the lock.
 - **If the commit fails a hook**, fix the cause inside your paths and commit again as a new commit. Never use `--no-verify` or `--amend`.
