@@ -64,17 +64,20 @@ func TestE2E_DfctlRunThroughLobby(t *testing.T) {
 	// Character creation is intentionally driven through the same Act RPC that
 	// dfctl uses. If the root engine has not yet dispatched phase events, this
 	// is the first observable stall and the skip records all useful evidence.
-	sendAct(t, debugClient, debugCtx, "1", "species", "human")
-	state = readDebugState(t, debugClient, debugCtx, "DF-E2E")
-	if state.GetPhase() == "creation" {
-		moves := readLegal(t, debugClient, debugCtx, "DF-E2E", "1")
-		t.Skipf("e2e stall: event act seat=1 move=species arg=human; state=%q; legal_moves=%v", state.GetPhase(), moves)
-	}
-
+	// Each seat picks species and gender, then rolls; picking alone keeps the
+	// room in creation, so only the legal moves decide what is sent next.
 	for _, seat := range []string{"1", "2"} {
+		sendAct(t, debugClient, debugCtx, seat, "species", "human")
 		sendAct(t, debugClient, debugCtx, seat, "gender", "nonbinary")
 		sendAct(t, debugClient, debugCtx, seat, "roll_hero", "")
-		sendAct(t, debugClient, debugCtx, seat, "ready", "")
+		if contains(readLegal(t, debugClient, debugCtx, "DF-E2E", seat), "ready") {
+			sendAct(t, debugClient, debugCtx, seat, "ready", "")
+		}
+	}
+	state = waitPhaseLeaves(t, debugClient, debugCtx, "DF-E2E", "creation")
+	if state.GetPhase() == "creation" {
+		moves := readLegal(t, debugClient, debugCtx, "DF-E2E", "1")
+		t.Skipf("e2e stall: both seats picked species, gender, roll_hero, ready; state=%q; legal_moves=%v", state.GetPhase(), moves)
 	}
 	assertPhase(t, debugClient, debugCtx, "DF-E2E", "opening", phaseTrace)
 	phaseTrace = append(phaseTrace, "opening")
@@ -189,4 +192,27 @@ func freePort(t *testing.T) int {
 		t.Fatal("reserved port is too low for debug port offset")
 	}
 	return port
+}
+
+func contains(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
+}
+
+// waitPhaseLeaves polls the debug state until the room leaves phase or a short
+// deadline passes; executors on fakes post their results asynchronously.
+func waitPhaseLeaves(t *testing.T, client df.DebugServiceClient, ctx context.Context, room, phase string) *df.DebugState {
+	t.Helper()
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		state := readDebugState(t, client, ctx, room)
+		if state.GetPhase() != phase || time.Now().After(deadline) {
+			return state
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
 }
