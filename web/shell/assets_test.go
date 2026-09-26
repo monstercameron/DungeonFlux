@@ -14,12 +14,12 @@ import (
 func TestAssetLoader_PreloadCachesLogicalNameAndSHA(t *testing.T) {
 	service := &fakeAssetService{
 		manifest: &dungeonfluxv1.AssetManifestResponse{Assets: []*dungeonfluxv1.AssetManifestEntry{
-			{Name: "ui/title_bg", Sha256: "title-sha", ContentType: "image/webp", Size: 5},
-			{Name: "scene", Sha256: "scene-sha", ContentType: "image/webp", Size: 5},
+			{Name: "ui/title_bg", Sha256: "aaf2320646108059a87ab5017a86aee454f5378ed95003dbb2e12f4ca5266e0e", ContentType: "image/webp", Size: 5},
+			{Name: "scene", Sha256: "611511ebb64c2264898a204c561ee1c012789ef0c4244aacd6e1f0243add2fdf", ContentType: "image/webp", Size: 5},
 		}},
 		assets: map[string]fakeAsset{
-			"ui/title_bg": {name: "ui/title_bg", sha: "title-sha", contentType: "image/webp", data: []byte("title")},
-			"scene":       {name: "scene", sha: "scene-sha", contentType: "image/webp", data: []byte("scene!")},
+			"ui/title_bg": {name: "ui/title_bg", sha: "aaf2320646108059a87ab5017a86aee454f5378ed95003dbb2e12f4ca5266e0e", contentType: "image/webp", data: []byte("title")},
+			"scene":       {name: "scene", sha: "611511ebb64c2264898a204c561ee1c012789ef0c4244aacd6e1f0243add2fdf", contentType: "image/webp", data: []byte("scene!")},
 		},
 	}
 	blobs := &fakeBlobURLFactory{}
@@ -35,7 +35,7 @@ func TestAssetLoader_PreloadCachesLogicalNameAndSHA(t *testing.T) {
 	if got := loader.ArtURL("ui/title_bg"); got == "" {
 		t.Fatal("logical name did not resolve after preload")
 	}
-	if got := loader.ArtURL("title-sha"); got != loader.ArtURL("ui/title_bg") {
+	if got := loader.ArtURL("aaf2320646108059a87ab5017a86aee454f5378ed95003dbb2e12f4ca5266e0e"); got != loader.ArtURL("ui/title_bg") {
 		t.Fatalf("SHA URL = %q, logical URL = %q", got, loader.ArtURL("ui/title_bg"))
 	}
 	if got := loader.ArtURL("scene"); got != "" {
@@ -51,7 +51,7 @@ func TestAssetLoader_PreloadCachesLogicalNameAndSHA(t *testing.T) {
 
 func TestAssetLoader_LoadDeduplicatesInFlightFetches(t *testing.T) {
 	service := &fakeAssetService{
-		assets:     map[string]fakeAsset{"ui/title_bg": {name: "ui/title_bg", sha: "title-sha", contentType: "image/webp", data: []byte("title")}},
+		assets:     map[string]fakeAsset{"ui/title_bg": {name: "ui/title_bg", sha: "aaf2320646108059a87ab5017a86aee454f5378ed95003dbb2e12f4ca5266e0e", contentType: "image/webp", data: []byte("title")}},
 		getStarted: make(chan struct{}),
 		releaseGet: make(chan struct{}),
 	}

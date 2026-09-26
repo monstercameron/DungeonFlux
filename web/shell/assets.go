@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"google.golang.org/grpc"
@@ -52,6 +53,8 @@ type AssetProgress struct {
 type AssetLoader struct {
 	service AssetService
 	blobs   BlobURLFactory
+	store   assetStore
+	now     func() time.Time
 
 	mu       sync.Mutex
 	manifest map[string]assetEntry
@@ -74,9 +77,19 @@ type assetFlight struct {
 
 // NewAssetLoader creates a loader with an injected service and Blob factory.
 func NewAssetLoader(service AssetService, blobs BlobURLFactory) *AssetLoader {
+	return NewAssetLoaderWithStore(service, blobs, newMemoryAssetStore())
+}
+
+// NewAssetLoaderWithStore creates a loader using the supplied persistent store.
+func NewAssetLoaderWithStore(service AssetService, blobs BlobURLFactory, store assetStore) *AssetLoader {
+	if store == nil {
+		store = newMemoryAssetStore()
+	}
 	return &AssetLoader{
 		service:  service,
 		blobs:    blobs,
+		store:    store,
+		now:      time.Now,
 		manifest: make(map[string]assetEntry),
 		bySHA:    make(map[string]string),
 		urls:     make(map[string]string),
@@ -154,6 +167,14 @@ func (l *AssetLoader) preload(ctx context.Context, progress func(AssetProgress))
 	if ctx == nil {
 		return errors.New("asset loader: context is nil")
 	}
+	if l.store != nil {
+		if err := l.warmManifest(ctx); err != nil {
+			l.fallbackStore()
+		}
+		if err := pruneAssetStore(ctx, l.store, l.now(), cacheCap(browserWidth())); err != nil {
+			l.fallbackStore()
+		}
+	}
 	if l.service == nil {
 		err := errors.New("asset loader: asset service is nil")
 		notifyProgress(progress, AssetProgress{Err: err, Done: true})
@@ -168,6 +189,11 @@ func (l *AssetLoader) preload(ctx context.Context, progress func(AssetProgress))
 	if err != nil {
 		notifyProgress(progress, AssetProgress{Err: err, Done: true})
 		return err
+	}
+	if err := l.storeManifest(ctx, entries); err != nil {
+		// Storage is an optimization. Private browsing and quota failures must
+		// not prevent the live manifest and assets from rendering.
+		l.fallbackStore()
 	}
 	uiEntries := make([]assetEntry, 0, len(entries))
 	for _, entry := range entries {
@@ -213,6 +239,11 @@ func (l *AssetLoader) installManifest(response *dungeonfluxv1.AssetManifestRespo
 			return nil, errors.New("asset loader: manifest entry has no name or sha256")
 		}
 		entry := assetEntry{name: strings.TrimSpace(raw.GetName()), sha256: strings.TrimSpace(raw.GetSha256()), contentType: strings.TrimSpace(raw.GetContentType()), size: raw.GetSize()}
+		if previous, ok := l.manifest[entry.name]; ok && previous.sha256 != entry.sha256 {
+			delete(l.urls, "name:"+entry.name)
+			delete(l.urls, "sha:"+previous.sha256)
+			delete(l.bySHA, previous.sha256)
+		}
 		l.manifest[entry.name] = entry
 		l.bySHA[entry.sha256] = entry.name
 		entries = append(entries, entry)
@@ -230,38 +261,6 @@ func (l *AssetLoader) fetch(ctx context.Context, selector, key string, flight *a
 	}
 	l.mu.Unlock()
 	close(flight.done)
-}
-
-func (l *AssetLoader) fetchAsset(ctx context.Context, selector string) AssetResult {
-	if l.service == nil {
-		return AssetResult{Err: errors.New("asset loader: asset service is nil")}
-	}
-	if l.blobs == nil {
-		return AssetResult{Err: errors.New("asset loader: Blob factory is nil")}
-	}
-	request := &dungeonfluxv1.AssetRequest{}
-	l.mu.Lock()
-	_, knownName := l.manifest[selector]
-	_, knownSHA := l.bySHA[selector]
-	l.mu.Unlock()
-	if (l.isSHA(selector) && !knownName) || knownSHA {
-		request.Sha256 = selector
-	} else {
-		request.Name = selector
-	}
-	stream, err := l.service.Get(ctx, request)
-	if err != nil {
-		return AssetResult{Err: fmt.Errorf("fetch asset %q: %w", selector, err)}
-	}
-	data, contentType, err := readAssetStream(stream)
-	if err != nil {
-		return AssetResult{Err: fmt.Errorf("read asset %q: %w", selector, err)}
-	}
-	url, err := l.blobs.Create(data, contentType)
-	if err != nil {
-		return AssetResult{Err: fmt.Errorf("create Blob URL for %q: %w", selector, err)}
-	}
-	return AssetResult{URL: url}
 }
 
 func readAssetStream(stream AssetStream) ([]byte, string, error) {
