@@ -254,8 +254,8 @@ func allowedInternal(packagePath string) []string {
 		return []string{"internal/core/fsm", "internal/domain", "internal/vocab", "internal/content", "internal/game/rules", "internal/game/combat", "internal/game/phase", "internal/game/nested", "internal/game/steer"}
 	case packagePath == "internal/game/nested" || packagePath == "internal/game/steer":
 		return []string{"internal/core/fsm", "internal/domain", "internal/vocab", "internal/content", "internal/game/rules"}
-	case packagePath == "internal/sim":
-		return []string{"internal/game", "internal/core/fsm", "internal/domain", "internal/vocab"}
+	case packagePath == "internal/sim" || strings.HasPrefix(packagePath, "internal/sim/"):
+		return []string{"internal/game", "internal/core/fsm", "internal/domain", "internal/vocab", "internal/i18n"}
 	case strings.HasPrefix(packagePath, "internal/adapters/"):
 		return []string{"internal/ports", "internal/domain", "internal/vocab", "internal/clock", "internal/httpx"}
 	case packagePath == "internal/config":
@@ -264,11 +264,11 @@ func allowedInternal(packagePath string) []string {
 		// Composition roots may import every module package except archtest.
 		return []string{"gen", "internal", "web/shell", "cmd/dfctl"}
 	case packagePath == "web/shell":
-		return []string{"gen", "internal/domain", "internal/vocab", "web/shell", "web/splat", "web/dm", "web/phone", "web/host"}
+		return []string{"gen", "internal/domain", "internal/vocab", "internal/i18n", "web/shell", "web/splat", "web/dm", "web/phone", "web/host"}
 	case strings.HasPrefix(packagePath, "web/"):
-		return []string{"gen", "internal/domain", "internal/vocab", "web/shell", "web/splat"}
+		return []string{"gen", "internal/domain", "internal/vocab", "internal/i18n", "web/shell", "web/splat"}
 	default:
-		return []string{"internal/vocab", "internal/domain", "internal/ports", "internal/clock", "internal/config", "internal/wire", "internal/logx", "internal/httpx", "internal/runtime", "internal/content", "internal/game", "internal/core/fsm", "internal/api", "internal/media", "internal/modelchain", "internal/budget", "internal/llmexec", "internal/voice", "internal/store", "internal/replay", "gen", "scripts"}
+		return []string{"internal/vocab", "internal/domain", "internal/ports", "internal/clock", "internal/config", "internal/wire", "internal/logx", "internal/httpx", "internal/runtime", "internal/content", "internal/game", "internal/core/fsm", "internal/api", "internal/media", "internal/modelchain", "internal/budget", "internal/llmexec", "internal/voice", "internal/store", "internal/replay", "internal/i18n", "gen", "scripts"}
 	}
 }
 
