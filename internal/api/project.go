@@ -8,6 +8,7 @@ import (
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
+	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
 
 // Project converts a domain view to the protobuf view for one client kind.
@@ -136,9 +137,12 @@ func projectPhone(view domain.View, seat domain.SeatID) *df.PhoneView {
 			continue
 		}
 		out.Character = projectCharacter(item.Character)
+		if out.Character != nil {
+			out.Character.Locked = characterLocked(item.Moves)
+		}
 		out.Moves = projectMoves(item.Moves)
 		out.TurnTimer = projectTimer(item.TurnTimer)
-		out.StatusText = item.StatusText
+		out.StatusText = phoneStatus(view, item)
 		break
 	}
 	if view.Combat != nil {
@@ -161,8 +165,68 @@ func projectCharacter(character *domain.Character) *df.Character {
 	if character == nil {
 		return nil
 	}
-	return &df.Character{Name: character.Name, ClassName: character.Class,
-		PersuasionModifier: int32(character.PersuasionModifier), PortraitUrl: string(character.Portrait), HookText: character.Hook}
+	return &df.Character{
+		Name:               character.Name,
+		ClassName:          character.Class,
+		PersuasionModifier: int32(character.PersuasionModifier),
+		PortraitUrl:        string(character.Portrait),
+		HookText:           character.Hook,
+		Species:            character.Species,
+		Gender:             character.Gender,
+		Flavor:             &df.CharacterFlavor{Name: character.Name, Hook: character.Hook},
+		Build: &df.CharacterBuild{
+			Hp:    int32(character.HP),
+			HpMax: int32(character.MaxHP),
+			Ac:    int32(character.AC),
+		},
+	}
+}
+
+func characterLocked(moves []domain.MoveView) bool {
+	for _, move := range moves {
+		if move.ID == vocab.MoveReady {
+			return !move.Enabled && move.Reason == "Your hero is already ready"
+		}
+	}
+	return false
+}
+
+func phoneStatus(view domain.View, seat domain.SeatView) string {
+	if seat.StatusText != "" {
+		return seat.StatusText
+	}
+	if seat.Character != nil && characterLocked(seat.Moves) {
+		return "Your hero is ready"
+	}
+	switch view.Path {
+	case vocab.StateLobby:
+		return "Waiting for the host"
+	case vocab.StateCreation:
+		if seat.Character == nil {
+			return "Choose a species and gender"
+		}
+		return "Your hero is ready to lock in"
+	case vocab.StateOpening:
+		return "The story is beginning"
+	case vocab.StateExploration:
+		return "Choose your next move"
+	case vocab.StateConversation:
+		return "Talk to Mother Vell"
+	case vocab.StateCheck:
+		return "The engine is rolling your Persuasion"
+	case vocab.StateResolution:
+		return "Mother Vell is deciding"
+	case vocab.StateHookEvent:
+		return "A stranger arrives"
+	case vocab.StateCombat:
+		return "Choose your combat move"
+	case vocab.StateCliffhanger:
+		return "The bell remembers"
+	case vocab.StateEnd:
+		return "The night ends here"
+	default:
+		return ""
+	}
 }
 
 func projectBuildCards(seats []domain.SeatView) []*df.BuildCard {

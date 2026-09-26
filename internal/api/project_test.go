@@ -79,6 +79,59 @@ func TestProject_NilAndUnknownValues(t *testing.T) {
 	}
 }
 
+func TestProjectPhone_ProjectsRolledCharacterAndLock(t *testing.T) {
+	view := domain.View{
+		Path: vocab.StateCreation,
+		Seats: []domain.SeatView{{
+			Seat: 1,
+			Character: &domain.Character{
+				Name: "Mira", Class: "Rogue", Species: "elf", Gender: "female",
+				Hook: "A debt in the river", Portrait: "https://assets.test/mira.png",
+				PersuasionModifier: 4, HP: 11, MaxHP: 12, AC: 15,
+			},
+			Moves: []domain.MoveView{{ID: vocab.MoveReady, Label: "Ready", Enabled: false, Reason: "Your hero is already ready"}},
+		}},
+	}
+
+	phone := ProjectPhone(view, 1)
+	character := phone.GetCharacter()
+	if character == nil || character.GetSpecies() != "elf" || character.GetGender() != "female" || !character.GetLocked() {
+		t.Fatalf("character identity/lock = %#v", character)
+	}
+	if character.GetPortraitUrl() != "https://assets.test/mira.png" || character.GetHookText() != "A debt in the river" {
+		t.Fatalf("character flavor/media = %#v", character)
+	}
+	if build := character.GetBuild(); build == nil || build.GetHp() != 11 || build.GetHpMax() != 12 || build.GetAc() != 15 {
+		t.Fatalf("character build = %#v", character.GetBuild())
+	}
+	if flavor := character.GetFlavor(); flavor == nil || flavor.GetName() != "Mira" || flavor.GetHook() != "A debt in the river" {
+		t.Fatalf("character flavor = %#v", character.GetFlavor())
+	}
+}
+
+func TestProjectPhone_StatusFallbackFollowsPhase(t *testing.T) {
+	tests := []struct {
+		name  string
+		phase vocab.StateID
+		want  string
+	}{
+		{name: "lobby", phase: vocab.StateLobby, want: "Waiting for the host"},
+		{name: "creation", phase: vocab.StateCreation, want: "Choose a species and gender"},
+		{name: "opening", phase: vocab.StateOpening, want: "The story is beginning"},
+		{name: "check", phase: vocab.StateCheck, want: "The engine is rolling your Persuasion"},
+		{name: "combat", phase: vocab.StateCombat, want: "Choose your combat move"},
+		{name: "end", phase: vocab.StateEnd, want: "The night ends here"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			state := ProjectPhone(domain.View{Path: test.phase, Seats: []domain.SeatView{{Seat: 1}}}, 1)
+			if got := state.GetStatusText(); got != test.want {
+				t.Fatalf("status = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
 func TestProject_EnumValues(t *testing.T) {
 	for _, state := range []string{"offered", "rolling", "resolved"} {
 		if diceState(state) == df.DiceState_DICE_STATE_UNSPECIFIED {

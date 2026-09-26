@@ -181,7 +181,31 @@ message DMView {
   repeated LobbySeat seats = 23;
   Lobby lobby = 24;
 }
-message Character { string name = 1; string class_name = 2; int32 persuasion_modifier = 3; string portrait_url = 4; string hook_text = 5; }
+message CharacterFlavor {
+  string name = 1;
+  string look = 2;
+  string hook = 3;
+}
+message CharacterBuild {
+  repeated int32 abilities = 1;
+  repeated string save_profs = 2;
+  map<string, string> skill_profs = 3;
+  int32 hp = 4;
+  int32 hp_max = 5;
+  int32 ac = 6;
+}
+message Character {
+  string name = 1;
+  string class_name = 2;
+  int32 persuasion_modifier = 3;
+  string portrait_url = 4;
+  string hook_text = 5;
+  string species = 6;
+  string gender = 7;
+  CharacterFlavor flavor = 8;
+  CharacterBuild build = 9;
+  bool locked = 10;
+}
 message PTT { bool enabled = 1; PTTState state = 2; }
 message PhoneView { Character character = 1; repeated Move moves = 2; PTT ptt = 3; Timer turn_timer = 4; string status_text = 5; CombatView combat = 6; string locale = 7; Text status_msg = 8; }
 message AssetSlot { string name = 1; string state = 2; }
