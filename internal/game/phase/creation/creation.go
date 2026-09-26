@@ -46,33 +46,19 @@ type Result struct {
 
 // Machine is the pure character-creation phase machine.
 type Machine struct {
-	seed    []byte
-	classes [seatCount]rules.Class
-	seats   [seatCount]SeatState
+	seed  []byte
+	seats [seatCount]SeatState
 }
 
-// New creates a creation machine and draws both classes before either player
-// taps. The class draw therefore does not depend on tap order.
+// New creates a creation machine. Classes are selected by players; DrawClass
+// is used only when the creation timeout supplies a fallback.
 func New(seed []byte) (Machine, error) {
 	if len(seed) == 0 {
 		return Machine{}, errors.New("creation seed is empty")
 	}
-	classRoller := dice.New(seed)
-	first, err := rules.DrawClass(classRoller, 1, "")
-	if err != nil {
-		return Machine{}, fmt.Errorf("draw seat 1 class: %w", err)
-	}
-	second, err := rules.DrawClass(classRoller, 2, first)
-	if err != nil {
-		return Machine{}, fmt.Errorf("draw seat 2 class: %w", err)
-	}
 	return Machine{
-		seed:    append([]byte(nil), seed...),
-		classes: [seatCount]rules.Class{first, second},
-		seats: [seatCount]SeatState{
-			{Seat: 1, Class: first},
-			{Seat: 2, Class: second},
-		},
+		seed:  append([]byte(nil), seed...),
+		seats: [seatCount]SeatState{{Seat: 1}, {Seat: 2}},
 	}, nil
 }
 
@@ -140,9 +126,15 @@ func (m *Machine) stepAct(event domain.Act) (Result, error) {
 			return Result{}, fmt.Errorf("unknown gender %q", event.Arg)
 		}
 		seat.Gender = event.Arg
+	case vocab.MoveClass:
+		class := rules.Class(event.Arg)
+		if !rules.IsClass(class) {
+			return Result{}, fmt.Errorf("unknown class %q", event.Arg)
+		}
+		seat.Class = class
 	case vocab.MoveRollHero:
-		if seat.Species == "" || seat.Gender == "" {
-			return Result{}, errors.New("species and gender are required")
+		if seat.Species == "" || seat.Gender == "" || seat.Class == "" {
+			return Result{}, errors.New("species, gender, and class are required")
 		}
 		return m.roll(index)
 	default:
@@ -153,7 +145,7 @@ func (m *Machine) stepAct(event domain.Act) (Result, error) {
 
 func (m *Machine) roll(index int) (Result, error) {
 	seed := append(append([]byte(nil), m.seed...), byte(index+1))
-	build, err := rules.BuildHero(dice.New(seed), m.classes[index], m.seats[index].Species, m.seats[index].Gender)
+	build, err := rules.BuildHero(dice.New(seed), m.seats[index].Class, m.seats[index].Species, m.seats[index].Gender)
 	if err != nil {
 		return Result{}, fmt.Errorf("build seat %d: %w", index+1, err)
 	}
@@ -197,13 +189,20 @@ func (m *Machine) stepLocked(event domain.PCLocked) (Result, error) {
 }
 
 func (m *Machine) stepTimeout() (Result, error) {
+	classes, err := m.fallbackClasses()
+	if err != nil {
+		return Result{}, err
+	}
 	for i := range m.seats {
 		if m.seats[i].Built {
 			continue
 		}
+		if m.seats[i].Class == "" {
+			m.seats[i].Class = classes[i]
+		}
 		m.seats[i].Species = "human"
 		m.seats[i].Gender = "nonbinary"
-		build, err := rules.BuildHero(dice.New(append(append([]byte(nil), m.seed...), byte(i+1))), m.classes[i], "human", "nonbinary")
+		build, err := rules.BuildHero(dice.New(append(append([]byte(nil), m.seed...), byte(i+1))), m.seats[i].Class, "human", "nonbinary")
 		if err != nil {
 			return Result{}, fmt.Errorf("default seat %d: %w", i+1, err)
 		}
@@ -212,6 +211,19 @@ func (m *Machine) stepTimeout() (Result, error) {
 		m.seats[i].Locked = true
 	}
 	return Result{Accepted: true, Complete: m.Complete()}, nil
+}
+
+func (m Machine) fallbackClasses() ([seatCount]rules.Class, error) {
+	roller := dice.New(append(append([]byte(nil), m.seed...), 0))
+	first, err := rules.DrawClass(roller, 1, "")
+	if err != nil {
+		return [seatCount]rules.Class{}, fmt.Errorf("draw fallback seat 1 class: %w", err)
+	}
+	second, err := rules.DrawClass(roller, 2, first)
+	if err != nil {
+		return [seatCount]rules.Class{}, fmt.Errorf("draw fallback seat 2 class: %w", err)
+	}
+	return [seatCount]rules.Class{first, second}, nil
 }
 
 func seatIndex(seat domain.SeatID) (int, bool) {
@@ -228,10 +240,20 @@ func copySeat(seat SeatState) SeatState {
 
 func background(class rules.Class) string {
 	switch class {
+	case rules.Barbarian:
+		return "soldier"
 	case rules.Paladin:
 		return "soldier"
+	case rules.Fighter:
+		return "soldier"
+	case rules.Ranger:
+		return "guide"
 	case rules.Rogue:
 		return "criminal"
+	case rules.Monk:
+		return "sage"
+	case rules.Sorcerer, rules.Warlock, rules.Wizard:
+		return "sage"
 	default:
 		return "acolyte"
 	}

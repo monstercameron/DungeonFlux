@@ -38,7 +38,7 @@ func TestLegalMoveViews_PathMenus(t *testing.T) {
 func TestLegalMoveViews_CreationAndPause(t *testing.T) {
 	view := domain.View{Path: vocab.StateCreation, Seats: []domain.SeatView{{Seat: 1}}}
 	moves := LegalMoveViews(view, 1)
-	if len(moves) != 4 || !moves[2].Enabled || moves[3].Enabled {
+	if len(moves) != 5 || moves[2].ID != vocab.MoveClass || len(moves[2].Options) != 12 || !moves[3].Enabled || moves[4].Enabled {
 		t.Fatalf("creation moves = %#v", moves)
 	}
 	view.Paused = true

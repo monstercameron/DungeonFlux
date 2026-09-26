@@ -19,6 +19,9 @@ func TestMachine_SpeciesGenderRollAndLocks(t *testing.T) {
 		if _, err := machine.Step(domain.Act{Seat: seat, Move: vocab.MoveGender, Arg: "female"}); err != nil {
 			t.Fatal(err)
 		}
+		if _, err := machine.Step(domain.Act{Seat: seat, Move: vocab.MoveClass, Arg: "wizard"}); err != nil {
+			t.Fatal(err)
+		}
 		result, err := machine.Step(domain.Act{Seat: seat, Move: vocab.MoveRollHero})
 		if err != nil || len(result.Effects) != 1 {
 			t.Fatalf("roll result=%#v err=%v", result, err)
@@ -64,6 +67,7 @@ func TestMachine_RejectsInvalidEventsAndTimeoutDefaults(t *testing.T) {
 	}
 	cases := []domain.Event{
 		domain.Act{Seat: 1, Move: vocab.MoveSpecies, Arg: "kobold"},
+		domain.Act{Seat: 1, Move: vocab.MoveClass, Arg: "artificer"},
 		domain.Act{Seat: 1, Move: vocab.MoveRollHero},
 		domain.PCLocked{Seat: 1},
 	}
@@ -79,6 +83,30 @@ func TestMachine_RejectsInvalidEventsAndTimeoutDefaults(t *testing.T) {
 	for _, seat := range machine.Seats() {
 		if !seat.Locked || seat.Build.Class == "" || seat.Species != "human" {
 			t.Fatalf("default seat=%#v", seat)
+		}
+	}
+}
+
+func TestMachine_AllowsBothSeatsToChooseTheSameClass(t *testing.T) {
+	machine, err := New([]byte("same-class"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, seat := range []domain.SeatID{1, 2} {
+		for _, event := range []domain.Event{
+			domain.Act{Seat: seat, Move: vocab.MoveSpecies, Arg: "human"},
+			domain.Act{Seat: seat, Move: vocab.MoveGender, Arg: "nonbinary"},
+			domain.Act{Seat: seat, Move: vocab.MoveClass, Arg: "wizard"},
+			domain.Act{Seat: seat, Move: vocab.MoveRollHero},
+		} {
+			if _, err := machine.Step(event); err != nil {
+				t.Fatalf("seat %d event %#v: %v", seat, event, err)
+			}
+		}
+	}
+	for _, seat := range machine.Seats() {
+		if seat.Class != "wizard" {
+			t.Fatalf("seat class = %q", seat.Class)
 		}
 	}
 }
@@ -103,6 +131,7 @@ func buildInOrder(t *testing.T, order []domain.SeatID) (Machine, error) {
 		for _, event := range []domain.Event{
 			domain.Act{Seat: seat, Move: vocab.MoveSpecies, Arg: "human"},
 			domain.Act{Seat: seat, Move: vocab.MoveGender, Arg: "male"},
+			domain.Act{Seat: seat, Move: vocab.MoveClass, Arg: "paladin"},
 			domain.Act{Seat: seat, Move: vocab.MoveRollHero},
 		} {
 			if _, err := machine.Step(event); err != nil {

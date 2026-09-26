@@ -101,6 +101,8 @@ const (
 	MoveSpecies MoveID = "species"
 	// MoveGender selects a gender.
 	MoveGender MoveID = "gender"
+	// MoveClass selects a character class.
+	MoveClass MoveID = "class"
 	// MoveRollHero rolls a hero.
 	MoveRollHero MoveID = "roll_hero"
 	// MoveTalkVell starts a conversation with Vell.

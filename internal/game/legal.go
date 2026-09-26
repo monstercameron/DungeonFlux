@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
+	"github.com/monstercameron/DungeonFlux/internal/game/rules"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
 
@@ -78,9 +79,19 @@ func creationMoves(view domain.View, seat domain.SeatID) []domain.MoveView {
 	return []domain.MoveView{
 		enabledMove(vocab.MoveSpecies, "Choose species", ""),
 		enabledMove(vocab.MoveGender, "Choose gender", ""),
+		classMove(),
 		move(vocab.MoveRollHero, "Roll my hero", card.Build == nil, reasonFor(!ready, "Roll your hero first")),
 		move(vocab.MoveReady, "Ready", ready, reasonFor(!ready, "Finish your character first")),
 	}
+}
+
+func classMove() domain.MoveView {
+	move := enabledMove(vocab.MoveClass, "Choose class", "")
+	for _, class := range rules.Classes() {
+		value := string(class)
+		move.Options = append(move.Options, domain.OptionView{ID: value, Label: strings.ToUpper(value[:1]) + value[1:]})
+	}
+	return move
 }
 
 func explorationMoves(view domain.View, seat domain.SeatID) []domain.MoveView {
