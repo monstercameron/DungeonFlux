@@ -1435,6 +1435,12 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   done when: in lobby phase the phone shows the player's name, seat number, who else has joined, and "Waiting for the host to start"; preview fixture plus live check.
   status: claimed luna
 
+- [ ] PHONE-019 · phone end screen
+  why: Live run: when the TV shows the end card, the phone still shows the player sheet.
+  lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/end*.go`, `web/phone/screen*.go` · depends: PHONE-018
+  done when: at End the phone shows the outcome, the character's final state, thanks, and the SRD attribution link; preview fixture plus live check.
+  status: open (launch after PHONE-018)
+
 ## 20. DM screen
 
 The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
