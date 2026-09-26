@@ -25,6 +25,7 @@ type SessionServer struct {
 	roomCode  string
 	hostToken string
 	dmToken   string
+	engine    ports.Engine
 	mu        sync.Mutex
 	seats     map[string]seatSession
 	nextSeat  int
@@ -117,4 +118,11 @@ func newSeatToken() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(data), nil
+}
+
+func (s *SessionServer) seatForToken(token string) (seatSession, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	seat, ok := s.seats[token]
+	return seat, ok
 }
