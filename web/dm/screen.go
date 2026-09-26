@@ -24,6 +24,8 @@ const (
 	LayerDice Layer = "dice"
 	// LayerTimer is the combat turn timer surface.
 	LayerTimer Layer = "timer"
+	// LayerHUD is the exploration party and action overlay.
+	LayerHUD Layer = "hud"
 	// LayerMusic identifies the music side effect managed by the mount.
 	LayerMusic Layer = "music"
 	// LayerCombat is the FLAT battlefield surface.
@@ -48,6 +50,9 @@ func SelectLayers(state *dungeonfluxv1.ScreenState) []Layer {
 		return []Layer{LayerScene, LayerClip, LayerMusic}
 	case "exploration", "conversation", "check", "resolution":
 		layers := []Layer{LayerScene, LayerMusic}
+		if phase == "exploration" && state.GetDm() != nil {
+			layers = []Layer{LayerScene, LayerHUD, LayerMusic}
+		}
 		if phase == "check" || phase == "resolution" {
 			layers = append(layers, LayerDice)
 		}
