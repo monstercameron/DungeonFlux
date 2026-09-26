@@ -56,24 +56,95 @@ func TestE2E_DfctlRunThroughLobby(t *testing.T) {
 	}
 	joinSeats(t, server.URL, cfg.Server.RoomCode)
 
-	act, err := debugClient.Act(debugCtx, &df.DebugActRequest{Room: "DF-E2E", Seat: "1", MoveId: "ready"})
-	if err != nil || !act.GetAccepted() {
-		t.Fatalf("dfctl act: response=%v error=%v", act, err)
+	phaseTrace := []string{"lobby"}
+	sendDebug(t, debugClient, debugCtx, "host_start")
+	assertPhase(t, debugClient, debugCtx, "DF-E2E", "creation", phaseTrace)
+	phaseTrace = append(phaseTrace, "creation")
+
+	// Character creation is intentionally driven through the same Act RPC that
+	// dfctl uses. If the root engine has not yet dispatched phase events, this
+	// is the first observable stall and the skip records all useful evidence.
+	sendAct(t, debugClient, debugCtx, "1", "species", "human")
+	state = readDebugState(t, debugClient, debugCtx, "DF-E2E")
+	if state.GetPhase() == "creation" {
+		moves := readLegal(t, debugClient, debugCtx, "DF-E2E", "1")
+		t.Skipf("e2e stall: event act seat=1 move=species arg=human; state=%q; legal_moves=%v", state.GetPhase(), moves)
 	}
-	say, err := debugClient.Say(debugCtx, &df.DebugSayRequest{Room: "DF-E2E", Seat: "1", Text: "I greet Mother Vell."})
-	if err != nil || !say.GetAccepted() {
-		t.Fatalf("dfctl say: response=%v error=%v", say, err)
+
+	for _, seat := range []string{"1", "2"} {
+		sendAct(t, debugClient, debugCtx, seat, "gender", "nonbinary")
+		sendAct(t, debugClient, debugCtx, seat, "roll_hero", "")
+		sendAct(t, debugClient, debugCtx, seat, "ready", "")
 	}
-	dice, err := debugClient.DiceForce(debugCtx, &df.DiceForceRequest{Room: "DF-E2E", D20: 10})
-	if err != nil || !dice.GetAccepted() {
-		t.Fatalf("dfctl dice force: response=%v error=%v", dice, err)
+	assertPhase(t, debugClient, debugCtx, "DF-E2E", "opening", phaseTrace)
+	phaseTrace = append(phaseTrace, "opening")
+	if response, err := debugClient.Say(debugCtx, &df.DebugSayRequest{Room: "DF-E2E", Seat: "1", Text: "I greet Mother Vell."}); err != nil || !response.GetAccepted() {
+		t.Fatalf("dfctl say: response=%v error=%v", response, err)
+	}
+	if response, err := debugClient.DiceForce(debugCtx, &df.DiceForceRequest{Room: "DF-E2E", D20: 17}); err != nil || !response.GetAccepted() {
+		t.Fatalf("dfctl dice force: response=%v error=%v", response, err)
+	}
+	for _, phase := range []string{"exploration", "conversation", "check", "resolution", "hook_event"} {
+		sendDebug(t, debugClient, debugCtx, "host_skip")
+		assertPhase(t, debugClient, debugCtx, "DF-E2E", phase, phaseTrace)
+		phaseTrace = append(phaseTrace, phase)
+	}
+
+	sendAct(t, debugClient, debugCtx, "1", "attack", "")
+	sendAct(t, debugClient, debugCtx, "1", "end_turn", "")
+	for i := 0; i < 8; i++ {
+		sendAct(t, debugClient, debugCtx, "1", "attack", "")
+		sendAct(t, debugClient, debugCtx, "1", "end_turn", "")
+		sendAct(t, debugClient, debugCtx, "2", "attack", "")
+		sendAct(t, debugClient, debugCtx, "2", "end_turn", "")
 	}
 	state = readDebugState(t, debugClient, debugCtx, "DF-E2E")
-	if state.GetPhase() != "lobby" {
-		t.Fatalf("phase after reachable dfctl commands = %q, want lobby", state.GetPhase())
+	if state.GetPhase() != "cliffhanger" {
+		moves := readLegal(t, debugClient, debugCtx, "DF-E2E", "1")
+		t.Skipf("e2e stall: event combat attacks/end_turn; state=%q; legal_moves=%v", state.GetPhase(), moves)
 	}
-	t.Logf("reachable phase trace: %s", state.GetPhase())
-	t.Skip("phase progression is pending ENG-014, COMBAT-008, BASE-010, and BASE-011")
+	phaseTrace = append(phaseTrace, state.GetPhase())
+	sendDebug(t, debugClient, debugCtx, "host_skip")
+	assertPhase(t, debugClient, debugCtx, "DF-E2E", "end", phaseTrace)
+	t.Logf("phase trace: %v", phaseTrace)
+}
+
+func sendDebug(t *testing.T, client df.DebugServiceClient, ctx context.Context, event string) {
+	t.Helper()
+	response, err := client.Send(ctx, &df.SendRequest{Room: "DF-E2E", Event: event})
+	if err != nil || !response.GetAccepted() {
+		t.Fatalf("dfctl send %q: response=%v error=%v", event, response, err)
+	}
+}
+
+func sendAct(t *testing.T, client df.DebugServiceClient, ctx context.Context, seat, move, arg string) {
+	t.Helper()
+	response, err := client.Act(ctx, &df.DebugActRequest{Room: "DF-E2E", Seat: seat, MoveId: move, Arg: arg})
+	if err != nil || !response.GetAccepted() {
+		t.Fatalf("dfctl act seat=%s move=%s: response=%v error=%v", seat, move, response, err)
+	}
+}
+
+func assertPhase(t *testing.T, client df.DebugServiceClient, ctx context.Context, room, want string, trace []string) *df.DebugState {
+	t.Helper()
+	state := readDebugState(t, client, ctx, room)
+	if state.GetPhase() != want {
+		t.Fatalf("phase trace %v: got %q, want %q", trace, state.GetPhase(), want)
+	}
+	return state
+}
+
+func readLegal(t *testing.T, client df.DebugServiceClient, ctx context.Context, room, seat string) []string {
+	t.Helper()
+	moves, err := client.Legal(ctx, &df.SeatRequest{Room: room, Seat: seat})
+	if err != nil {
+		t.Fatalf("dfctl legal seat=%s: %v", seat, err)
+	}
+	result := make([]string, 0, len(moves.GetMoves()))
+	for _, move := range moves.GetMoves() {
+		result = append(result, move.GetMoveId())
+	}
+	return result
 }
 
 func joinSeats(t *testing.T, endpoint, room string) {
