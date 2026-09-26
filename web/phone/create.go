@@ -43,6 +43,7 @@ type CreationSnapshot struct {
 	Build        *df.BuildCard
 	Phase        CreationPhase
 	Error        string
+	Locale       string
 }
 
 // CreationModel owns creation selections and Act request construction.
@@ -128,6 +129,7 @@ func (m *CreationModel) ApplyScreenState(state *df.ScreenState) CreationSnapshot
 	if strings.Contains(strings.ToLower(state.GetPhase()), "creation") && m.state.Build != nil {
 		m.state.Phase = CreationRolling
 	}
+	m.state.Locale = phoneLocale(phone)
 	return m.Snapshot()
 }
 

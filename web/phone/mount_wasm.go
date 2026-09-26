@@ -28,10 +28,13 @@ type PhoneClient interface {
 }
 
 // Mount returns the stateful player phone screen for the shared shell router.
-func Mount(client PhoneClient, seatToken string) router.Component {
+func Mount(client PhoneClient, seatToken, locale string) router.Component {
+	if locale == "" {
+		locale = "en"
+	}
 	return func(_ router.Attrs) *router.Element {
 		if client == nil {
-			return ui.CreateElement(phoneError, "Player client unavailable")
+			return ui.CreateElement(func() ui.Node { return phoneError(locale, ClientUnavailable(locale)) })
 		}
 		props := phoneViewProps{
 			client: client, seatToken: seatToken,
@@ -56,8 +59,11 @@ type phoneViewProps struct {
 	ptt       *PTTModel
 }
 
-func phoneError(message string) ui.Node {
-	return html.Main(html.Props{Class: "df-phone", Role: "main"}, html.H1(html.Props{}, html.Text("DungeonFlux")), html.P(html.Props{Role: "alert"}, html.Text(message)))
+func phoneError(locale, message string) ui.Node {
+	if locale == "" {
+		locale = "en"
+	}
+	return html.Main(html.Props{Class: "df-phone", Role: "main"}, html.H1(html.Props{}, html.Text(ErrorTitle(locale))), html.P(html.Props{Role: "alert"}, html.Text(message)))
 }
 
 func phoneView(props phoneViewProps) ui.Node {
@@ -81,19 +87,24 @@ func phoneView(props phoneViewProps) ui.Node {
 		return cancel
 	}, props.client, props.seatToken)
 	state := view.Get()
-	return renderPhoneScreen(SelectScreen(state), props)
+	locale := state.Phone.GetLocale()
+	if locale == "" {
+		locale = "en"
+	}
+	props.typed.SetLocale(locale)
+	return renderPhoneScreen(SelectScreen(state), props, locale)
 }
 
-func renderPhoneScreen(kind ScreenKind, props phoneViewProps) ui.Node {
+func renderPhoneScreen(kind ScreenKind, props phoneViewProps, locale string) ui.Node {
 	switch kind {
 	case ScreenCreate:
 		return ui.CreateElement(CreationScreen(props.creation))
 	case ScreenDice:
 		return ui.CreateElement(DiceScreen(props.dice))
 	case ScreenCombat:
-		return ui.CreateElement(combatScreen, props.combat)
+		return ui.CreateElement(func() ui.Node { return combatScreen(props.combat, locale) })
 	case ScreenConversation:
-		return ui.CreateElement(conversationScreen, props)
+		return ui.CreateElement(func() ui.Node { return conversationScreen(props, locale) })
 	case ScreenMoves:
 		return ui.CreateElement(MovesScreen(props.moves))
 	default:
@@ -101,18 +112,25 @@ func renderPhoneScreen(kind ScreenKind, props phoneViewProps) ui.Node {
 	}
 }
 
-func conversationScreen(props phoneViewProps) ui.Node {
+func conversationScreen(props phoneViewProps, locale string) ui.Node {
 	return html.Main(html.Props{Class: "df-phone df-phone-conversation"},
 		ui.CreateElement(MovesScreen(props.moves)),
 		ui.CreateElement(TypedInputScreen(props.typed)),
-		ui.CreateElement(pttScreen, pttProps{model: props.ptt}),
+		ui.CreateElement(pttScreen, pttProps{model: props.ptt, locale: locale}),
 	)
 }
 
-type pttProps struct{ model *PTTModel }
+type pttProps struct {
+	model  *PTTModel
+	locale string
+}
 
 func pttScreen(props pttProps) ui.Node {
-	status := ui.UseState("Ready to talk")
+	locale := props.locale
+	if locale == "" {
+		locale = "en"
+	}
+	status := ui.UseState(PTTReady(locale))
 	busy := ui.UseState(false)
 	recorder := ui.UseState((*BrowserRecorder)(nil))
 	stream := ui.UseState(js.Value{})
@@ -135,24 +153,24 @@ func pttScreen(props pttProps) ui.Node {
 		busy.Set(true)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancelRecording.Set(cancel)
-		go startPTT(ctx, cancel, props.model, status.Set, busy.Set, recorder.Set, stream.Set)
+		go startPTT(ctx, cancel, props.model, locale, status.Set, busy.Set, recorder.Set, stream.Set)
 	})
 	stop := ui.UseEvent(func() {
 		current := recorder.Get()
 		if current == nil || !busy.Get() {
 			return
 		}
-		status.Set("Finishing recording…")
-		go finishPTT(current, props.model, stream.Get(), cancelRecording.Get, status.Set, busy.Set)
+		status.Set(T(locale, "ptt.finishing", nil))
+		go finishPTT(current, props.model, locale, stream.Get(), cancelRecording.Get, status.Set, busy.Set)
 	})
 	return html.Section(html.Props{Class: "df-phone-ptt"},
-		html.Button(html.Props{Type: "button", OnClick: start, Disabled: busy.Get()}, html.Text("Start talking")),
-		html.Button(html.Props{Type: "button", OnClick: stop, Disabled: !busy.Get()}, html.Text("Stop talking")),
+		html.Button(html.Props{Type: "button", OnClick: start, Disabled: busy.Get()}, html.Text(PTTStart(locale))),
+		html.Button(html.Props{Type: "button", OnClick: stop, Disabled: !busy.Get()}, html.Text(PTTStop(locale))),
 		html.P(html.Props{Role: "status"}, html.Text(status.Get())),
 	)
 }
 
-func finishPTT(recorder *BrowserRecorder, model *PTTModel, stream js.Value, cancel func() context.CancelFunc, setStatus func(string), setBusy func(bool)) {
+func finishPTT(recorder *BrowserRecorder, model *PTTModel, locale string, stream js.Value, cancel func() context.CancelFunc, setStatus func(string), setBusy func(bool)) {
 	if err := recorder.Stop(); err != nil {
 		recorder.Dispose()
 		stopTracks(stream)
@@ -181,10 +199,13 @@ func finishPTT(recorder *BrowserRecorder, model *PTTModel, stream js.Value, canc
 		cancelFn()
 	}
 	setBusy(false)
-	setStatus("Ready to talk")
+	setStatus(PTTReady(locale))
 }
 
-func startPTT(ctx context.Context, cancel context.CancelFunc, model *PTTModel, setStatus func(string), setBusy func(bool), setRecorder func(*BrowserRecorder), setStream func(js.Value)) {
+func startPTT(ctx context.Context, cancel context.CancelFunc, model *PTTModel, locale string, setStatus func(string), setBusy func(bool), setRecorder func(*BrowserRecorder), setStream func(js.Value)) {
+	if locale == "" {
+		locale = "en"
+	}
 	started := false
 	defer func() {
 		if !started {
@@ -192,7 +213,7 @@ func startPTT(ctx context.Context, cancel context.CancelFunc, model *PTTModel, s
 		}
 	}()
 	if model == nil {
-		setStatus("Push-to-talk unavailable")
+		setStatus(T(locale, "ptt.unavail", nil))
 		return
 	}
 	mediaStream, err := requestMicrophone(ctx)
@@ -204,7 +225,7 @@ func startPTT(ctx context.Context, cancel context.CancelFunc, model *PTTModel, s
 	mimeType := recorderMIME()
 	if mimeType == "" {
 		stopTracks(mediaStream)
-		setStatus("This browser cannot record audio")
+		setStatus(PTTNoRecord(locale))
 		return
 	}
 	if err := model.Start(ctx, mimeType); err != nil {
@@ -227,7 +248,7 @@ func startPTT(ctx context.Context, cancel context.CancelFunc, model *PTTModel, s
 		return
 	}
 	setRecorder(recorder)
-	setStatus("Recording…")
+	setStatus(T(locale, "ui.ptt.recording", nil))
 	started = true
 	go watchRecorderFailure(ctx, cancel, model, recorder, mediaStream, setStatus, setBusy)
 }
@@ -323,10 +344,13 @@ func stopTracks(stream js.Value) {
 	}
 }
 
-func combatScreen(model *CombatModel) ui.Node {
+func combatScreen(model *CombatModel, locale string) ui.Node {
+	if locale == "" {
+		locale = "en"
+	}
 	refresh := ui.UseState(0)
 	snapshot := model.Snapshot()
-	children := []ui.Node{html.H1(html.Props{}, html.Text("Your turn")), html.P(html.Props{Role: "status"}, html.Text(snapshot.StatusText))}
+	children := []ui.Node{html.H1(html.Props{}, html.Text(CombatTurnTitle(locale))), html.P(html.Props{Role: "status"}, html.Text(snapshot.StatusText))}
 	for _, move := range snapshot.Moves {
 		children = append(children, ui.CreateElement(combatMoveButton, combatMoveProps{model: model, move: move, refresh: refresh}))
 	}

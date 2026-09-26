@@ -15,6 +15,10 @@ func MovesScreen(model *MovesModel) router.Component {
 	return func(_ router.Attrs) *router.Element {
 		refresh := ui.UseState(0)
 		current := model.Snapshot()
+		locale := current.Locale
+		if locale == "" {
+			locale = "en"
+		}
 		children := make([]ui.Node, 0, len(current.Moves)*2+2)
 		for _, move := range current.Moves {
 			item := move
@@ -29,7 +33,7 @@ func MovesScreen(model *MovesModel) router.Component {
 		if current.Error != "" {
 			children = append(children, html.P(html.Props{Role: "alert"}, html.Text(current.Error)))
 		}
-		children = append([]ui.Node{html.H1(html.Props{}, html.Text("Your moves"))}, children...)
+		children = append([]ui.Node{html.H1(html.Props{}, html.Text(MovesTitle(locale)))}, children...)
 		return html.Main(html.Props{Class: "df-phone df-phone-moves"}, children...)
 	}
 }

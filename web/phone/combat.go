@@ -26,6 +26,7 @@ type CombatSnapshot struct {
 	ContactInMs    int64
 	StatusText     string
 	Error          string
+	Locale         string
 }
 
 // CombatModel owns combat controls and Act request construction.
@@ -61,12 +62,13 @@ func (m *CombatModel) ApplyScreenState(state *df.ScreenState) CombatSnapshot {
 	if phone == nil {
 		return m.Snapshot()
 	}
+	m.state.Locale = phoneLocale(phone)
 	m.state.StatusText = phone.GetStatusText()
 	m.state.Moves = cloneMoves(phone.GetMoves())
 	m.state.TimerRemaining, m.state.TimerTotal, m.state.TimerFrozen = timerState(phone.GetTurnTimer())
 	combat := phone.GetCombat()
 	if combat == nil {
-		m.state = CombatSnapshot{StatusText: phone.GetStatusText(), Moves: cloneMoves(phone.GetMoves())}
+		m.state = CombatSnapshot{StatusText: phone.GetStatusText(), Moves: cloneMoves(phone.GetMoves()), Locale: phoneLocale(phone)}
 		m.state.TimerRemaining, m.state.TimerTotal, m.state.TimerFrozen = timerState(phone.GetTurnTimer())
 		return m.Snapshot()
 	}

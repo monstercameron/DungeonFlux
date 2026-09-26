@@ -20,15 +20,18 @@ func TestSheetModel_ProjectsCharacterCombatAndCopiesConditions(t *testing.T) {
 	if model.Snapshot().Conditions[0] != "bloodied" {
 		t.Fatal("snapshot exposed mutable conditions")
 	}
-	if model.Summary() != "Astra · Rogue" {
-		t.Fatalf("summary = %q", model.Summary())
+	if model.Summary("en") != "Astra · Rogue" {
+		t.Fatalf("summary = %q", model.Summary("en"))
 	}
 }
 
 func TestSheetModel_HandlesEmptyAndMissingPhoneViews(t *testing.T) {
 	model := NewSheetModel()
-	if model.Summary() != "Your character" {
-		t.Fatalf("empty summary = %q", model.Summary())
+	if model.Summary("en") != "Your character" {
+		t.Fatalf("empty summary = %q", model.Summary("en"))
+	}
+	if model.Summary("es") != "Tu personaje" {
+		t.Fatalf("spanish empty summary = %q", model.Summary("es"))
 	}
 	model.ApplyScreenState(&df.ScreenState{})
 	if got := model.Snapshot(); got.Name != "" || got.StatusText != "" {
@@ -42,7 +45,7 @@ func TestSheetModel_HandlesEmptyAndMissingPhoneViews(t *testing.T) {
 
 func TestSheetModel_NilModelIsSafe(t *testing.T) {
 	var model *SheetModel
-	if got := model.Snapshot(); got.Name != "" || model.Summary() != "Your character" {
+	if got := model.Snapshot(); got.Name != "" || model.Summary("en") != "Your character" {
 		t.Fatalf("nil model = %+v", got)
 	}
 }

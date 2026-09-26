@@ -17,11 +17,20 @@ type SheetSnapshot struct {
 	HPMax              int32
 	Conditions         []string
 	StatusText         string
+	Locale             string
 }
 
 // SheetModel stores the latest server-authoritative player sheet.
 type SheetModel struct {
 	state SheetSnapshot
+}
+
+// Locale returns the render locale settled from the latest server view.
+func (m *SheetModel) Locale() string {
+	if m == nil || m.state.Locale == "" {
+		return "en"
+	}
+	return m.state.Locale
 }
 
 // NewSheetModel creates an empty player sheet.
@@ -47,7 +56,7 @@ func (m *SheetModel) ApplyScreenState(state *df.ScreenState) SheetSnapshot {
 		return m.Snapshot()
 	}
 	character := phone.GetCharacter()
-	m.state = SheetSnapshot{StatusText: phone.GetStatusText()}
+	m.state = SheetSnapshot{StatusText: phone.GetStatusText(), Locale: phoneLocale(phone)}
 	if character != nil {
 		m.state.Name = character.GetName()
 		m.state.Class = character.GetClassName()
@@ -63,11 +72,11 @@ func (m *SheetModel) ApplyScreenState(state *df.ScreenState) SheetSnapshot {
 }
 
 // Summary returns a compact label suitable for a narrow phone header.
-func (m *SheetModel) Summary() string {
+func (m *SheetModel) Summary(locale string) string {
 	state := m.Snapshot()
 	parts := []string{state.Name, state.Class}
 	if state.Name == "" && state.Class == "" {
-		return "Your character"
+		return SheetName(locale, "", "")
 	}
 	return strings.TrimSpace(strings.Join(parts, " · "))
 }

@@ -31,6 +31,7 @@ type MovesSnapshot struct {
 	Moves      []MoveSnapshot
 	StatusText string
 	Error      string
+	Locale     string
 }
 
 // MovesModel owns the phone's server-authoritative legal move menu.
@@ -62,7 +63,7 @@ func (m *MovesModel) ApplyScreenState(state *df.ScreenState) MovesSnapshot {
 	if phone == nil {
 		return m.Snapshot()
 	}
-	m.state = MovesSnapshot{StatusText: phone.GetStatusText(), Moves: projectMoves(phone.GetMoves())}
+	m.state = MovesSnapshot{StatusText: phone.GetStatusText(), Moves: projectMoves(phone.GetMoves()), Locale: phoneLocale(phone)}
 	return m.Snapshot()
 }
 

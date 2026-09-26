@@ -11,28 +11,18 @@ import (
 func SheetScreen(model *SheetModel) router.Component {
 	return func(_ router.Attrs) *router.Element {
 		state := model.Snapshot()
+		locale := state.Locale
+		if locale == "" {
+			locale = "en"
+		}
 		portrait := html.Div(html.Props{Class: "df-phone-portrait", Role: "img", Aria: map[string]string{"label": state.Name}}, html.Text(state.Name))
-		hp := html.P(html.Props{}, html.Text(hpLabel(state)))
-		conditions := html.P(html.Props{}, html.Text(conditionLabel(state)))
+		hp := html.P(html.Props{}, html.Text(SheetHP(locale, state.HP, state.HPMax)))
+		conditions := html.P(html.Props{}, html.Text(SheetConditions(locale, state.Conditions)))
 		return html.Main(html.Props{Class: "df-phone df-phone-sheet"},
-			html.H1(html.Props{}, html.Text(model.Summary())), portrait, hp, conditions,
+			html.H1(html.Props{}, html.Text(SheetName(locale, state.Name, state.Class))), portrait, hp, conditions,
 			html.P(html.Props{Role: "status"}, html.Text(state.StatusText)),
 		)
 	}
-}
-
-func hpLabel(state SheetSnapshot) string {
-	if state.HPMax <= 0 {
-		return "HP —"
-	}
-	return "HP " + number(state.HP) + "/" + number(state.HPMax)
-}
-
-func conditionLabel(state SheetSnapshot) string {
-	if len(state.Conditions) == 0 {
-		return "No conditions"
-	}
-	return "Conditions: " + state.Conditions[0]
 }
 
 func number(value int32) string {

@@ -32,6 +32,7 @@ type DiceSnapshot struct {
 	Phase     DicePhase
 	CanRoll   bool
 	Error     string
+	Locale    string
 }
 
 // DiceModel owns the persuasion roll action and its projected state.
@@ -99,6 +100,7 @@ func (m *DiceModel) ApplyScreenState(state *df.ScreenState) DiceSnapshot {
 	if phone == nil {
 		return m.Snapshot()
 	}
+	m.state.Locale = phoneLocale(phone)
 	for _, move := range phone.GetMoves() {
 		if move.GetMoveId() != "persuade" {
 			continue

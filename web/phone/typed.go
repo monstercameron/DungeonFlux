@@ -31,12 +31,33 @@ type TypedInputSnapshot struct {
 	UtteranceID string
 	Open        bool
 	Sending     bool
+	Locale      string
 }
 
 // TypedInputModel owns the fallback text box and Say request construction.
 type TypedInputModel struct {
 	client SayClient
 	state  TypedInputSnapshot
+	locale string
+}
+
+// SetLocale settles the render locale for typed-input statuses.
+func (m *TypedInputModel) SetLocale(locale string) {
+	if m == nil {
+		return
+	}
+	if locale == "" {
+		locale = "en"
+	}
+	m.locale = locale
+	m.state.Locale = locale
+}
+
+func (m *TypedInputModel) renderLocale() string {
+	if m == nil || m.locale == "" {
+		return "en"
+	}
+	return m.locale
 }
 
 // NewTypedInputModel creates a typed-input model for one seat.
@@ -73,7 +94,7 @@ func (m *TypedInputModel) OpenFallback() TypedInputSnapshot {
 		return TypedInputSnapshot{Error: "typed input is unavailable"}
 	}
 	m.state.Open = true
-	m.state.StatusText = "Didn't catch that. Try again, or type it"
+	m.state.StatusText = T(m.renderLocale(), "ui.ptt.failed", nil)
 	m.state.Error = ""
 	return m.Snapshot()
 }
@@ -119,7 +140,7 @@ func (m *TypedInputModel) ApplySay(result SayResult) TypedInputSnapshot {
 		}
 		return m.Snapshot()
 	}
-	m.state.Error, m.state.StatusText = "", "Message sent"
+	m.state.Error, m.state.StatusText = "", TypedSent(m.renderLocale())
 	m.state.UtteranceID = result.Value.GetUtteranceId()
 	m.state.Text, m.state.Open = "", false
 	return m.Snapshot()
