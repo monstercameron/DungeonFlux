@@ -7,14 +7,15 @@ import (
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
 
-func TestDefinitions_registerCanonicalStubPhases(t *testing.T) {
+func TestDefinitions_registerCanonicalPhases(t *testing.T) {
 	got := Definitions()
 	want := []vocab.StateID{vocab.StateLobby, vocab.StateCreation, vocab.StateOpening, vocab.StateExploration, vocab.StateConversation, vocab.StateCheck, vocab.StateResolution, vocab.StateHookEvent, vocab.StateCombat, vocab.StateCliffhanger, vocab.StateEnd}
 	if len(got) != len(want) {
 		t.Fatalf("phase count = %d, want %d", len(got), len(want))
 	}
 	for index, phase := range got {
-		if phase.ID != want[index] || !phase.Stub {
+		wantStub := phase.ID == vocab.StateCombat
+		if phase.ID != want[index] || phase.Stub != wantStub {
 			t.Fatalf("phase %d = %#v", index, phase)
 		}
 	}

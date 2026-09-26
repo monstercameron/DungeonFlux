@@ -3,6 +3,14 @@ package phase
 import (
 	"github.com/monstercameron/DungeonFlux/internal/core/fsm"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
+	"github.com/monstercameron/DungeonFlux/internal/game/phase/check"
+	"github.com/monstercameron/DungeonFlux/internal/game/phase/cliffhanger"
+	"github.com/monstercameron/DungeonFlux/internal/game/phase/conversation"
+	"github.com/monstercameron/DungeonFlux/internal/game/phase/creation"
+	"github.com/monstercameron/DungeonFlux/internal/game/phase/hook"
+	"github.com/monstercameron/DungeonFlux/internal/game/phase/opening"
+	"github.com/monstercameron/DungeonFlux/internal/game/phase/resolution"
+	"github.com/monstercameron/DungeonFlux/internal/game/rules/dice"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
 
@@ -33,17 +41,17 @@ func Definitions() []Definition {
 }
 
 var phaseDefinitions = []Definition{
-	{ID: vocab.StateLobby, Stub: true},
-	{ID: vocab.StateCreation, Stub: true},
-	{ID: vocab.StateOpening, Stub: true},
-	{ID: vocab.StateExploration, Stub: true},
-	{ID: vocab.StateConversation, Stub: true},
-	{ID: vocab.StateCheck, Stub: true},
-	{ID: vocab.StateResolution, Stub: true},
-	{ID: vocab.StateHookEvent, Stub: true},
+	{ID: vocab.StateLobby, Stub: false},
+	{ID: vocab.StateCreation, Stub: false},
+	{ID: vocab.StateOpening, Stub: false},
+	{ID: vocab.StateExploration, Stub: false},
+	{ID: vocab.StateConversation, Stub: false},
+	{ID: vocab.StateCheck, Stub: false},
+	{ID: vocab.StateResolution, Stub: false},
+	{ID: vocab.StateHookEvent, Stub: false},
 	{ID: vocab.StateCombat, Stub: true},
-	{ID: vocab.StateCliffhanger, Stub: true},
-	{ID: vocab.StateEnd, Stub: true},
+	{ID: vocab.StateCliffhanger, Stub: false},
+	{ID: vocab.StateEnd, Stub: false},
 }
 
 // Machine is the pure top-level phase dispatcher.
@@ -51,6 +59,13 @@ type Machine struct {
 	table            fsm.Machine
 	paused           bool
 	conversationDone bool
+	creation         creation.Machine
+	opening          opening.Machine
+	conversation     conversation.State
+	check            check.Machine
+	resolution       resolution.Machine
+	hook             hook.Machine
+	cliffhanger      cliffhanger.Machine
 }
 
 // Result reports a phase dispatch and whether the event was handled while
@@ -66,7 +81,11 @@ func New() (Machine, error) {
 	if err != nil {
 		return Machine{}, err
 	}
-	return Machine{table: table}, nil
+	created, err := creation.New([]byte("dungeonflux-phase"))
+	if err != nil {
+		return Machine{}, err
+	}
+	return Machine{table: table, creation: created}, nil
 }
 
 // State returns the current top-level phase.
@@ -124,12 +143,102 @@ func (m *Machine) stepPhase(event domain.Event) (Result, error) {
 }
 
 func (m *Machine) step(event vocab.EventKind) (Result, error) {
+	if err := m.route(event); err != nil {
+		return Result{}, err
+	}
 	transition, err := m.table.Step(event)
 	if err == nil && transition.To == vocab.StateExploration && transition.From == vocab.StateResolution {
 		m.conversationDone = true
 	}
 	return Result{Transition: transition, Paused: m.paused}, err
 }
+
+func (m *Machine) route(event vocab.EventKind) error {
+	if event == eventStart {
+		return nil
+	}
+	switch m.State() {
+	case vocab.StateCreation:
+		if event == eventCreationEnd {
+			return nil
+		}
+	case vocab.StateOpening:
+		if m.opening.State() == opening.StateReady {
+			m.opening = opening.New()
+			m.opening.Enter()
+		}
+		if event == eventOpeningEnd {
+			m.opening.Step(domain.LineDone{})
+		}
+	case vocab.StateExploration:
+		if event == eventTalk {
+			m.conversation = conversation.State{Seat: 1}
+		}
+		if event == eventLeave {
+			var err error
+			m.hook, err = hook.New(hook.Config{ArrivalClip: "hook-arrival", StrangerUtterance: "stranger", CannedUtterance: "stranger-canned", CannedLine: "canned-stranger"})
+			if err != nil {
+				return err
+			}
+			_, err = m.hook.Start()
+			return err
+		}
+	case vocab.StateConversation:
+		if event == eventPersuade {
+			var err error
+			m.check, err = check.New(check.Config{CheckID: "persuasion", Seat: 1, Charisma: 14, Proficient: true, DC: 10}, newDice())
+			if err != nil {
+				return err
+			}
+			_, err = m.check.Step(domain.Act{Move: vocab.MovePersuade})
+			return err
+		}
+	case vocab.StateCheck:
+		if event == eventRoll {
+			if _, err := m.check.Step(domain.TimerFired{Name: "roll_resolved"}); err != nil {
+				return err
+			}
+			outcome, ok := m.check.Outcome()
+			if !ok {
+				return nil
+			}
+			var err error
+			m.resolution, err = resolution.New(outcome.Success, resolution.Config{SuccessUtterance: "reveal", FailureUtterance: "refuse", SuccessText: "The clue is yours.", FailureText: "She refuses.", SuccessCanned: "canned-reveal", FailureCanned: "canned-refuse"})
+			if err != nil {
+				return err
+			}
+			_, err = m.resolution.Start()
+			return err
+		}
+	case vocab.StateResolution:
+		if m.resolution.State() != resolution.Done && event == eventResolution {
+			_, _ = m.resolution.Step(domain.LineDone{})
+		}
+	case vocab.StateHookEvent:
+		if event == eventCombat {
+			_, _ = m.hook.Step(domain.LineDone{})
+		}
+	case vocab.StateCliffhanger:
+		if event == eventCliffhanger {
+			var err error
+			m.cliffhanger, err = cliffhanger.New(cliffhanger.Config{
+				LiveClip: domain.Asset{ID: "live-cliffhanger"}, GenericClip: domain.Asset{ID: "generic-cliffhanger"}, AnimatedStill: domain.Asset{ID: "cliffhanger-still"},
+				LineID: "cliffhanger", CannedLineID: "cliffhanger-canned", CannedAssetID: "canned-cliffhanger", NarrationInput: "The road continues.",
+			})
+			if err != nil {
+				return err
+			}
+			if _, err = m.cliffhanger.Enter(); err != nil {
+				return err
+			}
+			_, err = m.cliffhanger.Step(domain.LineDone{UtteranceID: "cliffhanger"})
+			return err
+		}
+	}
+	return nil
+}
+
+func newDice() *dice.Roller { return dice.New([]byte("dungeonflux-check")) }
 
 func definition() fsm.Def {
 	states := make([]fsm.State, 0, len(phaseDefinitions))
