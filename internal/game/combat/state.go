@@ -88,8 +88,14 @@ func (g Grid) IsWalkable(cell Cell) bool {
 
 // Participant is the mutable combat projection of one player character.
 type Participant struct {
-	Seat       int
-	ID         string
+	Seat int
+	ID   string
+	// Name is the character name shown in audience views.
+	Name string
+	// Species is the cosmetic species used by the character sprite.
+	Species string
+	// Portrait is the generated or stand-in character portrait asset.
+	Portrait   string
 	Build      rules.Build
 	Position   Cell
 	HP         int

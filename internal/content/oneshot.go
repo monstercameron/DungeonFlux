@@ -32,7 +32,7 @@ func DefaultOneShot() OneShot {
 				{ID: "cliffhanger", Text: "The tower bell tolls midnight, every lantern dies, and whoever rang it knows the heroes' names."},
 			},
 			Encounter: domain.Encounter{
-				Enemy:       domain.Creature{ID: "thrall", Name: "Drowned Thrall", HP: 12, MaxHP: 12, AC: 8, Cell: domain.Cell{C: 6, R: 0}},
+				Enemy:       domain.Creature{ID: "thrall", Name: "Drowned Thrall", HP: 12, MaxHP: 12, AC: 8, Cell: domain.Cell{C: 2, R: 4}},
 				Trigger:     "after_stranger_line",
 				Battlefield: woodedPathBattlefield(),
 				Loops: map[string]domain.Asset{
@@ -125,5 +125,80 @@ func validateBattlefield(field domain.Battlefield) error {
 	if field.Grid.CellM <= 0 {
 		return fmt.Errorf("battlefield cell size must be positive")
 	}
+	if err := validateSpawns(field); err != nil {
+		return err
+	}
 	return nil
+}
+
+func validateSpawns(field domain.Battlefield) error {
+	seatCells := make(map[domain.SeatID]domain.Cell, 2)
+	var thrall domain.Cell
+	foundThrall := false
+	for _, spawn := range field.Spawns {
+		if !walkable(field.Grid, spawn.Cell) {
+			return fmt.Errorf("spawn at (%d,%d) is not walkable", spawn.Cell.C, spawn.Cell.R)
+		}
+		switch {
+		case spawn.Seat == 1 || spawn.Seat == 2:
+			if _, exists := seatCells[spawn.Seat]; exists {
+				return fmt.Errorf("duplicate seat %d spawn", spawn.Seat)
+			}
+			seatCells[spawn.Seat] = spawn.Cell
+		case spawn.Entity == "thrall":
+			if foundThrall {
+				return fmt.Errorf("duplicate thrall spawn")
+			}
+			thrall, foundThrall = spawn.Cell, true
+		default:
+			return fmt.Errorf("spawn has no supported seat or entity")
+		}
+	}
+	if len(seatCells) != 2 || !foundThrall {
+		return fmt.Errorf("battlefield needs two seat spawns and one thrall spawn")
+	}
+	distance, ok := spawnDistance(field.Grid, seatCells[1], thrall)
+	if !ok || distance < 4 || distance > 6 {
+		return fmt.Errorf("thrall must be 4-6 walkable cells from seat 1")
+	}
+	return nil
+}
+
+func walkable(grid domain.Grid, cell domain.Cell) bool {
+	if cell.C < 0 || cell.R < 0 || cell.C >= grid.Cols || cell.R >= grid.Rows {
+		return false
+	}
+	return grid.Walkable[cell.R*grid.Cols+cell.C]
+}
+
+func spawnDistance(grid domain.Grid, from, to domain.Cell) (int, bool) {
+	if !walkable(grid, from) || !walkable(grid, to) {
+		return 0, false
+	}
+	type node struct {
+		cell domain.Cell
+		dist int
+	}
+	queue := []node{{cell: from}}
+	seen := map[domain.Cell]bool{from: true}
+	for head := 0; head < len(queue); head++ {
+		current := queue[head]
+		if current.cell == to {
+			return current.dist, true
+		}
+		for row := -1; row <= 1; row++ {
+			for column := -1; column <= 1; column++ {
+				if row == 0 && column == 0 {
+					continue
+				}
+				next := domain.Cell{C: current.cell.C + column, R: current.cell.R + row}
+				if seen[next] || !walkable(grid, next) {
+					continue
+				}
+				seen[next] = true
+				queue = append(queue, node{cell: next, dist: current.dist + 1})
+			}
+		}
+	}
+	return 0, false
 }

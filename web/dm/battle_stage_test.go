@@ -10,7 +10,7 @@ import (
 func TestBattleStageFromViewMapsWoodedPathTokensAndCamera(t *testing.T) {
 	view := &dungeonfluxv1.DMView{
 		Tokens: []*dungeonfluxv1.Token{
-			{TokenId: "seat-a", Name: "Astra", Kind: "rogue", Cell: &dungeonfluxv1.Cell{C: 2, R: 0}, Path: []*dungeonfluxv1.Cell{{C: 1, R: 0}, {C: 2, R: 0}}, Anim: "walk", AnimSeq: 9, Clips: map[string]string{"walk": "walk-clip"}, Hp: 9, HpMax: 10, Active: true},
+			{TokenId: "seat-a", Name: "Astra", Kind: "rogue", Cell: &dungeonfluxv1.Cell{C: 2, R: 0}, Path: []*dungeonfluxv1.Cell{{C: 1, R: 0}, {C: 2, R: 0}}, Anim: "walk", AnimSeq: 9, StepMs: 150, Clips: map[string]string{"walk": "walk-clip"}, Hp: 9, HpMax: 10, Active: true},
 			{TokenId: "seat-b", Name: "Bram", Cell: &dungeonfluxv1.Cell{C: 3, R: 0}, Hp: 8, HpMax: 10},
 			{TokenId: "enemy", Name: "Drowned Thrall", Cell: &dungeonfluxv1.Cell{C: 6, R: 0}, Hp: 12, HpMax: 12},
 		},
@@ -26,6 +26,9 @@ func TestBattleStageFromViewMapsWoodedPathTokensAndCamera(t *testing.T) {
 	}
 	if got.Scene.Tokens[0].Anim != "walk" || got.Scene.Tokens[0].AnimSeq != 9 || len(got.Scene.Tokens[0].Path) != 2 || got.Scene.Tokens[0].Clips["walk"] != "walk-clip" {
 		t.Fatalf("stage token animation = %#v", got.Scene.Tokens[0])
+	}
+	if got.Scene.Tokens[0].StepMS != 150 {
+		t.Fatalf("stage token pace = %d", got.Scene.Tokens[0].StepMS)
 	}
 	if got.Scene.Camera.Preset != "COMBAT_EST" || got.Scene.Camera.FocusTokenID != "pc-1" || got.Scene.Camera.Follow == nil || !*got.Scene.Camera.Follow || got.Scene.Seq != 7 {
 		t.Fatalf("stage camera = %#v", got.Scene.Camera)

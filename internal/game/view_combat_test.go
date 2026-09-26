@@ -89,3 +89,17 @@ func TestCombatViewFrom_ProjectsEnginePresentation(t *testing.T) {
 		t.Fatalf("combat presentation = %#v", got)
 	}
 }
+
+func TestCombatViewFrom_ProjectsPartyIdentityAndPortrait(t *testing.T) {
+	state := combat.State{PCs: [2]combat.Participant{
+		{Seat: 1, ID: "pc-1", Name: "Mara", Species: "elf", Portrait: "ui/species_elf", Build: rules.Build{Class: rules.Ranger}, HP: 11, MaxHP: 11, AC: 15},
+		{Seat: 2, ID: "pc-2", Name: "Bram", Species: "dwarf", Portrait: "portrait-bram", Build: rules.Build{Class: rules.Barbarian}, HP: 12, MaxHP: 12, AC: 16},
+	}, Thrall: rules.Thrall("thrall")}
+	view := CombatViewFrom(state, 0, 0, 0)
+	if view.Tokens[0].Name != "Mara" || view.Tokens[0].Kind != "pc-ranger-elf" || view.Tokens[0].Portrait != "ui/species_elf" {
+		t.Fatalf("seat one token = %#v", view.Tokens[0])
+	}
+	if view.TurnOrder[1].Name != "thrall" || view.TurnOrder[0].Portrait != "ui/species_elf" {
+		t.Fatalf("turn order = %#v", view.TurnOrder)
+	}
+}

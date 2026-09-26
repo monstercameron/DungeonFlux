@@ -3,6 +3,7 @@ package phase
 import (
 	"testing"
 
+	"github.com/monstercameron/DungeonFlux/internal/content"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/game/combat"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
@@ -20,6 +21,88 @@ func mapBattlefield() domain.Battlefield {
 		{Seat: 2, Cell: domain.Cell{C: 5, R: 0}}, // not walkable: falls back
 		{Entity: "thrall", Cell: domain.Cell{C: 11, R: 1}},
 	}}
+}
+
+func realPartyCombatMachine(t *testing.T) Machine {
+	t.Helper()
+	story := content.DefaultOneShot()
+	machine, err := NewWithSeed(story.OneShot, []byte("real-party"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	events := []domain.Event{domain.HostCmd{Cmd: vocab.HostStart}}
+	for _, seat := range []struct {
+		id                           domain.SeatID
+		species, gender, class, name string
+	}{{1, "elf", "female", "ranger", "Lyra"}, {2, "dwarf", "male", "barbarian", "Korr"}} {
+		events = append(events,
+			domain.Act{Seat: seat.id, Move: vocab.MoveSpecies, Arg: seat.species},
+			domain.Act{Seat: seat.id, Move: vocab.MoveGender, Arg: seat.gender},
+			domain.Act{Seat: seat.id, Move: vocab.MoveClass, Arg: seat.class},
+			domain.Act{Seat: seat.id, Move: vocab.MoveRollHero},
+			domain.FlavorDone{Seat: seat.id, Flavor: domain.Flavor{Name: seat.name}},
+			domain.PCLocked{Seat: seat.id})
+	}
+	events = append(events,
+		domain.LineDone{UtteranceID: "opening"},
+		domain.Act{Seat: 1, Move: vocab.MoveTalkVell},
+		domain.Act{Seat: 1, Move: vocab.MovePersuade},
+		domain.TimerFired{Name: "roll_resolved"},
+		domain.LineDone{UtteranceID: "reveal"},
+		domain.Act{Seat: 1, Move: vocab.MoveLeave},
+		domain.LineDone{UtteranceID: "hook-arrival"},
+		domain.LineDone{UtteranceID: "stranger"})
+	for _, event := range events {
+		if _, err := machine.Step(event); err != nil {
+			t.Fatalf("event %T: %v", event, err)
+		}
+	}
+	return machine
+}
+
+func TestCombatEntry_UsesRolledPartyAndAuthoredWalkableSpawns(t *testing.T) {
+	machine := realPartyCombatMachine(t)
+	view := machine.View()
+	if machine.State() != vocab.StateCombat || view.Combat == nil || view.Battlefield == nil {
+		t.Fatalf("combat view/state = %#v/%s", view, machine.State())
+	}
+	for _, token := range view.Combat.Tokens[:2] {
+		if !view.Battlefield.Grid.Walkable[token.Cell.R*view.Battlefield.Grid.Cols+token.Cell.C] {
+			t.Fatalf("hero spawned on blocked cell: %+v", token)
+		}
+	}
+	if view.Combat.Tokens[0].Name != "Lyra" || view.Combat.Tokens[0].Kind != "pc-ranger-elf" || view.Combat.Tokens[0].Portrait != "ui/species_elf" {
+		t.Fatalf("seat one identity = %+v", view.Combat.Tokens[0])
+	}
+	if view.Combat.Tokens[1].Name != "Korr" || view.Combat.Tokens[1].Kind != "pc-barbarian-dwarf" || view.Combat.Tokens[1].Portrait != "ui/species_dwarf" {
+		t.Fatalf("seat two identity = %+v", view.Combat.Tokens[1])
+	}
+	if view.Combat.Tokens[2].Cell != (domain.Cell{C: 2, R: 4}) || view.Combat.Tokens[2].HP != 12 || view.Combat.Tokens[2].HPMax != 12 {
+		t.Fatalf("thrall = %+v", view.Combat.Tokens[2])
+	}
+	seatOne, _ := machine.creation.Seat(1)
+	if view.Combat.Tokens[0].HP != seatOne.Build.HP || view.Combat.Tokens[0].HPMax != seatOne.Build.MaxHP || view.Seats[0].Character.AC != seatOne.Build.AC {
+		t.Fatalf("rolled stats did not reach combat: token=%+v seat=%+v", view.Combat.Tokens[0], seatOne)
+	}
+
+	if err := machine.ForceD20(20); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := machine.DebugPatch("token:pc1", map[string]string{"hp": "1"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := machine.Step(domain.Act{Seat: 1, Move: vocab.MoveEndTurn}); err != nil {
+		t.Fatal(err)
+	}
+	if !machine.combat.PCs[0].IsDown() {
+		t.Fatal("thrall did not put seat one Down")
+	}
+	if _, err := machine.Step(domain.HostCmd{Cmd: vocab.HostSkip}); err != nil {
+		t.Fatal(err)
+	}
+	if machine.View().Seats[0].Character.HP != 1 {
+		t.Fatalf("stabilized HP did not carry back to seat: %+v", machine.View().Seats[0].Character)
+	}
 }
 
 func combatMachine(t *testing.T) Machine {

@@ -1,8 +1,12 @@
 package phase
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/game/combat"
+	"github.com/monstercameron/DungeonFlux/internal/game/phase/creation"
 )
 
 // contentCombatConfig places the combat on the content battlefield: the
@@ -26,6 +30,43 @@ func contentCombatConfig(source domain.Battlefield) combat.Config {
 	}
 	config.SpawnCell = spawnCell(source, grid, 0, "thrall", taken)
 	return config
+}
+
+// partyCombatConfig replaces the placeholder fighters with the rolled builds
+// from creation while preserving the authored battlefield positions.
+func partyCombatConfig(config combat.Config, seats []creation.SeatState) combat.Config {
+	for index := range config.PCs {
+		if index >= len(seats) || !seats[index].Built {
+			continue
+		}
+		seat := seats[index]
+		name := strings.TrimSpace(seat.Flavor.Name)
+		if name == "" {
+			name = fmt.Sprintf("Hero %d", seat.Seat)
+		}
+		species := strings.TrimSpace(seat.Build.Species)
+		if species == "" {
+			species = strings.TrimSpace(seat.Species)
+		}
+		portrait := ""
+		if species != "" {
+			portrait = "ui/species_" + strings.ToLower(species)
+		}
+		position := config.PCs[index].Position
+		config.PCs[index] = combat.Participant{
+			Seat: seatNumber(seat.Seat, index), ID: fmt.Sprintf("pc-%d", index+1),
+			Name: name, Species: species, Portrait: portrait, Build: seat.Build,
+			Position: position, HP: seat.Build.HP, MaxHP: seat.Build.MaxHP, AC: seat.Build.AC,
+		}
+	}
+	return config
+}
+
+func seatNumber(seat domain.SeatID, index int) int {
+	if seat >= 1 && seat <= 2 {
+		return int(seat)
+	}
+	return index + 1
 }
 
 // spawnCell returns the authored spawn for a seat or entity when it is a

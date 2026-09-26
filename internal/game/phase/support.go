@@ -54,6 +54,7 @@ func (m *Machine) stepCombat(event domain.Event) (Result, error) {
 			return Result{}, err
 		}
 		if m.combat.Phase == combat.Done {
+			m.syncCombatSeats()
 			return m.transition(eventCliffhanger, effects)
 		}
 		return Result{Effects: effects}, nil
@@ -64,6 +65,7 @@ func (m *Machine) stepCombat(event domain.Event) (Result, error) {
 				return Result{}, err
 			}
 		}
+		m.syncCombatSeats()
 		return m.transition(eventCliffhanger, nil)
 	}
 	return m.passive(event)
@@ -185,7 +187,8 @@ func (m *Machine) startHook() ([]domain.Effect, error) {
 
 func (m *Machine) startCombat() error {
 	var err error
-	m.combat, err = combat.New(contentCombatConfig(m.oneShot.Encounter.Battlefield))
+	config := partyCombatConfig(contentCombatConfig(m.oneShot.Encounter.Battlefield), m.creation.Seats())
+	m.combat, err = combat.New(config)
 	if err != nil {
 		return err
 	}
@@ -197,6 +200,21 @@ func (m *Machine) startCombat() error {
 		m.forcedD20 = 0
 	}
 	return m.combat.Start()
+}
+
+func (m *Machine) syncCombatSeats() {
+	for index, participant := range m.combat.PCs {
+		if index >= len(m.seats) {
+			continue
+		}
+		seat := &m.seats[index]
+		if seat.Character != nil {
+			seat.Character.HP, seat.Character.MaxHP, seat.Character.AC = participant.HP, participant.MaxHP, participant.AC
+		}
+		if seat.Build != nil && seat.Build.Stats != nil {
+			seat.Build.Stats.HP, seat.Build.Stats.MaxHP, seat.Build.Stats.AC = participant.HP, participant.MaxHP, participant.AC
+		}
+	}
 }
 
 func (m *Machine) startCliffhanger() ([]domain.Effect, error) {

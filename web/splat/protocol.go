@@ -81,7 +81,9 @@ type Token struct {
 	Portrait string            `json:"portrait,omitempty"`
 	Anim     string            `json:"anim"`
 	AnimSeq  uint64            `json:"anim_seq"`
-	Statuses []string          `json:"statuses,omitempty"`
+	// StepMS is the engine-selected walk pace per path cell.
+	StepMS   int64    `json:"step_ms,omitempty"`
+	Statuses []string `json:"statuses,omitempty"`
 }
 
 // Highlight marks cells for movement, path, or target feedback.

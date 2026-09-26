@@ -167,6 +167,35 @@ func TestMachine_SeededGameDispatchesCreationAndStory(t *testing.T) {
 	}
 }
 
+func TestMachine_ViewProjectsCompleteSeededBuild(t *testing.T) {
+	machine, err := NewWithSeed(domain.OneShot{}, []byte("build-view"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, event := range []domain.Event{
+		domain.HostCmd{Cmd: vocab.HostStart},
+		domain.Act{Seat: 1, Move: vocab.MoveSpecies, Arg: "human"},
+		domain.Act{Seat: 1, Move: vocab.MoveGender, Arg: "female"},
+		domain.Act{Seat: 1, Move: vocab.MoveClass, Arg: "ranger"},
+		domain.Act{Seat: 1, Move: vocab.MoveRollHero},
+	} {
+		if _, err := machine.Step(event); err != nil {
+			t.Fatalf("event %T: %v", event, err)
+		}
+	}
+	view := machine.View()
+	stats := view.Seats[0].Build.Stats
+	if stats == nil || stats.Abilities[5] != 14 || stats.HP == 0 || stats.MaxHP == 0 || stats.AC == 0 {
+		t.Fatalf("build stats = %#v", stats)
+	}
+	if stats.AttackName != "Longbow" || stats.AttackDice != "1d8+3" || stats.AttackBonus != 5 {
+		t.Fatalf("attack stats = %#v", stats)
+	}
+	if stats.SkillProficiencies["persuasion"] != "proficient" || len(stats.SaveProficiencies) != 2 {
+		t.Fatalf("proficiency stats = %#v", stats)
+	}
+}
+
 func TestMachine_DebugCombatAndPassiveCallbacks(t *testing.T) {
 	machine, err := NewWithSeed(domain.OneShot{}, []byte("debug-seed"))
 	if err != nil {

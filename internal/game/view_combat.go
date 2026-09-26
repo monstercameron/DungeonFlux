@@ -1,6 +1,7 @@
 package game
 
 import (
+	"strings"
 	"time"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
@@ -45,18 +46,36 @@ func CombatViewAt(source combat.State, contact, cap domain.TimerView) domain.Com
 
 func participantToken(participant combat.Participant, source combat.State) domain.TokenView {
 	visual := source.Presentation.Tokens[participant.ID]
-	return domain.TokenView{
-		ID:     domain.TokenID(participant.ID),
-		Kind:   "pc",
-		Name:   participant.ID,
-		Cell:   domain.Cell{C: participant.Position.X, R: participant.Position.Y},
-		Path:   toDomainCells(visual.Path),
-		HP:     participant.HP,
-		HPMax:  participant.MaxHP,
-		Active: source.Phase == combat.PCTurn && source.TurnSeat == participant.Seat,
-		Anim:   visual.Anim,
-		Status: conditionStatus(participant.Conditions),
+	name := participant.Name
+	if name == "" {
+		name = participant.ID
 	}
+	return domain.TokenView{
+		ID:       domain.TokenID(participant.ID),
+		Kind:     participantKind(participant),
+		Name:     name,
+		Portrait: domain.AssetID(participant.Portrait),
+		Cell:     domain.Cell{C: participant.Position.X, R: participant.Position.Y},
+		Path:     toDomainCells(visual.Path),
+		HP:       participant.HP,
+		HPMax:    participant.MaxHP,
+		Active:   source.Phase == combat.PCTurn && source.TurnSeat == participant.Seat,
+		Anim:     visual.Anim,
+		StepMS:   visual.StepMS,
+		Status:   conditionStatus(participant.Conditions),
+	}
+}
+
+func participantKind(participant combat.Participant) string {
+	class := strings.ToLower(strings.TrimSpace(string(participant.Build.Class)))
+	if class == "" {
+		return "pc"
+	}
+	kind := "pc-" + class
+	if species := strings.ToLower(strings.TrimSpace(participant.Species)); species != "" {
+		kind += "-" + species
+	}
+	return kind
 }
 
 func thrallToken(source combat.State) domain.TokenView {
@@ -71,6 +90,7 @@ func thrallToken(source combat.State) domain.TokenView {
 		HPMax:  source.Thrall.MaxHP,
 		Active: source.Phase == combat.EnemyTurn,
 		Anim:   visual.Anim,
+		StepMS: visual.StepMS,
 		Status: conditionStatus(source.Thrall.Conditions),
 	}
 }
@@ -100,8 +120,12 @@ func turnOrder(source combat.State) []domain.TurnEntry {
 }
 
 func turnEntry(participant combat.Participant, source combat.State) domain.TurnEntry {
+	name := participant.Name
+	if name == "" {
+		name = participant.ID
+	}
 	return domain.TurnEntry{
-		TokenID: domain.TokenID(participant.ID), Name: participant.ID,
+		TokenID: domain.TokenID(participant.ID), Name: name, Portrait: domain.AssetID(participant.Portrait),
 		HP: participant.HP, HPMax: participant.MaxHP,
 		Active: source.Phase == combat.PCTurn && source.TurnSeat == participant.Seat,
 		Done:   participant.IsDown(),

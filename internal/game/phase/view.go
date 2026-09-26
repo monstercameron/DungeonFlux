@@ -3,10 +3,12 @@ package phase
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/game/combat"
 	"github.com/monstercameron/DungeonFlux/internal/game/phase/creation"
+	"github.com/monstercameron/DungeonFlux/internal/game/rules"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
 
@@ -96,14 +98,34 @@ func (m Machine) combatView() *domain.CombatView {
 	}
 	for _, pc := range m.combat.PCs {
 		visual := presentation.Tokens[pc.ID]
-		view.Tokens = append(view.Tokens, domain.TokenView{ID: domain.TokenID(pc.ID), Kind: string(pc.Build.Class), Name: pc.ID, Cell: domain.Cell{R: pc.Position.Y, C: pc.Position.X}, Path: domainCells(visual.Path), Anim: visual.Anim, AnimSeq: visual.AnimSeq, HP: pc.HP, HPMax: pc.MaxHP, Active: pc.Seat == m.combat.TurnSeat})
+		name := pc.Name
+		if name == "" {
+			name = pc.ID
+		}
+		active := m.combat.Phase == combat.PCTurn && pc.Seat == m.combat.TurnSeat
+		view.Tokens = append(view.Tokens, domain.TokenView{ID: domain.TokenID(pc.ID), Kind: combatKind(string(pc.Build.Class), pc.Species), Name: name, Portrait: domain.AssetID(pc.Portrait), Cell: domain.Cell{R: pc.Position.Y, C: pc.Position.X}, Path: domainCells(visual.Path), Anim: visual.Anim, AnimSeq: visual.AnimSeq, StepMS: visual.StepMS, HP: pc.HP, HPMax: pc.MaxHP, Active: active})
+		view.TurnOrder = append(view.TurnOrder, domain.TurnEntry{TokenID: domain.TokenID(pc.ID), Name: name, Portrait: domain.AssetID(pc.Portrait), HP: pc.HP, HPMax: pc.MaxHP, Active: active, Done: pc.IsDown()})
 	}
 	thrallVisual := presentation.Tokens[m.combat.Thrall.ID]
-	view.Tokens = append(view.Tokens, domain.TokenView{ID: domain.TokenID(m.combat.Thrall.ID), Kind: "thrall", Name: m.combat.Thrall.ID, Cell: domain.Cell{C: m.combat.ThrallPosition.X, R: m.combat.ThrallPosition.Y}, Path: domainCells(thrallVisual.Path), Anim: thrallVisual.Anim, AnimSeq: thrallVisual.AnimSeq, HP: m.combat.Thrall.HP, HPMax: m.combat.Thrall.MaxHP, Active: m.combat.Phase == combat.EnemyTurn})
+	thrallActive := m.combat.Phase == combat.EnemyTurn
+	view.Tokens = append(view.Tokens, domain.TokenView{ID: domain.TokenID(m.combat.Thrall.ID), Kind: "thrall", Name: m.combat.Thrall.ID, Cell: domain.Cell{C: m.combat.ThrallPosition.X, R: m.combat.ThrallPosition.Y}, Path: domainCells(thrallVisual.Path), Anim: thrallVisual.Anim, AnimSeq: thrallVisual.AnimSeq, StepMS: thrallVisual.StepMS, HP: m.combat.Thrall.HP, HPMax: m.combat.Thrall.MaxHP, Active: thrallActive})
+	view.TurnOrder = append(view.TurnOrder, domain.TurnEntry{TokenID: domain.TokenID(m.combat.Thrall.ID), Name: m.combat.Thrall.ID, HP: m.combat.Thrall.HP, HPMax: m.combat.Thrall.MaxHP, Active: thrallActive, Done: m.combat.Thrall.HP <= 0})
 	for _, highlight := range presentation.Highlights {
 		view.Highlights = append(view.Highlights, domain.HighlightView{Kind: highlight.Kind, Cells: domainCells(highlight.Cells)})
 	}
 	return view
+}
+
+func combatKind(class, species string) string {
+	class = strings.ToLower(strings.TrimSpace(class))
+	if class == "" {
+		return "pc"
+	}
+	kind := "pc-" + class
+	if species = strings.ToLower(strings.TrimSpace(species)); species != "" {
+		kind += "-" + species
+	}
+	return kind
 }
 
 func (m Machine) combatBattlefieldView(combatView domain.CombatView) *domain.BattlefieldView {
@@ -153,9 +175,34 @@ func creationSeatView(state creation.SeatState) domain.SeatView {
 	if name == "" {
 		name = "Hero " + strconv.Itoa(int(state.Seat))
 	}
-	seat.Build = &domain.BuildCard{Name: name, Class: string(state.Class), PlayerNumber: int(state.Seat)}
-	seat.Character = &domain.Character{ID: domain.EntityID("pc-" + strconv.Itoa(int(state.Seat))), Name: name, Class: string(state.Class), Species: state.Species, Gender: state.Gender, Hook: state.Flavor.Hook, PersuasionModifier: state.Build.PersuasionBonus, HP: state.Build.HP, MaxHP: state.Build.MaxHP, AC: state.Build.AC}
+	portrait := domain.AssetID("")
+	if state.Species != "" {
+		portrait = domain.AssetID("ui/species_" + strings.ToLower(state.Species))
+	}
+	seat.Build = &domain.BuildCard{Name: name, Class: string(state.Class), Portrait: portrait, PlayerNumber: int(state.Seat), Stats: buildStats(state.Build)}
+	seat.Character = &domain.Character{ID: domain.EntityID("pc-" + strconv.Itoa(int(state.Seat))), Name: name, Class: string(state.Class), Species: state.Species, Gender: state.Gender, Portrait: portrait, Hook: state.Flavor.Hook, PersuasionModifier: state.Build.PersuasionBonus, HP: state.Build.HP, MaxHP: state.Build.MaxHP, AC: state.Build.AC}
 	return seat
+}
+
+func buildStats(build rules.Build) *domain.BuildStats {
+	return &domain.BuildStats{
+		Abilities:          [6]int{build.Abilities.Strength, build.Abilities.Dexterity, build.Abilities.Constitution, build.Abilities.Intelligence, build.Abilities.Wisdom, build.Abilities.Charisma},
+		SaveProficiencies:  append([]string(nil), build.SaveProficiencies...),
+		SkillProficiencies: cloneStringMap(build.SkillProficiencies),
+		HP:                 build.HP, MaxHP: build.MaxHP, AC: build.AC,
+		AttackName: build.Attack.Name, AttackDice: build.Attack.Dice, AttackDamageType: build.Attack.DamageType, AttackBonus: build.AttackBonus,
+	}
+}
+
+func cloneStringMap(values map[string]string) map[string]string {
+	if values == nil {
+		return nil
+	}
+	clone := make(map[string]string, len(values))
+	for key, value := range values {
+		clone[key] = value
+	}
+	return clone
 }
 
 func (m Machine) viewSeats() []domain.SeatView {

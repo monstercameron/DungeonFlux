@@ -149,11 +149,11 @@ func TestEnvelope_sceneFollowAndTokenFields(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			scene := Scene{
 				Seq:    3,
-				Tokens: []Token{{ID: "hero-1", Kind: "pc", Cell: Cell{0, 0}, Path: []Cell{{1, 0}, {0, 0}}, AnimSeq: 17}},
+				Tokens: []Token{{ID: "hero-1", Kind: "pc", Cell: Cell{0, 0}, Path: []Cell{{1, 0}, {0, 0}}, AnimSeq: 17, StepMS: 150}},
 				Camera: CameraCommand{Preset: "TURN_FOCUS", FocusTokenID: "hero-1", Follow: tc.follow},
 			}
 			text := string(mustEnvelope(t, "scene", scene))
-			for _, want := range []string{`"id":"hero-1"`, `"kind":"pc"`, `"cell":[0,0]`, `"path":[[1,0],[0,0]]`, `"anim_seq":17`} {
+			for _, want := range []string{`"id":"hero-1"`, `"kind":"pc"`, `"cell":[0,0]`, `"path":[[1,0],[0,0]]`, `"anim_seq":17`, `"step_ms":150`} {
 				if !strings.Contains(text, want) {
 					t.Fatalf("scene envelope %s does not contain %s", text, want)
 				}

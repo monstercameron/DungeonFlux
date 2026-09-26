@@ -21,7 +21,7 @@ func TestView_CombatCarriesEnginePresentationToBattlefield(t *testing.T) {
 	if len(view.Battlefield.Tokens) != 3 || view.Battlefield.Camera.Preset != "TURN_FOCUS" || view.Battlefield.Camera.FocusTokenID != "pc-1" {
 		t.Fatalf("battlefield scene = %#v", view.Battlefield)
 	}
-	if view.Battlefield.Tokens[0].Kind != "paladin" || view.Battlefield.Tokens[0].Anim != "idle" || view.Battlefield.Tokens[0].AnimSeq == 0 {
+	if view.Battlefield.Tokens[0].Kind != "pc-paladin" || view.Battlefield.Tokens[0].Anim != "idle" || view.Battlefield.Tokens[0].AnimSeq == 0 {
 		t.Fatalf("token presentation = %#v", view.Battlefield.Tokens[0])
 	}
 	if len(view.Battlefield.Highlights) != 1 || view.Battlefield.Highlights[0].Kind != "reach" {

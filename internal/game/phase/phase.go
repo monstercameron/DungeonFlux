@@ -191,6 +191,12 @@ func (m *Machine) stepHost(cmd domain.HostCmd) (Result, error) {
 		return m.step(eventReset)
 	case vocab.HostSkip:
 		m.paused = false
+		if m.State() == vocab.StateCombat && m.combat.Phase != combat.Done {
+			if _, err := m.combat.ResolveEnd(combat.ReasonSkip, 0); err != nil {
+				return Result{}, err
+			}
+			m.syncCombatSeats()
+		}
 		if m.State() == vocab.StateExploration && m.conversationDone {
 			return m.step(eventLeave)
 		}

@@ -132,7 +132,7 @@ func stageTokens(tokens []*dungeonfluxv1.Token, cards []*dungeonfluxv1.BuildCard
 		if anim == "" {
 			anim = "idle"
 		}
-		result = append(result, splat.Token{ID: stageTokenID(token, index), Kind: kind, Name: token.GetName(), Cell: splat.Cell{int(token.GetCell().GetC()), int(token.GetCell().GetR())}, Path: stageCells(token.GetPath()), HeightM: 1.8, Portrait: token.GetPortraitUrl(), Anim: anim, AnimSeq: token.GetAnimSeq(), Clips: copyClips(token.GetClips()), Statuses: append([]string(nil), token.GetStatuses()...)})
+		result = append(result, splat.Token{ID: stageTokenID(token, index), Kind: kind, Name: token.GetName(), Cell: splat.Cell{int(token.GetCell().GetC()), int(token.GetCell().GetR())}, Path: stageCells(token.GetPath()), HeightM: 1.8, Portrait: token.GetPortraitUrl(), Anim: anim, AnimSeq: token.GetAnimSeq(), StepMS: int64(token.GetStepMs()), Clips: copyClips(token.GetClips()), Statuses: append([]string(nil), token.GetStatuses()...)})
 		if kind == "thrall" {
 			result[len(result)-1].HeightM = 1.6
 		}

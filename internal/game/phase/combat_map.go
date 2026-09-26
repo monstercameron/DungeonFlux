@@ -118,7 +118,7 @@ func (m Machine) combatMapFor(seat domain.SeatID) *domain.CombatMapView {
 	}
 	for _, pc := range state.PCs {
 		token := mapToken(state, pc.ID, pc.Position, pc.HP, pc.MaxHP)
-		token.Seat, token.Kind, token.Down = domain.SeatID(pc.Seat), string(pc.Build.Class), pc.IsDown()
+		token.Seat, token.Kind, token.Down = domain.SeatID(pc.Seat), combatKind(string(pc.Build.Class), pc.Species), pc.IsDown()
 		token.Active = state.Phase == combat.PCTurn && state.TurnSeat == pc.Seat
 		if pc.Seat == int(seat) {
 			out.Me = token.ID

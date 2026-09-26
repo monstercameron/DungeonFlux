@@ -5,6 +5,10 @@ import { createTokenSprite, roleForToken } from "./token_sprite.mjs";
 function role(token) { return roleForToken(token); }
 function same(a,b) { return a.c === b.c && a.r === b.r; }
 function gone(token) { return [token.status,...(Array.isArray(token.statuses) ? token.statuses : [])].some(value => ["removed","fled","defeated"].includes(String(value).toLowerCase())); }
+function paceSeconds(token) {
+  const milliseconds = Number(token?.step_ms);
+  return Number.isFinite(milliseconds) && milliseconds > 0 ? milliseconds / 1000 : .25;
+}
 function place(entry,position) {
   entry.position = position.slice();
   entry.entity.setPosition(position[0],position[1]+entry.height/2,position[2]);
@@ -80,13 +84,14 @@ class TokenController {
   }
   advance(entry,dt) {
     if (!entry.queue.length || dt <= 0) return false;
+    const pace = paceSeconds(entry.token);
     entry.elapsed+=dt;
     let moved = false;
-    while (entry.queue.length && entry.elapsed + 1e-9 >= .25) {
-      place(entry,entry.queue.shift()); entry.start=entry.position.slice(); entry.elapsed=Math.max(0,entry.elapsed-.25); moved = true;
+    while (entry.queue.length && entry.elapsed + 1e-9 >= pace) {
+      place(entry,entry.queue.shift()); entry.start=entry.position.slice(); entry.elapsed=Math.max(0,entry.elapsed-pace); moved = true;
     }
     if (!entry.queue.length) { entry.elapsed=0; return moved; }
-    const t=entry.elapsed/.25, end=entry.queue[0];
+    const t=entry.elapsed/pace, end=entry.queue[0];
     const position=entry.start.map((value,i)=>value+(end[i]-value)*t);
     const size=this.grid.cell_m ?? 1.524, origin=this.grid.origin ?? [0,0];
     position[1]=terrainHeight(this.grid,(position[0]-origin[0])/size,(position[2]-origin[1])/size);

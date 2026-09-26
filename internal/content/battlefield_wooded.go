@@ -14,7 +14,7 @@ func woodedPathBattlefield() domain.Battlefield {
 		Mode: "SPLAT", SceneURL: "/splat/scenes/64bb46d5.json", LiteURL: "/splat/scenes/64bb46d5.json",
 		Transform: domain.Transform{Scale: 0.4, Translate: [3]float64{0, 9.2, 0}},
 		Grid:      domain.Grid{Origin: [2]float64{12.952, -15.2192}, CellM: 1.524, Cols: 16, Rows: 10, Walkable: walkable},
-		Spawns:    []domain.Spawn{{Seat: 1, Cell: domain.Cell{C: 2, R: 0}}, {Seat: 2, Cell: domain.Cell{C: 3, R: 0}}, {Entity: "thrall", Cell: domain.Cell{C: 6, R: 0}}},
+		Spawns:    []domain.Spawn{{Seat: 1, Cell: domain.Cell{C: 2, R: 0}}, {Seat: 2, Cell: domain.Cell{C: 3, R: 0}}, {Entity: "thrall", Cell: domain.Cell{C: 2, R: 4}}},
 		Door:      domain.Cell{C: 12, R: 9},
 		Cameras:   woodedPathCameras(),
 		Flat:      domain.FlatBattlefield{ImageURL: "battlefield_tavern_flat"},

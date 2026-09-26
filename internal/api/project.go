@@ -182,6 +182,7 @@ func projectPhone(view domain.View, seat domain.SeatID) *df.PhoneView {
 		}
 		out.Character = projectCharacter(item.Character)
 		if out.Character != nil {
+			out.Character.Build = projectCharacterBuild(item.Character, item.Build)
 			out.Character.Locked = characterLocked(item.Moves)
 		}
 		out.Moves = projectMoves(item.Moves)
@@ -234,6 +235,28 @@ func projectCharacter(character *domain.Character) *df.Character {
 			Ac:    int32(character.AC),
 		},
 	}
+}
+
+func projectCharacterBuild(character *domain.Character, card *domain.BuildCard) *df.CharacterBuild {
+	build := &df.CharacterBuild{}
+	if character != nil {
+		build.Hp, build.HpMax, build.Ac = int32(character.HP), int32(character.MaxHP), int32(character.AC)
+	}
+	if card == nil || card.Stats == nil {
+		return build
+	}
+	stats := card.Stats
+	build.Abilities = make([]int32, len(stats.Abilities))
+	for index, score := range stats.Abilities {
+		build.Abilities[index] = int32(score)
+	}
+	build.SaveProfs = append([]string(nil), stats.SaveProficiencies...)
+	build.SkillProfs = make(map[string]string, len(stats.SkillProficiencies))
+	for skill, level := range stats.SkillProficiencies {
+		build.SkillProfs[skill] = level
+	}
+	build.Hp, build.HpMax, build.Ac = int32(stats.HP), int32(stats.MaxHP), int32(stats.AC)
+	return build
 }
 
 func characterLocked(moves []domain.MoveView) bool {
@@ -427,7 +450,7 @@ func projectTokens(tokens []domain.TokenView) []*df.Token {
 			statuses = []string{token.Status}
 		}
 		out = append(out, &df.Token{TokenId: string(token.ID), Name: token.Name, PortraitUrl: string(token.Portrait), Cell: projectCell(token.Cell), Hp: int32(token.HP), HpMax: int32(token.HPMax), Active: token.Active, Statuses: statuses,
-			Kind: token.Kind, Path: projectCells(token.Path), Anim: token.Anim, AnimSeq: token.AnimSeq, Clips: projectClips(token.Clips)})
+			Kind: token.Kind, Path: projectCells(token.Path), Anim: token.Anim, AnimSeq: token.AnimSeq, Clips: projectClips(token.Clips), StepMs: int32(token.StepMS)})
 	}
 	return out
 }
