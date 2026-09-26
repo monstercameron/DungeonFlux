@@ -17,8 +17,8 @@ Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 
 function Get-Profile([string] $Name) {
-    if ($Name -eq 'cb2fddd6') { return [pscustomobject]@{ id = 'cb2fddd6'; defaultSeed = '0,0,0'; filter = '-25,-13,-30,30,-3,35' } }
-    return [pscustomobject]@{ id = '64bb46d5'; defaultSeed = '0,0,0'; filter = '10,-32,-80,85,-14,15' }
+    if ($Name -eq 'cb2fddd6') { return [pscustomobject]@{ id = 'cb2fddd6'; defaultSeed = '0,0,0'; filter = '-55,-14.5,-65,65,-3,80' } }
+    return [pscustomobject]@{ id = '64bb46d5'; defaultSeed = '0,0,0'; filter = '-35,-35,-145,125,-13,65' }
 }
 
 function Get-Tool([string] $Value) {

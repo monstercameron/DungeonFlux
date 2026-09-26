@@ -2034,7 +2034,7 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   lane: L-OPS · paths: `scripts/generate-supersplat-colliders.ps1` · depends: OPS-SPLAT-001
   done when: canonical colliders include the main visible paths and surrounding lawn in both scenes, generation defaults reproduce those bounds, provenance and binary sizes are verified, and the lane gate passes.
   status: done 7fd7434 (scoped gate failures 0; canonical binaries and provenance verified)
-- [ ] OPS-SPLAT-003 · extend SuperSplat colliders to distant terrain
+- [x] OPS-SPLAT-003 · extend SuperSplat colliders to distant terrain
   why: The developer wants the battle grid to extend much farther than the initial main-path collider crops.
   lane: L-OPS · paths: `scripts/generate-supersplat-colliders.ps1` · depends: OPS-SPLAT-002
   done when: larger bounded collider regions retain distant supported ground in both scenes, defaults reproduce generation, binary/provenance checks and generator regression pass, and the scoped gate is green.
