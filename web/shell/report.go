@@ -118,6 +118,21 @@ func (r *ClientReporter) ReportError(err error) {
 	r.enqueue()
 }
 
+// ReportScreenshot sends a best-effort PNG report for a debug client command.
+// The caller owns capture and supplies the command ID so the API can match the
+// response to dfctl client screenshot.
+func (r *ClientReporter) ReportScreenshot(ctx context.Context, commandID string, png []byte) error {
+	if r == nil || commandID == "" {
+		return errors.New("shell report: screenshot command ID is required")
+	}
+	return r.transport.report(ctx, &dungeonfluxv1.ReportRequest{
+		SeatToken: r.seatToken,
+		Kind:      dungeonfluxv1.ReportKind_REPORT_KIND_CLIENT_SCREENSHOT,
+		Id:        commandID,
+		Png:       append([]byte(nil), png...),
+	})
+}
+
 func (r *ClientReporter) loop(ctx context.Context) {
 	ticker := time.NewTicker(clientReportInterval)
 	defer ticker.Stop()

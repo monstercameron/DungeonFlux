@@ -55,6 +55,23 @@ func TestClientReporter_ReportErrorIgnoresNil(t *testing.T) {
 	}
 }
 
+func TestClientReporter_ReportScreenshotCopiesPNG(t *testing.T) {
+	fake := &fakeReportTransport{requests: make(chan *dungeonfluxv1.ReportRequest, 1)}
+	reporter := newTestReporter(fake)
+	png := []byte{1, 2, 3}
+	if err := reporter.ReportScreenshot(context.Background(), "command-1", png); err != nil {
+		t.Fatal(err)
+	}
+	png[0] = 9
+	request := <-fake.requests
+	if request.GetKind() != dungeonfluxv1.ReportKind_REPORT_KIND_CLIENT_SCREENSHOT || request.GetId() != "command-1" || request.GetPng()[0] != 1 {
+		t.Fatalf("screenshot request = %+v", request)
+	}
+	if err := reporter.ReportScreenshot(context.Background(), "", nil); err == nil {
+		t.Fatal("empty command ID accepted")
+	}
+}
+
 type fakeReportTransport struct {
 	requests chan *dungeonfluxv1.ReportRequest
 }
