@@ -26,6 +26,23 @@ func TestCannedLines_HaveStableContent(t *testing.T) {
 	}
 }
 
+func TestCannedPlans_CountCharactersAndUseAudioDirectory(t *testing.T) {
+	canned := CannedTTSPlan()
+	if canned.Requests != len(CannedLines()) || canned.Characters != 1413 || canned.EstimatedCostUSD <= 0 {
+		t.Fatalf("canned plan = %#v", canned)
+	}
+	nudges := NudgeTTSPlan()
+	if nudges.Requests != len(NudgeLines()) || nudges.Characters != 41 || nudges.EstimatedCostUSD <= 0 {
+		t.Fatalf("nudge plan = %#v", nudges)
+	}
+	if got := filepath.Base(audioOutputDir(filepath.Join(t.TempDir(), "buildtime"))); got != "audio" {
+		t.Fatalf("audio output base = %q", got)
+	}
+	if got := audioOutputDir(filepath.Join(t.TempDir(), "audio")); filepath.Base(got) != "audio" {
+		t.Fatalf("audio output was nested: %q", got)
+	}
+}
+
 func TestBuildCannedTTSRequest_EncodesFlashModel(t *testing.T) {
 	data, err := BuildCannedTTSRequest(CannedLines()[0])
 	if err != nil {
@@ -40,6 +57,29 @@ func TestBuildCannedTTSRequest_EncodesFlashModel(t *testing.T) {
 	}
 	if _, err := BuildCannedTTSRequest(CannedLine{}); err == nil {
 		t.Fatal("accepted incomplete line")
+	}
+}
+
+func TestRenderCannedLine_RejectsInvalidRequestInputs(t *testing.T) {
+	writer, err := NewManifestWriter(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	line := CannedLines()[0]
+	for name, client := range map[string]*http.Client{"nil client": nil, "valid client": &http.Client{}} {
+		t.Run(name, func(t *testing.T) {
+			if err := RenderCannedLine(context.Background(), client, "https://example.invalid", t.TempDir(), writer, line, 1); err == nil {
+				t.Fatal("invalid client accepted")
+			}
+		})
+	}
+	badID := line
+	badID.ID = "../audio"
+	if err := RenderCannedLine(context.Background(), &http.Client{}, "https://example.invalid", t.TempDir(), writer, badID, 1); err == nil {
+		t.Fatal("path traversal ID accepted")
+	}
+	if err := RenderCannedLine(context.Background(), &http.Client{}, "://bad", t.TempDir(), writer, line, 1); err == nil {
+		t.Fatal("malformed endpoint accepted")
 	}
 }
 
@@ -85,6 +125,34 @@ func TestRenderCannedLine_ReportsHTTPFailure(t *testing.T) {
 	}
 }
 
+func TestRenderCannedLine_RejectsEmptyAudio(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	defer server.Close()
+	writer, err := NewManifestWriter(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := RenderCannedLine(context.Background(), server.Client(), server.URL, t.TempDir(), writer, CannedLines()[0], 1); err == nil {
+		t.Fatal("empty audio accepted")
+	}
+}
+
+func TestRenderCannedLine_ReportsCanceledRequest(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
+	}))
+	defer server.Close()
+	writer, err := NewManifestWriter(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := RenderCannedLine(ctx, server.Client(), server.URL, t.TempDir(), writer, CannedLines()[0], 1); err == nil {
+		t.Fatal("canceled request accepted")
+	}
+}
+
 func TestNudgeJob_LiveNormalizesAudioAndLocksManifest(t *testing.T) {
 	var requests atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -121,5 +189,62 @@ func TestNudgeJob_LiveNormalizesAudioAndLocksManifest(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(root, "manifest.json")); err != nil {
 		t.Fatalf("manifest after job: %v", err)
+	}
+}
+
+func TestCannedJob_LiveFixtureRegistersEveryLine(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		_, _ = w.Write(bytes.Repeat([]byte{0, 0}, 24000))
+	}))
+	defer server.Close()
+	root := filepath.Join(t.TempDir(), "buildtime")
+	writer, err := NewManifestWriter(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := CannedJob(server.Client(), server.URL, root, 1).Run(context.Background(), writer); err != nil {
+		t.Fatal(err)
+	}
+	if requests.Load() != int32(len(CannedLines())) || len(writer.manifest.Assets) != len(CannedLines()) {
+		t.Fatalf("requests=%d assets=%d", requests.Load(), len(writer.manifest.Assets))
+	}
+	for _, line := range CannedLines() {
+		asset := writer.manifest.Assets[line.ID]
+		if asset.DurationMS == 0 || asset.Metadata["normalization"] == "" {
+			t.Errorf("asset %q lacks normalized metadata: %#v", line.ID, asset)
+		}
+	}
+}
+
+func TestCannedJob_ReleasesLockOnHTTPFailure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "no", http.StatusBadGateway)
+	}))
+	defer server.Close()
+	root := filepath.Join(t.TempDir(), "buildtime")
+	writer, err := NewManifestWriter(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := CannedJob(server.Client(), server.URL, root, 1).Run(context.Background(), writer); err == nil {
+		t.Fatal("failed canned job accepted")
+	}
+	if _, err := os.Stat(filepath.Join(root, "manifest.lock")); !os.IsNotExist(err) {
+		t.Fatalf("lock after failed canned job: %v", err)
+	}
+}
+
+func TestResolveVoiceID_UsesOverrideAndKnownFallback(t *testing.T) {
+	t.Setenv("DF_ELEVENLABS_VOICE_DM", "override")
+	if got := resolveVoiceID("dm"); got != "override" {
+		t.Fatalf("override voice = %q", got)
+	}
+	if got := resolveVoiceID("courier"); got == "courier" {
+		t.Fatal("known voice did not resolve")
+	}
+	if got := resolveVoiceID("unknown"); got != "unknown" {
+		t.Fatalf("unknown voice = %q", got)
 	}
 }

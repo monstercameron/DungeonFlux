@@ -9,6 +9,63 @@ import (
 	"time"
 )
 
+func TestWithManifestLock_ReloadsAndPersistsManifest(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "buildtime")
+	writer, err := NewManifestWriter(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := filepath.Join(t.TempDir(), "asset.bin")
+	if err := os.WriteFile(source, []byte("asset"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := writer.AddFile("old", "AUDIO", source, 1); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := writer.Write(); err != nil {
+		t.Fatal(err)
+	}
+	if err := withManifestLock(context.Background(), writer, func(current *ManifestWriter) error {
+		if _, ok := current.manifest.Assets["old"]; !ok {
+			t.Fatal("manifest was not reloaded")
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "manifest.json")); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestWithManifestLock_ReleasesAfterJobError(t *testing.T) {
+	root := t.TempDir()
+	writer, err := NewManifestWriter(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := errors.New("job failed")
+	if err := withManifestLock(context.Background(), writer, func(*ManifestWriter) error { return want }); !errors.Is(err, want) {
+		t.Fatalf("job error = %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "manifest.lock")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("lock after failed job: %v", err)
+	}
+}
+
+func TestWithManifestLock_RejectsMissingArguments(t *testing.T) {
+	if err := withManifestLock(context.Background(), nil, func(*ManifestWriter) error { return nil }); err == nil {
+		t.Fatal("nil writer accepted")
+	}
+	writer, err := NewManifestWriter(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := withManifestLock(context.Background(), writer, nil); err == nil {
+		t.Fatal("nil job accepted")
+	}
+}
+
 func TestManifestLock_ExcludesSecondOwnerUntilReleased(t *testing.T) {
 	root := t.TempDir()
 	first, err := LockManifest(context.Background(), root)
@@ -59,5 +116,14 @@ func TestLockManifest_RejectsCanceledContext(t *testing.T) {
 	cancel()
 	if _, err := LockManifest(ctx, filepath.Join(t.TempDir(), "nested")); !errors.Is(err, context.Canceled) {
 		t.Fatalf("canceled lock error = %v", err)
+	}
+}
+
+func TestLockManifest_RejectsNilContextAndEmptyRoot(t *testing.T) {
+	if _, err := LockManifest(nil, t.TempDir()); err == nil {
+		t.Fatal("nil context accepted")
+	}
+	if _, err := LockManifest(context.Background(), ""); err == nil {
+		t.Fatal("empty root accepted")
 	}
 }

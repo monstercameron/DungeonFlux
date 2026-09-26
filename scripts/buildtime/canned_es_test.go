@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -59,5 +61,34 @@ func TestSpanishCannedJob_DryRunWritesPlansWithoutNetwork(t *testing.T) {
 		if strings.TrimSpace(string(data)) != line.Text {
 			t.Fatalf("plan %s text drifted", line.ID)
 		}
+	}
+}
+
+func TestSpanishCannedJob_LiveFixtureRegistersEveryLine(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("pcm"))
+	}))
+	defer server.Close()
+	root := t.TempDir()
+	writer, err := NewManifestWriter(filepath.Join(root, "manifest"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	job := SpanishCannedJob(server.Client(), server.URL, filepath.Join(root, "audio"), 1, false)
+	if err := job.Run(context.Background(), writer); err != nil {
+		t.Fatal(err)
+	}
+	if len(writer.manifest.Assets) != len(SpanishCannedLines()) {
+		t.Fatalf("registered %d Spanish lines, want %d", len(writer.manifest.Assets), len(SpanishCannedLines()))
+	}
+}
+
+func TestSpanishCannedJob_LiveRequiresClient(t *testing.T) {
+	writer, err := NewManifestWriter(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := SpanishCannedJob(nil, "https://example.invalid", t.TempDir(), 1, false).Run(context.Background(), writer); err == nil {
+		t.Fatal("Spanish live job accepted nil client")
 	}
 }

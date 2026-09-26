@@ -45,3 +45,13 @@ func TestRenderNudgeLine_UsesCannedRendererAndAddsMetadata(t *testing.T) {
 		t.Fatalf("unexpected nudge asset: %#v", asset)
 	}
 }
+
+func TestRenderNudgeLine_RejectsIncompleteLine(t *testing.T) {
+	writer, err := NewManifestWriter(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := RenderNudgeLine(context.Background(), nil, "", t.TempDir(), writer, NudgeLine{}, 1); err == nil {
+		t.Fatal("incomplete nudge accepted")
+	}
+}
