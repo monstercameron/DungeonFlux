@@ -3,7 +3,9 @@ package phone
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
+	"time"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 )
@@ -38,18 +40,30 @@ func TestPTTModel_UploadsChunksInOrderAndKeepsFirstChunk(t *testing.T) {
 }
 
 func TestPTTModel_QueueDoesNotBlockAndReportsFull(t *testing.T) {
-	m := NewPTTModel(&talkFake{}, "seat", 1)
+	fake := &talkFake{sendGate: make(chan struct{}), sendStarted: make(chan struct{})}
+	m := NewPTTModel(fake, "seat", 1)
 	if err := m.Start(context.Background(), "audio/mp4"); err != nil {
 		t.Fatal(err)
 	}
 	if !m.QueueChunk([]byte{1}) {
 		t.Fatal("first chunk rejected")
 	}
+	select {
+	case <-fake.sendStarted:
+	case <-time.After(time.Second):
+		t.Fatal("uploader did not start")
+	}
 	if m.QueueChunk([]byte{2}) {
 		t.Fatal("full queue accepted a chunk")
 	}
 	if state, err := m.State(); state != PTTFailed || err == nil {
 		t.Fatalf("state = %q, err = %v", state, err)
+	}
+	close(fake.sendGate)
+	select {
+	case <-m.done:
+	case <-time.After(time.Second):
+		t.Fatal("uploader did not finish")
 	}
 }
 
@@ -79,9 +93,12 @@ func TestPTTModel_StartSendError(t *testing.T) {
 }
 
 type talkFake struct {
-	requests []*df.TalkRequest
-	openErr  error
-	sendErr  error
+	requests    []*df.TalkRequest
+	openErr     error
+	sendErr     error
+	sendGate    chan struct{}
+	sendStarted chan struct{}
+	sendOnce    sync.Once
 }
 
 func (f *talkFake) OpenTalk(context.Context) (TalkStream, error) {
@@ -94,6 +111,10 @@ func (f *talkFake) OpenTalk(context.Context) (TalkStream, error) {
 func (f *talkFake) Send(request *df.TalkRequest) error {
 	if f.sendErr != nil {
 		return f.sendErr
+	}
+	if request.GetStart() == nil && f.sendGate != nil {
+		f.sendOnce.Do(func() { close(f.sendStarted) })
+		<-f.sendGate
 	}
 	f.requests = append(f.requests, request)
 	return nil
