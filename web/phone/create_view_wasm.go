@@ -118,8 +118,12 @@ func creationBuildCard(snapshot CreationSnapshot) ui.Node {
 	}
 	build := snapshot.Build
 	portrait := html.Div(html.Props{Role: "img", Aria: map[string]string{"label": build.GetName()}, Style: map[string]string{"width": "76px", "height": "96px", "display": "grid", "place-items": "center", "flex": "0 0 76px", "border-radius": "8px", "border": "1px solid rgba(217,164,65,.5)", "background": "radial-gradient(circle, #354052, #171a23 70%)", "color": "#e7c27a", "font-family": "Georgia, serif", "font-size": "1.4rem"}}, html.Text("✦"))
-	if build.GetPortraitUrl() != "" {
-		portrait = html.Div(html.Props{Style: map[string]string{"width": "76px", "height": "96px", "flex": "0 0 76px", "border-radius": "8px", "border": "1px solid rgba(217,164,65,.5)", "background": "#25232b", "overflow": "hidden"}}, html.Img(html.Props{Src: build.GetPortraitUrl(), Alt: build.GetName(), Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))
+	src := portraitSrc(build.GetPortraitUrl())
+	if src == "" {
+		src = heroProxyArt(snapshot.Species, build.GetClassName(), build.GetName())
+	}
+	if src != "" {
+		portrait = html.Div(html.Props{Style: map[string]string{"width": "76px", "height": "96px", "flex": "0 0 76px", "border-radius": "8px", "border": "1px solid rgba(217,164,65,.5)", "background": "#25232b", "overflow": "hidden"}}, html.Img(html.Props{Src: src, Alt: build.GetName(), Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))
 	}
 	return html.Section(html.Props{Class: "df-phone-create-build", Style: map[string]string{"display": "flex", "gap": "12px", "align-items": "center", "padding": "10px", "border": "1px solid #d9a441", "border-radius": "10px", "background": "linear-gradient(135deg, rgba(47,39,31,.96), rgba(17,21,29,.98))", "box-shadow": "inset 0 0 24px rgba(217,164,65,.08)"}}, portrait, html.Div(html.Props{Style: map[string]string{"min-width": "0"}}, html.P(html.Props{Style: map[string]string{"margin": "0 0 3px", "color": "#e7c27a", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "22px"}}, html.Text(build.GetName())), html.P(html.Props{Style: map[string]string{"margin": "0", "color": "#efe6d2", "font-size": "13px", "letter-spacing": ".08em", "text-transform": "uppercase"}}, html.Text(build.GetClassName()))))
 }

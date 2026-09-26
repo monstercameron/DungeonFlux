@@ -60,7 +60,11 @@ func hudPartyCard(member HUDPartyMember) ui.Node {
 		"border-radius": "7px", "background": "radial-gradient(circle at 50% 25%,#4d5964,#111722 68%)",
 	}
 	var portrait ui.Node
-	if resolved := artSrc(member.PortraitURL); resolved != "" {
+	resolved := artSrc(member.PortraitURL)
+	if resolved == "" {
+		resolved = heroProxyArt("", member.Class, nameOrSeat(member))
+	}
+	if resolved != "" {
 		portrait = html.Img(html.Props{Src: resolved, Alt: nameOrSeat(member), Style: portraitStyle})
 	} else {
 		portrait = html.Div(html.Props{Aria: map[string]string{"label": nameOrSeat(member) + " portrait placeholder"}, Style: portraitStyle},

@@ -1,6 +1,7 @@
 package dm
 
 import (
+	"hash/fnv"
 	"strings"
 	"sync/atomic"
 )
@@ -60,3 +61,25 @@ type artBox struct{ source ArtSource }
 type noArt struct{}
 
 func (noArt) ArtURL(string) string { return "" }
+
+var proxySpecies = []string{"human", "elf", "dwarf", "halfling", "orc", "tiefling", "dragonborn", "gnome", "goliath"}
+
+// heroProxyArt is the stand-in portrait while a hero's generated image is not
+// ready: the rolled species art, else the class crest, else a seeded random
+// species (the same seed always rolls the same proxy). "" only while the
+// proxy art itself is still loading.
+func heroProxyArt(species, class, seed string) string {
+	if species = strings.ToLower(strings.TrimSpace(species)); species != "" {
+		if url := ArtURL("ui/species_" + species); url != "" {
+			return url
+		}
+	}
+	if class = strings.ToLower(strings.TrimSpace(class)); class != "" {
+		if url := ArtURL("ui/class_" + class); url != "" {
+			return url
+		}
+	}
+	hash := fnv.New32a()
+	_, _ = hash.Write([]byte(seed))
+	return ArtURL("ui/species_" + proxySpecies[hash.Sum32()%uint32(len(proxySpecies))])
+}

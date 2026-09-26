@@ -1,6 +1,7 @@
 package phone
 
 import (
+	"hash/fnv"
 	"strings"
 	"sync/atomic"
 )
@@ -139,4 +140,23 @@ func portraitSrc(portrait string) string {
 		return portrait
 	}
 	return ArtURL(portrait)
+}
+
+var proxySpecies = []string{"human", "elf", "dwarf", "halfling", "orc", "tiefling", "dragonborn", "gnome", "goliath"}
+
+// heroProxyArt is the stand-in portrait while a hero's generated image is not
+// ready: the rolled species art, else the class crest, else a seeded random
+// species (the same seed always rolls the same proxy).
+func heroProxyArt(species, class, seed string) string {
+	if url := ArtURL(speciesArtAsset(species)); species != "" && url != "" {
+		return url
+	}
+	if class = strings.ToLower(strings.TrimSpace(class)); class != "" {
+		if url := ArtURL("ui/class_" + class); url != "" {
+			return url
+		}
+	}
+	hash := fnv.New32a()
+	_, _ = hash.Write([]byte(seed))
+	return ArtURL("ui/species_" + proxySpecies[hash.Sum32()%uint32(len(proxySpecies))])
 }

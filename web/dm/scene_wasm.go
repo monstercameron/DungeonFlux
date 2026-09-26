@@ -142,11 +142,8 @@ func boolWeight(active bool) string {
 // still generating) the class art, then the lantern emblem; never an empty img.
 func heroPortrait(portraitURL, className, name string) ui.Node {
 	src := artSrc(portraitURL)
-	if src == "" && className != "" {
-		src = ArtURL("ui/class_" + strings.ToLower(strings.TrimSpace(className)))
-	}
 	if src == "" {
-		src = ArtURL("ui/logo_emblem")
+		src = heroProxyArt("", className, name)
 	}
 	if src == "" {
 		return html.Span(html.Props{Aria: map[string]string{"label": name}, Style: map[string]string{"display": "grid", "place-items": "center", "height": "100%", "color": "#d9a441", "font-size": "40px"}}, ui.Text("✦"))

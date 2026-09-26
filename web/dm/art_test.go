@@ -57,3 +57,27 @@ func TestArtSrc_PassesBrowserURLsAndResolvesAssetSelectors(t *testing.T) {
 		})
 	}
 }
+
+type mapArt map[string]string
+
+func (m mapArt) ArtURL(name string) string { return m[name] }
+
+func TestHeroProxyArt(t *testing.T) {
+	art := mapArt{"ui/species_elf": "blob:elf", "ui/class_rogue": "blob:rogue"}
+	for _, species := range proxySpecies {
+		art["ui/species_"+species] = "blob:" + species
+	}
+	SetArtSource(art)
+	defer SetArtSource(nil)
+	if got := heroProxyArt("Elf", "rogue", "Lyra1"); got != "blob:elf" {
+		t.Fatalf("species proxy = %q", got)
+	}
+	delete(art, "ui/species_elf")
+	if got := heroProxyArt("", "Rogue", "Lyra1"); got != "blob:rogue" {
+		t.Fatalf("class proxy = %q", got)
+	}
+	first := heroProxyArt("", "ranger", "Brom2")
+	if first == "" || first != heroProxyArt("", "ranger", "Brom2") {
+		t.Fatalf("seeded proxy = %q, want a stable species art", first)
+	}
+}

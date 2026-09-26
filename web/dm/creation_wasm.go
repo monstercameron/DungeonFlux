@@ -49,8 +49,8 @@ func creationCornerLabel(value string) ui.Node {
 func creationPortraitPanel(seat CreationSeat) ui.Node {
 	style := creationPanelStyle("230px", "324px", "500px", "600px")
 	portrait := creationAssetURL(seat.PortraitURL)
-	if portrait == "" {
-		portrait = ArtURL(speciesArtName(seat.Species))
+	if portrait == "" && (seat.Name != "" || seat.Class != "" || seat.Species != "") {
+		portrait = heroProxyArt(seat.Species, seat.Class, seat.Name+strconv.Itoa(int(seat.Number)))
 	}
 	image := html.Div(html.Props{Style: map[string]string{"position": "absolute", "inset": "0", "background": "radial-gradient(circle at 50% 30%,rgba(48,73,102,.9),transparent 45%),linear-gradient(145deg,#111b2a,#0b0d13)"}}, html.Img(html.Props{Src: portrait, Alt: creationDisplayValue(seat.Name, "Hero portrait"), Hidden: portrait == "", Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover", "object-position": "center top"}}))
 	return html.Div(html.Props{Class: "df-dm-creation-portrait", Role: "img", Aria: map[string]string{"label": "Generated hero portrait"}, Style: style},
