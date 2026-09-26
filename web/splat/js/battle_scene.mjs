@@ -97,7 +97,7 @@ export function battleProfile(search, baseURL = window.location.href) {
   if (!encoded) return null;
   try {
     const profile = JSON.parse(encoded);
-    if (!profile || typeof profile !== "object") throw new Error("battle profile must be an object");
+    if (!profile || typeof profile !== "object" || Array.isArray(profile)) throw new Error("battle profile must be an object");
     const resolve = (url) => url ? new URL(url, baseURL).href : "";
     return {
       ...profile,

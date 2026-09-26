@@ -8,7 +8,7 @@
     :root { color-scheme: dark; font: 14px/1.35 system-ui, sans-serif; }
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #070b12; }
-    canvas { display: block; width: 100%; height: 100%; }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none; }
     #hud { position: fixed; inset: 0; pointer-events: none; }
     #toolbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 10px; }
     #toolbar, #status { width: fit-content; max-width: calc(100vw - 20px); border: 1px solid #334358;
@@ -22,7 +22,11 @@
     #status[data-kind="error"] { color: #ffaaa8; border-color: #a24e5b; }
     .label { color: #7f9bb7; margin-right: 3px; }
     select { border: 1px solid #526981; border-radius: 5px; padding: 6px 9px; color: #eaf2ff; background: #162538; font: inherit; }
+    #source-details { margin: 0 10px; width: fit-content; max-width: min(720px, calc(100vw - 20px)); color: #9fb5ca; border: 1px solid #334358; border-radius: 7px; background: rgb(8 14 24 / 88%); }
+    #source-details summary { padding: 5px 9px; cursor: pointer; }
+    #source-info { padding: 0 9px 7px; white-space: pre-wrap; overflow-wrap: anywhere; }
     .spacer { flex: 1 1 10px; }
+    .help { color: #8da5bc; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -38,8 +42,10 @@
       <span class="spacer"></span>
       <button id="grid-toggle" type="button" aria-pressed="true">Grid</button>
       <button id="export-picks" type="button">Export picks</button>
+      <span class="help">Drag to orbit · Scroll to zoom · Choose a view to reset</span>
     </div>
     <div id="status">Waiting for ?src=scene.ply (or .sog)…</div>
+    <details id="source-details"><summary>Source details</summary><div id="source-info">No profile loaded.</div></details>
   </div>
   <script type="module" src="./viewer.mjs"></script>
 </body>

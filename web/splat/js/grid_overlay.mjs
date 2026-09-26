@@ -40,7 +40,10 @@ function appendCellEdges(positions, indices, seen, grid, column, row, width, hei
   const corners = [[x, z], [x + cellM, z], [x + cellM, z + cellM], [x, z + cellM]];
   for (let side = 0; side < 4; side += 1) {
     const next = (side + 1) % 4;
-    const key = edgeKey(`${column},${row},${side}`, `${column},${row},${next}`);
+    const cornersBySide = [[column, row], [column + 1, row], [column + 1, row + 1], [column, row + 1]];
+    const start = cornersBySide[side];
+    const end = cornersBySide[next];
+    const key = edgeKey(`${start[0]},${start[1]}`, `${end[0]},${end[1]}`);
     if (!seen.has(key)) {
       seen.add(key);
       addQuad(positions, indices, corners[side], corners[next], width, height);
@@ -91,4 +94,3 @@ export function createGridOverlay(pc, app, grid, options = {}) {
   app.root.addChild(entity);
   return entity;
 }
-
