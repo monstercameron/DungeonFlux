@@ -98,22 +98,30 @@ func phoneView(props phoneViewProps) ui.Node {
 }
 
 func renderPhoneScreen(kind ScreenKind, props phoneViewProps, locale string) ui.Node {
+	frame := NewFrameModel("Player", locale)
+	frame.Screen = kind
+	frame.Mode = modeForScreen(kind)
+	frame.Connection = ConnectionOnline
 	switch kind {
 	case ScreenCreate:
-		return ui.CreateElement(CreationScreen(props.creation))
+		return frameScreen(frame, ui.CreateElement(CreationScreen(props.creation)))
 	case ScreenDice:
-		return ui.CreateElement(DiceScreen(props.dice))
+		return frameScreen(frame, ui.CreateElement(DiceScreen(props.dice)))
 	case ScreenCombat:
-		return ui.CreateElement(func() ui.Node { return combatScreen(props.combat, locale) })
+		return frameScreen(frame, ui.CreateElement(func() ui.Node { return combatScreen(props.combat, locale) }))
 	case ScreenEnd:
-		return ui.CreateElement(EndScreen(props.end))
+		return frameScreen(frame, ui.CreateElement(EndScreen(props.end)))
 	case ScreenConversation:
-		return ui.CreateElement(func() ui.Node { return conversationScreen(props, locale) })
+		return frameScreen(frame, ui.CreateElement(func() ui.Node { return conversationScreen(props, locale) }))
 	case ScreenMoves:
-		return ui.CreateElement(MovesScreen(props.moves))
+		return frameScreen(frame, ui.CreateElement(MovesScreen(props.moves)))
 	default:
-		return ui.CreateElement(SheetScreen(props.sheet))
+		return frameScreen(frame, ui.CreateElement(SheetScreen(props.sheet)))
 	}
+}
+
+func frameScreen(model FrameModel, content ui.Node) ui.Node {
+	return ui.CreateElement(PhoneFrame(model, content, nil))
 }
 
 func conversationScreen(props phoneViewProps, locale string) ui.Node {

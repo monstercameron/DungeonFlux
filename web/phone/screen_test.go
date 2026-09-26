@@ -72,16 +72,20 @@ func TestEndModel_PreservesFinalCharacterState(t *testing.T) {
 
 func TestFrameModel_TracksScreenAndConnection(t *testing.T) {
 	model := NewFrameModel("", "")
-	if model.DisplayName != "Player" || model.Locale != "en" || model.Connection != ConnectionConnecting {
+	if model.DisplayName != "Player" || model.Locale != "en" || model.Connection != ConnectionConnecting || model.Location != "The Drowned Lantern" || model.ActiveTab != PhoneTabPlay {
 		t.Fatalf("initial frame = %+v", model)
 	}
 	first := model.ApplyView(SeatView{Phase: "creation"})
-	if !first.Changed || first.To != ScreenCreate || model.Connection != ConnectionOnline {
+	if !first.Changed || first.To != ScreenCreate || model.Connection != ConnectionOnline || model.Mode != PhoneModePlay {
 		t.Fatalf("first transition = %+v, model = %+v", first, model)
 	}
 	second := model.ApplyView(SeatView{Phase: "creation"})
 	if second.Changed || second.From != ScreenCreate || second.To != ScreenCreate {
 		t.Fatalf("repeat transition = %+v", second)
+	}
+	model.ApplyView(SeatView{Phase: "combat"})
+	if model.Mode != PhoneModeCombat || model.ActiveTab != PhoneTabPlay {
+		t.Fatalf("combat frame mode = %q, tab = %q", model.Mode, model.ActiveTab)
 	}
 	model.SetConnection(ConnectionOffline)
 	if model.Connection != ConnectionOffline {

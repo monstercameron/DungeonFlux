@@ -53,9 +53,14 @@ const (
 type FrameModel struct {
 	DisplayName string
 	Title       string
+	Location    string
+	Act         string
+	Scene       string
 	Locale      string
 	Connection  ConnectionState
 	Screen      ScreenKind
+	Mode        PhoneMode
+	ActiveTab   PhoneTabID
 }
 
 // NewFrameModel creates a frame with sensible labels for a seat.
@@ -66,7 +71,11 @@ func NewFrameModel(displayName, locale string) FrameModel {
 	if locale == "" {
 		locale = "en"
 	}
-	return FrameModel{DisplayName: displayName, Title: "Your adventure", Locale: locale, Connection: ConnectionConnecting}
+	return FrameModel{
+		DisplayName: displayName, Title: "Your adventure", Location: "The Drowned Lantern",
+		Act: "Act I", Scene: "Scene 1", Locale: locale, Connection: ConnectionConnecting,
+		Mode: PhoneModePlay, ActiveTab: PhoneTabPlay,
+	}
 }
 
 // ApplyView updates the frame screen and marks the connection online.
@@ -76,8 +85,21 @@ func (m *FrameModel) ApplyView(view SeatView) ScreenTransition {
 	}
 	previous := m.Screen
 	m.Screen = SelectScreen(view)
+	m.Mode = modeForScreen(m.Screen)
+	m.ActiveTab = PhoneTabPlay
 	m.Connection = ConnectionOnline
 	return ScreenTransition{From: previous, To: m.Screen, Changed: previous != m.Screen}
+}
+
+func modeForScreen(screen ScreenKind) PhoneMode {
+	switch screen {
+	case ScreenCombat:
+		return PhoneModeCombat
+	case ScreenMoves:
+		return PhoneModeExplore
+	default:
+		return PhoneModePlay
+	}
 }
 
 // SetConnection records a transport state for the next render.
