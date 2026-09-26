@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -24,7 +23,7 @@ type SplatSpec struct {
 	Take        int
 }
 
-// SplatOptions controls the Marble generation and SPZ-to-SOG build job.
+// SplatOptions controls the Marble generation and PLY export job.
 type SplatOptions struct {
 	Endpoint     string
 	APIKey       string
@@ -33,11 +32,7 @@ type SplatOptions struct {
 	Specs        []SplatSpec
 	PollInterval time.Duration
 	DryRun       bool
-	Converter    SOGConverter
 }
-
-// SOGConverter converts a downloaded SPZ file into a SOG file.
-type SOGConverter func(context.Context, string, string) error
 
 type marbleClient struct {
 	httpClient   *http.Client
@@ -45,15 +40,12 @@ type marbleClient struct {
 	apiKey       string
 	pollInterval time.Duration
 }
-
 type marbleRequest struct {
 	Model    string `json:"model"`
 	Prompt   string `json:"prompt,omitempty"`
 	ImageURL string `json:"image_url,omitempty"`
 	Quality  string `json:"quality,omitempty"`
-	SPZ      bool   `json:"return_spz"`
 }
-
 type marbleOperation struct {
 	OperationID string `json:"operation_id"`
 	Done        bool   `json:"done"`
@@ -62,17 +54,33 @@ type marbleOperation struct {
 	} `json:"error,omitempty"`
 	Response marbleWorld `json:"response"`
 }
-
 type marbleWorld struct {
-	SPZURL            string  `json:"spz_url"`
-	MetricScaleFactor float64 `json:"metric_scale_factor"`
-	GroundPlaneOffset float64 `json:"ground_plane_offset"`
-	Assets            struct {
-		SPZURL string `json:"spz_url"`
+	ID     string `json:"id"`
+	Assets struct {
+		Splats struct {
+			SemanticsMetadata struct {
+				MetricScaleFactor float64 `json:"metric_scale_factor"`
+				GroundPlaneOffset float64 `json:"ground_plane_offset"`
+			} `json:"semantics_metadata"`
+		} `json:"splats"`
 	} `json:"assets"`
 }
+type exportRequest struct {
+	AssetType  string `json:"asset_type"`
+	Format     string `json:"format"`
+	Resolution string `json:"resolution"`
+}
+type exportResponse struct {
+	Done  bool `json:"done"`
+	Error *struct {
+		Message string `json:"message"`
+	} `json:"error,omitempty"`
+	Response struct {
+		URL string `json:"url"`
+	} `json:"response"`
+}
 
-// RunSplatJob generates both full and lite SOG assets and records Marble scale metadata.
+// RunSplatJob generates PLY assets and records Marble scale metadata.
 func RunSplatJob(ctx context.Context, writer *ManifestWriter, options SplatOptions) error {
 	if writer == nil {
 		return errors.New("buildtime: nil manifest writer")
@@ -89,29 +97,28 @@ func RunSplatJob(ctx context.Context, writer *ManifestWriter, options SplatOptio
 			continue
 		}
 		client := marbleClient{httpClient: &http.Client{}, endpoint: effectiveMarbleEndpoint(options.Endpoint), apiKey: options.APIKey, pollInterval: options.PollInterval}
-		world, err := client.Generate(ctx, marbleRequest{Model: "marble-1.1", Prompt: options.Prompt, ImageURL: options.ImageURL, Quality: effectiveQuality(spec.Quality), SPZ: true})
+		world, err := client.Generate(ctx, marbleRequest{Model: "marble-1.1", Prompt: options.Prompt, ImageURL: options.ImageURL, Quality: effectiveQuality(spec.Quality)})
 		if err != nil {
 			return fmt.Errorf("splat %q: %w", spec.LogicalName, err)
 		}
-		spzURL := world.SPZURL
-		if spzURL == "" {
-			spzURL = world.Assets.SPZURL
+		if world.ID == "" {
+			return fmt.Errorf("splat %q: Marble response has no world ID", spec.LogicalName)
 		}
-		if spzURL == "" {
-			return fmt.Errorf("splat %q: Marble response has no SPZ URL", spec.LogicalName)
-		}
-		spz, err := client.Download(ctx, spzURL)
+		export, err := client.Export(ctx, world.ID, exportRequest{AssetType: "splats", Format: "ply", Resolution: exportResolution(spec.Quality)})
 		if err != nil {
-			return fmt.Errorf("splat %q: download SPZ: %w", spec.LogicalName, err)
+			return fmt.Errorf("splat %q: export PLY: %w", spec.LogicalName, err)
 		}
-		if err := addConvertedSOG(ctx, writer, spec, spz, options.Converter); err != nil {
+		if export.Response.URL == "" {
+			return fmt.Errorf("splat %q: Marble export has no PLY URL", spec.LogicalName)
+		}
+		ply, err := client.Download(ctx, export.Response.URL)
+		if err != nil {
+			return fmt.Errorf("splat %q: download PLY: %w", spec.LogicalName, err)
+		}
+		if err := addPLY(writer, spec, ply); err != nil {
 			return fmt.Errorf("splat %q: %w", spec.LogicalName, err)
 		}
-		metadata := map[string]string{
-			"metric_scale_factor": fmt.Sprintf("%g", world.MetricScaleFactor),
-			"ground_plane_offset": fmt.Sprintf("%g", world.GroundPlaneOffset),
-			"quality":             effectiveQuality(spec.Quality),
-		}
+		metadata := map[string]string{"metric_scale_factor": fmt.Sprintf("%g", world.Assets.Splats.SemanticsMetadata.MetricScaleFactor), "ground_plane_offset": fmt.Sprintf("%g", world.Assets.Splats.SemanticsMetadata.GroundPlaneOffset), "quality": effectiveQuality(spec.Quality)}
 		if err := writer.SetMetadata(spec.LogicalName, 0, 0, metadata); err != nil {
 			return err
 		}
@@ -152,6 +159,40 @@ func (c marbleClient) Generate(ctx context.Context, request marbleRequest) (marb
 		return marbleWorld{}, errors.New("marble response has no operation ID")
 	}
 	return c.poll(ctx, operation.OperationID)
+}
+
+func (c marbleClient) Export(ctx context.Context, worldID string, export exportRequest) (exportResponse, error) {
+	body, err := json.Marshal(export)
+	if err != nil {
+		return exportResponse{}, fmt.Errorf("encode Marble export: %w", err)
+	}
+	base := strings.TrimSuffix(strings.TrimRight(c.endpoint, "/"), "worlds:generate")
+	if base == c.endpoint {
+		base = strings.TrimRight(c.endpoint, "/") + "/"
+	}
+	url := base + "worlds/" + worldID + ":export"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return exportResponse{}, fmt.Errorf("create Marble export: %w", err)
+	}
+	req.Header.Set("WLT-Api-Key", c.apiKey)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return exportResponse{}, fmt.Errorf("marble export: %w", err)
+	}
+	defer resp.Body.Close()
+	var result exportResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return exportResponse{}, fmt.Errorf("decode Marble export: %w", err)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return exportResponse{}, fmt.Errorf("marble export: %s", marbleError(result.Error, resp.Status))
+	}
+	if !result.Done {
+		return exportResponse{}, errors.New("marble PLY export was not completed")
+	}
+	return result, nil
 }
 
 func (c marbleClient) poll(ctx context.Context, operationID string) (marbleWorld, error) {
@@ -207,55 +248,34 @@ func (c marbleClient) Download(ctx context.Context, url string) ([]byte, error) 
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("SPZ download: %s", resp.Status)
+		return nil, fmt.Errorf("asset download: %s", resp.Status)
 	}
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("read SPZ: %w", err)
+		return nil, fmt.Errorf("read asset: %w", err)
 	}
 	if len(data) == 0 {
-		return nil, errors.New("SPZ download was empty")
+		return nil, errors.New("asset download was empty")
 	}
 	return data, nil
 }
 
-func addConvertedSOG(ctx context.Context, writer *ManifestWriter, spec SplatSpec, spz []byte, converter SOGConverter) error {
-	input, err := os.CreateTemp(writer.root, "splat-*.spz")
-	if err != nil {
-		return fmt.Errorf("create SPZ temp file: %w", err)
+func addPLY(writer *ManifestWriter, spec SplatSpec, ply []byte) error {
+	outputName := filepath.Join(writer.root, fmt.Sprintf("%s.ply", spec.LogicalName))
+	if err := os.WriteFile(outputName, ply, 0o644); err != nil {
+		return fmt.Errorf("write PLY: %w", err)
 	}
-	inputName := input.Name()
-	defer os.Remove(inputName)
-	if _, err := input.Write(spz); err != nil {
-		input.Close()
-		return fmt.Errorf("write SPZ temp file: %w", err)
-	}
-	if err := input.Close(); err != nil {
-		return fmt.Errorf("close SPZ temp file: %w", err)
-	}
-	outputName := filepath.Join(writer.root, fmt.Sprintf("%s.sog", spec.LogicalName))
 	defer os.Remove(outputName)
-	if converter == nil {
-		converter = CommandSOGConverter
-	}
-	if err := converter(ctx, inputName, outputName); err != nil {
-		return fmt.Errorf("convert SPZ to SOG: %w", err)
-	}
-	if _, err := writer.AddFile(spec.LogicalName, "SPLAT", outputName, spec.Take); err != nil {
-		return err
-	}
-	return nil
+	_, err := writer.AddFile(spec.LogicalName, "SPLAT", outputName, spec.Take)
+	return err
 }
 
-// CommandSOGConverter invokes the installed splat-transform CLI.
-func CommandSOGConverter(ctx context.Context, input, output string) error {
-	command := exec.CommandContext(ctx, "splat-transform", input, output)
-	if output, err := command.CombinedOutput(); err != nil {
-		return fmt.Errorf("splat-transform: %w (%s)", err, strings.TrimSpace(string(output)))
+func exportResolution(quality string) string {
+	if effectiveQuality(quality) == "lite" {
+		return "100k"
 	}
-	return nil
+	return "full_res"
 }
-
 func validateSplatSpec(spec SplatSpec) error {
 	if strings.TrimSpace(spec.LogicalName) == "" || filepath.Base(spec.LogicalName) != spec.LogicalName {
 		return fmt.Errorf("buildtime: invalid splat logical name %q", spec.LogicalName)
@@ -265,7 +285,6 @@ func validateSplatSpec(spec SplatSpec) error {
 	}
 	return nil
 }
-
 func effectiveMarbleEndpoint(endpoint string) string {
 	if endpoint != "" {
 		return endpoint
@@ -275,14 +294,12 @@ func effectiveMarbleEndpoint(endpoint string) string {
 	}
 	return defaultMarbleURL
 }
-
 func effectiveQuality(quality string) string {
 	if quality == "" {
 		return "full"
 	}
 	return quality
 }
-
 func marbleError(apiError *struct {
 	Message string `json:"message"`
 }, fallback string) string {
