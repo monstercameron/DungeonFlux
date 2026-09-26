@@ -3,7 +3,46 @@ package dm
 import (
 	"strings"
 	"testing"
+
+	dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 )
+
+func TestCliffhangerModelFromView_UsesCaptionAndStillFallback(t *testing.T) {
+	view := &dungeonfluxv1.DMView{
+		BackgroundUrl: "/tower.webp",
+		Locale:        "es",
+		Subtitle:      &dungeonfluxv1.Subtitle{Text: "The bell rings again."},
+	}
+	model := CliffhangerModelFromView(view)
+	if model.Caption != "The bell rings again." || model.Clip.StillURL != "/tower.webp" || model.Locale != "es" {
+		t.Fatalf("CliffhangerModelFromView() = %+v", model)
+	}
+	if !CliffhangerReady(model) {
+		t.Fatal("caption plus still should make cliffhanger ready")
+	}
+}
+
+func TestCliffhangerModelFromView_FallsBackToNarrationThenCannedCopy(t *testing.T) {
+	narrated := CliffhangerModelFromView(&dungeonfluxv1.DMView{
+		Narration: &dungeonfluxv1.Narration{TextSoFar: "The lanterns die."},
+	})
+	if narrated.Caption != "The lanterns die." {
+		t.Fatalf("narration caption = %q", narrated.Caption)
+	}
+	fallback := CliffhangerModelFromView(&dungeonfluxv1.DMView{})
+	if fallback.Caption != defaultCliffhangerCaption {
+		t.Fatalf("fallback caption = %q", fallback.Caption)
+	}
+}
+
+func TestCliffhangerReady_RequiresVisual(t *testing.T) {
+	if CliffhangerReady(CliffhangerModel{Caption: "bell"}) {
+		t.Fatal("caption without visual should not be ready")
+	}
+	if CliffhangerReady(CliffhangerModel{Clip: ClipModel{StillURL: "tower.webp"}}) {
+		t.Fatal("visual without caption should not be ready")
+	}
+}
 
 func TestNewEndCardModel_ContainsTerminalCopyAndAttribution(t *testing.T) {
 	model := NewEndCardModel()

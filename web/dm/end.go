@@ -1,5 +1,36 @@
 package dm
 
+import dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
+
+const defaultCliffhangerCaption = "Midnight. The tower bell tolls, and every lantern gutters out. Whoever pulls that rope already knows your names."
+
+// CliffhangerModel contains the final still, caption, and playback state.
+type CliffhangerModel struct {
+	Clip    ClipModel
+	Caption string
+	Locale  string
+}
+
+// CliffhangerModelFromView projects a terminal DM snapshot into a render model.
+func CliffhangerModelFromView(view *dungeonfluxv1.DMView) CliffhangerModel {
+	if view == nil {
+		return CliffhangerModel{Caption: defaultCliffhangerCaption}
+	}
+	caption := view.GetSubtitle().GetText()
+	if caption == "" {
+		caption = view.GetNarration().GetTextSoFar()
+	}
+	if caption == "" {
+		caption = defaultCliffhangerCaption
+	}
+	return CliffhangerModel{Clip: ClipModelFromView(view), Caption: caption, Locale: localeOrDefault(view.GetLocale())}
+}
+
+// CliffhangerReady reports whether the terminal caption and a visual fallback exist.
+func CliffhangerReady(model CliffhangerModel) bool {
+	return model.Caption != "" && (model.Clip.VideoURL != "" || model.Clip.StillURL != "")
+}
+
 // EndCardModel contains the fixed copy shown after the cliffhanger line.
 type EndCardModel struct {
 	Title       string
