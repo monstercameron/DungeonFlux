@@ -65,6 +65,35 @@ func TestCreationModel_RecordsRPCFailures(t *testing.T) {
 	}
 }
 
+func TestCreationOptions_AreCopiesWithStableLegalValues(t *testing.T) {
+	species := CreationSpecies()
+	genders := CreationGenders()
+	if len(species) != 9 || len(genders) != 3 {
+		t.Fatalf("option counts = %d/%d", len(species), len(genders))
+	}
+	if species[0].ID != "human" || species[len(species)-1].ID != "goliath" || genders[2].ID != "nonbinary" {
+		t.Fatalf("unexpected option order: %+v / %+v", species, genders)
+	}
+	species[0].ID = "changed"
+	if CreationSpecies()[0].ID != "human" {
+		t.Fatal("species result aliases package state")
+	}
+}
+
+func TestCreationModel_RejectsServerResponseAndPreservesSelection(t *testing.T) {
+	model := NewCreationModel(&actFake{result: ActResult{Value: &df.ActResponse{Accepted: false, Reason: "seat is locked"}}}, "token", 1)
+	if err := model.SelectSpecies("elf"); err != nil {
+		t.Fatal(err)
+	}
+	if err := model.SelectGender("male"); err != nil {
+		t.Fatal(err)
+	}
+	got := model.ApplyAct(<-model.RollHero(context.Background()))
+	if got.Phase != CreationFailed || got.Error != "seat is locked" || got.Species != "elf" || got.Gender != "male" {
+		t.Fatalf("rejection snapshot = %+v", got)
+	}
+}
+
 type actFake struct {
 	request *df.ActRequest
 	result  ActResult

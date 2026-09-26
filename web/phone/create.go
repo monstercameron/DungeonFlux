@@ -46,6 +46,28 @@ type CreationSnapshot struct {
 	Locale       string
 }
 
+// CreationOption is one choice shown by a character-creation picker.
+type CreationOption struct {
+	ID    string
+	Label string
+}
+
+var creationSpecies = []CreationOption{
+	{ID: "human", Label: "Human"}, {ID: "elf", Label: "Elf"}, {ID: "dwarf", Label: "Dwarf"},
+	{ID: "halfling", Label: "Halfling"}, {ID: "orc", Label: "Orc"}, {ID: "tiefling", Label: "Tiefling"},
+	{ID: "dragonborn", Label: "Dragonborn"}, {ID: "gnome", Label: "Gnome"}, {ID: "goliath", Label: "Goliath"},
+}
+
+var creationGenders = []CreationOption{
+	{ID: "female", Label: "Female"}, {ID: "male", Label: "Male"}, {ID: "nonbinary", Label: "Nonbinary"},
+}
+
+// CreationSpecies returns the legal species choices in display order.
+func CreationSpecies() []CreationOption { return append([]CreationOption(nil), creationSpecies...) }
+
+// CreationGenders returns the legal gender choices in display order.
+func CreationGenders() []CreationOption { return append([]CreationOption(nil), creationGenders...) }
+
 // CreationModel owns creation selections and Act request construction.
 type CreationModel struct {
 	client ActClient
