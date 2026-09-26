@@ -61,7 +61,21 @@ func cloneBuild(build *domain.BuildCard) *domain.BuildCard {
 		return nil
 	}
 	copyBuild := *build
+	copyBuild.Stats = cloneBuildStats(build.Stats)
 	return &copyBuild
+}
+
+func cloneBuildStats(stats *domain.BuildStats) *domain.BuildStats {
+	if stats == nil {
+		return nil
+	}
+	copyStats := *stats
+	copyStats.SaveProficiencies = append([]string(nil), stats.SaveProficiencies...)
+	copyStats.SkillProficiencies = make(map[string]string, len(stats.SkillProficiencies))
+	for key, value := range stats.SkillProficiencies {
+		copyStats.SkillProficiencies[key] = value
+	}
+	return &copyStats
 }
 
 func seatViewsFor(seats []domain.SeatView, wanted domain.SeatID) []domain.SeatView {

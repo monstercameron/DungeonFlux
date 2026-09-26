@@ -1,6 +1,7 @@
 package phone
 
 import (
+	"strings"
 	"testing"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
@@ -10,7 +11,7 @@ func TestSheetModel_ProjectsCharacterCombatAndCopiesConditions(t *testing.T) {
 	model := NewSheetModel()
 	state := &df.ScreenState{View: &df.ScreenState_Phone{Phone: &df.PhoneView{
 		Character: &df.Character{Name: "Astra", ClassName: "Rogue", Species: "Human", Gender: "female", PortraitUrl: "portrait", HookText: "a debt", PersuasionModifier: 4, Build: &df.CharacterBuild{
-			Abilities: []int32{17, 10, 14, 8, 12, 14}, Hp: 12, HpMax: 12, Ac: 14,
+			Abilities: []int32{17, 10, 14, 8, 12, 14}, SaveProfs: []string{"dex", "int"}, SkillProfs: map[string]string{"stealth": "expertise", "persuasion": "proficient"}, Hp: 12, HpMax: 12, Ac: 14,
 		}},
 		StatusText: "Your turn", Combat: &df.CombatView{Hp: 7, HpMax: 9, Statuses: []string{"bloodied"}},
 	}}}
@@ -21,13 +22,21 @@ func TestSheetModel_ProjectsCharacterCombatAndCopiesConditions(t *testing.T) {
 	if len(got.Abilities) != 6 || got.Abilities[0].Modifier != 3 || got.Abilities[3].Modifier != -1 {
 		t.Fatalf("abilities = %+v", got.Abilities)
 	}
+	if len(got.SaveProficiencies) != 2 || got.SkillProficiencies["stealth"] != "expertise" || got.AttackName != "Shortsword" || got.AttackDice != "1d6+3" || got.AttackBonus != 5 {
+		t.Fatalf("build details = %+v", got)
+	}
 	got.Conditions[0] = "changed"
 	got.Abilities[0].Score = 1
+	got.SaveProficiencies[0] = "changed"
+	got.SkillProficiencies["stealth"] = "changed"
 	if model.Snapshot().Conditions[0] != "bloodied" {
 		t.Fatal("snapshot exposed mutable conditions")
 	}
 	if model.Snapshot().Abilities[0].Score != 17 {
 		t.Fatal("snapshot exposed mutable abilities")
+	}
+	if model.Snapshot().SaveProficiencies[0] != "dex" || model.Snapshot().SkillProficiencies["stealth"] != "expertise" {
+		t.Fatal("snapshot exposed mutable build details")
 	}
 	if model.Summary("en") != "Astra · Rogue" {
 		t.Fatalf("summary = %q", model.Summary("en"))
@@ -115,6 +124,27 @@ func TestSheetActions_UseClassWeaponAndFeatures(t *testing.T) {
 	}
 	if got := SheetActions("unknown"); got[0].Label != "Attack" {
 		t.Fatalf("unknown class actions = %+v", got)
+	}
+}
+
+func TestSheetActions_CoverAllOfferedClasses(t *testing.T) {
+	tests := []struct {
+		className, weapon, detail string
+	}{
+		{"barbarian", "Greataxe", "1d12+3"}, {"bard", "Dagger", "1d4+2"},
+		{"cleric", "Mace", "1d6"}, {"druid", "Scimitar", "1d6+3"},
+		{"fighter", "Longsword", "1d8+3"}, {"monk", "Quarterstaff", "1d6+3"},
+		{"paladin", "Longsword", "1d8+3"}, {"ranger", "Longbow", "1d8+3"},
+		{"rogue", "Shortsword", "1d6+3"}, {"sorcerer", "Dagger", "1d4+3"},
+		{"warlock", "Light Crossbow", "1d8+3"}, {"wizard", "Dagger", "1d4+3"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.className, func(t *testing.T) {
+			row := SheetActions(tt.className)[0]
+			if row.Label != tt.weapon || !strings.Contains(row.Detail, tt.detail) {
+				t.Fatalf("attack row = %+v", row)
+			}
+		})
 	}
 }
 

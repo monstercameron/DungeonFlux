@@ -1,6 +1,8 @@
 package phone
 
 import (
+	"sort"
+	"strconv"
 	"strings"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
@@ -20,6 +22,12 @@ type SheetSnapshot struct {
 	AC                 int32
 	Level              int32
 	Abilities          []StatValue
+	SaveProficiencies  []string
+	SkillProficiencies map[string]string
+	AttackName         string
+	AttackDice         string
+	AttackDamageType   string
+	AttackBonus        int32
 	Conditions         []string
 	StatusText         string
 	Locale             string
@@ -37,27 +45,62 @@ type SheetAction struct {
 // SheetActions returns the class's demo actions in stable display order.
 func SheetActions(className string) []SheetAction {
 	rows := []SheetAction{
-		{ID: "attack", Label: "Attack", Detail: "Use your equipped weapon", Icon: "⚔", Enabled: true},
+		sheetAttackAction(className),
 		{ID: "help", Label: "Help Ally", Detail: "Give an ally advantage", Icon: "+", Enabled: true},
 		{ID: "dash", Label: "Dash", Detail: "Move twice this turn", Icon: "↗", Enabled: true},
 	}
 	switch strings.ToLower(strings.TrimSpace(className)) {
-	case "fighter":
-		rows[0] = SheetAction{ID: "attack", Label: "Longsword", Detail: "+5 to hit · 1d8+3 slashing", Icon: "⚔", Enabled: true}
 	case "rogue":
-		rows[0] = SheetAction{ID: "attack", Label: "Shortsword", Detail: "+5 to hit · 1d6+3 piercing", Icon: "⚔", Enabled: true}
 		rows[1] = SheetAction{ID: "sneak_attack", Label: "Sneak Attack", Detail: "+1d6 when you have the opening", Icon: "◇", Enabled: true}
 	case "paladin":
-		rows[0] = SheetAction{ID: "attack", Label: "Longsword", Detail: "+5 to hit · 1d8+3 slashing", Icon: "⚔", Enabled: true}
 		rows[1] = SheetAction{ID: "lay_on_hands", Label: "Lay on Hands", Detail: "Restore up to 5 HP", Icon: "+", Enabled: true}
 	case "bard":
-		rows[0] = SheetAction{ID: "attack", Label: "Dagger", Detail: "+4 to hit · 1d4+2 piercing", Icon: "⚔", Enabled: true}
-		rows[1] = SheetAction{ID: "inspiration", Label: "Bardic Inspiration", Detail: "Inspire an ally · d6", Icon: "♪", Enabled: true}
+		rows[1] = SheetAction{ID: "inspiration", Label: "Bardic Inspiration", Detail: "Inspire an ally · d6", Icon: "♫", Enabled: true}
 	case "cleric":
-		rows[0] = SheetAction{ID: "attack", Label: "Mace", Detail: "+2 to hit · 1d6 bludgeoning", Icon: "⚔", Enabled: true}
 		rows[1] = SheetAction{ID: "spellcasting", Label: "Spellcasting", Detail: "Channel divine power", Icon: "✦", Enabled: true}
 	}
 	return rows
+}
+
+type sheetAttack struct {
+	name, dice, damageType string
+	bonus                  int32
+}
+
+func sheetAttackForClass(className string) sheetAttack {
+	switch strings.ToLower(strings.TrimSpace(className)) {
+	case "barbarian":
+		return sheetAttack{name: "Greataxe", dice: "1d12+3", damageType: "slashing", bonus: 5}
+	case "bard":
+		return sheetAttack{name: "Dagger", dice: "1d4+2", damageType: "piercing", bonus: 4}
+	case "cleric":
+		return sheetAttack{name: "Mace", dice: "1d6", damageType: "bludgeoning", bonus: 2}
+	case "druid":
+		return sheetAttack{name: "Scimitar", dice: "1d6+3", damageType: "slashing", bonus: 5}
+	case "fighter", "paladin":
+		return sheetAttack{name: "Longsword", dice: "1d8+3", damageType: "slashing", bonus: 5}
+	case "monk":
+		return sheetAttack{name: "Quarterstaff", dice: "1d6+3", damageType: "bludgeoning", bonus: 5}
+	case "ranger":
+		return sheetAttack{name: "Longbow", dice: "1d8+3", damageType: "piercing", bonus: 5}
+	case "rogue":
+		return sheetAttack{name: "Shortsword", dice: "1d6+3", damageType: "piercing", bonus: 5}
+	case "sorcerer", "wizard":
+		return sheetAttack{name: "Dagger", dice: "1d4+3", damageType: "piercing", bonus: 5}
+	case "warlock":
+		return sheetAttack{name: "Light Crossbow", dice: "1d8+3", damageType: "piercing", bonus: 5}
+	default:
+		return sheetAttack{name: "Attack"}
+	}
+}
+
+func sheetAttackAction(className string) SheetAction {
+	attack := sheetAttackForClass(className)
+	detail := "Use your equipped weapon"
+	if attack.dice != "" {
+		detail = "+" + strconv.Itoa(int(attack.bonus)) + " to hit · " + attack.dice + " " + attack.damageType
+	}
+	return SheetAction{ID: "attack", Label: attack.name, Detail: detail, Icon: "⚔", Enabled: true}
 }
 
 func sheetAbilityValues(values []int32) []StatValue {
@@ -136,6 +179,8 @@ func (m *SheetModel) Snapshot() SheetSnapshot {
 	}
 	state := m.state
 	state.Abilities = append([]StatValue(nil), state.Abilities...)
+	state.SaveProficiencies = append([]string(nil), state.SaveProficiencies...)
+	state.SkillProficiencies = cloneProficiencies(state.SkillProficiencies)
 	state.Conditions = append([]string(nil), state.Conditions...)
 	return state
 }
@@ -159,11 +204,15 @@ func (m *SheetModel) ApplyScreenState(state *df.ScreenState) SheetSnapshot {
 		m.state.PortraitURL = character.GetPortraitUrl()
 		m.state.Hook = character.GetHookText()
 		m.state.PersuasionModifier = character.GetPersuasionModifier()
+		attack := sheetAttackForClass(m.state.Class)
+		m.state.AttackName, m.state.AttackDice, m.state.AttackDamageType, m.state.AttackBonus = attack.name, attack.dice, attack.damageType, attack.bonus
 		if build := character.GetBuild(); build != nil {
 			m.state.HP, m.state.HPMax = build.GetHp(), build.GetHpMax()
 			m.state.AC = build.GetAc()
 			m.state.Level = 1
 			m.state.Abilities = sheetAbilityValues(build.GetAbilities())
+			m.state.SaveProficiencies = append([]string(nil), build.GetSaveProfs()...)
+			m.state.SkillProficiencies = cloneProficiencies(build.GetSkillProfs())
 		}
 	}
 	if combat := phone.GetCombat(); combat != nil {
@@ -171,6 +220,27 @@ func (m *SheetModel) ApplyScreenState(state *df.ScreenState) SheetSnapshot {
 		m.state.Conditions = append([]string(nil), combat.GetStatuses()...)
 	}
 	return m.Snapshot()
+}
+
+func cloneProficiencies(values map[string]string) map[string]string {
+	if values == nil {
+		return nil
+	}
+	clone := make(map[string]string, len(values))
+	for key, value := range values {
+		clone[key] = value
+	}
+	return clone
+}
+
+// SortedSkillProficiencies returns skill IDs in stable display order.
+func SortedSkillProficiencies(values map[string]string) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 // Summary returns a compact label suitable for a narrow phone header.

@@ -17,8 +17,12 @@ func TestViewForDM_ReturnsLobbyAndSeatCards(t *testing.T) {
 		t.Fatalf("dm seat card = %#v", got.Seats[0].Build)
 	}
 	got.Seats[0].Build.Name = "changed"
+	got.Seats[0].Build.Stats.SkillProficiencies["stealth"] = "changed"
 	if view.Seats[0].Build.Name != "Astra" {
 		t.Fatal("dm view shares build card with source")
+	}
+	if view.Seats[0].Build.Stats.SkillProficiencies["stealth"] != "expertise" {
+		t.Fatal("dm view shares build stats with source")
 	}
 }
 
@@ -54,7 +58,7 @@ func lobbyView() domain.View {
 		Path:    vocab.StateLobby,
 		Paused:  true,
 		Seats: []domain.SeatView{
-			{Seat: 1, PlayerNumber: 1, Build: &domain.BuildCard{Name: "Astra", Class: "Rogue"}, Character: &domain.Character{Name: "Astra"}},
+			{Seat: 1, PlayerNumber: 1, Build: &domain.BuildCard{Name: "Astra", Class: "Rogue", Stats: &domain.BuildStats{SkillProficiencies: map[string]string{"stealth": "expertise"}}}, Character: &domain.Character{Name: "Astra"}},
 			{Seat: 2, PlayerNumber: 2, Build: &domain.BuildCard{Name: "Bryn", Class: "Paladin"}, Character: &domain.Character{Name: "Bryn"}},
 		},
 	}

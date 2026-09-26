@@ -78,7 +78,34 @@ func sheetStats(locale string, state SheetSnapshot) ui.Node {
 		return sheetEmptyPanel(locale, "Ability scores", "Your rolled abilities will appear here.")
 	}
 	return html.Section(html.Props{Class: "df-phone-sheet-section", Aria: map[string]string{"label": "Ability scores"}, Style: map[string]string{"display": "grid", "gap": "7px"}},
-		sheetSectionHeading("Ability scores", "", false), StatRow(state.Abilities),
+		sheetSectionHeading("Ability scores", "", false), StatRow(state.Abilities), sheetBuildDetails(locale, state),
+	)
+}
+
+func sheetBuildDetails(locale string, state SheetSnapshot) ui.Node {
+	saves := "—"
+	if len(state.SaveProficiencies) > 0 {
+		saves = strings.ToUpper(strings.Join(state.SaveProficiencies, ", "))
+	}
+	skills := "—"
+	if len(state.SkillProficiencies) > 0 {
+		items := make([]string, 0, len(state.SkillProficiencies))
+		for _, skill := range SortedSkillProficiencies(state.SkillProficiencies) {
+			items = append(items, titleCase(strings.ReplaceAll(skill, "_", " "))+" ("+state.SkillProficiencies[skill]+")")
+		}
+		skills = strings.Join(items, ", ")
+	}
+	attack := state.AttackName
+	if attack == "" {
+		attack = sheetUnknown(locale)
+	}
+	if state.AttackDice != "" {
+		attack += " · +" + strconv.Itoa(int(state.AttackBonus)) + " · " + state.AttackDice + " " + state.AttackDamageType
+	}
+	return html.Div(html.Props{Style: map[string]string{"display": "grid", "gap": "3px", "padding-top": "2px", "color": DefaultPhoneTheme().Muted, "font-family": "Inter, system-ui, sans-serif", "font-size": "12px"}},
+		html.Div(html.Props{}, html.Strong(html.Props{}, html.Text(localizedSheet(locale, "Saves", "Salvaciones")+": ")), html.Text(saves)),
+		html.Div(html.Props{}, html.Strong(html.Props{}, html.Text(localizedSheet(locale, "Skills", "Habilidades")+": ")), html.Text(skills)),
+		html.Div(html.Props{}, html.Strong(html.Props{}, html.Text(localizedSheet(locale, "Attack", "Ataque")+": ")), html.Text(attack)),
 	)
 }
 

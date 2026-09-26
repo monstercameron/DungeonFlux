@@ -22,10 +22,11 @@ type Character struct {
 }
 
 type BuildCard struct {
-	Name         string  `json:"name"`
-	Class        string  `json:"class"`
-	Portrait     AssetID `json:"portrait,omitempty"`
-	PlayerNumber int     `json:"player_number"`
+	Name         string      `json:"name"`
+	Class        string      `json:"class"`
+	Portrait     AssetID     `json:"portrait,omitempty"`
+	PlayerNumber int         `json:"player_number"`
+	Stats        *BuildStats `json:"stats,omitempty"`
 }
 
 type Seat struct {
