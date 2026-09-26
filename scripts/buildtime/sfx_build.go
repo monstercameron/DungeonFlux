@@ -53,6 +53,8 @@ type SFXBuildOptions struct {
 	Processor  SFXProcessor
 	Log        io.Writer
 	MaxCostUSD float64
+	// Only limits the build to these asset IDs; empty builds every asset.
+	Only []string
 }
 
 // SFXSummary reports the generated takes and measured usage.
@@ -80,7 +82,7 @@ func RunSFXBuild(ctx context.Context, options SFXBuildOptions) (SFXSummary, erro
 	if options.MaxCostUSD == 0 {
 		options.MaxCostUSD = 5
 	}
-	assets := SFXAssets()
+	assets := filterSFXAssets(SFXAssets(), options.Only)
 	plan, err := PlanSFX(assets, options.Takes)
 	if err != nil {
 		return SFXSummary{}, err
@@ -196,4 +198,23 @@ func SFXJob(client *http.Client, endpoint, outputDir string, take int) Job {
 		}
 		return nil
 	}}
+}
+
+// filterSFXAssets keeps the assets named in only, in catalog order. It lets a
+// build generate newly added sounds without paying to regenerate the rest.
+func filterSFXAssets(assets []SFXAsset, only []string) []SFXAsset {
+	if len(only) == 0 {
+		return assets
+	}
+	keep := make(map[string]bool, len(only))
+	for _, id := range only {
+		keep[strings.TrimSpace(id)] = true
+	}
+	filtered := make([]SFXAsset, 0, len(only))
+	for _, asset := range assets {
+		if keep[asset.ID] {
+			filtered = append(filtered, asset)
+		}
+	}
+	return filtered
 }

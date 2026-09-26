@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -40,7 +41,11 @@ func TestLiveSFXBuild(t *testing.T) {
 		}
 		takes = parsed
 	}
-	summary, err := RunSFXBuild(t.Context(), SFXBuildOptions{Client: &http.Client{}, Endpoint: endpoint, Root: root, Takes: takes, Log: os.Stdout})
+	var only []string
+	if raw := os.Getenv("DF_SFX_ONLY"); raw != "" {
+		only = strings.Split(raw, ",")
+	}
+	summary, err := RunSFXBuild(t.Context(), SFXBuildOptions{Client: &http.Client{}, Endpoint: endpoint, Root: root, Takes: takes, Log: os.Stdout, Only: only})
 	if err != nil {
 		t.Fatal(err)
 	}

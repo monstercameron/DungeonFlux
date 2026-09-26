@@ -31,10 +31,10 @@ type SFXAsset struct {
 func SFXAssets() []SFXAsset {
 	return []SFXAsset{
 		{ID: "sfx_join_tv", Prompt: "warm welcoming tavern chime with a soft wooden door creak, no music", DurationSeconds: 0.8, LUFS: -16},
-		{ID: "sfx_phone_confirm", Prompt: "soft friendly confirmation tick with a tiny warm chime, no music", DurationSeconds: 0.3, LUFS: -16},
+		{ID: "sfx_phone_confirm", Prompt: "soft friendly confirmation tick with a tiny warm chime, no music", DurationSeconds: 0.5, LUFS: -16},
 		{ID: "sfx_ready", Prompt: "short confident ready confirmation chime, warm and clear", DurationSeconds: 0.5, LUFS: -16},
 		{ID: "sfx_host_start", Prompt: "short dramatic fantasy table-start sting, bright bell and low lift", DurationSeconds: 1.2, LUFS: -16},
-		{ID: "sfx_phone_tick", Prompt: "tiny crisp wooden UI tick, quiet and tactile", DurationSeconds: 0.2, LUFS: -16},
+		{ID: "sfx_phone_tick", Prompt: "tiny crisp wooden UI tick, quiet and tactile", DurationSeconds: 0.5, LUFS: -19},
 		{ID: "sfx_phone_dice", Prompt: "very short soft dice rattle in a player's hand, three tiny taps", DurationSeconds: 0.7, LUFS: -16},
 		{ID: "sfx_roll_reveal", Prompt: "short magical hero reveal shimmer with a warm bell resolve", DurationSeconds: 1.1, LUFS: -16},
 		{ID: "sfx_hero_lock", Prompt: "brief warm hero locked chime, gentle fantasy bell", DurationSeconds: 0.8, LUFS: -16},

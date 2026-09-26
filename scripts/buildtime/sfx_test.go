@@ -224,3 +224,19 @@ func TestSFXBuild_RejectsCostCapBeforeNetwork(t *testing.T) {
 		t.Fatal("accepted a plan over the cost cap")
 	}
 }
+
+func TestFilterSFXAssetsKeepsOnlyNamedAssets(t *testing.T) {
+	all := SFXAssets()
+	if got := filterSFXAssets(all, nil); len(got) != len(all) {
+		t.Fatalf("empty filter kept %d of %d", len(got), len(all))
+	}
+	got := filterSFXAssets(all, []string{"sfx_hero_lock", " sfx_join_tv", "missing"})
+	if len(got) != 2 {
+		t.Fatalf("filter kept %d assets, want 2", len(got))
+	}
+	for _, asset := range got {
+		if asset.ID != "sfx_hero_lock" && asset.ID != "sfx_join_tv" {
+			t.Fatalf("unexpected asset %q", asset.ID)
+		}
+	}
+}
