@@ -58,10 +58,6 @@ func TestArtSrc_PassesBrowserURLsAndResolvesAssetSelectors(t *testing.T) {
 	}
 }
 
-type mapArt map[string]string
-
-func (m mapArt) ArtURL(name string) string { return m[name] }
-
 func TestHeroProxyArt(t *testing.T) {
 	art := mapArt{"ui/species_elf": "blob:elf", "ui/class_rogue": "blob:rogue"}
 	for _, species := range proxySpecies {
