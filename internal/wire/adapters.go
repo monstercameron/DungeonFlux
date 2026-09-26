@@ -1,11 +1,8 @@
 package wire
 
 import (
-	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"strings"
 
@@ -37,7 +34,7 @@ func buildAdapters(cfg config.Config, logger *slog.Logger) (adapterSet, error) {
 	if err := requireLiveKeys(cfg); err != nil {
 		return adapterSet{}, err
 	}
-	set := adapterSet{llm: nullLLM{}, image: nullImage{}, video: nullVideo{}, stt: nullSTT{}, tts: nullTTS{}}
+	set := adapterSet{llm: newFakeLLM(), image: newFakeImage(), video: newFakeVideo(), stt: fakeSTT{}, tts: fakeTTS{}}
 	var err error
 	if isLive(cfg, "llm") {
 		set.llm, err = liveLLM(cfg, logger)
@@ -186,45 +183,4 @@ func vendorConfig(cfg config.Config, vendor string) (string, string) {
 		}
 	}
 	return "", ""
-}
-
-type nullLLM struct{}
-
-func (nullLLM) StreamText(context.Context, ports.TextRequest) (ports.TextStream, error) {
-	return nullText{}, nil
-}
-func (nullLLM) JSON(context.Context, ports.TextRequest, ports.Schema) (json.RawMessage, error) {
-	return nil, errors.New("wire: adapter stand-in has no response")
-}
-
-type nullText struct{}
-
-func (nullText) Recv() (string, error) { return "", io.EOF }
-func (nullText) Close() error          { return nil }
-
-type nullImage struct{}
-
-func (nullImage) Generate(context.Context, ports.ImageRequest) (ports.ImageStream, error) {
-	return nil, errors.New("wire: image adapter stand-in")
-}
-
-type nullVideo struct{}
-
-func (nullVideo) Submit(context.Context, ports.VideoRequest) (ports.VideoJob, error) {
-	return ports.VideoJob{}, errors.New("wire: video adapter stand-in")
-}
-func (nullVideo) Poll(context.Context, ports.VideoJob) (ports.VideoStatus, error) {
-	return ports.VideoStatus{}, errors.New("wire: video adapter stand-in")
-}
-
-type nullSTT struct{}
-
-func (nullSTT) Transcribe(context.Context, ports.STTRequest) (ports.Transcript, error) {
-	return ports.Transcript{}, errors.New("wire: STT adapter stand-in")
-}
-
-type nullTTS struct{}
-
-func (nullTTS) Stream(context.Context, ports.TTSRequest, ports.TextStream) (ports.PCMStream, error) {
-	return nil, errors.New("wire: TTS adapter stand-in")
 }

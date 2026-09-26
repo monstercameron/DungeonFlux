@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/ports"
@@ -53,7 +54,10 @@ func (e *CannedExecutor) PlayCanned(ctx context.Context, effect domain.PlayCanne
 	reader, err := e.openLocalized(lineCtx, effect.AssetID)
 	if err != nil {
 		if !isCanceled(lineCtx, err) {
-			postLineFailed(ctx, scope, in, effect.UtteranceID, vocab.ErrUnavailable)
+			// Build-time media is optional in fake mode and may be absent during
+			// early rehearsals. A short silence preserves the line lifecycle so
+			// the engine can continue instead of waiting forever.
+			e.playSilence(ctx, scope, in, effect.UtteranceID)
 		}
 		return
 	}
@@ -91,6 +95,20 @@ func (e *CannedExecutor) PlayCanned(ctx context.Context, effect domain.PlayCanne
 		default:
 		}
 	}
+}
+
+func (e *CannedExecutor) playSilence(ctx context.Context, scope domain.Scope, in ports.Inbox, id domain.UtteranceID) {
+	timer := time.NewTimer(1200 * time.Millisecond)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+	case <-ctx.Done():
+		return
+	}
+	e.audio.Frame(domain.AudioFrame{UtteranceID: id, SampleRate: defaultSampleRate, PCMS16LE: make([]byte, defaultSampleRate*2*5/4), Final: true})
+	postLineFirst(ctx, scope, in, id)
+	postLineFinal(ctx, scope, in, id, defaultSampleRate*5/4, defaultSampleRate)
+	postLineDone(ctx, scope, in, id)
 }
 
 func (e *CannedExecutor) assetFrame(ctx context.Context, scope domain.Scope, in ports.Inbox, id domain.UtteranceID, data []byte, seq int, final bool, first *bool) int {

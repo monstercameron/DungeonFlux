@@ -3,7 +3,6 @@ package out
 import (
 	"bytes"
 	"context"
-	"errors"
 	"io"
 	"testing"
 
@@ -25,18 +24,20 @@ func TestCannedExecutor_PlayCannedStreamsAssetAndCompletes(t *testing.T) {
 	}
 }
 
-func TestCannedExecutor_MissingAssetPostsFailure(t *testing.T) {
+func TestCannedExecutor_MissingAssetFallsBackToSilence(t *testing.T) {
 	in := &testInbox{}
-	executor := NewCannedExecutor(testAssets{err: errors.New("missing")}, &testAudio{})
+	audio := &testAudio{}
+	executor := NewCannedExecutor(testAssets{err: errMissingAsset}, audio)
 	executor.PlayCanned(context.Background(), domain.PlayCanned{UtteranceID: "c-2"}, domain.Scope{}, in)
-	if len(in.events) != 1 {
+	if len(in.events) != 3 || len(audio.frames) != 1 || !audio.frames[0].Final {
 		t.Fatalf("events = %+v", in.events)
 	}
-	event, ok := in.events[0].Event.(domain.LineFailed)
-	if !ok || event.FailureKind != vocab.ErrUnavailable {
-		t.Fatalf("event = %#v", in.events[0].Event)
+	if got := eventKinds(in.events); got[0] != vocab.EventLineFirstAudio || got[1] != vocab.EventLineAudioFinal || got[2] != vocab.EventLineDone {
+		t.Fatalf("events = %v", got)
 	}
 }
+
+var errMissingAsset = io.ErrUnexpectedEOF
 
 func TestCannedExecutor_CancelRemovesQueuedAudio(t *testing.T) {
 	audio := &testAudio{}

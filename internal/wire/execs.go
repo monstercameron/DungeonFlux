@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/monstercameron/DungeonFlux/internal/config"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
@@ -61,6 +62,7 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 	inbox := &roomInbox{}
 	runner := runtime.NewRunner(inbox, cfg.logger)
 	assets := newAssetStore(cfg.config.Server.DataDir)
+	fakeMode := isFakeMode(cfg.config)
 	assembler := voicein.NewAssembler()
 	transcriber, err := voicein.NewTranscriber(set.stt, assembler)
 	if err != nil {
@@ -70,7 +72,17 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 	canned := voiceout.NewCannedExecutor(assets, audio)
 	interpret := llmexec.NewInterpretExecutor(llmexec.InterpretConfig{LLM: set.llm})
 	portrait := media.NewPortraitExecutor(media.PortraitConfig{Images: set.image, Assets: assets})
-	compose := media.NewComposeStillExecutor(media.ComposeStillConfig{Source: assets.Read, Assets: assets})
+	composeSource := assets.Read
+	if fakeMode {
+		composeSource = func(ctx context.Context, id domain.AssetID) ([]byte, error) {
+			data, err := assets.Read(ctx, id)
+			if err == nil {
+				return data, nil
+			}
+			return fakePNG(), nil
+		}
+	}
+	compose := media.NewComposeStillExecutor(media.ComposeStillConfig{Source: composeSource, Assets: assets})
 	clip := media.NewClipExecutor(media.ClipConfig{Videos: set.video, Assets: assets, Download: func(ctx context.Context, url string) ([]byte, error) {
 		downloader, ok := set.video.(interface {
 			Download(context.Context, string) ([]byte, error)
@@ -80,29 +92,47 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 		}
 		return downloader.Download(ctx, url)
 	}})
-	runtime.Handle(runner, transcriber.Execute)
-	runtime.Handle(runner, interpret.Execute)
-	runtime.Handle(runner, llmexec.NewCharacterFlavorExecutor(set.llm).Execute)
-	runtime.Handle(runner, pcm.StartLine)
-	runtime.Handle(runner, canned.PlayCanned)
-	runtime.Handle(runner, llmexec.NewPrerenderTextExecutor(set.llm).Execute)
-	runtime.Handle(runner, voiceout.NewRenderLinesExecutor(set.tts, assets).Execute)
-	runtime.Handle(runner, portrait.Execute)
-	runtime.Handle(runner, compose.Execute)
-	runtime.Handle(runner, clip.Execute)
-	runtime.Handle(runner, billboardExecutor(cfg.config.Server.DataDir))
-	runtime.Handle(runner, func(_ context.Context, effect domain.ReleaseLine, _ domain.Scope, _ ports.Inbox) {
+	runtime.Handle(runner, loggedExecutor(cfg.logger, transcriber.Execute))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, interpret.Execute))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, llmexec.NewCharacterFlavorExecutor(set.llm).Execute))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, pcm.StartLine))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, canned.PlayCanned))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, llmexec.NewPrerenderTextExecutor(set.llm).Execute))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, voiceout.NewRenderLinesExecutor(set.tts, assets).Execute))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, portrait.Execute))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, compose.Execute))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, clip.Execute))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, billboardExecutor(cfg.config.Server.DataDir, fakeMode)))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, func(_ context.Context, effect domain.ReleaseLine, _ domain.Scope, _ ports.Inbox) {
 		pcm.Cancel(effect.UtteranceID)
 		canned.Cancel(effect.UtteranceID)
-	})
-	runtime.Handle(runner, func(_ context.Context, effect domain.DropLine, _ domain.Scope, _ ports.Inbox) {
+	}))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, func(_ context.Context, effect domain.DropLine, _ domain.Scope, _ ports.Inbox) {
 		pcm.Cancel(effect.UtteranceID)
 		canned.Cancel(effect.UtteranceID)
-	})
-	runtime.Handle(runner, func(_ context.Context, effect domain.TalkStop, _ domain.Scope, _ ports.Inbox) {
+	}))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, func(_ context.Context, effect domain.TalkStop, _ domain.Scope, _ ports.Inbox) {
 		cfg.logger.Debug("talk stop requested", "seat", effect.Seat, "reason", effect.Reason)
-	})
+	}))
 	return runner, inbox, nil
+}
+
+func loggedExecutor[E domain.Effect](logger *slog.Logger, next runtime.Executor[E]) runtime.Executor[E] {
+	return func(ctx context.Context, effect E, scope domain.Scope, in ports.Inbox) {
+		started := time.Now()
+		outcome := "completed"
+		if next != nil {
+			next(ctx, effect, scope, in)
+		} else {
+			outcome = "missing"
+		}
+		if ctx.Err() != nil {
+			outcome = "canceled"
+		}
+		if logger != nil {
+			logger.Info("effect executed", "effect", effect.Kind(), "scope", scope, "dur_ms", time.Since(started).Milliseconds(), "outcome", outcome)
+		}
+	}
 }
 
 type configForWire struct {
@@ -181,11 +211,17 @@ func extension(kind vocab.AssetKind, mime string) string {
 	return "bin"
 }
 
-func billboardExecutor(root string) runtime.Executor[domain.GenerateBillboardLoops] {
+func billboardExecutor(root string, fake bool) runtime.Executor[domain.GenerateBillboardLoops] {
 	_ = root
 	return func(ctx context.Context, effect domain.GenerateBillboardLoops, scope domain.Scope, in ports.Inbox) {
 		manifest, err := LoadManifest(filepath.Join("artifacts", "runtime", "buildtime", "manifest.json"), nil)
 		if err != nil {
+			if fake && in != nil {
+				for index, clip := range effect.Clips {
+					in.Post(ctx, domain.Envelope{Scope: scope, Event: domain.AssetReady{Slot: fmt.Sprintf("billboard:%d:%d", effect.Seat, index), Asset: domain.Asset{ID: domain.AssetID(clip), Kind: string(vocab.AssetVideo), MIME: "video/mp4"}}})
+				}
+				return
+			}
 			postAssetFailure(ctx, scope, in, vocab.ErrUnavailable)
 			return
 		}
