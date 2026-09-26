@@ -27,7 +27,7 @@ func RenderNudgeLine(ctx context.Context, client *http.Client, endpoint, outputD
 	if line.ID == "" || line.Voice == "" || line.Text == "" {
 		return errors.New("buildtime: nudge requires id, voice, and text")
 	}
-	if err := RenderCannedLine(ctx, client, endpoint, outputDir, writer, CannedLine{ID: line.ID, Voice: line.Voice, Text: line.Text}, take); err != nil {
+	if err := RenderCannedLine(ctx, client, endpoint, outputDir, writer, CannedLine(line), take); err != nil {
 		return err
 	}
 	return writer.SetMetadata(line.ID, 0, 0, map[string]string{
