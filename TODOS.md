@@ -239,11 +239,11 @@ The shared vocabulary, domain types, ports, and protobuf API every lane codes ag
   done when: `go tool buf generate` output builds with `go build ./gen/...` and `GOOS=js GOARCH=wasm go build ./gen/...`.; gate green (≥ 70% coverage where applicable)
   status: done 9b677b2
 
-- [ ] CON-010 · vocab style: one constant per line with doc comments
+- [x] CON-010 · vocab style: one constant per line with doc comments
   why: CON-001 packed constants onto semicolon lines without doc comments, against AGENTS rule 2.
   lane: ORCH (delegated) · block: 8–11 · paths: `internal/vocab/**` · depends: CON-001
   done when: every exported identifier has a doc comment; one constant per line; values unchanged (the uniqueness test still passes); go build ./... unaffected.
-  status: committed 548aae8
+  status: done 0aa0d0f
 
 ## 3. Foundations: clock, config, logging, HTTP, fakes, archtest
 
