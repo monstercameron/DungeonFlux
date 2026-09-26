@@ -237,7 +237,7 @@ The shared vocabulary, domain types, ports, and protobuf API every lane codes ag
   why: CON-001 packed constants onto semicolon lines without doc comments, against AGENTS rule 2.
   lane: ORCH (delegated) · block: 8–11 · paths: `internal/vocab/**` · depends: CON-001
   done when: every exported identifier has a doc comment; one constant per line; values unchanged (the uniqueness test still passes); go build ./... unaffected.
-  status: claimed developer-codex
+  status: committed 548aae8
 
 ## 3. Foundations: clock, config, logging, HTTP, fakes, archtest
 
@@ -297,6 +297,12 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   done when: internal/wire and cmd/server may import any module package except archtest; runtime and other packages still may not import adapters; archtest green.
   status: committed 25b960e
 
+- [ ] BASE-016 · wire instantiates live adapters, budget, and the remaining line/talk executors
+  why: BASE-011 landed before archtest allowed wire to import adapters (BASE-015), so live adapters and the budget ledger were skipped and ReleaseLine, DropLine, TalkStop, and GenerateBillboardLoops were registered as no-ops.
+  lane: ORCH · block: 8–11 · paths: `internal/wire/adapters*.go`, `internal/wire/execs*.go`, `internal/wire/budget*.go` · depends: BASE-011, BASE-015
+  done when: live config builds every vendor adapter from env keys (fail fast naming the missing variable) behind modelchain and the budget ledger; ReleaseLine and DropLine reach voice/out, TalkStop reaches the Talk stream, and billboard loops resolve to build-time manifest assets; the effect-coverage test has no no-op entries except documented control effects.
+  status: claimed luna
+
 - [x] BASE-007 · internal/wire skeleton and cmd/server skeleton
   why: The server binary must start from hour 1 with fakes, flags (-config, -port, -data-dir, -seed), and graceful shutdown.
   lane: ORCH · block: 1–5 · paths: `internal/wire/**`, `cmd/server/**` · depends: BASE-002, BASE-005
@@ -325,7 +331,7 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   why: Effects need executors (voice out/in, llmexec, media) bound to fake or live adapters, model chains, and the budget, chosen by config with keys from env vars.
   lane: ORCH · block: 5–8 · paths: `internal/wire/exec*.go`, `internal/wire/adapters*.go`, `internal/wire/wire.go` · depends: BASE-010, VOUT-003, VIN-003, LLM-009, MEDIA-007, LLM-007
   done when: with config/fake.json every effect kind the engine emits has a registered executor (test enumerates vocab effect kinds); live config builds adapters only when keys exist, else fails fast naming the missing env var.
-  status: committed 3a0494a
+  status: committed 1e9d290 (live adapters, budget, and line/talk executors follow in BASE-016)
 
 - [ ] BASE-012 · lobby QR code and room code at start-up
   why: Phones join by scanning a QR on the DM screen, so start-up writes the join URL QR PNG as an asset and prints the room code.
@@ -801,6 +807,12 @@ The room loop, runner, scope tree, inbox, timers, and executors registry that ru
   done when: NewRoom accepts options (WithRunner, WithTimers, WithScopes or one WithExecutors); after each Step the room applies control effects itself (start/cancel/freeze/thaw timers, pause/resume all, cancel scope/key, new run) and hands work effects to the Runner under the scope context from ScopeTree; synctest tests prove a StartTimer fires timer_fired back into Step and a CancelScope cancels a running executor's context.
   status: committed efc65c8
 
+- [ ] RT-010 · NewRun replaces engine state through a newGame hook
+  why: BASE-011 and RT-009 both report that a NewRun (reset) cancels scopes and timers but cannot swap in a fresh engine with the next seed, so host Reset and dfctl reset leave stale game state.
+  lane: L-RT · block: 8–11 · paths: `internal/runtime/room*.go`, `internal/runtime/newrun*.go` · depends: RT-009, RT-007
+  done when: a Room option (e.g. WithNewGame(func(seed []byte) ports.Engine)) is called on NewRun with RoomState's derived seed; the old engine is dropped, a fresh View is published, and the event log records the new run; synctest test proves Reset mid-conversation returns to Lobby with a new seed.
+  status: claimed luna
+
 ## 13. API and streams
 
 The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug service.
@@ -883,6 +895,12 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   done when: Ring buffer handler feeds HostView.log_tail; tests.; gate green (≥ 70% coverage where applicable)
   status: committed e863809
 
+- [ ] API-014 · Watch reattach without client kind, and the newest DM Listen replaces older streams
+  why: E2E-002 skips path 12 because a Watch reattach is rejected with "client kind is required", and path 21 because a second DM Listen does not replace the older stream.
+  lane: L-API · block: 8–11 · paths: `internal/api/watch*.go`, `internal/api/listen*.go` · depends: API-004, API-005, E2E-002
+  done when: a reattaching client can resume its Watch with its seat token (kind remembered from Join); a newer DM Listen stream closes the older one cleanly; E2E paths 12 and 21 run instead of skipping.
+  status: claimed luna
+
 ## 14. LLM layer
 
 SchemaFlux for OpenAI-dialect links, Gemini and Haiku adapters, model chains, budget, and the executors that turn effects into model calls.
@@ -963,7 +981,7 @@ SchemaFlux for OpenAI-dialect links, Gemini and Haiku adapters, model chains, bu
   why: The hour-11 gate needs one cheap real call per adapter to prove keys, endpoints, and parsing before the voice loop is tested.
   lane: L-LLM (delegated) · block: 8–11 · paths: `internal/adapters/**/live_test.go` · depends: LLM-001, LLM-002, LLM-003, VIN-001, VOUT-001, VOUT-007, MEDIA-002, MEDIA-003
   done when: each adapter has a //go:build live test gated by DF_LIVE=1 that makes one minimal call and asserts parsed output; go vet -tags live passes; nothing runs without the tag.
-  status: claimed developer-codex
+  status: committed c092514
 
 ## 15. Voice in (STT)
 
@@ -1193,7 +1211,7 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   why: ORCH review: TestPTTModel_QueueDoesNotBlockAndReportsFull fails in web/phone after PHONE-004, breaking the web/phone package gate.
   lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/ptt*.go` · depends: PHONE-004
   done when: go test ./web/phone passes; the queue never blocks the MediaRecorder callback and reports full as the test expects.
-  status: claimed developer-codex
+  status: committed cb377ee
 
 - [ ] PHONE-009 · compose the phone screen flow from SeatView
   why: The phone screens (create, sheet, moves, PTT, typed, dice, combat) landed as separate views; nothing switches between them by phase and seat state.
@@ -1251,7 +1269,7 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   why: The DM views (lobby, scene, clip, dice/timer, music, FLAT combat, end card) landed separately; the /dm route needs one composition that layers them by phase.
   lane: L-WEB-DM · block: 8–11 · paths: `web/dm/screen*.go`, `web/dm/mount*.go` · depends: DM-001, DM-002, DM-003, DM-004, DM-005, DM-006, DM-007, WEB-008
   done when: a pure layer-selection function maps View to visible layers with table tests per phase; the /dm route renders it; GOOS=js GOARCH=wasm build passes.
-  status: claimed developer-codex
+  status: committed e955d1f
 
 ## 21. Host
 
@@ -1523,6 +1541,12 @@ Keeping the build honest: per-commit checks, the 30-minute full gate, checkpoint
   why: Two walk paths exercise the API and runtime rather than the engine, so they live in ORCH's e2e.
   lane: ORCH · block: 8–11 · paths: `internal/wire/e2e_paths_test.go` · depends: E2E-001
   done when: Both paths pass.; gate green (≥ 70% coverage where applicable)
+  status: claimed luna
+
+- [ ] E2E-003 · e2e dfctl run reaches End (unskip E2E-001)
+  why: E2E-001 still skips after the lobby with a note that ENG-014, COMBAT-008, BASE-010, and BASE-011 were pending; all four are committed, so the fastest gate check must now drive a whole run to End.
+  lane: ORCH · block: 8–11 · paths: `internal/wire/e2e_test.go` · depends: E2E-001, ENG-014, COMBAT-008, BASE-011
+  done when: the test drives lobby → creation → opening → conversation → check → resolution → hook → combat → cliffhanger → End through dfctl only, on fakes, asserting the phase trace; any engine stall is reported with the exact event and state as a follow-up todo request.
   status: claimed luna
 
 - [ ] SPIKE-001 · Spike proto and grpctunnel echo
