@@ -1,0 +1,113 @@
+package wire
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/monstercameron/DungeonFlux/internal/config"
+)
+
+func TestMountWeb_ServesPagesAndWasm(t *testing.T) {
+	root := t.TempDir()
+	wasm := filepath.Join(root, "artifacts", "wasm")
+	if err := os.MkdirAll(wasm, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(old) })
+	if err := os.Chdir(root); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "web", "shell", "static"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "web", "shell", "static", "index.html"), []byte("host"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(wasm, "dungeonflux.wasm"), []byte("wasm"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(wasm, "wasm_exec.js"), []byte("js"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	mux := http.NewServeMux()
+	if err := mountWeb(mux, config.Config{Server: config.ServerConfig{DataDir: filepath.Join(root, "runtime")}}); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"/dm", "/p", "/p/seat", "/host", "/about"} {
+		res := request(mux, path, "")
+		if res.Code != http.StatusOK || res.Body.String() != "host" {
+			t.Errorf("GET %s = %d %q", path, res.Code, res.Body.String())
+		}
+	}
+	res := request(mux, "/app/dungeonflux.wasm", "")
+	if res.Code != http.StatusOK || res.Header().Get("Content-Type") != "application/wasm" {
+		t.Fatalf("wasm = %d %q %q", res.Code, res.Body.String(), res.Header().Get("Content-Type"))
+	}
+	res = request(mux, "/wasm_exec.js", "")
+	if res.Code != http.StatusOK || !strings.HasPrefix(res.Header().Get("Content-Type"), "text/javascript") {
+		t.Fatalf("loader = %d %q", res.Code, res.Header().Get("Content-Type"))
+	}
+}
+
+func TestMountWeb_ServesBrotliAndValidatesAssets(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "web", "shell", "static"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "artifacts", "wasm"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "web", "shell", "static", "index.html"), []byte("host"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	wasm := filepath.Join(root, "artifacts", "wasm", "dungeonflux.wasm")
+	if err := os.WriteFile(wasm+".br", []byte("compressed"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	old, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(old) })
+	if err := os.Chdir(root); err != nil {
+		t.Fatal(err)
+	}
+	assets := filepath.Join(root, "runtime", "assets")
+	if err := os.MkdirAll(assets, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	name := strings.Repeat("a", 64) + ".png"
+	if err := os.WriteFile(filepath.Join(assets, name), []byte("asset"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	mux := http.NewServeMux()
+	if err := mountWeb(mux, config.Config{Server: config.ServerConfig{DataDir: filepath.Join(root, "runtime")}}); err != nil {
+		t.Fatal(err)
+	}
+	res := request(mux, "/app/dungeonflux.wasm", "gzip, br")
+	if res.Code != http.StatusOK || res.Header().Get("Content-Encoding") != "br" || res.Body.String() != "compressed" {
+		t.Fatalf("brotli = %d %q %q", res.Code, res.Header(), res.Body.String())
+	}
+	res = request(mux, "/assets/"+name, "")
+	if res.Code != http.StatusOK || res.Body.String() != "asset" {
+		t.Fatalf("asset = %d %q", res.Code, res.Body.String())
+	}
+	for _, path := range []string{"/assets/not-a-hash.png", "/assets/" + strings.Repeat("a", 64) + ".png/extra", "/assets/secret/extra"} {
+		if res := request(mux, path, ""); res.Code != http.StatusNotFound {
+			t.Errorf("invalid asset %s = %d", path, res.Code)
+		}
+	}
+}
+
+func request(handler http.Handler, path, encoding string) *httptest.ResponseRecorder {
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set("Accept-Encoding", encoding)
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	return res
+}
