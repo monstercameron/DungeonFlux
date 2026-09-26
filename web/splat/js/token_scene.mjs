@@ -26,18 +26,27 @@ export function acceptScene(state,scene) {
   if (!Number.isSafeInteger(seq) || seq<=state.sceneSequence) return;
   state.sceneSequence=seq; state.pendingScene=scene;
   if (state.tokens) { state.tokens.apply(scene); applyCamera(state,scene.camera); }
-  state.canvas.style.opacity=scene.visible ? "1" : "0";
-  state.canvas.style.transition=scene.visible ? "opacity 600ms ease" : "none";
+  if (scene.visible !== undefined) {
+    state.visible=Boolean(scene.visible);
+    state.canvas.style.opacity=state.visible ? "1" : "0";
+    state.canvas.style.transition=state.visible ? "opacity 600ms ease" : "none";
+  }
 }
 /** attachTokens installs the authoritative token renderer after the filtered grid is ready. */
 export function attachTokens(pc,state,grid,layer,message) {
   if (!grid) return;
   state.tokens=createTokenController({pc,app:state.app,grid,layer,camera:state.camera,effects:state.effects,
     reducedMotion:state.reducedMotion,
-    onState:value=>{state.tokenState=value;}});
+    onState:value=>{state.tokenState=value;state.onTokens?.(value);}});
   state.tokens.pause(state.paused);
   const pending=state.pendingScene;
-  state.tokens.apply({seq:pending?.seq ?? 0,tokens:pending?.tokens ?? message.tokens ?? []});
+  const buffered=state.pendingTokens;
+  state.tokens.apply(buffered ?? {seq:pending?.seq ?? 0,tokens:pending?.tokens ?? message.tokens ?? []});
+  state.pendingTokens=null;
   if (pending) applyCamera(state,pending.camera);
-  state.app.on("destroy",()=>state.tokens?.destroy());
+}
+
+/** Returns a detached authoritative token snapshot for runtime state consumers. */
+export function tokenSnapshot(state) {
+  return state.tokens?.getState?.() ?? {count:0,moving:0,followId:null,tokens:[]};
 }

@@ -1998,6 +1998,12 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: both scans have consistent visual scale registration across splats, colliders and cameras, characters remain 1.8 metres with 1.524 metre rules cells, playable terrain is regenerated at that scale, demo movement selects reachable cells after re-registration, both scenes pass visual review, and regressions and scoped gate pass.
   status: done Codex; voxel registration, disconnected movement, sprite and viewer regressions pass; scoped gate failures 0; both scenes visually verified
 
+- [x] SPLAT-021 - instance API for a host-owned battle canvas
+  why: The developer requests reusable canvas embedding and a proper handling API.
+  lane: L-WEB-SPLAT - paths: `web/splat/js/battle_runtime.mjs`, `web/splat/js/battle_scene.mjs`, `web/splat/js/canvas_surface.mjs`, `web/splat/js/runtime_stats.mjs`, `web/splat/js/df-splat.mjs`, `web/splat/js/token_scene.mjs`, `web/splat/js/camera_controls.mjs` - depends: SPLAT-020
+  done when: independent instances load profiles into supplied canvases without replacing nodes or changing host layout, resize to their own element, expose scene/token/camera/effects/visibility/control methods and events, preserve the Go bridge, clean up listeners and GPU resources, and lifecycle/race regressions plus lane gate pass.
+  status: done Codex; supplied-canvas API, explicit engine ownership, lifecycle/bridge regressions pass; gate-20260926-153328 failures 0
+
 ## 23. dfctl debug CLI
 
 Command-line reads and demo writes for agents and the developer.

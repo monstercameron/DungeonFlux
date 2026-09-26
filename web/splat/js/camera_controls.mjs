@@ -34,6 +34,7 @@ export function installOrbitControls({ canvas, camera, target = [0, 0, 0] }) {
   let startX = 0;
   let startY = 0;
   const apply = (next) => { position = next; camera.setPosition(...position); camera.lookAt(...orbitTarget); };
+  const releaseCapture = id => { if (!canvas.hasPointerCapture || canvas.hasPointerCapture(id)) canvas.releasePointerCapture?.(id); };
   const onDown = (event) => { if (dragging) return; dragging = true; activePointerId = event.pointerId; moved = false; startX = lastX = event.clientX; startY = lastY = event.clientY; canvas.setPointerCapture?.(event.pointerId); };
   const onMove = (event) => {
     if (!dragging || event.pointerId !== activePointerId) return;
@@ -43,7 +44,7 @@ export function installOrbitControls({ canvas, camera, target = [0, 0, 0] }) {
     apply(orbitPosition(orbitTarget, position, -dx * 0.008, dy * 0.008));
     lastX = event.clientX; lastY = event.clientY;
   };
-  const onUp = (event) => { if (event.pointerId !== activePointerId) return; dragging = false; activePointerId = null; canvas.releasePointerCapture?.(event.pointerId); };
+  const onUp = (event) => { if (event.pointerId !== activePointerId) return; dragging = false; activePointerId = null; releaseCapture(event.pointerId); };
   const onClick = (event) => { if (moved) { event.stopImmediatePropagation?.(); moved = false; } };
   const onWheel = (event) => {
     event.preventDefault?.();
@@ -60,6 +61,6 @@ export function installOrbitControls({ canvas, camera, target = [0, 0, 0] }) {
   canvas.addEventListener("wheel", onWheel, { passive: false });
   return Object.freeze({
     setTarget(next) { orbitTarget = [...next]; position = positionOf(camera); radius = distanceFrom(orbitTarget, position); minimum = Math.max(0.25, radius * 0.35); maximum = Math.max(minimum, radius * 3); },
-    dispose() { canvas.removeEventListener?.("pointerdown", onDown); canvas.removeEventListener?.("pointermove", onMove); canvas.removeEventListener?.("pointerup", onUp); canvas.removeEventListener?.("pointercancel", onUp); canvas.removeEventListener?.("click", onClick); canvas.removeEventListener?.("wheel", onWheel); },
+    dispose() { if (activePointerId !== null) releaseCapture(activePointerId); dragging = false; activePointerId = null; canvas.removeEventListener?.("pointerdown", onDown); canvas.removeEventListener?.("pointermove", onMove); canvas.removeEventListener?.("pointerup", onUp); canvas.removeEventListener?.("pointercancel", onUp); canvas.removeEventListener?.("click", onClick); canvas.removeEventListener?.("wheel", onWheel); },
   });
 }

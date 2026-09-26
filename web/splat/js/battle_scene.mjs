@@ -30,7 +30,11 @@ export async function loadSplatBundle(pc, app, source, options = {}) {
   const asset = await addAsset(app, pc, "df-splat-scene", assetURLValue, "gsplat");
   try {
     let metadata = null;
-    if (metaURL) metadata = (await addAsset(app, pc, "df-splat-meta", metaURL, "json")).resource;
+    if (metaURL) {
+      const metaAsset = await addAsset(app, pc, "df-splat-meta", metaURL, "json");
+      metadata = metaAsset.resource;
+      app.assets.remove(metaAsset); metaAsset.unload?.();
+    }
     const voxelConfig = source?.voxel_collider;
     const voxelURL = options.voxelURL || source?.voxel_collider_url || source?.voxelColliderURL || voxelConfig?.url;
     const colliderDeclared = Boolean(voxelConfig || source?.voxel_collider_url || source?.voxelColliderURL || options.voxelURL);
@@ -89,7 +93,10 @@ export function createBattleGrid(pc, app, grid, options = {}) {
       depthLayer = new pc.Layer({ name: options.depthLayerName ?? "df-voxel-depth", opaqueSortMode: pc.SORTMODE_NONE, transparentSortMode: pc.SORTMODE_NONE, clearDepthBuffer: false });
       layers.insert(depthLayer, index + 1);
       depthProxy = createVoxelDepthOccluder(pc, app, options.collider.occupiedBoxes(), grid, { layers: [depthLayer.id], maxBoxes: 65536, name: options.depthName ?? "df-voxel-depth-occluder" });
-      app.on?.("destroy", () => depthProxy?.destroy());
+      const ownedProxy = depthProxy;
+      const onDestroy = () => depthProxy.destroy();
+      depthProxy = Object.freeze({ ...ownedProxy, destroy() { app.off?.("destroy", onDestroy); ownedProxy.destroy(); } });
+      app.on?.("destroy", onDestroy);
     }
     layer = new pc.Layer({
       name: options.layerName ?? "df-battle-grid",
