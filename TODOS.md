@@ -327,6 +327,12 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   done when: run IDs are unique per start and per NewRun (e.g. the next sequence from the runs table, or a time-plus-seed-hash id); a wire test builds the app twice on the same data dir and both start; the human server stays up across restarts.
   status: committed 938b093
 
+- [ ] BASE-019 · start-up prints and saves the tester URLs (DM, host, phones)
+  why: DM and host tokens are generated per start and never shown, so a human tester cannot open /dm?token=… or /host?t=…, and phones need the LAN URL and room code.
+  lane: ORCH · block: 8–11 · paths: `internal/wire/urls*.go`, `internal/wire/wire.go` · depends: BASE-012
+  done when: on start the server logs at Info (and prints to stdout) the DM URL with token, the host URL with token, and the phone join URL with room code, for localhost and every non-loopback IPv4 address; the same list is written to <data-dir>/urls.txt (gitignored under artifacts); tokens never appear in the JSONL log file (console only); test covers URL building.
+  status: claimed luna
+
 - [x] BASE-007 · internal/wire skeleton and cmd/server skeleton
   why: The server binary must start from hour 1 with fakes, flags (-config, -port, -data-dir, -seed), and graceful shutdown.
   lane: ORCH · block: 1–5 · paths: `internal/wire/**`, `cmd/server/**` · depends: BASE-002, BASE-005
