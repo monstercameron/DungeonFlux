@@ -135,7 +135,7 @@ func (c marbleClient) Generate(ctx context.Context, request marbleRequest) (marb
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return marbleWorld{}, fmt.Errorf("Marble request: %w", err)
+		return marbleWorld{}, fmt.Errorf("marble request: %w", err)
 	}
 	defer resp.Body.Close()
 	var operation marbleOperation
@@ -143,13 +143,13 @@ func (c marbleClient) Generate(ctx context.Context, request marbleRequest) (marb
 		return marbleWorld{}, fmt.Errorf("decode Marble response: %w", err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return marbleWorld{}, fmt.Errorf("Marble API: %s", marbleError(operation.Error, resp.Status))
+		return marbleWorld{}, fmt.Errorf("marble API: %s", marbleError(operation.Error, resp.Status))
 	}
 	if operation.Done {
 		return operation.Response, nil
 	}
 	if operation.OperationID == "" {
-		return marbleWorld{}, errors.New("Marble response has no operation ID")
+		return marbleWorld{}, errors.New("marble response has no operation ID")
 	}
 	return c.poll(ctx, operation.OperationID)
 }
@@ -175,7 +175,7 @@ func (c marbleClient) poll(ctx context.Context, operationID string) (marbleWorld
 		req.Header.Set("WLT-Api-Key", c.apiKey)
 		resp, err := c.httpClient.Do(req)
 		if err != nil {
-			return marbleWorld{}, fmt.Errorf("Marble poll: %w", err)
+			return marbleWorld{}, fmt.Errorf("marble poll: %w", err)
 		}
 		var operation marbleOperation
 		decodeErr := json.NewDecoder(resp.Body).Decode(&operation)
@@ -184,7 +184,7 @@ func (c marbleClient) poll(ctx context.Context, operationID string) (marbleWorld
 			return marbleWorld{}, fmt.Errorf("decode Marble poll: %w", decodeErr)
 		}
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			return marbleWorld{}, fmt.Errorf("Marble poll: %s", marbleError(operation.Error, resp.Status))
+			return marbleWorld{}, fmt.Errorf("marble poll: %s", marbleError(operation.Error, resp.Status))
 		}
 		if operation.Error != nil {
 			return marbleWorld{}, errors.New(operation.Error.Message)
