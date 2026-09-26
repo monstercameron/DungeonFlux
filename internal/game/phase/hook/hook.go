@@ -68,7 +68,7 @@ func (m *Machine) Start() (Result, error) {
 		return Result{}, errors.New("arrival clip already started")
 	}
 	return Result{State: ArrivalClip, Effects: []domain.Effect{
-		domain.PlayCanned{AssetID: m.config.ArrivalClip},
+		domain.PlayCanned{UtteranceID: domain.UtteranceID(m.config.ArrivalClip), AssetID: m.config.ArrivalClip},
 	}}, nil
 }
 

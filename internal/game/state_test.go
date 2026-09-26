@@ -302,11 +302,12 @@ func TestStateStep_DelegatesCreationAndStoryToEnd(t *testing.T) {
 		domain.TimerFired{Name: "roll_resolved"},
 		domain.LineDone{UtteranceID: "reveal"},
 		domain.Act{Seat: 1, Move: vocab.MoveLeave},
+		domain.LineDone{UtteranceID: "hook-arrival"},
 		domain.LineDone{UtteranceID: "stranger"},
 		domain.HostCmd{Cmd: vocab.HostSkip},
 		domain.LineDone{UtteranceID: "cliffhanger"},
 	}
-	want := []vocab.StateID{vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateOpening, vocab.StateExploration, vocab.StateConversation, vocab.StateCheck, vocab.StateResolution, vocab.StateExploration, vocab.StateHookEvent, vocab.StateCombat, vocab.StateCliffhanger, vocab.StateEnd}
+	want := []vocab.StateID{vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateCreation, vocab.StateOpening, vocab.StateExploration, vocab.StateConversation, vocab.StateCheck, vocab.StateResolution, vocab.StateExploration, vocab.StateHookEvent, vocab.StateHookEvent, vocab.StateCombat, vocab.StateCliffhanger, vocab.StateEnd}
 	for index, event := range steps {
 		s.Step(domain.Envelope{Event: event})
 		if got := s.View().Path; got != want[index] {

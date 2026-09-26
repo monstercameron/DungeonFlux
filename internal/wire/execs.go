@@ -101,7 +101,9 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 	runtime.Handle(runner, loggedExecutor(cfg.logger, func(ctx context.Context, effect domain.StartLine, scope domain.Scope, in ports.Inbox) {
 		switch effect.Role {
 		case vocab.RoleNPCReply:
-			npcReply.Execute(ctx, effect, scope, in)
+			speakGenerated(npcReply.Execute, pcm.StartLine)(ctx, effect, scope, in)
+		case vocab.RoleOpening, vocab.RoleCliffhanger:
+			cannedWhenEmpty(pcm.StartLine)(ctx, effect, scope, in)
 		default:
 			pcm.StartLine(ctx, effect, scope, in)
 		}

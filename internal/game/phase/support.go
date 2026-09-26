@@ -14,20 +14,25 @@ import (
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
 
+// hookArrivalUtterance names the arrival clip and its canned stand-in line.
+const hookArrivalUtterance = "hook-arrival"
+
 func (m *Machine) stepHook(event domain.Event) (Result, error) {
 	if isPassive(event) {
 		return Result{}, nil
 	}
-	if line, ok := event.(domain.LineDone); ok {
-		if m.hook.State() == hook.ArrivalClip {
-			if _, err := m.hook.Step(domain.ClipDone{AssetID: "hook-arrival"}); err != nil {
-				return Result{}, err
-			}
+	if line, ok := event.(domain.LineDone); ok && m.hook.State() == hook.ArrivalClip {
+		if line.UtteranceID != "" && line.UtteranceID != hookArrivalUtterance {
+			return Result{}, nil
 		}
-		if line.UtteranceID == "" {
-			line.UtteranceID = "stranger"
+		// The arrival clip finished: start the stranger's line. Its effects
+		// used to be discarded and the same event re-fed as the stranger's
+		// line_done, so the hook either skipped the line or waited forever.
+		clip, err := m.hook.Step(domain.ClipDone{AssetID: hookArrivalUtterance})
+		if err != nil {
+			return Result{}, err
 		}
-		event = line
+		return Result{Effects: clip.Effects}, nil
 	}
 	result, err := m.hook.Step(event)
 	if err != nil {

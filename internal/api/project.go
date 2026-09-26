@@ -216,7 +216,7 @@ func projectCharacter(character *domain.Character) *df.Character {
 		Name:               character.Name,
 		ClassName:          character.Class,
 		PersuasionModifier: int32(character.PersuasionModifier),
-		PortraitUrl:        string(character.Portrait),
+		PortraitUrl:        heroPortrait(string(character.Portrait), character.Species),
 		HookText:           character.Hook,
 		Species:            character.Species,
 		Gender:             character.Gender,
@@ -282,8 +282,12 @@ func projectBuildCards(seats []domain.SeatView) []*df.BuildCard {
 		if seat.Build == nil {
 			continue
 		}
+		species := ""
+		if seat.Character != nil {
+			species = seat.Character.Species
+		}
 		out = append(out, &df.BuildCard{PlayerNumber: int32(seat.Build.PlayerNumber), Name: seat.Build.Name,
-			ClassName: seat.Build.Class, PortraitUrl: string(seat.Build.Portrait)})
+			ClassName: seat.Build.Class, PortraitUrl: heroPortrait(string(seat.Build.Portrait), species)})
 	}
 	return out
 }
@@ -480,4 +484,17 @@ func ints32(values []int) []int32 {
 		out[index] = int32(value)
 	}
 	return out
+}
+
+// heroPortrait is the portrait clients show for a hero: the generated one when
+// it exists, otherwise the rolled species art as a stand-in. The server picks
+// it so the TV and the player's phone always show the same stand-in.
+func heroPortrait(portrait, species string) string {
+	if strings.TrimSpace(portrait) != "" {
+		return portrait
+	}
+	if species = strings.ToLower(strings.TrimSpace(species)); species != "" {
+		return "ui/species_" + species
+	}
+	return ""
 }

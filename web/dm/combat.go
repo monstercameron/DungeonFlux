@@ -78,9 +78,15 @@ func CombatModelFromView(view *dungeonfluxv1.DMView) CombatModel {
 	model.Visible = battlefield.GetVisible()
 	if flat := flatBattlefield(battlefield); flat != nil {
 		model.ImageURL = flat.GetImageUrl()
-		model.Segments = projectedGrid(battlefield.GetGrid(), flat.GetFloorQuadPx())
-		model.Tokens = projectedTokens(view.GetTokens(), battlefield.GetGrid(), flat.GetFloorQuadPx(), view.GetBuildCards())
-		model.Highlights = projectedHighlights(view.GetHighlights(), battlefield.GetGrid(), flat.GetFloorQuadPx())
+		quad := flat.GetFloorQuadPx()
+		if len(quad) < 8 {
+			// Live content ships the flat battlefield image without its floor
+			// quad; without one no token or grid cell could be placed on the TV.
+			quad = defaultFloorQuad
+		}
+		model.Segments = projectedGrid(battlefield.GetGrid(), quad)
+		model.Tokens = projectedTokens(view.GetTokens(), battlefield.GetGrid(), quad, view.GetBuildCards())
+		model.Highlights = projectedHighlights(view.GetHighlights(), battlefield.GetGrid(), quad)
 	}
 	return model
 }
@@ -122,10 +128,15 @@ func projectedHighlights(highlights []*dungeonfluxv1.Highlight, grid *dungeonflu
 }
 
 func flatBattlefield(battlefield *dungeonfluxv1.Battlefield) *dungeonfluxv1.FlatBattlefield {
-	if battlefield == nil || !strings.EqualFold(battlefield.GetMode(), "FLAT") {
+	// The server carries the combat state (pc_turn, enemy_turn) in Mode, so
+	// only an explicit SPLAT mode opts out of the flat battlefield.
+	if battlefield == nil || strings.EqualFold(battlefield.GetMode(), "SPLAT") {
 		return nil
 	}
-	return battlefield.GetFlat()
+	if flat := battlefield.GetFlat(); flat != nil {
+		return flat
+	}
+	return &dungeonfluxv1.FlatBattlefield{}
 }
 
 func projectedTokens(tokens []*dungeonfluxv1.Token, grid *dungeonfluxv1.Grid, quad []float32, cards []*dungeonfluxv1.BuildCard) []CombatToken {
@@ -264,3 +275,7 @@ func (h homography) project(column, row float32, cols, rows int32) (CombatPoint,
 	}
 	return CombatPoint{X: float32((h[0]*u + h[1]*v + h[2]) / denominator), Y: float32((h[3]*u + h[4]*v + h[5]) / denominator)}, true
 }
+
+// defaultFloorQuad is the tavern floor of battlefield_tavern_flat in canvas
+// pixels (top-left, top-right, bottom-right, bottom-left).
+var defaultFloorQuad = []float32{120, 180, 1800, 120, 1740, 940, 160, 900}
