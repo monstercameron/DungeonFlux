@@ -233,6 +233,12 @@ The shared vocabulary, domain types, ports, and protobuf API every lane codes ag
   done when: `go tool buf generate` output builds with `go build ./gen/...` and `GOOS=js GOARCH=wasm go build ./gen/...`.; gate green (≥ 70% coverage where applicable)
   status: done 9b677b2
 
+- [ ] CON-010 · vocab style: one constant per line with doc comments
+  why: CON-001 packed constants onto semicolon lines without doc comments, against AGENTS rule 2.
+  lane: ORCH (delegated) · block: 8–11 · paths: `internal/vocab/**` · depends: CON-001
+  done when: every exported identifier has a doc comment; one constant per line; values unchanged (the uniqueness test still passes); go build ./... unaffected.
+  status: claimed developer-codex
+
 ## 3. Foundations: clock, config, logging, HTTP, fakes, archtest
 
 Small shared packages that every lane depends on. Two Sonnet helpers write them in hour 0 under ORCH review.
@@ -947,6 +953,12 @@ SchemaFlux for OpenAI-dialect links, Gemini and Haiku adapters, model chains, bu
   done when: internal/llmexec >= 70% with behaviour-asserting tests (failure events, fallbacks, schema rejection).
   status: committed ff2cfb3
 
+- [ ] LLM-013 · live smoke tests for every vendor adapter
+  why: The hour-11 gate needs one cheap real call per adapter to prove keys, endpoints, and parsing before the voice loop is tested.
+  lane: L-LLM (delegated) · block: 8–11 · paths: `internal/adapters/**/live_test.go` · depends: LLM-001, LLM-002, LLM-003, VIN-001, VOUT-001, VOUT-007, MEDIA-002, MEDIA-003
+  done when: each adapter has a //go:build live test gated by DF_LIVE=1 that makes one minimal call and asserts parsed output; go vet -tags live passes; nothing runs without the tag.
+  status: claimed developer-codex
+
 ## 15. Voice in (STT)
 
 Mic audio from phones to transcripts.
@@ -1171,6 +1183,18 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   done when: dice{OFFERED} → roll tap → result.; gate green (≥ 70% coverage where applicable)
   status: committed f16954b
 
+- [ ] PHONE-008 · fix PTT queue test failure
+  why: ORCH review: TestPTTModel_QueueDoesNotBlockAndReportsFull fails in web/phone after PHONE-004, breaking the web/phone package gate.
+  lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/ptt*.go` · depends: PHONE-004
+  done when: go test ./web/phone passes; the queue never blocks the MediaRecorder callback and reports full as the test expects.
+  status: claimed developer-codex
+
+- [ ] PHONE-009 · compose the phone screen flow from SeatView
+  why: The phone screens (create, sheet, moves, PTT, typed, dice, combat) landed as separate views; nothing switches between them by phase and seat state.
+  lane: L-WEB-PHONE · block: 8–11 · paths: `web/phone/screen*.go`, `web/phone/mount*.go` · depends: PHONE-001, PHONE-002, PHONE-003, PHONE-005, PHONE-006, PHONE-007, WEB-008
+  done when: a pure screen-selection function maps SeatView to the active screen with table tests for every phase; the /p route mounted by the shell renders it; GOOS=js GOARCH=wasm build passes.
+  status: claimed developer-codex
+
 ## 20. DM screen
 
 The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
@@ -1216,6 +1240,12 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   lane: L-WEB-DM · block: 14–17 · paths: `web/dm/end*.go` · depends: PH-CLIFF-001
   done when: End card renders at End.; gate green (≥ 70% coverage where applicable)
   status: committed 1b9c6bb
+
+- [ ] DM-008 · compose the DM screen from View
+  why: The DM views (lobby, scene, clip, dice/timer, music, FLAT combat, end card) landed separately; the /dm route needs one composition that layers them by phase.
+  lane: L-WEB-DM · block: 8–11 · paths: `web/dm/screen*.go`, `web/dm/mount*.go` · depends: DM-001, DM-002, DM-003, DM-004, DM-005, DM-006, DM-007, WEB-008
+  done when: a pure layer-selection function maps View to visible layers with table tests per phase; the /dm route renders it; GOOS=js GOARCH=wasm build passes.
+  status: claimed developer-codex
 
 ## 21. Host
 
@@ -1278,6 +1308,12 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   lane: L-WEB-SPLAT · block: 14–17 · paths: `web/splat/mode*.go` · depends: SPLAT-006, COMBAT-009
   done when: Switching tested in the browser.; gate green (≥ 70% coverage where applicable)
   status: committed 1703769
+
+- [ ] SPLAT-008 · standalone splat debug viewer page
+  why: Nav authoring (OPS-007) and fps checks need the splat, grid, presets, and pick mode on a page without running the whole game.
+  lane: L-WEB-SPLAT · block: 8–11 · paths: `web/splat/js/viewer*.html`, `web/splat/js/viewer*.mjs` · depends: SPLAT-003, SPLAT-005, SPLAT-006
+  done when: opening the viewer with ?src=<.ply or .sog>&debug loads the splat, shows the 8×6 grid and camera presets, logs p5 fps, and exports picked cells as JSON.
+  status: claimed developer-codex
 
 ## 23. dfctl debug CLI
 
@@ -1540,6 +1576,12 @@ Everything needed to run the 3-minute demo live.
   lane: ORCH · block: 17–20 · paths: none · depends: LLM-007
   done when: dfctl costs within budget.; gate green (≥ 70% coverage where applicable)
   status: open
+
+- [ ] STAGE-008 · cost check script over dfctl costs
+  why: STAGE-007 needs a repeatable check that per-run cost stays near $0.62 and totals stay within the §0.14 budget.
+  lane: ORCH (delegated) · block: 14–17 · paths: `scripts/costcheck.ps1` · depends: DFCTL-002, LLM-007
+  done when: the script reads dfctl costs JSON lines (or a saved file), sums per vendor and per run, compares to §0.14 caps, exits non-zero over budget; tested on sample JSON under artifacts/tmp.
+  status: claimed developer-codex
 
 ## 27. Backlog (post-hour-17, only if idle)
 
