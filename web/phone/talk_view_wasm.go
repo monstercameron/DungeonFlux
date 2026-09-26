@@ -67,7 +67,7 @@ func talkInputBar(props phoneViewProps, locale string) ui.Node {
 	theme := DefaultPhoneTheme()
 	return html.Div(html.Props{Class: "df-phone-talk-input", Style: map[string]string{"display": "flex", "align-items": "flex-end", "gap": "8px", "padding": "8px 0 2px", "border-top": "1px solid rgba(217,164,65,.25)"}},
 		ui.CreateElement(talkPTTScreen, talkPTTProps{model: props.ptt, locale: locale}),
-		html.Div(html.Props{Style: map[string]string{"min-width": "0", "flex": "1 1 auto", "display": "flex", "align-items": "center", "gap": "6px", "min-height": theme.TouchTarget, "padding": "0 6px 0 12px", "border": "1px solid rgba(168,159,140,.55)", "border-radius": "24px", "background": "rgba(23,26,35,.94)"}}, html.CreateElement(talkTypedInput, props.typed)),
+		html.Div(html.Props{Style: map[string]string{"min-width": "0", "flex": "1 1 auto", "display": "flex", "align-items": "center", "gap": "6px", "min-height": theme.TouchTarget, "padding": "0 6px 0 12px", "border": "1px solid rgba(168,159,140,.55)", "border-radius": "24px", "background": "rgba(23,26,35,.94)"}}, ui.CreateElement(talkTypedInput, props.typed)),
 	)
 }
 
