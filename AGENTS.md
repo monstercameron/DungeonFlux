@@ -9,7 +9,7 @@ Rules for every coding agent in this repo. Read it in full before your first edi
 2. Read order: this file → your lane's row in the "Spec index by lane" (top of plan §0) → those sections → §0.18.1, §0.18.2, §0.18.7, §0.18.8.
 3. Edit only the paths your lane owns (plan §0.18.9). Shared contracts belong to ORCH; ask for changes under "Contract requests".
 4. Your packages compile after every edit. Your lane's tests run against `internal/fakes`, never a sibling lane's code.
-5. Done means `scripts/gate.ps1 -Lane <LANE>` is green, run from PowerShell, and the hand-in report is written. Not green means not done.
+5. Done means `scripts/gate.ps1 -Lane <LANE>` is green, run from PowerShell, including **≥ 70% unit-test statement coverage on every package your todo touched** (section 14), and the hand-in report is written. Not green means not done.
 6. Every generated file goes under `artifacts/` (gitignored). Nothing is written to the repo root or to package directories.
 7. **Work comes from `TODOS.md`, and each todo is one atomic commit.** You commit your own todo when its gate is green, staging only your todo's paths by name. No push, stash, reset, checkout, rebase, pull, amend, or branch operation (section 13).
 8. No paid or live API calls in any lane test or lane gate. Live tests sit behind `//go:build live` plus `DF_LIVE=1`. The block gates at hours 2, 5, 8, 11, and 14 (plan §0.18.9) are live checkpoints run by the developer and ORCH on the human test server; lanes never run them.
@@ -108,6 +108,7 @@ Full coding rules: plan §0.18.8 (24 rules) and §0.18.7 (errors, context, loggi
 7. Table-driven, `t.Run(tc.name, ...)`, names like `TestStep_Conversation_rejectsPersuadeWhileSpeaking`.
 8. Fakes from `internal/fakes` or hand-written in `_test.go`. No mocking frameworks, no `time.Sleep`, no real network (use `httptest.Server`).
 9. Live or paid calls only behind `//go:build live` and `DF_LIVE=1`. Never run them in a gate or in verification.
+9a. Every package you touch keeps ≥ 70% statement coverage from fast unit tests (section 14). Tests assert behaviour; a test that only executes lines to raise the number is rejected in review.
 
 **Process**
 10. Your packages compile after every edit; other lanes build against the tree.
@@ -150,7 +151,7 @@ Start lane servers with `Start-Process -PassThru` and keep the PID. Stop with `S
 
 ## 7. Quick commands (PowerShell, from the repo root)
 ```powershell
-# Lane gate: gofmt -l, go vet, staticcheck, lane tests, archtest
+# Lane gate: gofmt -l, go vet, staticcheck, lane tests, 70% coverage per touched package, archtest
 .\scripts\gate.ps1 -Lane L-ENG
 
 # Native build
@@ -185,6 +186,7 @@ Todo: <TODO-ID> · Commit: <hash>
 Files changed: <every path, one per line; must equal the commit's file list>
 Gate: <last ~15 lines of scripts/gate.ps1 -Lane <LANE> output>
 Walk-test paths now covered: <numbers from plan §0.12, or "none">
+Coverage: <each touched package and its statement coverage, e.g. internal/game/nested 78.4%>
 Contract requests: <exact Go signature or proto diff + reason, or "none">
 Lane-local stand-ins: <unexported names standing in for pending contracts, or "none">
 Known gaps: <what is missing or fragile, and why>
@@ -284,7 +286,7 @@ The developer tests the game by hand throughout the build, so a working server i
 ```
 - [ ] ENG-012 · Check machine: offered → rolling → resolved
   lane: L-ENG · paths: internal/game/nested/check*.go · depends: ORCH-004, ENG-003
-  done when: walk paths 1–2 pass in sim; lane gate green
+  done when: walk paths 1–2 pass in sim; lane gate green (incl. ≥ 70% coverage on internal/game/nested)
   status: open | claimed <agent> <time> | committed <hash> | done <hash> | blocked <reason>
 ```
 - IDs are `<LANE-PREFIX>-<number>` and never reused.
@@ -298,7 +300,7 @@ ORCH only. ORCH marks a todo `claimed` when it launches the worker, `committed <
 1. **Read** your todo, its `depends`, and the plan sections it cites. If a dependency is not committed yet, stop and report `blocked`.
 2. **Check your paths are clean:** `git status --porcelain -- <your paths>` must show nothing you did not create in this todo. If it shows someone else's changes, stop and report; do not touch them.
 3. **Build** inside your paths only. Re-read each file right before editing it; prefer targeted edits over whole-file rewrites (except files you created in this todo).
-4. **Gate:** `scripts/gate.ps1 -Lane <LANE>` green from PowerShell. Format and fix only your own paths (`gofmt -w <your paths>`), never the whole tree.
+4. **Gate:** `scripts/gate.ps1 -Lane <LANE>` green from PowerShell, including the 70% coverage check on every package your todo touched (section 14). Format and fix only your own paths (`gofmt -w <your paths>`), never the whole tree.
 5. **Commit atomically** with the recipe below.
 6. **Hand in** (section 8) with the todo ID and commit hash.
 
@@ -328,3 +330,33 @@ The working tree always contains other agents' uncommitted, in-progress edits. T
 - Before launching a wave, ORCH checks that the claimed todos' `paths` do not overlap and that each todo's `depends` are committed.
 - ORCH reviews each todo commit on its own (`git show <hash>`), never batches several todos into one commit, and never rewrites a pushed commit.
 - ORCH's own todos (contracts, `TODOS.md` status, devlog, plan) follow the same recipe: one todo, named paths, one commit.
+
+## 14. Unit-test coverage: 70% per package, without slowing the build
+The goal is to catch bugs early without making anyone wait. The floor is **70% statement coverage per Go package**, measured by fast unit tests, and it is part of every lane gate.
+
+**What the gate checks**
+- For each package containing a file in your todo's paths: `go test -count=1 -coverprofile artifacts/coverage/<LANE>/<pkg>.out <pkg>` and the package total from `go tool cover -func` must be ≥ 70.0%.
+- Only touched packages are measured, so a gate stays fast. ORCH runs the whole-module report at checkpoints (informational, target ≥ 70% overall) and opens todos for packages that drift below the floor.
+- A package below the floor fails the gate. The fix is more real tests in the same todo, not an exception.
+
+**Keeping it fast**
+- Unit tests only: no network, no real vendors, no sleeps (`clock.Fake`, `testing/synctest`, `internal/fakes`, `httptest.Server` fixtures).
+- Each package's tests finish in under 10 seconds; a slower test goes behind `//go:build slow` and runs only in ORCH's checkpoint gate.
+- Table-driven tests: one table covers many cases cheaply. The engine is pure (`Step`), so most game logic is tested by feeding events and asserting effects, and the `sim` walk paths count toward `internal/game` coverage.
+- Tests are written in the same todo as the code, not afterwards.
+
+**Excluded from the 70% floor** (measured and reported, not gated)
+| Path | Why | How it is still tested |
+|---|---|---|
+| `gen/` | Generated protobuf code | Exercised through the API tests |
+| `cmd/server`, `internal/wire` | Composition roots | ORCH's `e2e_test` and the human test server |
+| `internal/fakes` | Test doubles | Used by every other package's tests |
+| `internal/adapters/**` files that only perform the live HTTP or WebSocket call | Need a vendor | Request building and response parsing live in separate functions, and those are unit-tested against `httptest` fixtures at ≥ 70% |
+| `web/**` files with `//go:build js && wasm` that only touch `syscall/js` | Need a browser | Keep view logic (state → view model, input → move) in plain Go files in the same package, which are covered at ≥ 70% |
+| `web/splat/js/*.mjs` | JavaScript | Checked in the browser at the hour-5 and hour-14 gates |
+| `scripts/**` | Build tooling | Run by L-OPS at checkpoints |
+
+**Review rules**
+- Coverage without assertions is rejected: every test checks an outcome (a returned value, an emitted effect, a state change, an error).
+- Tests follow the plan's contracts, not the implementation's internals, so refactors do not break them.
+- A worker reports each touched package's coverage percentage in the hand-in ("Coverage: internal/game/nested 78.4%").
