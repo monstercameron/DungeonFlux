@@ -301,7 +301,7 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   why: BASE-011 landed before archtest allowed wire to import adapters (BASE-015), so live adapters and the budget ledger were skipped and ReleaseLine, DropLine, TalkStop, and GenerateBillboardLoops were registered as no-ops.
   lane: ORCH · block: 8–11 · paths: `internal/wire/adapters*.go`, `internal/wire/execs*.go`, `internal/wire/budget*.go` · depends: BASE-011, BASE-015
   done when: live config builds every vendor adapter from env keys (fail fast naming the missing variable) behind modelchain and the budget ledger; ReleaseLine and DropLine reach voice/out, TalkStop reaches the Talk stream, and billboard loops resolve to build-time manifest assets; the effect-coverage test has no no-op entries except documented control effects.
-  status: claimed luna
+  status: committed af502a6 (TalkStop waits on RT-010)
 
 - [x] BASE-007 · internal/wire skeleton and cmd/server skeleton
   why: The server binary must start from hour 1 with fakes, flags (-config, -port, -data-dir, -seed), and graceful shutdown.
