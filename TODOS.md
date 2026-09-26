@@ -85,23 +85,23 @@ Grouped by system, from the simplest foundations (repo, contracts, utilities) up
 
 The skeleton everything else builds in: module, pinned tools, gate script, CI, and the always-up human test server.
 
-- [ ] REPO-001 · go.mod with the §0.22 pins and tool directives
+- [x] REPO-001 · go.mod with the §0.22 pins and tool directives
   why: Every lane builds against one module with exact versions, so the toolchain, SchemaFlux, GoWebComponents, GoGRPCBridge, sqlite, and the vendor SDKs must be pinned before any code lands.
   lane: ORCH · block: 0–1 · paths: `go.mod`, `go.sum` · depends: none
   done when: `go mod verify` passes; `toolchain go1.26.8`; `go tool buf --version`, `go tool staticcheck -version` run.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: done 28b9afc
 
-- [ ] REPO-002 · CLAUDE.md pointer to AGENTS.md
+- [x] REPO-002 · CLAUDE.md pointer to AGENTS.md
   why: Claude Code sessions need a one-line entry point that sends them to the rulebook.
   lane: ORCH · block: 0–1 · paths: `CLAUDE.md` · depends: none
   done when: File is one line, LF, no BOM.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: done 06ec49f
 
-- [ ] REPO-003 · Go toolchain upgrade to 1.26.8 on the X2
+- [x] REPO-003 · Go toolchain upgrade to 1.26.8 on the X2
   why: The machine has Go 1.26.3 and the plan pins 1.26.8, so builds would otherwise download toolchains mid-gate.
   lane: ORCH · block: 0–1 · paths: none (machine) · depends: none
   done when: `go version` prints go1.26.8 windows/arm64.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: done 28b9afc (toolchain go1.26.8 auto-switch from go.mod)
 
 - [ ] REPO-004 · Hour-0 tool installs (splat-transform, lego, ffmpeg check)
   why: Build-time jobs need splat-transform under Node 22+, lego v5 for the certificate, and ffmpeg 9, all native on Windows.
@@ -113,43 +113,43 @@ The skeleton everything else builds in: module, pinned tools, gate script, CI, a
   why: Every todo is accepted by one command that formats, vets, lints, tests, and measures coverage only on the packages the todo touched.
   lane: ORCH · block: 0–1 · paths: `scripts/gate.ps1` · depends: REPO-001
   done when: `gate.ps1 -Todo <ID>` reads the todo's `paths:` from TODOS.md, runs gofmt -l, go vet, staticcheck, go test with coverage ≥ 70% per touched package (exclusions per AGENTS §14), archtest; exits non-zero on any failure.
-  status: open
+  status: claimed ORCH-G luna
 
 - [ ] REPO-006 · scripts/gate.ps1 -Full checkpoint mode
   why: ORCH needs a heavier run every 30 minutes that builds everything, the WASM bundle, and the walk tests on the merged head.
   lane: ORCH · block: 1–5 · paths: `scripts/gate.ps1` · depends: REPO-005
   done when: `-Full` runs `go build ./...`, `GOOS=js GOARCH=wasm go build ./web/...`, `go test ./...`, the walk subpackages, and writes a report to artifacts/test/ORCH/.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed ORCH-G luna
 
 - [ ] REPO-007 · GitHub Actions race job
   why: Windows ARM64 has no race detector and WSL is not used, so data races are caught on a Linux runner on every push.
   lane: L-OPS · block: 0–1 · paths: `.github/workflows/race.yml` · depends: REPO-001
   done when: Job runs `go test -race ./internal/runtime/... ./internal/api/... ./internal/voice/...` on ubuntu-latest; `gh run list --workflow race.yml` shows it green on main.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed L-OPS luna
 
-- [ ] REPO-008 · Artifact directory layout and .gitkeep files
+- [x] REPO-008 · Artifact directory layout and .gitkeep files
   why: All build, test, cache, and runtime output must land under artifacts/ with a fixed layout so cleanup and supervision are mechanical.
   lane: ORCH · block: 0–1 · paths: `artifacts/.gitkeep`, `.gitignore` · depends: none
   done when: Directories from AGENTS §4 exist or are created by scripts; `git status` stays clean after a full gate run.
-  status: open
+  status: done (artifacts/.gitkeep and .gitignore already in tree)
 
 - [ ] REPO-009 · scripts/clean.ps1 stale-artifact pruning
   why: Stale binaries and bundles hide bugs and fill the disk, so ORCH needs one command that applies the AGENTS §4a pruning rules.
   lane: L-OPS · block: 1–5 · paths: `scripts/clean.ps1` · depends: REPO-008
   done when: `clean.ps1 -Lane <L>` removes that lane's stale build/test/tmp output; `-Checkpoint` prunes build/ (except human/), old test/ and coverage/, tmp/, and clears the Go cache below 20 GB free; never touches runtime/human, runtime/show, runtime/buildtime.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed L-OPS luna
 
 - [ ] REPO-010 · scripts/logs.ps1 structured-log filter
   why: Agents and the developer need to read the slog JSONL by instance, run, level, and trace without writing ad-hoc parsers.
   lane: L-OPS · block: 1–5 · paths: `scripts/logs.ps1` · depends: REPO-008
   done when: `logs.ps1 -Instance <n> [-Run] [-Level] [-Trace] [-Follow]` filters artifacts/runtime/<n>/logs/*.jsonl; tested against a fixture file.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed L-OPS luna
 
 - [ ] REPO-011 · Human test server placeholder on :8443
   why: The developer must be able to open the test URL from hour 0, before any game code exists.
   lane: ORCH · block: 0–1 · paths: `scripts/devserver.ps1`, `scripts/devserver/**` · depends: REPO-008
   done when: A scheduled task serves a placeholder page (build phase + latest devlog entries) on :8443 and `/healthz` returns 200; it survives the launching shell.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed ORCH-D luna
 
 - [ ] REPO-012 · Human test server supervisor with last-good builds
   why: The test server must always run the newest build that passed the full gate and never swap in a broken one.
@@ -171,55 +171,55 @@ The shared vocabulary, domain types, ports, and protobuf API every lane codes ag
   why: Every state, event, effect, move, status, role, slot, vendor, and report kind needs one closed set of names so lanes never invent synonyms.
   lane: ORCH · block: 0–1 · paths: `internal/vocab/**` · depends: REPO-001
   done when: All §0.5, §0.18.4, and §0.21 names are constants; a table test checks values are unique.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed ORCH-C luna
 
 - [ ] CON-002 · internal/domain IDs and entities
   why: Characters, templates, seats, runs, assets, recordings, and moves are the nouns of the game and must be defined once.
   lane: ORCH · block: 0–1 · paths: `internal/domain/ids*.go`, `internal/domain/entities*.go` · depends: CON-001
   done when: Types compile with JSON round-trip tests.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed ORCH-C luna
 
 - [ ] CON-003 · internal/domain OneShot, encounter, Battlefield, MusicTrack
   why: The engine receives the whole one-shot (NPCs, beats, encounter, battlefield nav layer, music catalogue) as data, never from files.
   lane: ORCH · block: 0–1 · paths: `internal/domain/oneshot*.go`, `internal/domain/battlefield*.go`, `internal/domain/music*.go` · depends: CON-002
   done when: OneShot.encounter holds enemy, battlefield (transform, 8×6 grid of 1.524 m cells, walkable, spawns, door, cameras, flat), trigger, loops; round-trip tests.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed ORCH-C luna
 
 - [ ] CON-004 · internal/domain event and effect catalogue
   why: The engine's input and output are sealed unions, and each row of §0.18.4 needs exactly one type, including PrerenderText, prerender_text_done, RenderLines, and the debug events.
   lane: ORCH · block: 0–1 · paths: `internal/domain/events*.go`, `internal/domain/effects*.go`, `internal/domain/envelope*.go` · depends: CON-003
   done when: A test asserts one type per catalogue row and Kind() equals its vocab constant.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed ORCH-C luna
 
 - [ ] CON-005 · internal/domain View, Inspect, and records
   why: Clients render only the projected View, dfctl reads Inspect, and the log stores records, so all three shapes must be fixed before the API and web lanes start.
   lane: ORCH · block: 0–1 · paths: `internal/domain/view*.go`, `internal/domain/inspect*.go`, `internal/domain/records*.go` · depends: CON-004
   done when: View has top-level Battlefield, CombatView, SeatView (TurnTimer rule), Dice from Conversation entry, Music, Slots; Inspect has per-scope machine states, seed, dice counter, timers; deep-copy test.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed ORCH-C luna
 
 - [ ] CON-006 · internal/ports interfaces
   why: Adapters, the runtime, and the engine meet only through small interfaces, one per file, so lanes can build against fakes.
   lane: ORCH · block: 0–1 · paths: `internal/ports/**` · depends: CON-005
   done when: LLM, TextStream, ImageGen, VideoGen, TTS, STT, Inbox (Post(ctx, env) bool), AudioOut, EventLog (non-blocking Append), Runs, Assets, Cache, Recordings, Engine (Step, LegalMoves, View, Inspect); compiles.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed ORCH-C luna
 
 - [ ] CON-007 · proto: Session, Voice, Audio, Host services
   why: Browsers and the server talk gRPC over WebSocket, so every message in §0.6 and §0.21.6 must exist in protobuf before L-API and the web lanes start.
   lane: ORCH · block: 0–1 · paths: `proto/dungeonflux/v1/*.proto`, `proto/buf*.yaml` · depends: CON-005
   done when: `go tool buf lint` clean.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed ORCH-P luna
 
 - [ ] CON-008 · proto: DebugService
   why: dfctl needs a stable RPC contract for reads and the demo write verbs, with backlog RPCs declared but unimplemented.
   lane: ORCH · block: 0–1 · paths: `proto/dungeonflux/v1/debug.proto` · depends: CON-007
   done when: Lint clean; demo RPCs (State, View, Legal, Scopes, Assets, Events, Logs, Clients, Costs, Send, Act, Say, DiceForce, Reset) and backlog RPCs present.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed ORCH-P luna
 
 - [ ] CON-009 · gen/ generated code
   why: Go types for every message must be generated, never hand-edited, and compile natively and for js/wasm.
   lane: ORCH · block: 0–1 · paths: `gen/**` · depends: CON-007, CON-008
   done when: `go tool buf generate` output builds with `go build ./gen/...` and `GOOS=js GOARCH=wasm go build ./gen/...`.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed ORCH-P luna
 
 ## 3. Foundations: clock, config, logging, HTTP, fakes, archtest
 
@@ -229,7 +229,7 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   why: Timers must be testable without sleeping, so every time source goes through one clock interface with a controllable fake.
   lane: ORCH · block: 0–1 · paths: `internal/clock/**` · depends: REPO-001
   done when: Now, Since, NewTimer, AfterFunc; Fake.Advance fires in deadline order; synctest tests; gate green.
-  status: open
+  status: claimed ORCH-B luna
 
 - [ ] BASE-002 · internal/config loader
   why: Ports, data dir, debug flag, log level, model links, and feature flags come from one typed config with validation.
@@ -241,13 +241,13 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   why: Structured logging needs one place that builds the JSONL + console handlers, defines field names, and strips secrets.
   lane: ORCH · block: 0–1 · paths: `internal/logx/**` · depends: REPO-001
   done when: Handler writes artifacts/runtime/<instance>/logs/server-<start>.jsonl; Redact drops key/token/secret/authorization attributes; capturing test handler for other packages; gate green.
-  status: open
+  status: claimed ORCH-B luna
 
 - [ ] BASE-004 · internal/httpx shared HTTP clients
   why: Vendor adapters need clients with timeouts, httptrace timing, and one-call-record logging without each lane rebuilding them.
   lane: ORCH · block: 0–1 · paths: `internal/httpx/**` · depends: BASE-003
   done when: Client factory with per-vendor timeouts and ttft/dur capture into logs; tested with httptest; gate green.
-  status: open
+  status: claimed ORCH-B luna
 
 - [ ] BASE-005 · internal/fakes for every port
   why: Lanes build and test against fakes until real adapters exist, including a fake Engine for the runtime lane.
@@ -333,7 +333,7 @@ SRD 5.2.1 rules the demo uses: deterministic dice, checks, templates, and the co
   why: SRD data used by the game must be vendored with its source commit and CC-BY-4.0 notice.
   lane: L-CONTENT · block: 1–5 · paths: `third_party/srd/**` · depends: none
   done when: SOURCE and NOTICE files present with Open5e commit 0acbf263 and 5e-bits tag.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed L-CONTENT luna
 
 ## 6. Content
 
@@ -1157,7 +1157,7 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   why: The battlefield renders the Marble splat in PlayCanvas 2.22.4 on a canvas.
   lane: L-WEB-SPLAT · block: 1–5 · paths: `web/splat/js/**` · depends: none
   done when: Tavern splat renders in Edge.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed L-WEB-SPLAT luna
 
 - [ ] SPLAT-002 · web/splat Go bridge
   why: Go drives the JS module through a small syscall/js bridge (load, camera, grid, tokens).
@@ -1231,7 +1231,7 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   why: Every build-time job writes takes and a manifest entry, so wire can load assets by logical name.
   lane: L-OPS · block: 0–1 · paths: `scripts/buildtime/run*.go`, `scripts/buildtime/manifest*.go` · depends: REPO-001
   done when: manifest.json written under artifacts/runtime/buildtime/.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed L-OPS luna
 
 - [ ] OPS-002 · Codex imagegen for opaque stills
   why: Opaque art (tavern, doorway, tower, battlefield stills, portrait sources) comes from Codex's image tool with no API spend.
@@ -1303,7 +1303,7 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   why: Takes with the wrong tempo or downbeat must be rejected without WSL or Python.
   lane: L-OPS · block: 1–5 · paths: `scripts/buildtime/beatcheck/**` · depends: none
   done when: Click-track tests within ±0.5% on 80–170 BPM; fallback to prompted BPM if not green by hour 5.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed L-OPS luna
 
 - [ ] OPS-014 · Turn-timer nudge lines
   why: Two name-free nudge lines in the DM's and Mother Vell's voices keep the pace.
@@ -1391,7 +1391,7 @@ Keeping the build honest: per-commit checks, the 30-minute full gate, checkpoint
   why: The riskiest path (phone mic over the tunnel, PCM back) is proven with a throwaway proto first.
   lane: L-SPIKE · block: 0–1 · paths: `scripts/spike/**` · depends: none
   done when: Spike server builds.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed L-SPIKE luna
 
 - [ ] SPIKE-002 · Spike real-phone MediaRecorder → Talk → STT
   why: iOS and Android container headers must work before the real voice lanes build on them.
