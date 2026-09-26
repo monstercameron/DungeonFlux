@@ -30,7 +30,7 @@ func TalkScreen(props phoneViewProps, locale string) router.Component {
 			children = append(children, ChoiceRow(item, tap))
 		}
 		if len(children) == 0 {
-			children = append(children, html.P(html.Props{Style: talkMutedTextStyle()}, html.Text("Mother Vell waits for your answer.")))
+			children = append(children, html.P(html.Props{Style: talkMutedTextStyle()}, html.Text(T(locale, "phone.talk.waiting", nil))))
 		}
 		if moves.Error != "" {
 			children = append(children, html.P(html.Props{Role: "alert", Style: talkErrorStyle()}, html.Text(moves.Error)))
@@ -98,6 +98,6 @@ func talkTypedInput(model *TypedInputModel) ui.Node {
 	}
 	return html.Div(html.Props{Style: map[string]string{"min-width": "0", "flex": "1 1 auto", "display": "flex", "align-items": "center", "gap": "4px"}},
 		html.Input(html.Props{ID: "talk-message", Class: "df-phone-talk-input-field", Value: snapshot.Text, Placeholder: placeholder, OnInput: change, Disabled: snapshot.Sending, MaxLength: typedInputLimit, Aria: map[string]string{"label": "Type your response"}, Style: map[string]string{"min-width": "0", "flex": "1 1 auto", "height": "46px", "border": "0", "outline": "0", "background": "transparent", "color": DefaultPhoneTheme().Parchment, "font-family": DefaultPhoneTheme().Serif, "font-size": "16px"}}),
-		html.Button(html.Props{Type: "button", OnClick: send, Disabled: !snapshot.CanSubmit, Aria: map[string]string{"label": "Send response"}, Style: map[string]string{"width": "42px", "height": "42px", "flex": "0 0 42px", "border": "0", "border-radius": "50%", "background": "transparent", "color": DefaultPhoneTheme().GoldBright, "font-size": "19px", "touch-action": "manipulation"}}, html.Text("➤")),
+		html.Button(html.Props{Type: "button", OnClick: send, Disabled: !snapshot.CanSubmit, Aria: map[string]string{"label": T(snapshot.Locale, "phone.talk.send", nil)}, Style: map[string]string{"width": "42px", "height": "42px", "flex": "0 0 42px", "border": "0", "border-radius": "50%", "background": "transparent", "color": DefaultPhoneTheme().GoldBright, "font-size": "19px", "touch-action": "manipulation"}}, html.Text(T(snapshot.Locale, "phone.talk.send_glyph", nil))),
 	)
 }

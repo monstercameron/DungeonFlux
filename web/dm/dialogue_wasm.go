@@ -96,7 +96,7 @@ func dialogueIcon(option DialogueOption) ui.Node {
 	if iconURL := artSrc(option.IconURL); iconURL != "" {
 		return html.Img(html.Props{Src: iconURL, Alt: "", Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover", "border-radius": "50%"}, Raw: map[string]any{"aria-hidden": "true"}})
 	}
-	return ui.Text("✦")
+	return ui.Text(T("en", "dm.glyph.star", nil))
 }
 
 func dialogueDetail(option DialogueOption) ui.Node {

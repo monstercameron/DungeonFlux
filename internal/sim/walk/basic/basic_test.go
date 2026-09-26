@@ -59,7 +59,8 @@ func walkToEnd(t *testing.T, driver *sim.Simulator) {
 	send(t, driver, domain.TimerFired{Name: "roll_resolved"})
 	send(t, driver, domain.LineDone{})
 	send(t, driver, domain.Act{Seat: 1, Move: vocab.MoveLeave})
-	send(t, driver, domain.LineDone{})
+	send(t, driver, domain.LineDone{UtteranceID: "hook-arrival"})
+	send(t, driver, domain.LineDone{UtteranceID: "stranger"})
 	send(t, driver, domain.LineDone{})
 	send(t, driver, domain.LineDone{})
 }
@@ -76,8 +77,8 @@ func TestWalkBasic_StubbedHappyPathReachesEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Steps != 11 {
-		t.Fatalf("steps = %d, want 11", result.Steps)
+	if result.Steps != 12 {
+		t.Fatalf("steps = %d, want 12", result.Steps)
 	}
 }
 

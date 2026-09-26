@@ -57,7 +57,7 @@ func checkModifierPanel(presentation CheckPresentation) ui.Node {
 	}},
 		html.Div(html.Props{}, html.Strong(html.Props{Style: map[string]string{"display": "block", "color": theme.Parchment, "font-family": theme.Serif, "font-size": "18px"}}, html.Text(presentation.Ability+" ("+presentation.Skill+")")), html.Span(html.Props{Style: map[string]string{"display": "block", "margin-top": "3px", "color": theme.Muted, "font-size": "13px"}}, html.Text("Roll d20 "+SignedModifier(presentation.Modifier)))),
 		html.Strong(html.Props{Class: "df-phone-check-modifier-value", Style: map[string]string{"color": theme.GoldBright, "font-family": theme.Serif, "font-size": "28px"}}, html.Text(SignedModifier(presentation.Modifier))),
-		html.Div(html.Props{Style: map[string]string{"grid-column": "1 / -1", "display": "flex", "justify-content": "space-between", "padding-top": "8px", "border-top": "1px solid rgba(168,159,140,.22)", "color": theme.Muted, "font-size": "13px"}}, html.Span(html.Props{}, html.Text("Difficulty")), html.Span(html.Props{}, html.Text("DC "+strconv.Itoa(int(presentation.DC))))),
+		html.Div(html.Props{Style: map[string]string{"grid-column": "1 / -1", "display": "flex", "justify-content": "space-between", "padding-top": "8px", "border-top": "1px solid rgba(168,159,140,.22)", "color": theme.Muted, "font-size": "13px"}}, html.Span(html.Props{}, html.Text(T("en", "phone.check.difficulty", nil))), html.Span(html.Props{}, html.Text("DC "+strconv.Itoa(int(presentation.DC))))),
 	)
 }
 

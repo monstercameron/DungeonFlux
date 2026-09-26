@@ -69,9 +69,9 @@ func combatMapHead(layout CombatMapLayout, props combatMapProps) ui.Node {
 	if watching {
 		title, detail = "Battlefield", "Watch the fight unfold"
 	}
-	legend := []ui.Node{html.Span(html.Props{Class: "df-cm-key is-reach"}, html.Text("Move"))}
+	legend := []ui.Node{html.Span(html.Props{Class: "df-cm-key is-reach"}, html.Text(T("en", "phone.combat.move", nil)))}
 	if layout.CanDash && !watching {
-		legend = append(legend, html.Span(html.Props{Class: "df-cm-key is-dash"}, html.Text("Dash")))
+		legend = append(legend, html.Span(html.Props{Class: "df-cm-key is-dash"}, html.Text(T("en", "phone.combat.dash", nil))))
 	}
 	if watching {
 		legend = nil
@@ -174,7 +174,7 @@ func combatMapTokenNode(token CombatMapToken) ui.Node {
 
 func combatMapPortrait(token CombatMapToken) ui.Node {
 	if token.Enemy {
-		return html.Span(html.Props{Class: "df-cm-glyph", Aria: map[string]string{"hidden": "true"}}, html.Text("☠︎"))
+		return html.Span(html.Props{Class: "df-cm-glyph", Aria: map[string]string{"hidden": "true"}}, html.Text(T("en", "phone.combat.enemy_glyph", nil)))
 	}
 	src := portraitSrc(token.Portrait)
 	if src == "" {

@@ -26,7 +26,7 @@ func MusicIndicator(model MusicModel) router.Component {
 			label += " · " + model.Cue
 		}
 		return html.Div(html.Props{Class: "df-dm-music", Role: "status", Aria: map[string]string{"label": label}, Style: map[string]string{"position": "absolute", "right": "1.25rem", "bottom": "1.25rem", "display": "inline-flex", "align-items": "center", "gap": "0.55rem", "padding": "0.45rem 0.7rem", "border": "1px solid rgba(217,164,65,.55)", "border-radius": "999px", "background": "rgba(15,17,23,.78)", "color": "#efe6d2", "font-size": "0.8rem", "letter-spacing": "0.08em", "text-transform": "uppercase"}},
-			html.Span(html.Props{Class: "df-dm-music-glyph", Aria: map[string]string{"hidden": "true"}}, ui.Text("♫")),
+			html.Span(html.Props{Class: "df-dm-music-glyph", Aria: map[string]string{"hidden": "true"}}, ui.Text(T("en", "dm.glyph.music", nil))),
 			html.Span(html.Props{Class: "df-dm-music-label"}, ui.Text(label)),
 			html.Span(html.Props{Class: "df-dm-music-meter", Style: map[string]string{"display": "inline-block", "width": "2.5rem", "height": "0.2rem", "border-radius": "999px", "background": "linear-gradient(90deg, #d9a441 " + width + ", rgba(239,230,210,.2) " + width + ")"}, Aria: map[string]string{"hidden": "true"}}),
 		)

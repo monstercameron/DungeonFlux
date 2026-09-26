@@ -27,7 +27,7 @@ func ExploreScreen(model *MovesModel) router.Component {
 			rows = append(rows, ChoiceRow(item, tap))
 		}
 		if len(rows) == 0 {
-			rows = append(rows, html.P(html.Props{Style: exploreMutedStyle()}, html.Text("The room offers no clear path yet.")))
+			rows = append(rows, html.P(html.Props{Style: exploreMutedStyle()}, html.Text(T("en", "phone.explore.empty", nil))))
 		}
 		if errorText := model.Snapshot().Error; errorText != "" {
 			rows = append(rows, html.P(html.Props{Role: "alert", Style: exploreErrorStyle()}, html.Text(errorText)))

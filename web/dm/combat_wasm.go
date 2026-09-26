@@ -74,7 +74,7 @@ func combatStageStyle(model CombatModel) map[string]string {
 
 func combatTopTitle(locale string, model CombatModel) ui.Node {
 	return html.Div(html.Props{Style: map[string]string{"position": "absolute", "left": "460px", "right": "460px", "top": "34px", "text-align": "center", "color": "#efe6d2", "text-shadow": "0 3px 12px #000"}},
-		html.Div(html.Props{Style: map[string]string{"color": "#e7c27a", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "34px", "letter-spacing": ".16em", "text-transform": "uppercase"}}, ui.Text("The Drowned Lantern")),
+		html.Div(html.Props{Style: map[string]string{"color": "#e7c27a", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "34px", "letter-spacing": ".16em", "text-transform": "uppercase"}}, ui.Text(T(locale, "dm.combat.title", nil))),
 		html.Div(html.Props{Style: map[string]string{"width": "440px", "max-width": "80%", "height": "1px", "margin": "10px auto", "background": "linear-gradient(90deg,transparent,#d9a441,transparent)"}}),
 		html.Div(html.Props{Style: map[string]string{"color": "#efe6d2", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "27px"}}, ui.Text(combatBanner(model))),
 		html.Span(html.Props{Hidden: locale == "", Style: map[string]string{"display": "none"}}, ui.Text(locale)),
@@ -145,7 +145,7 @@ func combatEnemyCard(model CombatModel) ui.Node {
 
 func enemyCard(token CombatToken) ui.Node {
 	return html.Div(html.Props{Class: "df-dm-combat-enemy", Style: map[string]string{"position": "absolute", "right": "36px", "top": "135px", "width": "310px", "padding": "14px", "border": "1px solid #b3372f", "border-radius": "10px", "background": "rgba(12,18,28,.9)", "box-shadow": "0 12px 28px rgba(0,0,0,.52)"}},
-		html.Div(html.Props{Style: map[string]string{"color": "#e7c27a", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "22px", "letter-spacing": ".1em", "text-transform": "uppercase"}}, ui.Text("Enemy")),
+		html.Div(html.Props{Style: map[string]string{"color": "#e7c27a", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "22px", "letter-spacing": ".1em", "text-transform": "uppercase"}}, ui.Text(T("en", "dm.combat.enemy", nil))),
 		html.Div(html.Props{Style: map[string]string{"display": "flex", "gap": "14px", "align-items": "center", "margin-top": "10px"}}, html.Img(html.Props{Src: artSrc(token.Portrait), Alt: token.Name, Style: map[string]string{"width": "92px", "height": "92px", "object-fit": "cover", "border": "2px solid #b3372f"}}), html.Div(html.Props{Style: map[string]string{"font-family": "Cormorant Garamond,Georgia,serif", "font-size": "28px"}}, ui.Text(token.Name))),
 		html.Div(html.Props{Style: map[string]string{"margin-top": "12px", "height": "8px", "background": "#291b1b", "border-radius": "5px", "overflow": "hidden"}}, html.Div(html.Props{Style: map[string]string{"width": combatHPPercent(token.HP, token.HPMax), "height": "100%", "background": "#b3372f"}})),
 	)

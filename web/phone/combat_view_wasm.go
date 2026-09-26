@@ -19,7 +19,7 @@ func combatStyledScreen(model *CombatModel, locale string, _ ...ui.Node) ui.Node
 		locale = "en"
 	}
 	if model == nil {
-		return html.Section(html.Props{Class: "df-phone-combat", Role: "region"}, html.Text("Combat is unavailable."))
+		return html.Section(html.Props{Class: "df-phone-combat", Role: "region"}, html.Text(T(locale, "phone.combat.unavailable", nil)))
 	}
 	refresh := ui.UseState(0)
 	snapshot := model.Snapshot()
@@ -87,7 +87,7 @@ func combatProfile(snapshot CombatSnapshot, theme PhoneTheme) ui.Node {
 	}}, portrait, html.Div(html.Props{Style: map[string]string{"min-width": "0", "flex": "1 1 auto"}},
 		html.H1(html.Props{Style: map[string]string{"margin": "0", "font-family": theme.Serif, "font-size": "22px", "line-height": "1.05", "white-space": "nowrap", "overflow": "hidden", "text-overflow": "ellipsis"}}, html.Text(name)),
 		html.P(html.Props{Style: map[string]string{"margin": "3px 0 7px", "color": theme.GoldBright, "font-size": "13px"}}, html.Text(role)),
-		html.Div(html.Props{Style: map[string]string{"display": "flex", "justify-content": "space-between", "gap": "8px", "margin-bottom": "4px", "color": theme.Muted, "font-size": "11px"}}, html.Span(html.Props{}, html.Text("VITALS")), html.Span(html.Props{}, html.Text(status))),
+		html.Div(html.Props{Style: map[string]string{"display": "flex", "justify-content": "space-between", "gap": "8px", "margin-bottom": "4px", "color": theme.Muted, "font-size": "11px"}}, html.Span(html.Props{}, html.Text(T("en", "phone.combat.vitals", nil))), html.Span(html.Props{}, html.Text(status))),
 		HPBar(snapshot.HP, snapshot.HPMax),
 	))
 }
@@ -151,7 +151,7 @@ func combatTarget(snapshot CombatSnapshot, theme PhoneTheme) ui.Node {
 	}
 	preview := combatAttackPreview(snapshot.Attack.Preview)
 	children := []ui.Node{choiceIcon(combatIconName("ui/icon_attack", "⚔")), html.Div(html.Props{Style: map[string]string{"min-width": "0", "flex": "1 1 auto"}},
-		html.Small(html.Props{Style: map[string]string{"display": "block", "color": theme.Muted, "font-family": theme.Sans, "font-size": "11px", "letter-spacing": ".1em", "text-transform": "uppercase"}}, html.Text("Target")),
+		html.Small(html.Props{Style: map[string]string{"display": "block", "color": theme.Muted, "font-family": theme.Sans, "font-size": "11px", "letter-spacing": ".1em", "text-transform": "uppercase"}}, html.Text(T("en", "phone.combat.target", nil))),
 		html.Strong(html.Props{Style: map[string]string{"display": "block", "margin-top": "2px", "color": theme.Parchment, "font-family": theme.Serif, "font-size": "19px", "white-space": "nowrap", "overflow": "hidden", "text-overflow": "ellipsis"}}, html.Text(combatTargetLabel(snapshot.Attack))),
 	)}
 	if preview != "" {

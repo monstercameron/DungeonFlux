@@ -82,7 +82,7 @@ func GoldPlateButton(icon, label string) ui.Node {
 	return html.Div(html.Props{Class: "df-gold-button df-gold-plate-button", Role: "status"},
 		html.Span(html.Props{Class: "df-menu-row-icon", Aria: map[string]string{"hidden": "true"}}, ui.Text(icon)),
 		html.Span(html.Props{Class: "df-menu-row-label"}, ui.Text(label)),
-		html.Span(html.Props{Class: "df-button-chevron", Aria: map[string]string{"hidden": "true"}}, ui.Text("›")))
+		html.Span(html.Props{Class: "df-button-chevron", Aria: map[string]string{"hidden": "true"}}, ui.Text(T("en", "dm.glyph.chevron", nil))))
 }
 
 // DarkButton renders a restrained information row with an optional icon.
@@ -157,7 +157,7 @@ func PortraitCard(model PortraitCardModel) ui.Node {
 	}
 	portraitNode := html.Div(html.Props{Class: "df-portrait-card-portrait", Aria: map[string]string{"label": name}},
 		html.Img(html.Props{Src: portrait, Alt: "", Hidden: portrait == "", Raw: map[string]any{"aria-hidden": "true"}}),
-		html.Span(html.Props{Class: "df-portrait-card-silhouette", Hidden: portrait != "", Aria: map[string]string{"hidden": "true"}}, ui.Text("✦")),
+		html.Span(html.Props{Class: "df-portrait-card-silhouette", Hidden: portrait != "", Aria: map[string]string{"hidden": "true"}}, ui.Text(T("en", "dm.glyph.star", nil))),
 	)
 	children := []ui.Node{portraitNode, html.Div(html.Props{Class: "df-portrait-card-copy"},
 		html.Strong(html.Props{Class: "df-portrait-card-name"}, ui.Text(name)),
@@ -177,7 +177,7 @@ func SpeakerCaption(model CaptionModel) ui.Node {
 	return html.Div(html.Props{Class: "df-speaker-caption", Role: "status", Aria: map[string]string{"live": "polite"}},
 		html.Strong(html.Props{Class: "df-speaker-caption-name"}, ui.Text(model.Speaker)),
 		html.P(html.Props{Class: "df-speaker-caption-text"}, ui.Text(model.Text)),
-		html.Div(html.Props{Class: "df-speaker-caption-ornament", Aria: map[string]string{"hidden": "true"}}, ui.Text("✦")),
+		html.Div(html.Props{Class: "df-speaker-caption-ornament", Aria: map[string]string{"hidden": "true"}}, ui.Text(T("en", "dm.glyph.star", nil))),
 	)
 }
 
@@ -229,7 +229,7 @@ func WordmarkBand(url string, width int) ui.Node {
 // CornerBrand is the small top-left wordmark used on in-game screens: the
 // lettering band of the logo art with the subtitle beneath (callers position it).
 func CornerBrand() ui.Node {
-	var mark ui.Node = html.Div(html.Props{Class: "df-corner-brand-text"}, ui.Text("DungeonFlux"))
+	var mark ui.Node = html.Div(html.Props{Class: "df-corner-brand-text"}, ui.Text(T("en", "dm.brand", nil)))
 	if url := ArtURL("ui/logo_wordmark"); url != "" {
 		mark = WordmarkBand(url, 340)
 	}

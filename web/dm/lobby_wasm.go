@@ -33,7 +33,7 @@ func titlePlateAt(wordmark string) ui.Node {
 }
 
 func lobbyTagline() ui.Node {
-	return html.Div(html.Props{Class: "df-lobby-tagline", Style: absoluteStyle(50, 55, 210, 95)}, html.P(html.Props{}, ui.Text("STORIES RESPOND.\nWORLDS EVOLVE.\nYOU BELONG.")))
+	return html.Div(html.Props{Class: "df-lobby-tagline", Style: absoluteStyle(50, 55, 210, 95)}, html.P(html.Props{}, ui.Text(T("en", "dm.lobby.tagline", nil))))
 }
 
 func lobbyStatus(model LobbyModel) ui.Node {
@@ -54,15 +54,15 @@ func shortJoinURL(value string) string {
 }
 
 func lobbyQuote() ui.Node {
-	return html.Div(html.Props{Class: "df-lobby-quote", Style: absoluteStyle(890, 520, 350, 78)}, html.P(html.Props{}, ui.Text("“Same table.\nHigher possibilities.”")))
+	return html.Div(html.Props{Class: "df-lobby-quote", Style: absoluteStyle(890, 520, 350, 78)}, html.P(html.Props{}, ui.Text(T("en", "dm.lobby.quote", nil))))
 }
 
 func lobbyJoinPanel(model LobbyModel, art titleArt) ui.Node {
 	qr := lobbyQR(model.QRURL)
 	content := []ui.Node{
 		html.Div(html.Props{Class: "df-lobby-qr-wrap", Style: map[string]string{"position": "absolute", "left": "30px", "top": "55px", "width": "185px", "height": "185px"}}, qr),
-		html.Div(html.Props{Class: "df-lobby-code-box", Style: map[string]string{"position": "absolute", "left": "235px", "top": "98px", "width": "250px", "height": "76px"}}, html.Span(html.Props{Class: "df-lobby-code-label"}, ui.Text("ROOM CODE")), html.Strong(html.Props{Class: "df-lobby-code-value"}, ui.Text(SpacedRoomCode(model.RoomCode)))),
-		html.P(html.Props{Class: "df-lobby-scan-copy", Style: map[string]string{"position": "absolute", "left": "30px", "right": "30px", "bottom": "16px"}}, ui.Text("▣  Scan with your phone to join the game.")),
+		html.Div(html.Props{Class: "df-lobby-code-box", Style: map[string]string{"position": "absolute", "left": "235px", "top": "98px", "width": "250px", "height": "76px"}}, html.Span(html.Props{Class: "df-lobby-code-label"}, ui.Text(T("en", "dm.room_code", nil))), html.Strong(html.Props{Class: "df-lobby-code-value"}, ui.Text(SpacedRoomCode(model.RoomCode)))),
+		html.P(html.Props{Class: "df-lobby-scan-copy", Style: map[string]string{"position": "absolute", "left": "30px", "right": "30px", "bottom": "16px"}}, ui.Text(T("en", "dm.lobby.scan", nil))),
 	}
 	return panelAt("PLAYERS JOIN HERE", 40, 665, 520, 320, art.PanelFrame, content...)
 }
@@ -73,9 +73,9 @@ func lobbyQR(value string) ui.Node {
 		value = resolved
 	}
 	if value == "" {
-		return html.Div(html.Props{Class: "df-lobby-qr-empty", Role: "img", Aria: map[string]string{"label": "Join QR code loading"}}, ui.Text("QR"))
+		return html.Div(html.Props{Class: "df-lobby-qr-empty", Role: "img", Aria: map[string]string{"label": "Join QR code loading"}}, ui.Text(T("en", "dm.lobby.qr", nil)))
 	}
-	return html.Img(html.Props{Class: "df-lobby-qr-image", Src: value, Alt: "Scan to join the game"})
+	return html.Img(html.Props{Class: "df-lobby-qr-image", Src: value, Alt: T("en", "dm.lobby.qr_alt", nil)})
 }
 
 func lobbyPartyPanel(model LobbyModel, art titleArt) ui.Node {
@@ -84,7 +84,7 @@ func lobbyPartyPanel(model LobbyModel, art titleArt) ui.Node {
 	}
 	content := []ui.Node{
 		html.Div(html.Props{Class: "df-lobby-party-cards", Role: "list", Style: map[string]string{"position": "absolute", "left": "25px", "right": "25px", "top": "50px", "height": "230px", "display": "grid", "grid-template-columns": "1fr 1fr", "gap": "15px"}}, card(model.Seats[0]), card(model.Seats[1])),
-		html.P(html.Props{Class: "df-lobby-party-footer", Style: map[string]string{"position": "absolute", "left": "25px", "right": "25px", "bottom": "14px"}}, ui.Text("▣  Players use their phones as character sheets, dice rollers, and controllers.")),
+		html.P(html.Props{Class: "df-lobby-party-footer", Style: map[string]string{"position": "absolute", "left": "25px", "right": "25px", "bottom": "14px"}}, ui.Text(T("en", "dm.lobby.party_footer", nil))),
 	}
 	return panelAt("YOUR PARTY", 580, 665, 740, 320, art.PanelFrame, content...)
 }
@@ -115,5 +115,5 @@ func absoluteStyle(left, top, width, height int) map[string]string {
 }
 
 func lobbyFooter() ui.Node {
-	return html.Div(html.Props{Class: "df-lobby-footer", Style: map[string]string{"position": "absolute", "left": "40px", "right": "40px", "top": "1005px", "display": "flex", "justify-content": "space-between"}}, html.Span(html.Props{}, ui.Text("NO APP. NO ACCOUNT. SCAN AND PLAY.")), html.Span(html.Props{}, ui.Text("SAME GAME. A BRIGHTER TOMORROW.")))
+	return html.Div(html.Props{Class: "df-lobby-footer", Style: map[string]string{"position": "absolute", "left": "40px", "right": "40px", "top": "1005px", "display": "flex", "justify-content": "space-between"}}, html.Span(html.Props{}, ui.Text(T("en", "dm.lobby.scan", nil))), html.Span(html.Props{}, ui.Text(T("en", "dm.lobby.quote", nil))))
 }

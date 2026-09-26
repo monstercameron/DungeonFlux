@@ -68,7 +68,7 @@ func hudPartyCard(member HUDPartyMember) ui.Node {
 		portrait = html.Img(html.Props{Src: resolved, Alt: nameOrSeat(member), Style: portraitStyle})
 	} else {
 		portrait = html.Div(html.Props{Aria: map[string]string{"label": nameOrSeat(member) + " portrait placeholder"}, Style: portraitStyle},
-			html.Span(html.Props{Style: map[string]string{"display": "block", "padding-top": "25px", "color": "#d9a441", "font-size": "28px", "text-align": "center"}}, ui.Text("✦")))
+			html.Span(html.Props{Style: map[string]string{"display": "block", "padding-top": "25px", "color": "#d9a441", "font-size": "28px", "text-align": "center"}}, ui.Text(T("en", "dm.glyph.star", nil))))
 	}
 	return html.Article(html.Props{Class: "df-dm-hud-party-card", Role: "listitem", Style: map[string]string{
 		"display": "flex", "align-items": "center", "gap": "12px", "height": "100px", "padding": "4px", "border": "1px solid " + border,
@@ -88,7 +88,7 @@ func hudPartyCopy(member HUDPartyMember) ui.Node {
 
 func hudHP(member HUDPartyMember) ui.Node {
 	if !member.HPKnown {
-		return html.Span(html.Props{Style: map[string]string{"display": "block", "margin-top": "5px", "color": "#a89f8c", "font-size": "14px"}}, ui.Text("HP unavailable"))
+		return html.Span(html.Props{Style: map[string]string{"display": "block", "margin-top": "5px", "color": "#a89f8c", "font-size": "14px"}}, ui.Text(T("en", "dm.hp_unavailable", nil)))
 	}
 	return html.Div(html.Props{Style: map[string]string{"margin-top": "5px"}},
 		html.Span(html.Props{Style: map[string]string{"display": "block", "color": "#a89f8c", "font-size": "14px"}}, ui.Text("HP "+strconv.Itoa(int(member.HP))+"/"+strconv.Itoa(int(member.HPMax)))),
@@ -108,7 +108,7 @@ func hudObjective(model HUDModel) ui.Node {
 		return html.Section(html.Props{Hidden: true})
 	}
 	items := []ui.Node{html.Div(html.Props{Style: map[string]string{"display": "flex", "gap": "10px", "align-items": "flex-start", "margin-top": "2px"}},
-		html.Span(html.Props{Style: map[string]string{"color": "#d9a441", "font-size": "22px", "line-height": "1"}}, ui.Text("◇")),
+		html.Span(html.Props{Style: map[string]string{"color": "#d9a441", "font-size": "22px", "line-height": "1"}}, ui.Text(T("en", "dm.glyph.objective", nil))),
 		html.P(html.Props{Style: map[string]string{"margin": "0", "color": "#efe6d2", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "24px", "line-height": "1.12"}}, ui.Text(model.Objective)))}
 	for _, item := range model.Checklist {
 		color := "#a89f8c"
@@ -130,9 +130,9 @@ func hudNarration(model HUDModel) ui.Node {
 	}
 	portraitURL := artSrc("ui/dm_speaker")
 	portraitStyle := map[string]string{"width": "118px", "height": "118px", "flex": "0 0 118px", "border": "2px solid #d9a441", "border-radius": "50%", "object-fit": "cover", "background": "radial-gradient(circle at 50% 35%,#293241,#07090d 70%)"}
-	var portrait ui.Node = html.Div(html.Props{Style: portraitStyle}, html.Span(html.Props{Style: map[string]string{"display": "block", "padding-top": "36px", "color": "#d9a441", "font-size": "40px", "text-align": "center"}}, ui.Text("✦")))
+	var portrait ui.Node = html.Div(html.Props{Style: portraitStyle}, html.Span(html.Props{Style: map[string]string{"display": "block", "padding-top": "36px", "color": "#d9a441", "font-size": "40px", "text-align": "center"}}, ui.Text(T("en", "dm.glyph.star", nil))))
 	if portraitURL != "" {
-		portrait = html.Img(html.Props{Src: portraitURL, Alt: "Dungeon Master", Style: portraitStyle})
+		portrait = html.Img(html.Props{Src: portraitURL, Alt: T("en", "dm.speaker_alt", nil), Style: portraitStyle})
 	}
 	return hudPanel("", map[string]string{
 		"position": "absolute", "left": "25px", "bottom": "90px", "width": "745px", "height": "165px", "padding": "20px 24px",
@@ -165,7 +165,7 @@ func hudMinimap(model HUDModel) ui.Node {
 		style["background-position"] = "center"
 	}
 	return html.Div(html.Props{Class: "df-dm-hud-minimap", Role: "img", Aria: map[string]string{"label": "Exploration minimap"}, Style: style},
-		html.Span(html.Props{Style: map[string]string{"position": "absolute", "left": "50%", "top": "50%", "color": "#e7c27a", "font-size": "28px", "transform": "translate(-50%,-50%)"}}, ui.Text("◆")))
+		html.Span(html.Props{Style: map[string]string{"position": "absolute", "left": "50%", "top": "50%", "color": "#e7c27a", "font-size": "28px", "transform": "translate(-50%,-50%)"}}, ui.Text(T("en", "dm.glyph.minimap", nil))))
 }
 
 func hudFooter(model HUDModel) ui.Node {

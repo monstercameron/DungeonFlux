@@ -159,8 +159,9 @@ func TestWalkFull_PhaseCombatReturnsToEnd(t *testing.T) {
 		domain.TimerFired{Name: "creation_timeout"},
 		domain.LineDone{},
 		domain.Act{Move: vocab.MoveLeave},
-		domain.LineDone{},
+		domain.LineDone{UtteranceID: "hook-arrival"},
 		domain.HostCmd{Cmd: vocab.HostSkip},
+		domain.LineDone{},
 		domain.LineDone{},
 	} {
 		output := virtual.Send(event)

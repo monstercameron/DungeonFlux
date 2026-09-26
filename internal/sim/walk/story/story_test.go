@@ -69,6 +69,7 @@ func walkToExploration(t *testing.T, driver *sim.Simulator) {
 
 func finishFromHook(t *testing.T, driver *sim.Simulator) {
 	t.Helper()
+	send(t, driver, domain.LineDone{UtteranceID: "hook-arrival"})
 	send(t, driver, domain.LineDone{UtteranceID: "stranger"})
 	send(t, driver, domain.LineDone{UtteranceID: "combat-outcome"})
 	send(t, driver, domain.LineDone{UtteranceID: "cliffhanger"})

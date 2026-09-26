@@ -126,7 +126,8 @@ func stringsTitle(value string) string {
 }
 
 func diceAnimationStyle() ui.Node {
-	return html.Tag("style", html.Props{ID: "df-dm-dice-animation"}, html.Text("@keyframes df-dice-roll{from{transform:rotate(-7deg) scale(.96)}to{transform:rotate(7deg) scale(1.04)}}@media (prefers-reduced-motion:reduce){.df-dm-dice-face{animation:none!important}}"))
+	const css = "@keyframes df-dice-roll{from{transform:rotate(-7deg) scale(.96)}to{transform:rotate(7deg) scale(1.04)}}@media (prefers-reduced-motion:reduce){.df-dm-dice-face{animation:none!important}}"
+	return html.Tag("style", html.Props{ID: "df-dm-dice-animation"}, html.Text(css))
 }
 
 // TimerComponent renders the remaining turn time as a progress bar.

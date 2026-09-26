@@ -87,7 +87,7 @@ func creationContentStyle() map[string]string {
 
 func creationHeading(locale string) ui.Node {
 	return html.Div(html.Props{Class: "df-phone-create-heading", Style: map[string]string{"padding": "8px 4px 5px", "text-align": "center"}},
-		html.P(html.Props{Style: map[string]string{"margin": "0 0 3px", "color": "#d9a441", "font-size": "10px", "font-weight": "700", "letter-spacing": ".2em"}}, html.Text("YOUR PHONE CONTROLS THE HERO")),
+		html.P(html.Props{Style: map[string]string{"margin": "0 0 3px", "color": "#d9a441", "font-size": "10px", "font-weight": "700", "letter-spacing": ".2em"}}, html.Text(T(locale, "phone.create.controls", nil))),
 		html.H1(html.Props{Style: map[string]string{"margin": "0", "color": "#efe6d2", "font-family": "Cormorant Garamond, Cinzel, Georgia, serif", "font-size": "29px", "line-height": "1.05"}}, html.Text(CreateTitle(locale))),
 		html.P(html.Props{Style: map[string]string{"margin": "5px 0 0", "color": "#a89f8c", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "16px", "line-height": "1.25"}}, html.Text(creationHint(locale))),
 	)
@@ -114,10 +114,10 @@ func creationOptionArt(kind, id, label string) ui.Node {
 
 func creationBuildCard(snapshot CreationSnapshot) ui.Node {
 	if snapshot.Build == nil {
-		return html.Div(html.Props{Class: "df-phone-create-empty", Style: map[string]string{"padding": "13px 12px", "border": "1px dashed rgba(168,159,140,.35)", "border-radius": "10px", "color": "#a89f8c", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "16px", "text-align": "center"}}, html.Text("Your rolled hero will appear here."))
+		return html.Div(html.Props{Class: "df-phone-create-empty", Style: map[string]string{"padding": "13px 12px", "border": "1px dashed rgba(168,159,140,.35)", "border-radius": "10px", "color": "#a89f8c", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "16px", "text-align": "center"}}, html.Text(T("en", "phone.create.empty", nil)))
 	}
 	build := snapshot.Build
-	portrait := html.Div(html.Props{Role: "img", Aria: map[string]string{"label": build.GetName()}, Style: map[string]string{"width": "76px", "height": "96px", "display": "grid", "place-items": "center", "flex": "0 0 76px", "border-radius": "8px", "border": "1px solid rgba(217,164,65,.5)", "background": "radial-gradient(circle, #354052, #171a23 70%)", "color": "#e7c27a", "font-family": "Georgia, serif", "font-size": "1.4rem"}}, html.Text("✦"))
+	portrait := html.Div(html.Props{Role: "img", Aria: map[string]string{"label": build.GetName()}, Style: map[string]string{"width": "76px", "height": "96px", "display": "grid", "place-items": "center", "flex": "0 0 76px", "border-radius": "8px", "border": "1px solid rgba(217,164,65,.5)", "background": "radial-gradient(circle, #354052, #171a23 70%)", "color": "#e7c27a", "font-family": "Georgia, serif", "font-size": "1.4rem"}}, html.Text(T("en", "phone.create.glyph", nil)))
 	src := portraitSrc(build.GetPortraitUrl())
 	if src == "" {
 		src = heroProxyArt(snapshot.Species, build.GetClassName(), build.GetName())

@@ -43,6 +43,7 @@ func TestWalkFull_SpanishPhoneEnglishDM(t *testing.T) {
 		domain.TimerFired{Name: "roll_resolved"},
 		domain.LineDone{UtteranceID: "reveal"},
 		domain.Act{Seat: 1, Move: vocab.MoveLeave},
+		domain.LineDone{UtteranceID: "hook-arrival"},
 		domain.LineDone{UtteranceID: "stranger"},
 		domain.LineDone{UtteranceID: "combat-outcome"},
 		domain.LineDone{UtteranceID: "cliffhanger"},

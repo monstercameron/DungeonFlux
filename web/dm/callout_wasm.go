@@ -14,10 +14,10 @@ func CalloutComponent(view CalloutView) router.Component {
 		return html.Div(html.Props{Class: "df-dm-callout", Hidden: !view.Visible, Role: "status", Aria: map[string]string{"live": "polite"}, Style: calloutStageStyle()},
 			html.Div(html.Props{Style: calloutBackdropStyle()}),
 			html.Div(html.Props{Style: calloutPanelStyle()},
-				html.Div(html.Props{Style: map[string]string{"color": "#e7c27a", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "25px", "letter-spacing": ".2em", "text-transform": "uppercase"}}, ui.Text("DM steering")),
+				html.Div(html.Props{Style: map[string]string{"color": "#e7c27a", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "25px", "letter-spacing": ".2em", "text-transform": "uppercase"}}, ui.Text(T("en", "dm.callout.steering", nil))),
 				html.Div(html.Props{Style: map[string]string{"width": "600px", "max-width": "80%", "height": "1px", "margin": "18px auto 22px", "background": "linear-gradient(90deg,transparent,#d9a441,transparent)"}}),
 				html.P(html.Props{Style: map[string]string{"margin": "0", "color": "#efe6d2", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "54px", "line-height": "1.15", "text-shadow": "0 2px 8px #000"}}, ui.Text(view.Text)),
-				html.Div(html.Props{Style: map[string]string{"margin-top": "26px", "color": "#a89f8c", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "23px", "font-style": "italic"}}, ui.Text("The Dungeon Master turns the thread.")),
+				html.Div(html.Props{Style: map[string]string{"margin-top": "26px", "color": "#a89f8c", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "23px", "font-style": "italic"}}, ui.Text(T("en", "dm.callout.prompt", nil))),
 			),
 		)
 	}
