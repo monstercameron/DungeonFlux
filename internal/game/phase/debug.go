@@ -32,7 +32,10 @@ func (m *Machine) DebugGoto(target vocab.StateID) (Result, error) {
 		}
 		out.Transition = result.Transition
 		out.Paused = result.Paused
-		out.Effects = append(out.Effects, result.Effects...)
+		// Only the target phase's own line may play: the skipped phases'
+		// lines (the opening narration, the reveal) used to start together
+		// while the TV already showed the target phase.
+		out.Effects = append(withoutSpokenLines(out.Effects), result.Effects...)
 		return nil
 	}
 	if target == vocab.StateLobby {
@@ -102,6 +105,19 @@ func (m *Machine) DebugGoto(target vocab.StateID) (Result, error) {
 		return Result{}, err
 	}
 	return out, nil
+}
+
+// withoutSpokenLines drops voice-line effects, keeping every other effect.
+func withoutSpokenLines(effects []domain.Effect) []domain.Effect {
+	kept := effects[:0]
+	for _, effect := range effects {
+		switch effect.(type) {
+		case domain.StartLine, domain.PlayCanned:
+			continue
+		}
+		kept = append(kept, effect)
+	}
+	return kept
 }
 
 func (m *Machine) debugBuildHeroes(step func(domain.Event) error) error {
