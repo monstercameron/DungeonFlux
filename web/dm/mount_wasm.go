@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall/js"
 	"time"
 
@@ -127,6 +128,11 @@ func sharedScreenClient(endpoint string) (*screenClient, error) {
 	return client, nil
 }
 
+// routeRenders changes on every route render. The shell re-navigates when art
+// finishes loading; with the shared client the props would otherwise be equal
+// and the screen would skip the render that picks up the new Blob URLs.
+var routeRenders atomic.Uint64
+
 // Mount returns the stateful DM screen for the shared shell router.
 func Mount(endpoint string) router.Component {
 	return func(_ router.Attrs) *router.Element {
@@ -134,11 +140,14 @@ func Mount(endpoint string) router.Component {
 		if err != nil {
 			return ui.CreateElement(screenError, err.Error())
 		}
-		return ui.CreateElement(screenView, screenProps{client: client})
+		return ui.CreateElement(screenView, screenProps{client: client, render: routeRenders.Add(1)})
 	}
 }
 
-type screenProps struct{ client *screenClient }
+type screenProps struct {
+	client *screenClient
+	render uint64
+}
 
 func screenError(message string) ui.Node {
 	return html.Main(html.Props{Class: "df-dm-error", Role: "main"}, html.H1(html.Props{}, html.Text(ErrorTitle("en"))), html.P(html.Props{Role: "alert"}, html.Text(message)))
