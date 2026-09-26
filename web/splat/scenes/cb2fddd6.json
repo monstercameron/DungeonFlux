@@ -1,6 +1,13 @@
 {
   "title": "Dittrich's Tomb",
   "scene_url": "../../../artifacts/media/supersplat/cb2fddd6/lod-meta.json",
+  "voxel_collider": {
+    "url": "../../../artifacts/media/supersplat/colliders/cb2fddd6.voxel.json",
+    "floor_y": 0,
+    "step_height": 0.3,
+    "height": 1.8,
+    "inset": 0.15
+  },
   "lod": 3,
   "transform": {
     "scale": 1,
@@ -205,5 +212,5 @@
     "license": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
     "credits": "Scene description credits Ing. arch. Daniel Dworschak."
   },
-  "registration_note": "Courtyard and side lawn preview. Building footprint, platform and visible fence edges are excluded from the authored cells. Scan units and flat ground registration are approximate; no surveyed navigation or collision mesh."
+  "registration_note": "Courtyard and side lawn preview with generated 0.2m voxel occupancy and authored cells. Scan units and flat ground registration remain approximate; voxel collision is not a surveyed navigation mesh."
 }

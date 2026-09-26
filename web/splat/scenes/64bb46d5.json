@@ -1,6 +1,13 @@
 {
   "title": "Wooded Path",
   "scene_url": "../../../artifacts/media/supersplat/64bb46d5/lod-meta.json",
+  "voxel_collider": {
+    "url": "../../../artifacts/media/supersplat/colliders/64bb46d5.voxel.json",
+    "floor_y": 0,
+    "step_height": 0.3,
+    "height": 1.8,
+    "inset": 0.15
+  },
   "lod": 2,
   "transform": {
     "scale": 1,
@@ -8,7 +15,7 @@
     "rot_y_deg": 0,
     "translate": [
       0,
-      6.5,
+      23.0,
       0
     ]
   },
@@ -183,12 +190,12 @@
     "SOURCE": {
       "position": [
         51.950321,
-        2.321109,
+        18.821109,
         -24.961411
       ],
       "target": [
         52.213506,
-        1.88106,
+        18.38106,
         -25.81995
       ],
       "fov": 85
@@ -201,5 +208,5 @@
     "manifest": "https://d28zzqy0iyovbz.cloudfront.net/64bb46d5/v1/lod-meta.json",
     "license": "https://creativecommons.org/licenses/by/4.0/"
   },
-  "registration_note": "Path and adjacent clearing preview with visible boulders and vegetation excluded from authored cells. Scan units and flat ground registration are approximate; no surveyed navigation or collision mesh."
+  "registration_note": "Path and adjacent clearing preview with generated 0.2m voxel occupancy and authored cells. Scan units and flat ground registration remain approximate; voxel collision is not a surveyed navigation mesh."
 }
