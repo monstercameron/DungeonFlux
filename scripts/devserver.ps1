@@ -26,8 +26,8 @@ if ($LASTEXITCODE -ne 0) { throw "go build failed with exit code $LASTEXITCODE" 
 $argumentList = "-port $Port -devlog `"$PWD\docs\devlog.html`" -status `"$PWD\artifacts\logs\devserver\status.json`""
 if ($RegisterTask) {
     $action = New-ScheduledTaskAction -Execute $binary -Argument $argumentList -WorkingDirectory $PWD
-    $trigger = New-ScheduledTaskTrigger -AtStartup
-    $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 20 -RestartInterval (New-TimeSpan -Minutes 1)
+    $trigger = New-ScheduledTaskTrigger -AtLogOn -User ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME)
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 20 -RestartInterval (New-TimeSpan -Minutes 1)
     Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -Description 'DungeonFlux human test server' -Force | Out-Null
 }
 if ($StartTask) {
