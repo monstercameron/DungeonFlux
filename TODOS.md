@@ -845,7 +845,7 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: If the hour-2 spike shows WebSocket PCM playback fails on a phone, an HTTP MP3 route is the fallback.
   lane: L-API · block: 8–11 · paths: `internal/api/tts_http*.go` · depends: VOUT-006
   done when: Built only if the spike fails; serves the MP3 path.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: blocked: conditional on the hour-2 real-phone spike (with VOUT-006)
 
 - [x] API-011 · api/debug DebugService on a loopback listener
   why: dfctl needs native gRPC, which the tunnel cannot serve, so a separate grpc.Server listens on 127.0.0.1:port+1000 only when debug is on.
@@ -863,7 +863,7 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   why: The host debug panel shows the last 50 Warn/Error records.
   lane: L-API · block: 8–11 · paths: `internal/api/logtail*.go` · depends: BASE-003
   done when: Ring buffer handler feeds HostView.log_tail; tests.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 ## 14. LLM layer
 
@@ -1001,7 +1001,7 @@ Spoken lines from text to PCM on the DM tab.
   why: Only if the hour-2 spike fails: request ElevenLabs mp3_44100_128 for the HTTP fallback.
   lane: L-VOUT · block: 8–11 · paths: `internal/voice/out/mp3*.go` · depends: VOUT-001
   done when: Built only on spike failure.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: blocked: conditional on the hour-2 real-phone spike (SPIKE-002 built; developer phone test pending)
 
 - [x] VOUT-007 · adapters/tts/openai fallback
   why: A second TTS vendor keeps lines playing if ElevenLabs fails.
@@ -1197,19 +1197,19 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   why: The DM tab plays the music cues with bar-aligned crossfades.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/music*.go` · depends: MEDIA-009
   done when: Cue switches follow MusicView.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 - [ ] DM-006 · web/dm combat frame (FLAT)
   why: When the splat is off, combat shows the flat still with an SVG grid and tokens.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/combat*.go` · depends: COMBAT-006
   done when: FLAT battlefield renders grid lines projected in Go.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 - [ ] DM-007 · web/dm end card with attribution
   why: The demo ends on an end card with the SRD attribution.
   lane: L-WEB-DM · block: 14–17 · paths: `web/dm/end*.go` · depends: PH-CLIFF-001
   done when: End card renders at End.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 ## 21. Host
 
@@ -1271,7 +1271,7 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   why: The client follows View.Battlefield mode and switches to FLAT on failure.
   lane: L-WEB-SPLAT · block: 14–17 · paths: `web/splat/mode*.go` · depends: SPLAT-006, COMBAT-009
   done when: Switching tested in the browser.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 ## 23. dfctl debug CLI
 
@@ -1345,7 +1345,7 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   why: The developer picks cells in the splat pick mode and the result becomes battlefield_tavern.json input.
   lane: L-OPS · block: 1–5 · paths: `scripts/buildtime/nav*.go` · depends: OPS-006, SPLAT-005
   done when: Pick output converted to the nav layer.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: blocked: needs the developer to pick nav cells in splat ?debug pick mode once the Marble splat exists
 
 - [x] OPS-008 · Thrall still, cut-out, and billboard loops
   why: The thrall needs a still, cut-out, and four billboard loops with measured contact_ms.
@@ -1399,7 +1399,7 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   why: The stage server needs a valid certificate for dm.{domain}, issued early because DNS is slow.
   lane: L-OPS · block: 0–1 · paths: `scripts/buildtime/cert.ps1` · depends: REPO-004
   done when: Certificate files in artifacts/runtime/show/tls.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: blocked: needs the developer DO_AUTH_TOKEN for lego DNS-01
 
 ## 25. Test server, gates, and checkpoints
 
@@ -1409,19 +1409,19 @@ Keeping the build honest: per-commit checks, the 30-minute full gate, checkpoint
   why: Each todo commit gets the lane gate, go build ./..., and archtest before it is marked done.
   lane: ORCH · block: 1–5 · paths: `TODOS.md` · depends: REPO-005
   done when: Recorded per todo in TODOS.md status.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed ORCH (running: per-commit review, TODOS review passes fa34d1b and later)
 
 - [ ] GATE-002 · 30-minute full gate cadence
   why: The full gate, WASM build, and walk tests run on the merged head every 30 minutes, and the supervisor swaps only on green.
   lane: ORCH · block: 1–5 · paths: `scripts/gate.ps1` · depends: REPO-006
   done when: Cadence running; results in artifacts/test/ORCH.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed ORCH (running: full gate on the merged head each ~30 min)
 
 - [ ] GATE-003 · Hour-2 spike checkpoint
   why: Real-phone mic to transcript and PCM playback must be proven by hour 2.
   lane: ORCH · block: 1–5 · paths: `docs/devlog.html` · depends: SPIKE-002
   done when: Both phones pass; decision on /tts fallback recorded.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: blocked: needs the developer with two real phones (SPIKE-002 steps in artifacts/lanes/L-SPIKE/spike2/hand-in.md)
 
 - [ ] GATE-004 · Hour-5 checkpoint
   why: Two phones join, walk subset passes, canned opening plays on the DM tab, splat spike at p5 fps ≥ 30.
@@ -1463,7 +1463,7 @@ Keeping the build honest: per-commit checks, the 30-minute full gate, checkpoint
   why: Two walk paths exercise the API and runtime rather than the engine, so they live in ORCH's e2e.
   lane: ORCH · block: 8–11 · paths: `internal/wire/e2e_paths_test.go` · depends: E2E-001
   done when: Both paths pass.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 - [ ] SPIKE-001 · Spike proto and grpctunnel echo
   why: The riskiest path (phone mic over the tunnel, PCM back) is proven with a throwaway proto first.
@@ -1485,7 +1485,7 @@ Everything needed to run the 3-minute demo live.
   why: On arrival and 10 minutes before stage, 20 live calls decide live mode or Safe Mode.
   lane: ORCH · block: 17–20 · paths: `scripts/probe.ps1` · depends: LLM-001, VOUT-001, VIN-001
   done when: p90 release→voice and failures reported.; gate green (≥ 70% coverage where applicable)
-  status: open
+  status: claimed luna
 
 - [ ] STAGE-002 · Safe Mode (sequence_mode) recordings
   why: If the uplink is bad, the show runs from recorded sequences.
