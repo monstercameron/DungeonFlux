@@ -44,15 +44,17 @@ internal/
   vocab clock domain ports      layer 0–2 contracts (ORCH)
   core/fsm                      generic machine (L-ENG)
   content                       one-shot, prompts, schemas, nav layer (L-CONTENT)
-  game/{rules,phase,nested,steer}  pure engine (L-ENG)
-  game/combat                   combat child machine (L-COMBAT)
+  game, game/{rules,nested,steer}  pure engine root (L-ENG)
+  game/phase                    thin top table + dispatcher (L-ENG)
+  game/phase/{creation,opening,conversation,check,resolution,hook,cliffhanger}  one package per phase; parallel todos (L-ENG)
+  game/combat, combat/combatsim  combat child machine + virtual-time harness (L-COMBAT)
   sim                           deterministic simulator (L-ENG)
   adapters/{llm,image,video,stt,tts,sound}/<vendor>   one vendor each (per lane)
-  httpx                         shared HTTP clients (ORCH)
+  httpx logx                    shared HTTP clients, slog helpers (ORCH)
   modelchain budget llmexec     (L-LLM)
   voice/in (L-VIN)  voice/out (L-VOUT)  media (L-MEDIA)
   store/sqlite replay           (L-STORE)
-  runtime (L-RT)  api (L-API)
+  runtime (L-RT)  api, api/debug (L-API)
   config wire archtest fakes    (ORCH)
 gen/dungeonflux/v1              buf output; never hand-edited (ORCH)
 proto/                          .proto sources (ORCH)
@@ -63,7 +65,7 @@ scripts/{buildtime,spike}       L-OPS / L-SPIKE;  scripts/gate.ps1 (ORCH)
 third_party/srd/                vendored SRD data with SOURCE and NOTICE
 assets/concept/  docs/  artifacts/
 ```
-Dependency rule: a package imports only what its §0.18.2 row allows. `internal/archtest` enforces it in every gate, including the purity rules for `game`, `game/combat`, `fsm`, `domain`, `content`, and `sim` (no `net`, `os`, `database/sql`, `log/slog`, `math/rand*`, `crypto/rand`, `sync`, no `go` statement, `time` only for `time.Duration`).
+Dependency rule: a package imports only what its §0.18.2 row allows. `internal/archtest` enforces it in every gate, including the purity rules for `game` (with `game/phase/**`), `game/combat`, `fsm`, `domain`, `content`, and `sim` (no `net`, `os`, `database/sql`, `log/slog`, `math/rand*`, `crypto/rand`, `sync`, no `go` statement, `time` only for `time.Duration`).
 
 ## 3. Ownership
 **ORCH-owned shared contracts** (plan §0.18.8 rule 17, plus this repo's config files): `go.mod`, `go.sum`, `proto/`, `gen/`, `internal/{vocab,domain,ports,clock,config,wire,fakes,archtest,httpx,logx}`, `cmd/server`, `config/`, `scripts/gate.ps1`, `AGENTS.md`, `CLAUDE.md`, `.gitignore`, `.gitattributes`. `internal/core/fsm` belongs to L-ENG, not ORCH.
@@ -150,6 +152,7 @@ Full coding rules: plan §0.18.8 (24 rules) and §0.18.7 (errors, context, loggi
 | L-WEB-SHELL / PHONE / DM / HOST | 18110 / 18111 / 18112 / 18113 |
 | L-WEB-SPLAT | 18114 |
 | L-SPIKE | 18120 |
+| `dfctl` debug listener (loopback only, `server.debug=true`) | server port + 1000: 9443 for the human test server, 9444 for ORCH scratch, 19101–19120 for lanes |
 
 Start lane servers with `Start-Process -PassThru` and keep the PID. Stop with `Stop-Process -Id <pid>`. A lane server you leave running is a failed hand-in. The human test server on 8443 is the exception: ORCH keeps it running (section 11), and nobody else starts, stops, or binds it.
 
@@ -176,7 +179,7 @@ $p = Start-Process go -ArgumentList 'run','./cmd/server','-config','config/fake.
   -RedirectStandardOutput artifacts\logs\L-API\out.log -RedirectStandardError artifacts\logs\L-API\err.log -PassThru
 Stop-Process -Id $p.Id
 
-# Race gate: not run locally (no race detector on windows/arm64, and no WSL).
+# Race gate: not run locally (no race detector on windows/arm64).
 # The GitHub Actions job on ubuntu-latest runs it on every push to main:
 #   go test -race ./internal/runtime/... ./internal/api/... ./internal/voice/...
 # ORCH reads the result with: gh run list --workflow race.yml --limit 1
@@ -264,9 +267,9 @@ PowerShell has no `<` input redirection, so the brief is piped in. Run each lane
 **Build-time art through Codex (no API spend).** Codex's built-in image tool works on this machine through the ChatGPT-login quota, with no `OPENAI_API_KEY` (verified 2026-09-26: one 1536×1024 painterly scene in under a minute). L-OPS may use it for build-time art (backgrounds, the battlefield still, NPC and fallback portraits, concept images). It is not a game-time API; the running game still calls the Images API. Recipe (the prompt goes through a file, because `$imagegen` inside double quotes is expanded by PowerShell):
 ```powershell
 'Use $imagegen to generate <description> and save it as artifacts/runtime/buildtime/<name>.png' |
-  Set-Content -Encoding utf8 artifacts\tmp\L-OPS\prompt.txt
+  ForEach-Object { [IO.File]::WriteAllText("$PWD\artifacts\tmp\L-OPS\prompt.txt", $_, [Text.UTF8Encoding]::new($false)) }
 Get-Content artifacts\tmp\L-OPS\prompt.txt -Raw |
-  codex exec -m gpt-5.6-sol --sandbox workspace-write --skip-git-repo-check -C "C:\Users\mreca\Desktop\DungeonFlux" `
+  codex exec -m gpt-5.6-luna --sandbox workspace-write --skip-git-repo-check -C "C:\Users\mreca\Desktop\DungeonFlux" `
     -o artifacts\tmp\L-OPS\imagegen-report.md -
 ```
 Codex first saves to `~/.codex/generated_images/<session>/` and then copies to the requested path; check the file exists and has the expected size. A transparent background is not guaranteed from this path; portraits that need alpha still use the Images API with `background: transparent` or a matting step.
@@ -293,7 +296,7 @@ The developer tests the game by hand throughout the build, so a working server i
   - MediaRecorder's first chunk carries the container header; never drop it, or the file will not decode.
   - Segmind results expire after an hour; download immediately.
   - Qwen on Cerebras defaults to `high` reasoning; send `reasoning_effort: "none"`.
-- **Game LLM calls go through SchemaFlux** (plan §0.15 and §0.18.3, once the dependency section lands); do not call vendor SDKs directly from game code.
+- **Game LLM text goes through `ports.LLM`** (plan D14, §0.18.3, §0.22): OpenAI-dialect links (Luna, Qwen on Cerebras) through SchemaFlux in `internal/adapters/llm/schemaflux`; Gemini and Haiku through their §0.22 SDKs in their own adapters. No other package calls a vendor SDK.
 
 ## 13. Working from TODOS.md: atomic commits without clobbering
 `TODOS.md` is the single list of work. Nothing is built that is not a todo there first, and every todo ends as exactly one commit.
@@ -406,13 +409,11 @@ Output is one JSON object per line (add `--pretty` for people). Exit codes: 0 ok
 
 ```powershell
 $env:DF_DEBUG_TOKEN = "<lane token>"
-go run ./cmd/dfctl --addr localhost:18101 state            # phase, scopes, seats, HP, timers
-go run ./cmd/dfctl --addr localhost:18101 view --seat 1    # exactly what phone 1 receives
-go run ./cmd/dfctl --addr localhost:18101 act --seat 1 persuade
-go run ./cmd/dfctl --addr localhost:18101 dice force d20=17
-go run ./cmd/dfctl --addr localhost:18101 goto combat
-go run ./cmd/dfctl --addr localhost:18101 logs --level warn --follow
-go run ./cmd/dfctl --addr localhost:18101 client dm splat flat
+go run ./cmd/dfctl --addr localhost:19101 state            # phase, scopes, seats, HP, timers
+go run ./cmd/dfctl --addr localhost:19101 view --seat 1    # exactly what phone 1 receives
+go run ./cmd/dfctl --addr localhost:19101 act --seat 1 persuade
+go run ./cmd/dfctl --addr localhost:19101 dice force d20=17
+go run ./cmd/dfctl --addr localhost:19101 logs --level warn --follow
 ```
 
 | Group | Verbs |
@@ -424,6 +425,7 @@ go run ./cmd/dfctl --addr localhost:18101 client dm splat flat
 
 Rules:
 - Write verbs never mutate state directly. They send events through `Step`, so they land in the event log and replay deterministically. Pass `--dry-run` to see the effects without applying them.
-- Use `dfctl` against your own lane's port only; the human test server (`:8443`) is ORCH's.
+- `dfctl` connects to the debug listener at `127.0.0.1:<server port + 1000>` (your lane's server) or `:9443` (the human test server, ORCH only). Lanes without a server (L-ENG, L-COMBAT, L-RT) use `debug_start` runs on ORCH's scratch server (:8444) through ORCH.
+- The demo build of `dfctl` has reads plus `send`, `act`, `say`, `dice force d20=N`, and `reset`; `goto combat` is the `debug_start: combat` config. The other verbs in the table are an only-if-idle backlog after hour 17.
 - Point `dfctl` at a server, not a vendor: `vendor fake` is how you test fallbacks, never a live call.
 - Put `dfctl` output you cite in a hand-in under `artifacts/test/<LANE>/`.
