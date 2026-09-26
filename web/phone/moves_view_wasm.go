@@ -58,13 +58,8 @@ func moveCard(move MoveSnapshot, tap ui.Handler) ui.Node {
 	if !move.Enabled {
 		style = map[string]string{"width": "100%", "min-height": "76px", "box-sizing": "border-box", "display": "flex", "flex-direction": "column", "align-items": "flex-start", "justify-content": "center", "gap": "5px", "padding": "14px 16px", "border-radius": "12px", "border": "1px solid #454650", "background-color": "#252730", "color": "#777b87", "text-align": "left", "font-size": "1.15rem", "font-weight": "700", "line-height": "1.2", "opacity": "0.86"}
 	}
-	plate := buttonPrimaryAsset
-	if !move.Enabled {
-		plate = buttonDisabledAsset
-	}
-	for key, value := range artButtonStyle(plate, style["background-color"]) {
-		style[key] = value
-	}
+	// The finish sheet styles these as choice rows; the stretched button-plate
+	// sprite squeezed the label into a small strip.
 	children := []ui.Node{moveIcon(move), html.Text(move.Label)}
 	if preview := MovePreviewText(move); preview != "" {
 		children = append(children, html.Small(html.Props{Style: map[string]string{"font-size": "0.82rem", "font-weight": "500", "color": "#d9a441"}}, html.Text(preview)))
@@ -113,7 +108,7 @@ func moveAriaLabel(move MoveSnapshot) string {
 
 func moveClass(move MoveSnapshot) string {
 	if move.Enabled {
-		return "df-phone-move"
+		return "df-phone-move df-phone-choice-row df-phone-choice-highlighted"
 	}
-	return "df-phone-move df-phone-move-disabled"
+	return "df-phone-move df-phone-move-disabled df-phone-choice-row df-phone-choice-disabled"
 }

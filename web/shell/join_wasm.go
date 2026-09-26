@@ -135,10 +135,17 @@ func languageSwitcher(locale *LocaleModel, view ui.State[JoinSnapshot]) ui.Node 
 
 func browserRoomCode() string {
 	value := js.Global().Get("URLSearchParams").New(js.Global().Get("location").Get("search")).Call("get", "room")
-	if value.IsNull() || value.IsUndefined() {
-		return ""
+	if !value.IsNull() && !value.IsUndefined() && value.String() != "" {
+		return value.String()
 	}
-	return value.String()
+	// The router drops the query on boot; rememberBootQuery keeps the room so
+	// a reload of /p still knows it (and can rejoin with the saved seat).
+	if storage := js.Global().Get("sessionStorage"); storage.Truthy() {
+		if saved := storage.Call("getItem", "df-room"); saved.Truthy() {
+			return saved.String()
+		}
+	}
+	return ""
 }
 
 func statusRole(state JoinSnapshot) string {
