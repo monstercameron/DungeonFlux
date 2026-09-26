@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
+	"github.com/monstercameron/GoWebComponents/v6/router"
 	"github.com/monstercameron/GoWebComponents/v6/testkit/render"
 	"github.com/monstercameron/GoWebComponents/v6/ui"
 )
@@ -77,6 +78,24 @@ func TestRenderPhoneScreen_CombatMoveCountChanges(t *testing.T) {
 	third := renderPhoneMarkup(t, ScreenCombat, props)
 	if !strings.Contains(first, ">Strike</button>") || strings.Contains(second, ">Strike</button>") || !strings.Contains(second, ">Advance</button>") || !strings.Contains(second, ">Finish</button>") || strings.Contains(third, ">Advance</button>") {
 		t.Fatalf("first=%s second=%s third=%s", first, second, third)
+	}
+}
+
+func TestRenderPhoneMount_UnavailableClient(t *testing.T) {
+	render.New(t)
+	mount := reflect.ValueOf(Mount)
+	client := reflect.Zero(reflect.TypeOf((*PhoneClient)(nil)).Elem())
+	arguments := []reflect.Value{client, reflect.ValueOf("seat")}
+	if mount.Type().NumIn() == 3 {
+		arguments = append(arguments, reflect.ValueOf("en"))
+	}
+	component := mount.Call(arguments)[0].Interface().(router.Component)
+	markup, err := ui.RenderToString(component(router.Attrs{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(markup, `role="alert"`) || !strings.Contains(markup, "df-phone") {
+		t.Fatalf("unavailable-client markup = %s", markup)
 	}
 }
 
