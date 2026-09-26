@@ -17,6 +17,7 @@ func TestAssetLoader_ManifestChangeRepointsLogicalName(t *testing.T) {
 		t.Fatal(err)
 	}
 	loader.urls["name:ui/title_bg"] = "blob:old"
+	loader.urls["ui/title_bg"] = "blob:old"
 	loader.urls["sha:"+oldSHA] = "blob:old"
 	if _, err := loader.installManifest(&dungeonfluxv1.AssetManifestResponse{Assets: []*dungeonfluxv1.AssetManifestEntry{{Name: "ui/title_bg", Sha256: newSHA}}}); err != nil {
 		t.Fatal(err)
@@ -62,16 +63,41 @@ func TestAssetLoader_LoadPersistentHitAndExpiry(t *testing.T) {
 	service := &fakeAssetService{assets: map[string]fakeAsset{sha: {data: []byte("network")}}}
 	loader := NewAssetLoaderWithStore(service, &fakeBlobURLFactory{}, store)
 	loader.now = func() time.Time { return now.Add(time.Minute) }
-	if result := <-loader.Load(context.Background(), sha); result.Err != nil {
+	result := <-loader.Load(context.Background(), sha)
+	if result.Err != nil {
 		t.Fatal(result.Err)
 	}
 	if got := service.calls(); got != 0 {
 		t.Fatalf("persistent hit made %d network calls", got)
 	}
+	if got := loader.ArtURL(sha); got != result.URL {
+		t.Fatalf("persistent Blob URL = %q, want %q", got, result.URL)
+	}
 	loader = NewAssetLoaderWithStore(service, &fakeBlobURLFactory{}, store)
 	loader.now = func() time.Time { return now.Add(assetTTL) }
 	if result := <-loader.Load(context.Background(), sha); result.Err == nil {
 		t.Fatal("expired cache entry was served")
+	}
+}
+
+func TestAssetLoader_PersistentSHAHitRepointsWhenManifestArrives(t *testing.T) {
+	const sha = "aaf2320646108059a87ab5017a86aee454f5378ed95003dbb2e12f4ca5266e0e"
+	now := time.Date(2026, 9, 26, 12, 0, 0, 0, time.UTC)
+	store := newMemoryAssetStore()
+	if err := store.Put(context.Background(), sha, assetCacheEntry{Data: []byte("title"), ContentType: "image/webp", StoredAt: now, LastUsed: now}); err != nil {
+		t.Fatal(err)
+	}
+	loader := NewAssetLoaderWithStore(&fakeAssetService{}, &fakeBlobURLFactory{}, store)
+	loader.now = func() time.Time { return now.Add(time.Minute) }
+	result := <-loader.Load(context.Background(), sha)
+	if result.Err != nil {
+		t.Fatal(result.Err)
+	}
+	if _, err := loader.installManifest(&dungeonfluxv1.AssetManifestResponse{Assets: []*dungeonfluxv1.AssetManifestEntry{{Name: "mother_vell", Sha256: sha, ContentType: "image/webp"}}}); err != nil {
+		t.Fatal(err)
+	}
+	if got := loader.ArtURL("mother_vell"); got != result.URL {
+		t.Fatalf("manifest name URL = %q, want %q", got, result.URL)
 	}
 }
 

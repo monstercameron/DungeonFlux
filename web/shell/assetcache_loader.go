@@ -30,6 +30,12 @@ func (l *AssetLoader) fetchAsset(ctx context.Context, selector string) AssetResu
 	}
 	if expectedSHA != "" {
 		if result, ok := l.loadPersistent(ctx, expectedSHA, entry.contentType); ok {
+			// Persistent hits still need the in-memory aliases used by the
+			// synchronous ArtURL path. Without this, the Blob URL exists only
+			// in the result channel and the phone renders its fallback forever.
+			l.mu.Lock()
+			l.cacheResult(selector, l.selectorKeyLocked(selector), result.URL)
+			l.mu.Unlock()
 			return result
 		}
 	}

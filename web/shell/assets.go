@@ -247,11 +247,21 @@ func (l *AssetLoader) installManifest(response *dungeonfluxv1.AssetManifestRespo
 		entry := assetEntry{name: strings.TrimSpace(raw.GetName()), sha256: strings.TrimSpace(raw.GetSha256()), contentType: strings.TrimSpace(raw.GetContentType()), size: raw.GetSize()}
 		if previous, ok := l.manifest[entry.name]; ok && previous.sha256 != entry.sha256 {
 			delete(l.urls, "name:"+entry.name)
+			delete(l.urls, entry.name)
 			delete(l.urls, "sha:"+previous.sha256)
 			delete(l.bySHA, previous.sha256)
 		}
 		l.manifest[entry.name] = entry
 		l.bySHA[entry.sha256] = entry.name
+		// A lazy SHA request can finish before the manifest request. Promote
+		// that raw/SHA alias now that the logical name is known.
+		for _, alias := range []string{entry.sha256, "sha:" + entry.sha256} {
+			if url := l.urls[alias]; url != "" {
+				l.urls[entry.name] = url
+				l.urls["name:"+entry.name] = url
+				break
+			}
+		}
 		entries = append(entries, entry)
 	}
 	return entries, nil
@@ -315,6 +325,10 @@ func readAssetStream(stream AssetStream) ([]byte, string, error) {
 }
 
 func (l *AssetLoader) cacheResult(selector, key, url string) {
+	// Keep the raw selector as well as canonical keys. A request can finish
+	// before Manifest installs its name-to-SHA mapping; the raw alias lets a
+	// later render find that Blob URL after the manifest arrives.
+	l.urls[selector] = url
 	l.urls[key] = url
 	selectorKey := l.selectorKeyLocked(selector)
 	l.urls[selectorKey] = url

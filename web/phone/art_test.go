@@ -56,3 +56,29 @@ func TestArtHelpers_ProvideFallbackStyles(t *testing.T) {
 		t.Fatal("loaded button style has no image")
 	}
 }
+
+func TestPortraitSrc_ResolvesAssetSelectorsAndPassesBrowserURLs(t *testing.T) {
+	SetArtSource(phoneArtFake{})
+	t.Cleanup(func() { SetArtSource(nil) })
+	for _, test := range []struct {
+		name, input, want string
+	}{
+		{name: "logical asset", input: "mother_vell", want: "/assets/mother_vell.webp"},
+		{name: "blob URL", input: " blob:ready ", want: "blob:ready"},
+		{name: "data URL", input: "data:image/webp;base64,abc", want: "data:image/webp;base64,abc"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := portraitSrc(test.input); got != test.want {
+				t.Fatalf("portraitSrc(%q) = %q, want %q", test.input, got, test.want)
+			}
+		})
+	}
+}
+
+func TestHeroProxyArt_UsesSpeciesBeforeClass(t *testing.T) {
+	SetArtSource(phoneArtFake{})
+	t.Cleanup(func() { SetArtSource(nil) })
+	if got := heroProxyArt("elf", "rogue", "seed"); got != "/assets/ui/species_elf.webp" {
+		t.Fatalf("heroProxyArt() = %q, want species proxy", got)
+	}
+}

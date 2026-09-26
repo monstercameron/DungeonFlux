@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"runtime"
 	"sync"
 	"testing"
 )
@@ -10,7 +12,7 @@ type fakeArtLoader struct {
 	mu     sync.Mutex
 	cached map[string]string
 	loads  []string
-	done   chan struct{}
+	errors []error
 }
 
 func (f *fakeArtLoader) ArtURL(selector string) string {
@@ -21,12 +23,18 @@ func (f *fakeArtLoader) ArtURL(selector string) string {
 
 func (f *fakeArtLoader) Load(_ context.Context, selector string) <-chan AssetResult {
 	f.mu.Lock()
+	index := len(f.loads)
 	f.loads = append(f.loads, selector)
-	f.cached[selector] = "blob:" + selector
+	assetResult := AssetResult{URL: "blob:" + selector}
+	if index < len(f.errors) && f.errors[index] != nil {
+		assetResult = AssetResult{Err: f.errors[index]}
+	} else {
+		f.cached[selector] = assetResult.URL
+	}
 	f.mu.Unlock()
-	result := make(chan AssetResult, 1)
-	result <- AssetResult{URL: "blob:" + selector}
-	return result
+	results := make(chan AssetResult, 1)
+	results <- assetResult
+	return results
 }
 
 func TestNormalizeArtSelector(t *testing.T) {
@@ -62,5 +70,31 @@ func TestLazyArtSource_fetchesOnceAndRefreshes(t *testing.T) {
 	defer loader.mu.Unlock()
 	if len(loader.loads) != 1 || loader.loads[0] != "qrsha" {
 		t.Fatalf("loads = %v, want exactly one load of qrsha", loader.loads)
+	}
+}
+
+func TestLazyArtSource_retriesAfterError(t *testing.T) {
+	loader := &fakeArtLoader{cached: map[string]string{}, errors: []error{errors.New("temporary miss")}}
+	source := newLazyArtSource(context.Background(), loader, nil)
+	if got := source.ArtURL("mother_vell"); got != "" {
+		t.Fatalf("first miss = %q, want empty", got)
+	}
+	for attempt := 0; attempt < 1000; attempt++ {
+		loader.mu.Lock()
+		loads := len(loader.loads)
+		loader.mu.Unlock()
+		if loads == 2 {
+			break
+		}
+		source.ArtURL("mother_vell")
+		runtime.Gosched()
+	}
+	loader.mu.Lock()
+	defer loader.mu.Unlock()
+	if len(loader.loads) != 2 {
+		t.Fatalf("loads after failed fetch = %v, want retry", loader.loads)
+	}
+	if got := loader.cached["mother_vell"]; got != "blob:mother_vell" {
+		t.Fatalf("retry cache = %q, want successful Blob URL", got)
 	}
 }

@@ -50,7 +50,14 @@ func (s *lazyArtSource) ArtURL(selector string) string {
 	if first {
 		go func() {
 			result := <-s.loader.Load(s.ctx, selector)
-			if result.Err == nil && s.refresh != nil {
+			s.mu.Lock()
+			if result.Err != nil || result.URL == "" {
+				// A transient miss must not poison this selector forever. The next
+				// render is the retry boundary after a failed lazy fetch.
+				delete(s.started, selector)
+			}
+			s.mu.Unlock()
+			if result.Err == nil && result.URL != "" && s.refresh != nil {
 				s.refresh()
 			}
 		}()
