@@ -10,6 +10,8 @@ import (
 type ScreenKind string
 
 const (
+	// ScreenWaiting shows the player's seat while the host gathers the table.
+	ScreenWaiting ScreenKind = "waiting"
 	// ScreenCreate shows species, gender, and hero rolling.
 	ScreenCreate ScreenKind = "create"
 	// ScreenSheet shows the current character and status.
@@ -26,8 +28,11 @@ const (
 
 // SeatView is the seat-specific state used to select and render a phone screen.
 type SeatView struct {
-	Phase string
-	Phone *df.PhoneView
+	Phase        string
+	Phone        *df.PhoneView
+	PlayerName   string
+	PlayerNumber int32
+	LobbySeats   []*df.LobbySeat
 }
 
 // ConnectionState identifies the transport state shown in the phone header.
@@ -91,7 +96,12 @@ type ScreenTransition struct {
 func SelectScreen(view SeatView) ScreenKind {
 	phase := strings.ToLower(strings.TrimSpace(view.Phase))
 	switch phase {
-	case "lobby", "exploration":
+	case "lobby":
+		if view.PlayerName != "" || view.PlayerNumber > 0 || len(view.LobbySeats) > 0 {
+			return ScreenWaiting
+		}
+		return ScreenMoves
+	case "exploration":
 		return ScreenMoves
 	case "creation":
 		return ScreenCreate
