@@ -307,7 +307,7 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   why: RT-010 added runtime.WithNewGame, but wire does not pass it (BASE-016 finished first), so host Reset still keeps the old engine; TalkStop is still a no-op in wire although runtime treats it as a control effect.
   lane: ORCH · block: 8–11 · paths: `internal/wire/wire.go`, `internal/wire/room*.go`, `internal/wire/execs*.go` · depends: RT-010, BASE-016, API-009
   done when: NewRoom gets WithNewGame (game.New with the one-shot and the given seed) and WithRoomState; TalkStop closes the seat's active Talk stream through the API; a wire test posts host Reset and sees a new run with a new seed and Lobby phase.
-  status: claimed luna
+  status: committed b0675b8
 
 - [x] BASE-007 · internal/wire skeleton and cmd/server skeleton
   why: The server binary must start from hour 1 with fakes, flags (-config, -port, -data-dir, -seed), and graceful shutdown.
