@@ -69,7 +69,7 @@ func (s *HostServer) Command(ctx context.Context, request *df.HostCommand) (*df.
 	if request.GetCommand() == df.HostCommandKind_HOST_COMMAND_KIND_ROOM_LOCALE {
 		tag := settleHostLocale(request.GetLocale())
 		if s.roomLocales != nil {
-			tag = s.roomLocales.SetRoomLocale(tag)
+			s.roomLocales.SetRoomLocale(tag)
 		}
 		return &df.HostAck{Ok: true}, nil
 	}
