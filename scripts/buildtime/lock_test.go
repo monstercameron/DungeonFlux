@@ -120,7 +120,8 @@ func TestLockManifest_RejectsCanceledContext(t *testing.T) {
 }
 
 func TestLockManifest_RejectsNilContextAndEmptyRoot(t *testing.T) {
-	if _, err := LockManifest(nil, t.TempDir()); err == nil {
+	var nilContext context.Context
+	if _, err := LockManifest(nilContext, t.TempDir()); err == nil {
 		t.Fatal("nil context accepted")
 	}
 	if _, err := LockManifest(context.Background(), ""); err == nil {
