@@ -30,11 +30,19 @@ const (
 
 // SeatView is the seat-specific state used to select and render a phone screen.
 type SeatView struct {
+	Version      uint64
 	Phase        string
 	Phone        *df.PhoneView
 	PlayerName   string
 	PlayerNumber int32
 	LobbySeats   []*df.LobbySeat
+}
+
+func seatViewFromState(state *df.ScreenState) SeatView {
+	if state == nil {
+		return SeatView{}
+	}
+	return SeatView{Version: state.GetVersion(), Phase: state.GetPhase(), Phone: state.GetPhone()}
 }
 
 // ConnectionState identifies the transport state shown in the phone header.

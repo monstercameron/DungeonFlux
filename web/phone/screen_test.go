@@ -32,6 +32,19 @@ func TestSelectScreen_AllDemoPhases(t *testing.T) {
 	}
 }
 
+func TestSeatViewFromState_CarriesSnapshotVersion(t *testing.T) {
+	state := &df.ScreenState{Version: 18, Phase: "creation", View: &df.ScreenState_Phone{Phone: &df.PhoneView{
+		StatusText: "Your hero is ready to lock in",
+	}}}
+	view := seatViewFromState(state)
+	if view.Version != 18 || view.Phase != "creation" || view.Phone.GetStatusText() != "Your hero is ready to lock in" {
+		t.Fatalf("seat view = %+v", view)
+	}
+	if empty := seatViewFromState(nil); empty.Version != 0 || empty.Phone != nil {
+		t.Fatalf("nil state view = %+v", empty)
+	}
+}
+
 func TestSelectScreen_UsesSeatViewState(t *testing.T) {
 	if got := SelectScreen(SeatView{Phone: &df.PhoneView{Moves: []*df.Move{{MoveId: "talk_vell"}}}}); got != ScreenMoves {
 		t.Fatalf("moves screen = %q", got)
