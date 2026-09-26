@@ -61,7 +61,7 @@ func (r *Runner) dispatch(effect domain.Effect) {
 		r.unregistered(effect)
 		return
 	}
-	go fn(context.Background(), effect, domain.Scope{}, r.in)
+	go runRecovered(context.Background(), r.logger, effect, domain.Scope{}, r.in, fn)
 }
 
 func isControl(effect domain.Effect) bool {
