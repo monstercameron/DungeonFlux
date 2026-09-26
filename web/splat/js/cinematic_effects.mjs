@@ -39,6 +39,13 @@ class CinematicEffects {
     return this.motion.setPose(definition);
   }
 
+  track(point, dt) {
+    if (this.destroyed || this.paused || !this.enabled || !Array.isArray(point) || point.length !== 3 || !point.every(Number.isFinite) || !Number.isFinite(dt)) return false;
+    this.remaining = 0;
+    this.target = null;
+    return this.motion.track(point, dt);
+  }
+
   move(preset, durationMs) {
     const definition = this.cameras[preset];
     const time = duration(durationMs);
@@ -115,10 +122,12 @@ export function createCinematicEffects(options = {}) {
     setPose: (definition) => state.setPose(definition),
     camera: (command) => state.camera(command),
     send: (effect) => state.send(effect),
+    track: (point, dt) => state.track(point, dt),
     pause: (on) => state.pause(on),
     stop: () => state.stop(),
     destroy: () => state.destroy(),
     update: (dt) => state.update(dt),
     getPose: state.motion.getPose,
+    getTrackTarget: state.motion.getTrackTarget,
   });
 }

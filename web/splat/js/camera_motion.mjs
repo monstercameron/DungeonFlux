@@ -68,6 +68,7 @@ function setPose(state, definition) {
   if (state.destroyed) return clonePose(state.pose);
   state.pose = poseFrom(definition, state.pose);
   state.panState = null;
+  state.trackTarget = null;
   clearShake(state);
   applyPose(state.camera, state.pose);
   return clonePose(state.pose);
@@ -79,9 +80,30 @@ function pan(state, definition, durationMs = 1200) {
   const target = poseFrom(definition, state.pose);
   const duration = Math.max(0, Math.min(MAX_PAN_MS, finite(durationMs, 1200)));
   clearShake(state);
+  state.trackTarget = null;
   if (!state.enabled || duration === 0) return setPose(state, target);
   state.panState = { from: clonePose(state.pose), to: target, elapsed: 0, duration: duration / 1000 };
   return clonePose(target);
+}
+
+function validPoint(point) {
+  return Array.isArray(point) && point.length === 3 && point.every((value) => Number.isFinite(value));
+}
+
+function track(state, point, dtSeconds) {
+  if (state.destroyed || state.paused || (!state.enabled && !state.reducedMotion) || !validPoint(point)) return false;
+  const dt = Number(dtSeconds);
+  if (!Number.isFinite(dt)) return false;
+  state.pose = currentCameraPose(state.camera, state.pose);
+  state.trackTarget = null;
+  state.panState = null;
+  state.trackTarget = point.slice();
+  const amount = state.reducedMotion ? 1 : 1 - Math.exp(-12 * Math.max(0, Math.min(1, dt)));
+  const offset = state.pose.position.map((value, i) => value - state.pose.target[i]);
+  const target = state.pose.target.map((value, i) => value + (point[i] - value) * amount);
+  state.pose = { position: target.map((value, i) => value + offset[i]), target, fov: state.pose.fov };
+  applyPose(state.camera, state.pose);
+  return true;
 }
 
 function shake(state, { amplitude_px = 8, duration_ms = 200 } = {}) {
@@ -119,6 +141,7 @@ function update(state, dtSeconds) {
 function stop(state) {
   state.pose = currentCameraPose(state.camera, state.pose);
   state.panState = null;
+  state.trackTarget = null;
   clearShake(state);
   return clonePose(state.pose);
 }
@@ -127,6 +150,7 @@ function setEnabled(state, value) {
   state.enabled = Boolean(value) && !state.reducedMotion;
   if (!state.enabled) {
     state.panState = null;
+    state.trackTarget = null;
     clearShake(state);
   }
 }
@@ -136,15 +160,17 @@ function destroy(state) {
   state.pose = currentCameraPose(state.camera, state.pose);
   state.destroyed = true;
   state.panState = null;
+  state.trackTarget = null;
   clearShake(state);
 }
 
 /** Creates deterministic camera pan and impact shake motion without timers. */
 export function createCameraMotion({ camera, canvas, reducedMotion = false } = {}) {
-  const state = { camera, canvas, baseTransform: canvas?.style?.transform ?? "", pose: poseFrom(null, { position: [0, 0, 0], target: [0, 0, -1], fov: 45 }), panState: null, shakeState: null, reducedMotion: Boolean(reducedMotion), enabled: !reducedMotion, paused: false, destroyed: false };
+  const state = { camera, canvas, baseTransform: canvas?.style?.transform ?? "", pose: poseFrom(null, { position: [0, 0, 0], target: [0, 0, -1], fov: 45 }), panState: null, trackTarget: null, shakeState: null, reducedMotion: Boolean(reducedMotion), enabled: !reducedMotion, paused: false, destroyed: false };
   return {
     setPose: (definition) => setPose(state, definition),
     pan: (definition, durationMs) => pan(state, definition, durationMs),
+    track: (point, dtSeconds) => track(state, point, dtSeconds),
     shake: (definition) => shake(state, definition),
     stop: () => stop(state),
     setEnabled: (value) => setEnabled(state, value),
@@ -153,5 +179,7 @@ export function createCameraMotion({ camera, canvas, reducedMotion = false } = {
     update: (dtSeconds) => update(state, dtSeconds),
     destroy: () => destroy(state),
     getPose: () => clonePose(state.pose),
+    getTrackTarget: () => state.trackTarget?.slice() ?? null,
+    get trackTarget() { return state.trackTarget?.slice() ?? null; },
   };
 }

@@ -7,7 +7,7 @@ import { THEMES } from "./theme_grades.mjs";
 import { installOrbitControls } from "./camera_controls.mjs";
 import { applyCameraPreset, cameraPreset, cameraPresetNames } from "./grid_camera.mjs";
 import { cellsJSON, installDebugPickMode } from "./debug_pick.mjs";
-
+import { createTokenController, createDemoSnapshot, findDemoPath, selectDemoCells } from "./token_demo.mjs";
 const GRID = Object.freeze({
   origin: [-6.096, -4.572],
   cell_m: 1.524,
@@ -21,6 +21,7 @@ const canvas = document.querySelector("#df-splat-viewer");
 const statusNode = document.querySelector("#status");
 const presetsNode = document.querySelector("#presets");
 const gridButton = document.querySelector("#grid-toggle");
+const charactersButton = document.querySelector("#characters-toggle");
 const exportButton = document.querySelector("#export-picks");
 const lodNode = document.querySelector("#lod-selector");
 const sourceInfoNode = document.querySelector("#source-info");
@@ -28,10 +29,15 @@ const tiltButton = document.querySelector("#tilt-toggle");
 const shakeButton = document.querySelector("#shake-effect");
 const panButton = document.querySelector("#pan-effect");
 const stopButton = document.querySelector("#stop-effects");
+const pauseButton = document.querySelector("#pause-toggle");
+const followNode = document.querySelector("#follow-selector");
+const moveButton = document.querySelector("#move-demo");
+const tokenStatusNode = document.querySelector("#token-status");
 const strengthNode = document.querySelector("#effect-strength");
 const themeNode = document.querySelector("#theme-grade");
 const gradeStrengthNode = document.querySelector("#grade-strength");
 let activeGrade = { theme: "neutral", strength: 0 };
+let tokenController;
 
 let app;
 let camera;
@@ -42,19 +48,20 @@ let baseStatus = "";
 let orbitControls;
 let cinematic;
 let effectSeq = 0;
+let demoSeq = 1;
+let demoCells = [];
+let demoState = null;
 function setStatus(message, kind = "info") {
   baseStatus = message;
   statusNode.textContent = message;
   statusNode.dataset.kind = kind;
 }
-
 function gridLabel(grid) {
   const playable = Array.isArray(grid?.walkable) ? grid.walkable.length : 0;
   const excluded = Array.isArray(grid?.excluded) ? grid.excluded.length : 0;
   const feet = Math.abs(Number(grid?.cell_m) - 1.524) < 0.01 ? " · 5 ft cells" : "";
   return `${Number(grid?.cols) || 0}×${Number(grid?.rows) || 0} grid · ${playable} playable${excluded ? ` · ${excluded} terrain excluded` : ""}${feet}`;
 }
-
 function querySource() {
   const source = new URLSearchParams(window.location.search).get("src");
   if (!source) return "";
@@ -64,7 +71,6 @@ function querySource() {
     return "";
   }
 }
-
 function configureApp() {
   app = new pc.Application(canvas, {
     graphicsDeviceOptions: { deviceTypes: ["webgl2"], antialias: true, alpha: false },
@@ -82,7 +88,6 @@ function configureApp() {
   console.info(`[splat viewer] grid MSAA: ${app.graphicsDevice?.backBuffer?.samples ?? "unknown"}`);
   return app;
 }
-
 function createViewerCamera() {
   camera = new pc.Entity("df-viewer-camera");
   camera.addComponent("camera", {
@@ -96,7 +101,6 @@ function createViewerCamera() {
   app.on?.("destroy", () => skybox.destroy());
   applyCameraPreset(camera, "TACTICAL");
 }
-
 function addPresetButtons(profile = null) {
   const names = [...new Set([...cameraPresetNames(), ...Object.keys(profile?.cameras ?? {})])];
   for (const name of names) {
@@ -105,6 +109,8 @@ function addPresetButtons(profile = null) {
     button.textContent = PRESET_LABELS[name] ?? name;
     button.dataset.preset = name;
     button.addEventListener("click", () => {
+      tokenController?.clearFollow();
+      if (followNode) followNode.value = "off";
       const definition = profile?.cameras?.[name];
       cinematic?.stop();
       if (definition) {
@@ -115,18 +121,13 @@ function addPresetButtons(profile = null) {
         if (camera.camera) camera.camera.fov = Number(definition.fov ?? 35);
         orbitControls?.setTarget(target);
       } else applyCameraPreset(camera, name);
-      if (!definition) orbitControls?.setTarget(cameraPresetTarget(name));
+      if (!definition) orbitControls?.setTarget(cameraPreset(name).target);
       for (const item of presetsNode.children) item.setAttribute("aria-pressed", String(item === button));
     });
     presetsNode.append(button);
   }
   presetsNode.querySelector('[data-preset="TACTICAL"]')?.setAttribute("aria-pressed", "true");
 }
-
-function cameraPresetTarget(name) {
-  return cameraPreset(name).target;
-}
-
 /** Creates a timestamp-driven p5 FPS sampler and logger. */
 export function createFPSReporter({ intervalMs = 2000, logger = () => {} } = {}) {
   let lastFrameAt = null;
@@ -154,7 +155,6 @@ export function createFPSReporter({ intervalMs = 2000, logger = () => {} } = {})
   report.reset = () => { lastFrameAt = null; lastReportAt = null; samples = []; };
   return report;
 }
-
 const fpsReporter = createFPSReporter({
   logger: (p5) => {
     console.log(`[splat viewer] p5 fps: ${p5.toFixed(1)}`);
@@ -169,7 +169,6 @@ function recordFPS() {
   if (document.hidden) { fpsReporter.reset(); return; }
   fpsReporter(performance.now());
 }
-
 function installMotionPreference() {
   const button = document.querySelector("#motion-toggle");
   if (!button) return;
@@ -183,17 +182,28 @@ function installMotionPreference() {
   button.addEventListener("click", () => {
     const enabled = button.getAttribute("aria-pressed") !== "true";
     cinematic?.send({ seq: ++effectSeq, reduced_motion: !enabled, enabled: true });
+    tokenController?.setReducedMotion(!enabled);
     display(enabled);
   });
 }
-
 function installControls() {
   installMotionPreference();
   gridButton.addEventListener("click", () => {
     if (!gridEntity) return;
     gridVisible = !gridVisible;
     gridEntity.enabled = gridVisible;
+    tokenController?.setGridVisible(gridVisible);
     gridButton.setAttribute("aria-pressed", String(gridVisible));
+  });
+  charactersButton?.addEventListener("click", () => { if (!tokenController) return; const enabled = charactersButton.getAttribute("aria-pressed") !== "true"; tokenController.setEnabled(enabled); charactersButton.setAttribute("aria-pressed", String(enabled)); });
+  followNode?.addEventListener("change", () => { const id = followNode.value; if (id === "off") tokenController?.clearFollow(); else tokenController?.follow(id); });
+  moveButton?.addEventListener("click", () => moveDemoToken());
+  pauseButton?.addEventListener("click", () => {
+    const paused = pauseButton.getAttribute("aria-pressed") !== "true";
+    pauseButton.setAttribute("aria-pressed", String(paused));
+    pauseButton.textContent = paused ? "Resume" : "Pause";
+    tokenController?.pause(paused);
+    cinematic?.pause(paused);
   });
   exportButton.addEventListener("click", () => pickMode?.download());
   tiltButton?.addEventListener("click", () => {
@@ -211,14 +221,27 @@ function installControls() {
   themeNode?.addEventListener("change", () => applyViewerGrade({ theme: themeNode.value, strength: THEMES[themeNode.value].strength, enabled: themeNode.value !== "neutral" }));
   shakeButton?.addEventListener("click", () => cinematic?.send({ seq: ++effectSeq, enabled: true, shake: { amplitude_px: 8, duration_ms: 200 } }));
   panButton?.addEventListener("click", () => {
+    tokenController?.clearFollow(); if (followNode) followNode.value = "off";
     const wide = panButton.dataset.wide !== "true";
     panButton.dataset.wide = String(wide);
     panButton.textContent = wide ? "Pan back" : "Pan wide";
     cinematic?.send({ seq: ++effectSeq, enabled: true, pan: { preset: wide ? "SURVEY" : "TACTICAL", duration_ms: 2500 } });
   });
-  stopButton?.addEventListener("click", () => { const pose = cinematic?.stop(); if (pose?.target) orbitControls?.setTarget(pose.target); });
+  stopButton?.addEventListener("click", () => { tokenController?.clearFollow(); if (followNode) followNode.value = "off"; const pose = cinematic?.stop(); if (pose?.target) orbitControls?.setTarget(pose.target); });
 }
-
+function moveDemoToken() {
+  if (!tokenController || !demoState) return;
+  const id = followNode?.value === "villain" ? "villain" : "player";
+  const entry = tokenController.getState().tokens.find((token) => token.id === id);
+  if (!entry || entry.moving) return;
+  const target = demoCells[(demoSeq * 7 + (id === "villain" ? 1 : 0)) % demoCells.length];
+  const path = findDemoPath(demoState.grid, { c: entry.cell[0], r: entry.cell[1] }, target);
+  if (!path.length) return;
+  demoSeq += 1;
+  const tokens = demoState.tokens.map((token) => token.id === id ? { ...token, cell: target, path, anim_seq: demoSeq } : { ...token, path: [] });
+  demoState = { ...demoState, seq: demoSeq, tokens };
+  tokenController.apply(demoState);
+}
 function applyViewerGrade(config = {}) {
   const theme = typeof config.theme === "string" && Object.hasOwn(THEMES, config.theme) ? config.theme : "neutral";
   activeGrade = { theme, strength: Number(config.strength ?? THEMES[theme].strength ?? 0) };
@@ -226,7 +249,6 @@ function applyViewerGrade(config = {}) {
   if (themeNode) themeNode.value = theme;
   if (gradeStrengthNode) gradeStrengthNode.value = String(activeGrade.strength);
 }
-
 function addLODOptions(profile, levelCount) {
   if (!lodNode) return;
   lodNode.replaceChildren();
@@ -246,7 +268,6 @@ function addLODOptions(profile, levelCount) {
   lodNode.disabled = max === min;
   if (profile?.lod !== undefined) lodNode.value = String(Math.max(min, Math.min(max, Number(profile.lod))));
 }
-
 function applyLOD(level) {
   if (!gridEntity?.splatEntity?.gsplat) return;
   const profile = gridEntity.profile;
@@ -258,7 +279,6 @@ function applyLOD(level) {
   component.lodRangeMax = level === "auto" ? max : Number(level);
   setStatus(`${gridEntity.sourceLabel}\n${gridLabel(profile?.grid ?? GRID)} · LOD ${level === "auto" ? "Auto" : level} · chunks stream on demand (resident chunks vary with the camera).`);
 }
-
 function setupViewer(profile) {
   configureApp();
   createViewerCamera();
@@ -273,9 +293,10 @@ function setupViewer(profile) {
   orbitControls = installOrbitControls({ canvas, camera, target: initialCamera?.target ?? initialCamera?.look_at ?? [0, 0, 0] });
   cinematic = createCinematicEffects({ pc, app, camera, canvas, cameras: profile?.cameras ?? {}, reducedMotion: Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce")?.matches), onPanComplete: (target) => orbitControls?.setTarget(target) });
   cinematic.setPose(initialCamera ?? { position: [0, 7, 10], target: [0, 0, 0], fov: 35 });
-  const stopForGesture = () => { const pose = cinematic?.stop(); if (pose?.target) orbitControls?.setTarget(pose.target); };
-  canvas.addEventListener("pointerdown", stopForGesture);
-  canvas.addEventListener("wheel", stopForGesture, { passive: true });
+  const stopForGesture = () => { tokenController?.clearFollow(); if (followNode) followNode.value = "off"; const pose = cinematic?.stop(); if (pose?.target) orbitControls?.setTarget(pose.target); };
+  canvas.addEventListener("pointerdown", stopForGesture, true);
+  canvas.addEventListener("wheel", stopForGesture, { passive: true, capture: true });
+  app.on("destroy", () => { canvas.removeEventListener("pointerdown", stopForGesture, true); canvas.removeEventListener("wheel", stopForGesture, true); orbitControls?.dispose(); });
   lodNode?.addEventListener("change", () => applyLOD(lodNode.value));
   app.on("postrender", recordFPS);
   app.start();
@@ -283,14 +304,6 @@ function setupViewer(profile) {
     themeNode.replaceChildren(...Object.entries(THEMES).map(([value, grade]) => { const option = document.createElement("option"); option.value = value; option.textContent = grade.label; return option; }));
   }
 }
-
-function profileSourceLabel(profile, source) {
-  const sourceInfo = profile?.source;
-  if (!sourceInfo) return "Loaded scene";
-  const title = profile.title ?? sourceInfo.title;
-  return [title, sourceInfo.author].filter(Boolean).join(" · ") || "Loaded scene";
-}
-
 async function attachViewer(profile, source, bundle) {
     const levels = Math.max(1, Number(bundle.asset.resource?.octree?.lodLevels ?? 1));
     const activeGrid = bundle.grid ?? profile?.grid ?? GRID;
@@ -307,9 +320,25 @@ async function attachViewer(profile, source, bundle) {
     if (battleGrid.layer?.id !== undefined && !camera.camera.layers.includes(battleGrid.layer.id)) camera.camera.layers = [...camera.camera.layers, battleGrid.layer.id];
     if (battleGrid.depthLayer?.id !== undefined && !camera.camera.layers.includes(battleGrid.depthLayer.id)) camera.camera.layers = [...camera.camera.layers, battleGrid.depthLayer.id];
     gridEntity.splatEntity = scene;
+    {
+      const target = profile?.cameras?.TACTICAL?.target ?? [0, 0, 0];
+      demoCells = selectDemoCells(activeGrid, target);
+      tokenController = createTokenController({ pc, app, grid: activeGrid, layer: battleGrid.layer?.id, effects: cinematic, reducedMotion: Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce")?.matches), onState: (value) => {
+        if (followNode) followNode.value = value.followId ?? "off";
+        if (tokenStatusNode) tokenStatusNode.textContent = `${value.count} combatants · ${value.moving ? "moving" : "ready"}${value.followId ? ` · following ${value.followId}` : ""}`;
+      } });
+      demoState = { ...createDemoSnapshot(demoCells, demoSeq), grid: activeGrid };
+      tokenController.apply(demoState);
+      const demoEnabled = new URLSearchParams(window.location.search).get("tokens") !== "off";
+      tokenController.setEnabled(demoEnabled);
+      charactersButton?.setAttribute("aria-pressed", String(demoEnabled));
+      followNode?.replaceChildren(new Option("Off", "off"), new Option("Player", "player"), new Option("Villain", "villain"));
+      app.on("update", (dt) => tokenController?.update(dt));
+      app.on("destroy", () => tokenController?.destroy());
+    }
     gridEntity.profile = { ...(profile ?? {}), grid: activeGrid };
     applyViewerGrade(profile?.color_grade ?? activeGrade);
-    gridEntity.sourceLabel = profileSourceLabel(profile, source);
+    gridEntity.sourceLabel = [profile?.title ?? profile?.source?.title, profile?.source?.author].filter(Boolean).join(" · ") || "Loaded scene";
     if (sourceInfoNode) {
       const info = profile?.source ?? {};
       sourceInfoNode.textContent = [
@@ -336,7 +365,6 @@ async function attachViewer(profile, source, bundle) {
     const streamLabel = bundle.streaming ? "Scene ready · streaming detail" : "Scene ready";
     setStatus(`${gridEntity.sourceLabel}\n${gridLabel(activeGrid)} · LOD ${defaultLOD} · ${debugLabel}${debugLabel ? " · " : ""}${streamLabel}`);
 }
-
 async function start() {
   let profile;
   try { profile = await loadBattleProfile(window.location.search, window.location.href); }

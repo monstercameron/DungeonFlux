@@ -18,7 +18,8 @@
       background: #162538; cursor: pointer; font: inherit; }
     button:hover, button[aria-pressed="true"] { background: #245070; border-color: #72d7e6; }
     button:disabled { cursor: wait; opacity: .55; }
-    #status { margin: 0 10px; padding: 7px 10px; color: #b7c8dc; white-space: pre-wrap; }
+    #status, #token-status { margin: 0 10px; padding: 7px 10px; color: #b7c8dc; white-space: pre-wrap; }
+    #token-status { width: fit-content; border: 1px solid #334358; border-radius: 7px; background: rgb(8 14 24 / 88%); font-size: 12px; }
     #status[data-kind="error"] { color: #ffaaa8; border-color: #a24e5b; }
     .label { color: #7f9bb7; margin-right: 3px; }
     select { border: 1px solid #526981; border-radius: 5px; padding: 6px 9px; color: #eaf2ff; background: #162538; font: inherit; }
@@ -45,6 +46,11 @@
       <input id="grade-strength" type="range" min="0" max="1" step="0.05" value="0.7" aria-label="Color grade strength">
       <span class="spacer"></span>
       <button id="grid-toggle" type="button" aria-pressed="true">Grid</button>
+      <button id="characters-toggle" type="button" aria-pressed="false">Characters</button>
+      <label class="label" for="follow-selector">Follow</label>
+      <select id="follow-selector" aria-label="Follow combatant"><option value="off">Off</option></select>
+      <button id="move-demo" type="button">Move</button>
+      <button id="pause-toggle" type="button" aria-pressed="false">Pause</button>
       <button id="tilt-toggle" type="button" aria-pressed="false">Tilt</button>
       <label class="label" for="effect-strength">Effect</label>
       <input id="effect-strength" type="range" min="0.5" max="2" step="0.25" value="1" aria-label="Effect strength">
@@ -56,6 +62,7 @@
       <span class="help">Drag to orbit · Scroll to zoom · Choose a view to reset</span>
     </div>
     <div id="status">Waiting for ?src=scene.ply (or .sog)…</div>
+    <div id="token-status" aria-live="polite">Characters ready</div>
     <details id="source-details"><summary>Source details</summary><div id="source-info">No profile loaded.</div></details>
   </div>
   <script type="module" src="./viewer.mjs"></script>

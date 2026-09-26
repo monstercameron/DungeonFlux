@@ -134,6 +134,63 @@ func TestEnvelope_colorGradeRejectsNonFiniteStrength(t *testing.T) {
 	}
 }
 
+func TestEnvelope_sceneFollowAndTokenFields(t *testing.T) {
+	cases := []struct {
+		name   string
+		follow *bool
+		want   string
+		miss   bool
+	}{
+		{name: "follow true", follow: boolPointer(true), want: `"follow":true`},
+		{name: "follow false", follow: boolPointer(false), want: `"follow":false`},
+		{name: "follow omitted", miss: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			scene := Scene{
+				Seq:    3,
+				Tokens: []Token{{ID: "hero-1", Kind: "pc", Cell: Cell{0, 0}, Path: []Cell{{1, 0}, {0, 0}}, AnimSeq: 17}},
+				Camera: CameraCommand{Preset: "TURN_FOCUS", FocusTokenID: "hero-1", Follow: tc.follow},
+			}
+			text := string(mustEnvelope(t, "scene", scene))
+			for _, want := range []string{`"id":"hero-1"`, `"kind":"pc"`, `"cell":[0,0]`, `"path":[[1,0],[0,0]]`, `"anim_seq":17`} {
+				if !strings.Contains(text, want) {
+					t.Fatalf("scene envelope %s does not contain %s", text, want)
+				}
+			}
+			if tc.miss && strings.Contains(text, `"follow"`) {
+				t.Fatalf("scene envelope unexpectedly contains follow: %s", text)
+			}
+			if !tc.miss && !strings.Contains(text, tc.want) {
+				t.Fatalf("scene envelope %s does not contain %s", text, tc.want)
+			}
+		})
+	}
+}
+
+func TestEnvelope_sceneRoundTripPreservesFollowAndZeroCoordinates(t *testing.T) {
+	follow := false
+	raw := mustEnvelope(t, "scene", Scene{
+		Tokens: []Token{{ID: "enemy-1", Kind: "enemy", Cell: Cell{0, 0}, Path: []Cell{{0, 0}}, AnimSeq: 0}},
+		Camera: CameraCommand{Preset: "TACTICAL", FocusTokenID: "enemy-1", Follow: &follow},
+	})
+	var decoded struct {
+		Tokens []Token       `json:"tokens"`
+		Camera CameraCommand `json:"camera"`
+	}
+	if err := json.Unmarshal(raw, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if len(decoded.Tokens) != 1 || decoded.Tokens[0].Cell != (Cell{0, 0}) || decoded.Tokens[0].Path[0] != (Cell{0, 0}) || decoded.Tokens[0].AnimSeq != 0 {
+		t.Fatalf("decoded token = %+v", decoded.Tokens)
+	}
+	if decoded.Camera.Follow == nil || *decoded.Camera.Follow || decoded.Camera.FocusTokenID != "enemy-1" {
+		t.Fatalf("decoded camera = %+v", decoded.Camera)
+	}
+}
+
+func boolPointer(value bool) *bool { return &value }
+
 func mustEnvelope(t *testing.T, kind string, value any) []byte {
 	t.Helper()
 	raw, err := envelope(kind, value)

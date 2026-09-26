@@ -1980,6 +1980,12 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: all ten battlemap themes have documented reference palettes and bounded GPU color grades, neutral/strength controls and typed runtime commands work, gray sky and grid remain readable, both scenes pass visual review, regressions and the lane gate pass.
   status: done Codex · gate failures 0 · web/splat coverage 85.4% · GPU viewer/runtime verified
 
+- [x] SPLAT-018 · moving combatants, camera follow and occupied-cell colors
+  why: The developer requests character movement across cells, a camera that tracks a selected character, and distinct cell lighting for players and villains.
+  lane: L-WEB-SPLAT · paths: `web/splat/js/token*.mjs`, `web/splat/js/occupied_cells.mjs`, `web/splat/js/df-splat.mjs`, `web/splat/js/camera_motion.mjs`, `web/splat/js/cinematic_effects.mjs`, `web/splat/js/viewer.mjs`, `web/splat/js/viewer.html`, `web/splat/protocol.go`, `web/splat/protocol_test.go` · depends: SPLAT-017
+  done when: authoritative token snapshots animate valid paths at 250 ms/cell without replay, occupied supported cells light cyan for players and crimson for villains, optional camera follow tracks the moving token while preserving a useful angle, pause/reduced motion/manual camera takeover/removal/disposal work, both scenes pass visual review, and regressions and lane gate pass.
+  status: done Codex; six JS regressions and lane gate pass (85.4%); both scenes visually inspected
+
 ## 23. dfctl debug CLI
 
 Command-line reads and demo writes for agents and the developer.

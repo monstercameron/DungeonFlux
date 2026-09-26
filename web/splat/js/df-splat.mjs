@@ -3,6 +3,7 @@ import { createBattleGrid, createSplatEntity, loadSplatBundle } from "./battle_s
 import { createCinematicEffects } from "./cinematic_effects.mjs";
 import { installCapturedSkyExclusion, installGraySkybox } from "./gray_skybox.mjs";
 import { applyColorGrade, isKnownTheme } from "./color_grade.mjs";
+import { acceptScene, attachTokens, applyCamera } from "./token_scene.mjs";
 const VERSION = 1;
 const WORLD_LAYER = pc.LAYERID_WORLD;
 const DEFAULT_CAMERA = {
@@ -164,28 +165,6 @@ function setVisible(canvas, visible) {
   canvas.style.transition = visible ? "opacity 600ms ease" : "none";
 }
 
-function applyCamera(runtimeState, command) {
-  if (!command || !runtimeState.camera) return;
-  const sequence = Number(command.seq ?? 0);
-  if (!Number.isSafeInteger(sequence) || sequence < 0) return;
-  if (sequence > 0 && sequence <= runtimeState.cameraSequence) return;
-  if (sequence === 0 && (command.preset ?? "TACTICAL") === runtimeState.cameraPreset) return;
-  if (sequence > 0) runtimeState.cameraSequence = sequence;
-  if (runtimeState.effects?.camera(command)) { runtimeState.cameraPreset = command.preset; return; }
-  const preset = command.preset ?? "TACTICAL";
-  const definition = getCameraDefinition(runtimeState.cameras, preset);
-  applyCameraDefinition(runtimeState.camera, definition);
-  runtimeState.cameraPreset = preset;
-}
-
-function acceptScene(runtimeState, scene) {
-  const sequence = Number(scene.seq ?? 0);
-  if (sequence <= runtimeState.sceneSequence) return;
-  runtimeState.sceneSequence = sequence;
-  applyCamera(runtimeState, scene.camera);
-  setVisible(runtimeState.canvas, Boolean(scene.visible));
-}
-
 function dispose() {
   if (!runtime) return;
   const old = runtime;
@@ -204,7 +183,8 @@ function createRuntimeState(app, camera, message) {
     liteTried: false, lowFpsReported: false, replacing: false, transform: message.transform,
     skyFloorY: Number(message.voxel_collider_options?.floor_y ?? message.voxel_collider?.floor_y ?? 0),
     lastFrameAt: 0, lastStatsAt: performance.now(), lowFpsSince: 0, fpsSamples: [], destroyed: false,
-    colorGrade: message.color_grade ?? null, effectsEnabled: true,
+    colorGrade: message.color_grade ?? null, effectsEnabled: true, pendingScene: null,
+    reducedMotion: Boolean(message.reduced_motion || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches),
   };
 }
 
@@ -233,8 +213,9 @@ function attachScene(state, message, bundle) {
   state.splat = { asset: bundle.asset, entity };
   state.capturedSkyCollider = bundle.collider ?? state.capturedSkyCollider;
   state.grid = grid;
+  attachTokens(pc, state, activeGrid, grid?.layer?.id, message);
   state.streaming = bundle.streaming;
-  applyCamera(state, { preset: "TACTICAL" });
+  if (!state.pendingScene) applyCamera(state, { preset: "TACTICAL" });
 }
 
 async function initialize(message) {
@@ -256,12 +237,13 @@ async function initialize(message) {
     const skybox = installGraySkybox(pc, app, camera);
     app.on("destroy", () => skybox.destroy());
     state.skybox = skybox;
-    state.effects = createCinematicEffects({ pc, app, camera, canvas, cameras: message.cameras ?? {}, reducedMotion: Boolean(message.reduced_motion || window.matchMedia?.("(prefers-reduced-motion: reduce")?.matches), onPanComplete: (target) => state.orbitTarget = target });
+    state.effects = createCinematicEffects({ pc, app, camera, canvas, cameras: message.cameras ?? {}, reducedMotion: state.reducedMotion, onPanComplete: (target) => state.orbitTarget = target });
     state.effects.setPose(getCameraDefinition(message.cameras, "TACTICAL"));
     app.on("error", (detail) => errorMessage("CONTEXT_LOST", detail));
     app.on("postrender", () => {
       if (runtime?.app === app) recordFrame(runtime);
     });
+    app.on("update", (dt) => { if (runtime === state) state.tokens?.update(dt); });
     app.start();
     const bundle = await loadSplatBundle(pc, app, message.scene_url, {
       lodMetaURL: message.lod_meta_url,
@@ -367,6 +349,7 @@ function send(raw) {
       if (runtime) {
         runtime.paused = Boolean(message.on);
         runtime.effects?.pause(runtime.paused);
+        runtime.tokens?.pause(runtime.paused);
         runtime.app.autoRender = !runtime.paused;
         if (!runtime.paused) runtime.app.renderNextFrame = true;
       }
@@ -376,6 +359,8 @@ function send(raw) {
         if (message.color_grade?.theme && !isKnownTheme(message.color_grade.theme)) break;
         const accepted = runtime.effects?.send(message);
         if (accepted) {
+          if (message.pan || message.stop) runtime.tokens?.clearFollow();
+          if (message.reduced_motion !== undefined) { runtime.reducedMotion = Boolean(message.reduced_motion); runtime.tokens?.setReducedMotion(runtime.reducedMotion); }
           if (message.color_grade && typeof message.color_grade === "object") runtime.colorGrade = message.color_grade;
           if (message.enabled !== undefined) runtime.effectsEnabled = Boolean(message.enabled);
           if (message.color_grade || message.enabled !== undefined) applyColorGrade(runtime.splat?.entity, runtime.colorGrade, runtime.effectsEnabled);

@@ -92,10 +92,12 @@ type Highlight struct {
 
 // CameraCommand selects a camera preset and optional token focus.
 type CameraCommand struct {
-	Preset       string  `json:"preset"`
-	FocusTokenID string  `json:"focus_token_id,omitempty"`
-	Seq          uint64  `json:"seq"`
-	DurationMS   float64 `json:"duration_ms,omitempty"`
+	Preset       string `json:"preset"`
+	FocusTokenID string `json:"focus_token_id,omitempty"`
+	// Follow selects persistent tracking of FocusTokenID; false explicitly clears it.
+	Follow     *bool   `json:"follow,omitempty"`
+	Seq        uint64  `json:"seq"`
+	DurationMS float64 `json:"duration_ms,omitempty"`
 }
 
 // TiltShift controls the optional battlefield depth-of-field effect.
