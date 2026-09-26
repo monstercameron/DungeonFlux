@@ -109,6 +109,7 @@ func TestMachine_SeededGameDispatchesCreationAndStory(t *testing.T) {
 		for _, event := range []domain.Event{
 			domain.Act{Seat: seat, Move: vocab.MoveSpecies, Arg: "human"},
 			domain.Act{Seat: seat, Move: vocab.MoveGender, Arg: "nonbinary"},
+			domain.Act{Seat: seat, Move: vocab.MoveClass, Arg: "paladin"},
 			domain.Act{Seat: seat, Move: vocab.MoveRollHero},
 			domain.Act{Seat: seat, Move: vocab.MoveReady},
 		} {

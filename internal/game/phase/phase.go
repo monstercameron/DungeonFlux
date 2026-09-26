@@ -98,7 +98,7 @@ func buildMachine(oneShot domain.OneShot, seed []byte, strict bool) (Machine, er
 	if err != nil {
 		return Machine{}, err
 	}
-	return Machine{table: table, strictCreation: strict, oneShot: oneShot, creation: created, opening: opening.New(oneShot), seats: initialSeats()}, nil
+	return Machine{table: table, strictCreation: strict, oneShot: oneShot, creation: created, opening: opening.New(oneShot), seats: initialSeats(), spotlight: 1}, nil
 }
 
 // State returns the current top-level phase.
