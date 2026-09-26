@@ -377,7 +377,13 @@ func (m *Machine) stepCheck(event domain.Event) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	return m.transition(eventRoll, started.Effects)
+	checkCue := "sfx_check_failure"
+	if outcome.Success {
+		checkCue = "sfx_check_success"
+	}
+	effects := append([]domain.Effect(nil), started.Effects...)
+	effects = append(effects, domain.PlaySound{Channel: vocab.SoundSFX, Name: checkCue, Target: "dm", Gain: 1})
+	return m.transition(eventRoll, effects)
 }
 
 func (m *Machine) stepResolution(event domain.Event) (Result, error) {

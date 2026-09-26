@@ -5,6 +5,7 @@ package audio
 import (
 	"fmt"
 	"syscall/js"
+	"time"
 
 	dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 )
@@ -22,6 +23,46 @@ type Player struct {
 	pending         map[Channel][]encodedChunk
 	pendingCommands map[Channel]pendingMix
 	scheduler       Scheduler
+	sfxGate         CueGate
+}
+
+// PlaySFXURL plays a short manifest-backed effect without treating its asset
+// ID as a permanently playing track. The cue gate prevents accidental stacks
+// while allowing the same effect to be used again later in the scene.
+func (p *Player) PlaySFXURL(id, url string, gain float32) error {
+	if p == nil || !p.context.Truthy() {
+		return fmt.Errorf("audio: player is unavailable")
+	}
+	if id == "" || url == "" || len(url) < 5 || url[:5] != "blob:" {
+		return fmt.Errorf("audio: SFX id and Blob URL are required")
+	}
+	at := time.Duration(p.context.Get("currentTime").Float() * float64(time.Second))
+	if !p.sfxGate.Allow(id, at) {
+		return nil
+	}
+	request := js.Global().Get("fetch").Invoke(url)
+	var then, decode, ready js.Func
+	then = js.FuncOf(func(_ js.Value, args []js.Value) any {
+		if len(args) == 0 {
+			return nil
+		}
+		return args[0].Call("arrayBuffer")
+	})
+	decode = js.FuncOf(func(_ js.Value, args []js.Value) any {
+		if len(args) == 0 {
+			return nil
+		}
+		return p.context.Call("decodeAudioData", args[0])
+	})
+	ready = js.FuncOf(func(_ js.Value, args []js.Value) any {
+		defer func() { then.Release(); decode.Release(); ready.Release() }()
+		if len(args) > 0 {
+			p.startDecoded(id, SFXChannel, args[0], false, float64(gain), 0, 0)
+		}
+		return nil
+	})
+	request.Call("then", then).Call("then", decode).Call("then", ready)
+	return nil
 }
 
 type encodedChunk struct {

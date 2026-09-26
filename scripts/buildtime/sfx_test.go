@@ -14,7 +14,7 @@ import (
 
 func TestSFXAssets_CoversGeneralAndCombatLibrary(t *testing.T) {
 	assets := SFXAssets()
-	if len(assets) != 16 {
+	if len(assets) != 24 {
 		t.Fatalf("got %d SFX assets", len(assets))
 	}
 	seen := make(map[string]bool)
@@ -32,7 +32,7 @@ func TestSFXAssets_CoversGeneralAndCombatLibrary(t *testing.T) {
 }
 
 func TestBuildSFXRequest_EncodesPrompt(t *testing.T) {
-	data, err := BuildSFXRequest(SFXAssets()[0])
+	data, err := BuildSFXRequest(SFXAssets()[8])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,7 +43,7 @@ func TestBuildSFXRequest_EncodesPrompt(t *testing.T) {
 	if request.ModelID != "eleven_text_to_sound_v2" || request.DurationSeconds != 2 {
 		t.Fatalf("unexpected request settings: %#v", request)
 	}
-	ambience, err := BuildSFXRequest(SFXAssets()[4])
+	ambience, err := BuildSFXRequest(SFXAssets()[12])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +74,7 @@ func TestRenderSFX_StoresAssetAndNormalizationMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	asset := SFXAssets()[0]
+	asset := SFXAssets()[8]
 	if err := RenderSFX(context.Background(), server.Client(), server.URL, root, writer, asset, 1); err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +138,7 @@ func TestPlanSFX_AccountsForTwoTakes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if plan.Requests != 32 || plan.EstimatedSeconds != 92 || plan.EstimatedCostUSD <= 0 {
+	if plan.Requests != 48 || plan.EstimatedSeconds != 103.2 || plan.EstimatedCostUSD <= 0 {
 		t.Fatalf("unexpected plan: %#v", plan)
 	}
 	if _, err := PlanSFX(SFXAssets(), 4); err == nil {
@@ -164,7 +164,7 @@ func TestRunSFXBuild_SelectsBestTakeAndReleasesLock(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(root, "manifest.lock")); !os.IsNotExist(err) {
 		t.Fatalf("manifest lock remains: %v", err)
 	}
-	if !strings.Contains(log.String(), "sfx_summary requests=16") {
+	if !strings.Contains(log.String(), "sfx_summary requests=24") {
 		t.Fatalf("summary log missing: %s", log.String())
 	}
 }

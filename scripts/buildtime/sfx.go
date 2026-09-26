@@ -30,6 +30,14 @@ type SFXAsset struct {
 // SFXAssets returns the complete demo sound-effect library.
 func SFXAssets() []SFXAsset {
 	return []SFXAsset{
+		{ID: "sfx_join_tv", Prompt: "warm welcoming tavern chime with a soft wooden door creak, no music", DurationSeconds: 0.8, LUFS: -16},
+		{ID: "sfx_phone_confirm", Prompt: "soft friendly confirmation tick with a tiny warm chime, no music", DurationSeconds: 0.3, LUFS: -16},
+		{ID: "sfx_ready", Prompt: "short confident ready confirmation chime, warm and clear", DurationSeconds: 0.5, LUFS: -16},
+		{ID: "sfx_host_start", Prompt: "short dramatic fantasy table-start sting, bright bell and low lift", DurationSeconds: 1.2, LUFS: -16},
+		{ID: "sfx_phone_tick", Prompt: "tiny crisp wooden UI tick, quiet and tactile", DurationSeconds: 0.2, LUFS: -16},
+		{ID: "sfx_phone_dice", Prompt: "very short soft dice rattle in a player's hand, three tiny taps", DurationSeconds: 0.7, LUFS: -16},
+		{ID: "sfx_roll_reveal", Prompt: "short magical hero reveal shimmer with a warm bell resolve", DurationSeconds: 1.1, LUFS: -16},
+		{ID: "sfx_hero_lock", Prompt: "brief warm hero locked chime, gentle fantasy bell", DurationSeconds: 0.8, LUFS: -16},
 		{ID: "sfx_dice_roll", Prompt: "tight fantasy dice rolling across a wooden table, three quick impacts", DurationSeconds: 2, LUFS: -16},
 		{ID: "sfx_check_success", Prompt: "brief bright magical success chime, warm and understated", DurationSeconds: 2, LUFS: -16},
 		{ID: "sfx_check_failure", Prompt: "brief muted ominous failure sting, low bell and soft scrape", DurationSeconds: 2, LUFS: -16},
@@ -67,8 +75,8 @@ func BuildSFXRequest(asset SFXAsset) ([]byte, error) {
 	if duration == 0 {
 		duration = 2
 	}
-	if duration < 0.5 || duration > 30 {
-		return nil, errors.New("buildtime: SFX duration must be between 0.5 and 30 seconds")
+	if duration < 0.2 || duration > 30 {
+		return nil, errors.New("buildtime: SFX duration must be between 0.2 and 30 seconds")
 	}
 	if asset.LUFS >= 0 {
 		return nil, errors.New("buildtime: SFX loudness target must be negative")

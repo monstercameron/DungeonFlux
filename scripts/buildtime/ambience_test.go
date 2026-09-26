@@ -288,7 +288,7 @@ func TestBuildtimeJobWrappersAndSummaries_AreDeterministic(t *testing.T) {
 	if err := MusicJobWithOptions(nil, "", "", 1, MusicOptions{Takes: 1, MaxConcurrent: musicConcurrency + 1}).Run(context.Background(), writer); err == nil {
 		t.Fatal("music job accepted excessive concurrency")
 	}
-	asset := SFXAssets()[0]
+	asset := SFXAssets()[8]
 	good := SFXMediaStats{DurationSeconds: 2, IntegratedLUFS: -16}
 	if !acceptableSFXStats(asset, good) || acceptableSFXStats(asset, SFXMediaStats{DurationSeconds: 40, IntegratedLUFS: -16}) {
 		t.Fatal("unexpected SFX media acceptance")

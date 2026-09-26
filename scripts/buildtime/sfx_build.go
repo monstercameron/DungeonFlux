@@ -139,7 +139,7 @@ func RunSFXBuild(ctx context.Context, options SFXBuildOptions) (SFXSummary, erro
 }
 
 func acceptableSFXStats(asset SFXAsset, stats SFXMediaStats) bool {
-	return stats.DurationSeconds >= 0.5 && stats.DurationSeconds <= 30 && math.Abs(stats.IntegratedLUFS-float64(asset.LUFS)) <= 2.5
+	return stats.DurationSeconds >= 0.2 && stats.DurationSeconds <= 30 && math.Abs(stats.IntegratedLUFS-float64(asset.LUFS)) <= 2.5
 }
 
 func sfxScore(asset SFXAsset, stats SFXMediaStats) float64 {

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"syscall/js"
+	"time"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 )
@@ -17,6 +18,7 @@ func (a *PhoneAudio) ConfigureAudio(service phoneAudioService, seatToken string,
 		return
 	}
 	a.service, a.seatToken, a.seat = service, seatToken, seat
+	a.installTapListener()
 	mediaQuery := js.Global().Call("matchMedia", "(prefers-reduced-motion: reduce)")
 	a.SetReducedMotion(mediaQuery.Get("matches").Truthy())
 }
@@ -36,6 +38,7 @@ func (a *PhoneAudio) UnlockAudio(ctx context.Context) error {
 		return errors.New("phone audio: Web Audio is unavailable")
 	}
 	player := newPhoneAudioPlayer(contextValue.New())
+	a.player = player
 	if err := player.resume(); err != nil {
 		a.cancel()
 		a.ctx, a.cancel = nil, nil
@@ -54,6 +57,42 @@ func (a *PhoneAudio) CloseAudio() {
 		a.cancel()
 	}
 	a.ctx, a.cancel = nil, nil
+	a.player = nil
+}
+
+func (a *PhoneAudio) installTapListener() {
+	if a == nil || a.tapInstalled {
+		return
+	}
+	document := js.Global().Get("document")
+	if !document.Truthy() {
+		return
+	}
+	a.tapInstalled = true
+	callback := js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
+		if len(args) == 0 || a.player == nil {
+			return nil
+		}
+		target := args[0]
+		if target.Truthy() && target.Get("closest").Truthy() {
+			target = target.Call("closest", "button")
+		}
+		if !target.Truthy() {
+			return nil
+		}
+		cue := TapCue(target.Get("textContent").String())
+		at := time.Duration(js.Global().Get("performance").Call("now").Float() * float64(time.Millisecond))
+		if !a.AllowLocalCue(cue, at) {
+			return nil
+		}
+		if asset := localCueAsset(cue); asset != "" {
+			if url := ArtURL(asset); url != "" {
+				_ = a.player.playURL(asset, url)
+			}
+		}
+		return nil
+	})
+	document.Call("addEventListener", "click", callback)
 }
 
 func (a *PhoneAudio) receiveAudio(ctx context.Context, player *phoneAudioPlayer) {
@@ -99,6 +138,39 @@ func (p *phoneAudioPlayer) resume() error {
 		return errors.New("phone audio: context is unavailable")
 	}
 	p.context.Call("resume")
+	return nil
+}
+
+func (p *phoneAudioPlayer) playURL(id, url string) error {
+	if p == nil || !p.context.Truthy() || id == "" || url == "" {
+		return errors.New("phone audio: local cue is unavailable")
+	}
+	request := js.Global().Get("fetch").Invoke(url)
+	var then, decode, ready js.Func
+	then = js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
+		if len(args) == 0 {
+			return nil
+		}
+		return args[0].Call("arrayBuffer")
+	})
+	decode = js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
+		if len(args) == 0 {
+			return nil
+		}
+		return p.context.Call("decodeAudioData", args[0])
+	})
+	ready = js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
+		defer func() { then.Release(); decode.Release(); ready.Release() }()
+		if len(args) == 0 {
+			return nil
+		}
+		source := p.context.Call("createBufferSource")
+		source.Set("buffer", args[0])
+		source.Call("connect", p.bus)
+		source.Call("start")
+		return nil
+	})
+	request.Call("then", then).Call("then", decode).Call("then", ready)
 	return nil
 }
 

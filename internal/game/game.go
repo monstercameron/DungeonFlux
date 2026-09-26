@@ -112,6 +112,9 @@ func (s *State) applyHost(cmd domain.HostCmd, env domain.Envelope) domain.StepOu
 		return domain.StepOut{Effects: effects, Ack: acceptedAck(env)}
 	}
 	out := s.dispatch(domain.HostCmd{Cmd: cmd.Cmd})
+	if out.Ack != nil && out.Ack.Accepted {
+		out.Effects = append(out.Effects, UIAudioEffects(cmd)...)
+	}
 	if out.Ack == nil || out.Ack.Reason == "" {
 		out.Ack = acceptedAck(env)
 	}
@@ -129,10 +132,13 @@ func (s *State) applyPhase(env domain.Envelope) domain.StepOut {
 		if !s.applyJoin(join) {
 			return s.rejected("invalid_seat")
 		}
-		return domain.StepOut{Ack: acceptedAck(env)}
+		return domain.StepOut{Effects: UIAudioEffects(join), Ack: acceptedAck(env)}
 	}
 	s.applyNarrationEvent(env.Event)
 	out := s.dispatch(env.Event)
+	if out.Ack != nil && out.Ack.Accepted {
+		out.Effects = append(out.Effects, UIAudioEffects(env.Event)...)
+	}
 	if out.Ack == nil || out.Ack.Reason == "" {
 		out.Ack = acceptedAck(env)
 	}

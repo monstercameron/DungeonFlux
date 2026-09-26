@@ -5,6 +5,7 @@ package audio
 import (
 	"fmt"
 	"syscall/js"
+	"time"
 
 	dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 )
@@ -70,6 +71,13 @@ func (p *Player) applyMix(command *dungeonfluxv1.AudioMixCommand, channel Channe
 		return fmt.Errorf("audio: mix command has no track id")
 	}
 	id := command.GetTrackId()
+	if channel == SFXChannel {
+		at := time.Duration(p.context.Get("currentTime").Float() * float64(time.Second))
+		if !p.sfxGate.Allow(id, at) {
+			p.discardPending(channel)
+			return nil
+		}
+	}
 	switch command.GetKind() {
 	case dungeonfluxv1.AudioMixCommandKind_AUDIO_MIX_COMMAND_KIND_STOP:
 		p.StopTrack(id, int(command.GetDurationMs()))
@@ -159,6 +167,10 @@ func (p *Player) startDecoded(id string, channel Channel, buffer js.Value, loop 
 	when := p.context.Get("currentTime").Float() + float64(max64(delayMS, 0))/1000
 	trackGain.Get("gain").Call("setValueAtTime", 0, when)
 	trackGain.Get("gain").Call("linearRampToValueAtTime", gain, when+float64(max(fadeInMS, 0))/1000)
+	if channel == SFXChannel && !loop {
+		source.Call("start", when)
+		return
+	}
 	p.tracks[id] = append(p.tracks[id], source)
 	p.trackGains[id] = append(p.trackGains[id], trackGain)
 	source.Call("start", when)

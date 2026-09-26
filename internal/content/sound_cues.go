@@ -12,6 +12,7 @@ type SoundCue struct {
 	Phase    vocab.StateID
 	Event    string
 	Kind     vocab.SoundKind
+	Target   string
 	Prompt   string
 	Seconds  float64
 	Loop     bool
@@ -27,6 +28,14 @@ type SoundCatalogue struct {
 // the demo phases and events.
 func DefaultSoundCatalogue() SoundCatalogue {
 	return SoundCatalogue{Cues: []SoundCue{
+		{ID: "sfx_join_tv", Phase: vocab.StateLobby, Event: "player.joined.tv", Kind: vocab.SoundSFX, Target: "dm", Prompt: "warm welcoming tavern chime with a soft wooden door creak, no music", Seconds: 0.8, Fallback: "silence"},
+		{ID: "sfx_phone_confirm", Phase: vocab.StateLobby, Event: "player.joined.phone", Kind: vocab.SoundSFX, Target: "phone", Prompt: "soft friendly confirmation tick with a tiny warm chime, no music", Seconds: 0.3, Fallback: "silence"},
+		{ID: "sfx_ready", Phase: vocab.StateLobby, Event: "player.ready", Kind: vocab.SoundSFX, Target: "phone", Prompt: "short confident ready confirmation chime, warm and clear", Seconds: 0.5, Fallback: "sfx_phone_confirm"},
+		{ID: "sfx_host_start", Phase: vocab.StateLobby, Event: "host.start", Kind: vocab.SoundSFX, Target: "dm", Prompt: "short dramatic fantasy table-start sting, bright bell and low lift", Seconds: 1.2, Fallback: "sfx_phone_confirm"},
+		{ID: "sfx_phone_tick", Phase: vocab.StateCreation, Event: "choice.tapped", Kind: vocab.SoundSFX, Target: "phone", Prompt: "tiny crisp wooden UI tick, quiet and tactile", Seconds: 0.2, Fallback: "sfx_phone_confirm"},
+		{ID: "sfx_roll_reveal", Phase: vocab.StateCreation, Event: "hero.roll", Kind: vocab.SoundSFX, Target: "dm", Prompt: "short magical hero reveal shimmer with a warm bell resolve", Seconds: 1.1, Fallback: "sfx_check_success"},
+		{ID: "sfx_phone_dice", Phase: vocab.StateCreation, Event: "hero.roll", Kind: vocab.SoundSFX, Target: "phone", Prompt: "very short soft dice rattle in a player's hand, three tiny taps", Seconds: 0.7, Fallback: "sfx_dice_roll"},
+		{ID: "sfx_hero_lock", Phase: vocab.StateCreation, Event: "hero.locked", Kind: vocab.SoundSFX, Target: "dm", Prompt: "brief warm hero locked chime, gentle fantasy bell", Seconds: 0.8, Fallback: "sfx_check_success"},
 		{ID: "sfx_tavern_ambience", Phase: vocab.StateOpening, Event: "scene.active", Kind: vocab.SoundSFX, Prompt: "seamless rain-soaked tavern ambience loop, distant room murmur and hearth, no music", Seconds: 10, Loop: true, Fallback: "silence"},
 		{ID: "sfx_dice_roll", Phase: vocab.StateCheck, Event: "check.rolling", Kind: vocab.SoundSFX, Prompt: "tight fantasy dice rolling across a wooden table, three quick impacts", Seconds: 2, Fallback: "silence"},
 		{ID: "sfx_check_success", Phase: vocab.StateResolution, Event: "check.success", Kind: vocab.SoundSFX, Prompt: "brief bright magical success chime, warm and understated", Seconds: 2, Fallback: "silence"},
@@ -67,7 +76,7 @@ func (c SoundCatalogue) Validate() error {
 		if cue.ID == "" || cue.Event == "" || cue.Prompt == "" || cue.Seconds <= 0 || cue.Seconds > 600 || seenID[cue.ID] {
 			return fmt.Errorf("invalid sound cue %q", cue.ID)
 		}
-		key := string(cue.Phase) + "\x00" + cue.Event + "\x00" + string(cue.Kind)
+		key := string(cue.Phase) + "\x00" + cue.Event + "\x00" + string(cue.Kind) + "\x00" + cue.Target
 		if seenEvent[key] {
 			return fmt.Errorf("duplicate sound cue mapping %q", key)
 		}

@@ -137,7 +137,7 @@ func TestStateStep_RootCommands(t *testing.T) {
 			}
 			wantEffects := 1
 			if test.name == "start" {
-				wantEffects = 3
+				wantEffects = 4
 			}
 			if len(out.Effects) != wantEffects || out.Effects[0].Kind() != test.effectKind {
 				t.Fatalf("effects = %#v", out.Effects)
@@ -158,6 +158,9 @@ func TestStateStep_PhaseTransitionEmitsCueOnce(t *testing.T) {
 	for _, command := range commands {
 		out := state.Step(domain.Envelope{Event: domain.HostCmd{Cmd: command}})
 		want := CueForState(state.View().Path).Effects()
+		if command == vocab.HostStart {
+			want = append(want, UIAudioEffects(domain.HostCmd{Cmd: command})...)
+		}
 		if got := playSounds(out.Effects); !reflect.DeepEqual(got, want) {
 			t.Fatalf("%s cue = %#v, want %#v", state.View().Path, got, want)
 		}

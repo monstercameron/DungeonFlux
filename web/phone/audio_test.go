@@ -2,6 +2,7 @@ package phone
 
 import (
 	"testing"
+	"time"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 )
@@ -72,5 +73,28 @@ func TestValidateAudioMessage_RejectsNonPhoneMessages(t *testing.T) {
 	}
 	if validateAudioMessage(sfxMessage(df.AudioTargetKind_AUDIO_TARGET_KIND_SEAT, 1, string(CueFailure))) != nil {
 		t.Fatal("seat sfx was rejected")
+	}
+}
+
+func TestPhoneAudio_LocalTapCueMapsAndDeduplicates(t *testing.T) {
+	if got := TapCue("Join the room"); got != CueJoin {
+		t.Fatalf("join cue = %q, want %q", got, CueJoin)
+	}
+	audio := NewPhoneAudio()
+	if TapCue("Roll my hero") != CueDice || localCueAsset(CueDice) != "sfx_phone_dice" {
+		t.Fatal("roll cue mapping is incorrect")
+	}
+	if !audio.AllowLocalCue(CueTick, time.Second) {
+		t.Fatal("first local cue was rejected")
+	}
+	if audio.AllowLocalCue(CueTick, 1100*time.Millisecond) {
+		t.Fatal("local cue stacked inside 150 ms")
+	}
+	if !audio.AllowLocalCue(CueTick, 1150*time.Millisecond) {
+		t.Fatal("local cue did not release at boundary")
+	}
+	audio.SetMuted(true)
+	if audio.AllowLocalCue(CueConfirm, 2*time.Second) {
+		t.Fatal("muted phone accepted local cue")
 	}
 }

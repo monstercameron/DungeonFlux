@@ -3,7 +3,9 @@ package phone
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
+	"time"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"google.golang.org/grpc"
@@ -27,6 +29,14 @@ const (
 	CueSuccess PhoneCue = "success"
 	// CueFailure is played after a failed check or attack.
 	CueFailure PhoneCue = "failure"
+	// CueJoin is the local confirmation after a phone joins.
+	CueJoin PhoneCue = "join"
+	// CueConfirm is the local confirmation for ready and lock actions.
+	CueConfirm PhoneCue = "confirm"
+	// CueTick is the local tactile sound for a choice or move tap.
+	CueTick PhoneCue = "tick"
+	// CueDice is the local rattle for rolling a hero.
+	CueDice PhoneCue = "dice"
 )
 
 // PhoneAudioMessage is a queued, seat-relevant one-off audio message.
@@ -120,6 +130,31 @@ type PhoneAudio struct {
 	seat           int32
 	ctx            context.Context
 	cancel         context.CancelFunc
+	localGate      localCueGate
+	player         localCuePlayer
+	tapInstalled   bool
+}
+
+type localCuePlayer interface {
+	playURL(string, string) error
+}
+
+type localCueGate struct {
+	last map[PhoneCue]time.Duration
+}
+
+func (g *localCueGate) allow(cue PhoneCue, at time.Duration) bool {
+	if cue == "" {
+		return false
+	}
+	if g.last == nil {
+		g.last = make(map[PhoneCue]time.Duration)
+	}
+	if previous, ok := g.last[cue]; ok && at-previous < 150*time.Millisecond {
+		return false
+	}
+	g.last[cue] = at
+	return true
 }
 
 type phoneAudioService interface {
@@ -165,6 +200,49 @@ func (a *PhoneAudio) Next() (PhoneAudioMessage, bool) {
 		return PhoneAudioMessage{}, false
 	}
 	return a.queue.Pop()
+}
+
+// AllowLocalCue applies mute and 150 ms dedupe policy to a manifest-backed
+// phone cue. The browser supplies AudioContext.currentTime as at.
+func (a *PhoneAudio) AllowLocalCue(cue PhoneCue, at time.Duration) bool {
+	if a == nil || a.queue == nil || a.queue.Muted() {
+		return false
+	}
+	return a.localGate.allow(cue, at)
+}
+
+// TapCue maps a visible phone action to its instant local cue.
+func TapCue(label string) PhoneCue {
+	label = strings.ToLower(strings.TrimSpace(label))
+	switch {
+	case strings.Contains(label, "join"):
+		return CueJoin
+	case strings.Contains(label, "roll my hero"):
+		return CueDice
+	case label == "ready", strings.Contains(label, "lock"):
+		return CueConfirm
+	case label == "enable sound", label == "mute", label == "unmute", label == "close":
+		return ""
+	case label != "":
+		return CueTick
+	default:
+		return ""
+	}
+}
+
+func localCueAsset(cue PhoneCue) string {
+	switch cue {
+	case CueJoin:
+		return "sfx_phone_confirm"
+	case CueConfirm:
+		return "sfx_ready"
+	case CueDice:
+		return "sfx_phone_dice"
+	case CueTick:
+		return "sfx_phone_tick"
+	default:
+		return ""
+	}
 }
 
 func isPhoneSFX(message *df.AudioMessage, seat int32) bool {
