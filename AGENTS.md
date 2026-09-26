@@ -2,7 +2,7 @@
 
 Rules for every coding agent in this repo. Read it in full before your first edit. Owner: the orchestrator (ORCH).
 
-**Who does what:** Claude **Opus 5.5** (Claude Code) is ORCH: coordinator and reviewer. It writes the shared contracts, briefs the lanes, reviews and gates every hand-in, merges, commits, keeps the dev server up, and writes the devlog. **GPT-6 Luna in Codex** runs every worker lane: it writes the first draft of all lane code and its tests. ORCH does not write lane code; a lane is never the last set of eyes on its own work.
+**Who does what:** Claude **Opus 5.5** (Claude Code) is ORCH: coordinator and reviewer. It writes the shared contracts, briefs the lanes, reviews and gates every hand-in, merges, commits, keeps the dev server up, and writes the devlog. **Luna in Codex** (the worker model: `gpt-6-luna` when the Codex account offers it; today the ChatGPT-login Codex account lists `gpt-5.6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.5`, so lanes run `gpt-5.6-luna`) runs every worker lane: it writes the first draft of all lane code and its tests. ORCH does not write lane code; a lane is never the last set of eyes on its own work.
 
 ## TL;DR
 1. `plan.md` section 0 is the binding spec. Sections 1–7 are post-demo and non-binding; section 0 wins every conflict.
@@ -229,16 +229,16 @@ Skip routine work (a clean gate, a rename, a formatting pass).
 </li>
 ```
 
-## 10. Running worker lanes in Codex (GPT-6 Luna)
+## 10. Running worker lanes in Codex (Luna)
 **Maximise parallelism.** At every point in the build, ORCH launches a Codex worker for every lane whose contract inputs exist (plan §0.18.9 lane table and §0.12 staging). There is no fixed cap: the limits are file ownership (two lanes never own the same path), disk, CPU, and Codex quota. When a lane's work splits cleanly by package or file (for example one adapter per vendor, or one web screen per view), ORCH splits it into sub-lanes with disjoint owned paths and runs them at the same time. A lane that finishes early gets the next item from its own backlog immediately.
 
 **How ORCH launches a lane.** ORCH picks the next unblocked todos from `TODOS.md`, confirms their paths do not overlap, marks them claimed, and launches one worker per todo. Each worker gets a brief file under `artifacts/lanes/<LANE>/brief.md`: this file's TL;DR and sections 3–5, the lane's owned paths, the binding plan sections from the spec index, the exact deliverables and gate, and the hand-in template. Then, from PowerShell:
 ```powershell
 Get-Content artifacts\lanes\L-ENG\brief.md -Raw |
-  codex exec -m gpt-6-luna --sandbox workspace-write -C "C:\Users\mreca\Desktop\DungeonFlux" `
+  codex exec -m gpt-5.6-luna --sandbox workspace-write --skip-git-repo-check -C "C:\Users\mreca\Desktop\DungeonFlux" `
     -o artifacts\lanes\L-ENG\hand-in.md - *> artifacts\lanes\L-ENG\codex.log
 ```
-PowerShell has no `<` input redirection, so the brief is piped in. Run each lane as a background process and keep its PID. Confirm the model and flags with `codex exec --help` in hour 0; if the Codex app (desktop) is used instead of the CLI, the same brief file is the task text and the same rules apply.
+PowerShell has no `<` input redirection, so the brief is piped in. Run each lane as a background process and keep its PID. **Always pass `-m`:** the global `~/.codex/config.toml` default (`model = "gpt-6-sol"` on this machine) is not available to the ChatGPT-login account and makes every `codex exec` fail with a 400 `model is not supported` error. At hour 0, `codex exec -m gpt-6-luna` is tried once; if it is accepted, lanes switch to it. Confirm the model and flags with `codex exec --help` in hour 0; if the Codex app (desktop) is used instead of the CLI, the same brief file is the task text and the same rules apply.
 
 **Worker rules (in every brief):** sections 3–5 and 13 of this file; one todo per brief; git only through the section 13 commit recipe; no edits outside the todo's paths; set `GOCACHE`, `GOTMPDIR`, `TMP`, and `TEMP` under `artifacts/` (`artifacts/cache/go`, `artifacts/tmp/<LANE>`); run the lane gate before handing in; report honestly (a test not run is "not run", never "passed").
 
@@ -254,6 +254,16 @@ PowerShell has no `<` input redirection, so the brief is piped in. Run each lane
 - **Environment misreported as a code failure:** workers sometimes report a flaky or unavailable dependency and skip tests. ORCH re-runs those tests before accepting.
 - **Disk filling up:** `artifacts/cache/go` and `artifacts/tmp` are never pruned automatically. Check `Get-PSDrive C` before each wave; if free space is low, clear `artifacts\tmp` and `artifacts\cache\go` while no lane is running. Scattered, plausible test failures plus a linker "not enough space" error mean a full disk.
 - **Hand-in written only at exit:** `-o` writes the report when Codex exits; watch `codex.log` for progress.
+
+**Build-time art through Codex (no API spend).** Codex's built-in image tool works on this machine through the ChatGPT-login quota, with no `OPENAI_API_KEY` (verified 2026-09-26: one 1536×1024 painterly scene in under a minute). L-OPS may use it for build-time art (backgrounds, the battlefield still, NPC and fallback portraits, concept images). It is not a game-time API; the running game still calls the Images API. Recipe (the prompt goes through a file, because `$imagegen` inside double quotes is expanded by PowerShell):
+```powershell
+'Use $imagegen to generate <description> and save it as artifacts/runtime/buildtime/<name>.png' |
+  Set-Content -Encoding utf8 artifacts\tmp\L-OPS\prompt.txt
+Get-Content artifacts\tmp\L-OPS\prompt.txt -Raw |
+  codex exec -m gpt-5.6-sol --sandbox workspace-write --skip-git-repo-check -C "C:\Users\mreca\Desktop\DungeonFlux" `
+    -o artifacts\tmp\L-OPS\imagegen-report.md -
+```
+Codex first saves to `~/.codex/generated_images/<session>/` and then copies to the requested path; check the file exists and has the expected size. A transparent background is not guaranteed from this path; portraits that need alpha still use the Images API with `background: transparent` or a matting step.
 
 ## 11. The human test server (always up)
 The developer tests the game by hand throughout the build, so a working server is always running for them.
@@ -308,7 +318,7 @@ ORCH only. ORCH marks a todo `claimed` when it launches the worker, `committed <
 ```powershell
 git add -- internal/game/nested/check.go internal/game/nested/check_test.go   # your todo's files, named one by one
 git diff --cached --name-only        # must list exactly your todo's files, nothing else
-git commit -m "ENG-012: Check machine offered, rolling, resolved" -m "Co-Authored-By: GPT-6 Luna (Codex) <noreply@openai.com>"
+git commit -m "ENG-012: Check machine offered, rolling, resolved" -m "Co-Authored-By: Luna (Codex) <noreply@openai.com>"
 git show --stat --oneline HEAD       # confirm the commit holds only your files
 ```
 - **If `git diff --cached` lists anything that is not yours** (another agent staged it), do not commit. Run `git restore --staged -- <your files>` to take back only your own entries, report the conflict, and stop. Never unstage or restore other agents' files.

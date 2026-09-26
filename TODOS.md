@@ -23,6 +23,9 @@ Build todos (hours 0–24) are generated from plan §0.18.9 (lane table and bloc
 - [x] PLAN-011 · AGENTS.md: 70% unit-test coverage per touched package in every lane gate, fast-test rules, exclusions
   lane: ORCH · paths: AGENTS.md, TODOS.md
   status: done d187597
+- [x] PLAN-013 · Codex image-generation test; AGENTS.md worker model is gpt-5.6-luna (account has no gpt-6-luna), always pass -m, build-time art recipe via Codex
+  lane: ORCH · paths: AGENTS.md, TODOS.md
+  status: done (this commit)
 - [ ] PLAN-004 · SchemaFlux as the game's LLM client layer; "Dependencies and external APIs" section with pinned versions
   lane: ORCH (research agent, sole plan.md writer while running) · paths: plan.md
   done when: §0.15, §0.18.2, §0.18.3, role table, and the new dependency section agree; report reviewed
