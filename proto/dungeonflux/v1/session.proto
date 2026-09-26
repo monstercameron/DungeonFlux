@@ -4,7 +4,7 @@ package dungeonflux.v1;
 
 option go_package = "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1;dungeonfluxv1";
 
-import "v1/common.proto";
+import "dungeonflux/v1/common.proto";
 
 service SessionService {
   rpc Join(JoinRequest) returns (JoinResponse);
