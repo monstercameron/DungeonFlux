@@ -99,6 +99,19 @@ func TestMusicDryRun_ReportsThreeTakesAndBudget(t *testing.T) {
 	}
 }
 
+func TestMusicDryRun_SelectedTracks(t *testing.T) {
+	plan, err := MusicDryRun(MusicOptions{Takes: 1, MaxConcurrent: 1, TrackIDs: []string{"CLIFF_TENSION_BED", "END_CARD_THEME"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Tracks != 2 || plan.Requests != 2 || plan.GeneratedSeconds != 48 {
+		t.Fatalf("unexpected selected plan: %+v", plan)
+	}
+	if _, err := MusicDryRun(MusicOptions{TrackIDs: []string{"missing"}}); err == nil {
+		t.Fatal("unknown track accepted")
+	}
+}
+
 func TestFoldMeasuredTempo_FoldsTempoFamily(t *testing.T) {
 	for _, tc := range []struct {
 		name     string

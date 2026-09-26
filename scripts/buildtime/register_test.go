@@ -85,6 +85,26 @@ func TestRegisterScannedStills_RegistersGeneratedAudioNames(t *testing.T) {
 	}
 }
 
+func TestAudioRegistry_ContainsCompleteMusicCatalogue(t *testing.T) {
+	want := []string{
+		"THEME_MAIN", "CREATION_BED_LOOP", "OPENING_SWELL", "TAVERN_WARM_LOOP",
+		"STING_STRANGER", "STING_COMBAT_START", "COMBAT_SKIRMISH_LOOP",
+		"STING_VICTORY", "STING_BELL_TOLL", "CLIFF_TENSION_BED",
+		"STING_CLIFF_HIT", "END_CARD_THEME",
+	}
+	seen := make(map[string]bool, len(audioRegistry))
+	for _, asset := range audioRegistry {
+		if asset.directory == "music" {
+			seen[asset.logical] = true
+		}
+	}
+	for _, logical := range want {
+		if !seen[logical] {
+			t.Errorf("music registry is missing %q", logical)
+		}
+	}
+}
+
 func TestRunRegister_RequiresScan(t *testing.T) {
 	if err := runRegister([]string{"--root", t.TempDir()}); err == nil {
 		t.Fatal("runRegister accepted missing --scan")

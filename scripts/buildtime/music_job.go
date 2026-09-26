@@ -11,6 +11,8 @@ import (
 	"sync"
 )
 
+const musicBudgetUSD = 2
+
 // MusicJob returns the live job for the complete three-take music catalogue.
 func MusicJob(client *http.Client, endpoint, outputDir string, take int) Job {
 	options := DefaultMusicOptions()
@@ -42,15 +44,19 @@ func runMusic(ctx context.Context, client *http.Client, endpoint, outputDir stri
 	if err := ensureMusicDirectory(musicDir); err != nil {
 		return err
 	}
+	tracks, err := selectedMusicTracks(options.TrackIDs)
+	if err != nil {
+		return err
+	}
 	return withManifestLock(ctx, writer, func(writer *ManifestWriter) error {
 		costs := &musicCostLog{path: resolveCostPath(musicDir, options.CostLogPath)}
-		tracks := MusicTracks()
-		themeID, themeErr := renderTheme(ctx, client, endpoint, musicDir, options, tracks[0], costs, writer)
-		if themeID == "" {
-			_, writeErr := writer.Write()
-			return errors.Join(themeErr, writeErr)
+		themeID := ""
+		var themeErr error
+		if len(tracks) > 0 && tracks[0].ID == "THEME_MAIN" {
+			themeID, themeErr = renderTheme(ctx, client, endpoint, musicDir, options, tracks[0], costs, writer)
+			tracks = tracks[1:]
 		}
-		trackErr := renderMusicTracks(ctx, client, endpoint, musicDir, options, themeID, tracks[1:], costs, writer)
+		trackErr := renderMusicTracks(ctx, client, endpoint, musicDir, options, themeID, tracks, costs, writer)
 		_, writeErr := writer.Write()
 		return errors.Join(themeErr, trackErr, writeErr)
 	})
@@ -219,7 +225,7 @@ func (log *musicCostLog) reserve(track MusicTrack) bool {
 	cost := float64(milliseconds) / 60000 * musicPricePerMin
 	log.mu.Lock()
 	defer log.mu.Unlock()
-	if log.spentUSD+cost > 5 {
+	if log.spentUSD+cost > musicBudgetUSD {
 		return false
 	}
 	log.spentUSD += cost

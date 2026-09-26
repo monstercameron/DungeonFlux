@@ -156,6 +156,46 @@ func screenError(message string) ui.Node {
 	return html.Main(html.Props{Class: "df-dm-error", Role: "main"}, html.H1(html.Props{}, html.Text(ErrorTitle("en"))), html.P(html.Props{Role: "alert"}, html.Text(message)))
 }
 
+func reconnectingListen(ctx context.Context, service audio.Service, token string) <-chan audio.Result {
+	results := make(chan audio.Result, 16)
+	go func() {
+		defer close(results)
+		delay := 250 * time.Millisecond
+		for ctx.Err() == nil {
+			stream := audio.NewListenClient(service).Listen(ctx, token)
+			received := false
+			for result := range stream {
+				if result.Err != nil {
+					break
+				}
+				received = true
+				select {
+				case results <- result:
+				case <-ctx.Done():
+					return
+				}
+			}
+			if ctx.Err() != nil {
+				return
+			}
+			timer := time.NewTimer(delay)
+			select {
+			case <-timer.C:
+			case <-ctx.Done():
+				if !timer.Stop() {
+					<-timer.C
+				}
+				return
+			}
+			delay = min(delay*2, 3*time.Second)
+			if received {
+				delay = 250 * time.Millisecond
+			}
+		}
+	}()
+	return results
+}
+
 func screenView(props screenProps) ui.Node {
 	state := ui.UseState((*dungeonfluxv1.ScreenState)(nil))
 	voicePlayer := ui.UseState((*audio.Player)(nil))
@@ -169,7 +209,7 @@ func screenView(props screenProps) ui.Node {
 			}
 		}()
 		if props.client.audio != nil {
-			listen := audio.NewListenClient(listenServiceAdapter{client: props.client.audio}).Listen(ctx, token)
+			listen := reconnectingListen(ctx, listenServiceAdapter{client: props.client.audio}, token)
 			player := voicePlayer.Get()
 			if player == nil {
 				player = audio.NewPlayer()

@@ -1,6 +1,8 @@
 package game
 
 import (
+	"strings"
+
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
@@ -8,13 +10,21 @@ import (
 const audioTargetDM = "dm"
 
 // soundEffects translates authored table audio into ordered runtime effects.
-// Music and ambience are loops; a stinger is a one-shot and is omitted when a
-// state has no stinger. Empty cues intentionally produce no effects.
+// Music and ambience are loops unless the authored music is a one-shot. A
+// follow-up music bed is emitted after a stinger so the client can replace the
+// previous bed while the one-shot plays. Empty cues intentionally produce no
+// effects.
 func soundEffects(cue CueEffect) []domain.Effect {
-	effects := make([]domain.Effect, 0, 3)
+	effects := make([]domain.Effect, 0, 4)
 	if cue.MusicTrack != "" {
 		effects = append(effects, domain.PlaySound{
 			Channel: vocab.SoundMusic, Name: cue.MusicTrack, Target: audioTargetDM,
+			Loop: musicLoops(cue.MusicTrack), Gain: musicGain(cue.State),
+		})
+	}
+	if cue.MusicLoop != "" {
+		effects = append(effects, domain.PlaySound{
+			Channel: vocab.SoundMusic, Name: cue.MusicLoop, Target: audioTargetDM,
 			Loop: true, Gain: musicGain(cue.State),
 		})
 	}
@@ -31,6 +41,18 @@ func soundEffects(cue CueEffect) []domain.Effect {
 		})
 	}
 	return effects
+}
+
+func musicLoops(track string) bool {
+	if strings.HasPrefix(track, "STING_") {
+		return false
+	}
+	switch track {
+	case "OPENING_SWELL", "CLIFF_TENSION_BED", "END_CARD_THEME":
+		return false
+	default:
+		return true
+	}
 }
 
 func musicGain(state vocab.StateID) float32 {

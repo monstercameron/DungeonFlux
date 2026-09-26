@@ -32,6 +32,27 @@ func TestDefaultSoundCatalogue_ValidatesAndFindsPhaseEvents(t *testing.T) {
 	}
 }
 
+func TestDefaultSoundCatalogue_ContainsAllMusicCues(t *testing.T) {
+	catalogue := DefaultSoundCatalogue()
+	for _, id := range []string{
+		"THEME_MAIN", "CREATION_BED_LOOP", "OPENING_SWELL", "TAVERN_WARM_LOOP",
+		"STING_STRANGER", "STING_COMBAT_START", "COMBAT_SKIRMISH_LOOP",
+		"STING_VICTORY", "STING_BELL_TOLL", "CLIFF_TENSION_BED",
+		"STING_CLIFF_HIT", "END_CARD_THEME",
+	} {
+		found := false
+		for _, cue := range catalogue.Cues {
+			if cue.ID == id && cue.Kind == vocab.SoundMusic {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("missing music cue %q", id)
+		}
+	}
+}
+
 func TestSoundCatalogue_RejectsMalformedCue(t *testing.T) {
 	for name, change := range map[string]func(*SoundCatalogue){
 		"empty":        func(c *SoundCatalogue) { c.Cues = nil },

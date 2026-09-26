@@ -42,9 +42,9 @@ func TestCueEffect_EffectsTargetsDMAndPreservesAudioOrder(t *testing.T) {
 		loop    bool
 		gain    float32
 	}{
+		{vocab.SoundMusic, "STING_COMBAT_START", false, 0.5},
 		{vocab.SoundMusic, "COMBAT_SKIRMISH_LOOP", true, 0.5},
 		{vocab.SoundAmbience, "ambience_combat_tension", true, 0.25},
-		{vocab.SoundSFX, "sfx_door_burst", false, 1},
 	}
 	for index, expected := range want {
 		got, ok := effects[index].(domain.PlaySound)
@@ -56,8 +56,8 @@ func TestCueEffect_EffectsTargetsDMAndPreservesAudioOrder(t *testing.T) {
 
 func TestCueEffect_EffectsOmitsMissingStinger(t *testing.T) {
 	effects := CueForState(vocab.StateOpening).Effects()
-	if len(effects) != 2 {
-		t.Fatalf("opening effects = %d, want 2", len(effects))
+	if len(effects) != 3 {
+		t.Fatalf("opening effects = %d, want 3", len(effects))
 	}
 }
 
@@ -70,7 +70,7 @@ func TestCueForState_returnsAuthoredCue(t *testing.T) {
 		bar   int
 	}{
 		{name: "opening", state: vocab.StateOpening, music: "OPENING_SWELL", shot: "EST_WIDE_PUSH", bar: 3000},
-		{name: "combat", state: vocab.StateCombat, music: "COMBAT_SKIRMISH_LOOP", shot: "BB_LOOP", bar: 1500},
+		{name: "combat", state: vocab.StateCombat, music: "STING_COMBAT_START", shot: "BB_LOOP", bar: 1500},
 		{name: "cliffhanger", state: vocab.StateCliffhanger, music: "CLIFF_TENSION_BED", shot: "CLIFF_TWO_PUSH", bar: 4000},
 	}
 	for _, tt := range tests {
@@ -78,6 +78,29 @@ func TestCueForState_returnsAuthoredCue(t *testing.T) {
 			cue := CueForState(tt.state)
 			if cue.MusicTrack != tt.music || cue.Shot != tt.shot || cue.BarMS != tt.bar {
 				t.Fatalf("cue = %#v", cue)
+			}
+		})
+	}
+}
+
+func TestCueEffect_StingersHandOffToLoopBeds(t *testing.T) {
+	for _, tt := range []struct {
+		name, state, oneShot, loop string
+	}{
+		{name: "opening", state: string(vocab.StateOpening), oneShot: "OPENING_SWELL", loop: "TAVERN_WARM_LOOP"},
+		{name: "hook", state: string(vocab.StateHookEvent), oneShot: "STING_STRANGER", loop: "TAVERN_WARM_LOOP"},
+		{name: "combat", state: string(vocab.StateCombat), oneShot: "STING_COMBAT_START", loop: "COMBAT_SKIRMISH_LOOP"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			cue := CueForState(vocab.StateID(tt.state))
+			if cue.MusicTrack != tt.oneShot || cue.MusicLoop != tt.loop {
+				t.Fatalf("cue = %#v", cue)
+			}
+			effects := cue.Effects()
+			first := effects[0].(domain.PlaySound)
+			second := effects[1].(domain.PlaySound)
+			if first.Name != tt.oneShot || first.Loop || second.Name != tt.loop || !second.Loop {
+				t.Fatalf("music effects = %#v", effects[:2])
 			}
 		})
 	}

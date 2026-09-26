@@ -17,6 +17,7 @@ import (
 type MusicOptions struct {
 	Takes         int
 	MaxConcurrent int
+	TrackIDs      []string
 	DryRun        bool
 	ProcessAudio  bool
 	BeatcheckPath string
@@ -45,9 +46,13 @@ func MusicDryRun(options MusicOptions) (MusicPlan, error) {
 	if options.Takes < 1 || options.MaxConcurrent < 1 {
 		return MusicPlan{}, errors.New("buildtime: music takes and concurrency must be positive")
 	}
-	plan := MusicPlan{Tracks: len(MusicTracks()), Takes: options.Takes, MaxConcurrent: options.MaxConcurrent}
+	tracks, err := selectedMusicTracks(options.TrackIDs)
+	if err != nil {
+		return MusicPlan{}, err
+	}
+	plan := MusicPlan{Tracks: len(tracks), Takes: options.Takes, MaxConcurrent: options.MaxConcurrent}
 	plan.Requests = plan.Tracks * plan.Takes
-	for _, track := range MusicTracks() {
+	for _, track := range tracks {
 		for _, chunk := range musicChunks(track) {
 			plan.GeneratedSeconds += float64(chunk.DurationMS) / 1000
 		}
@@ -55,6 +60,32 @@ func MusicDryRun(options MusicOptions) (MusicPlan, error) {
 	plan.GeneratedSeconds *= float64(options.Takes)
 	plan.EstimatedCostUSD = plan.GeneratedSeconds / 60 * musicPricePerMin
 	return plan, nil
+}
+
+func selectedMusicTracks(ids []string) ([]MusicTrack, error) {
+	if len(ids) == 0 {
+		return MusicTracks(), nil
+	}
+	wanted := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		if wanted[id] {
+			return nil, fmt.Errorf("buildtime: duplicate music track %q", id)
+		}
+		wanted[id] = true
+	}
+	tracks := make([]MusicTrack, 0, len(ids))
+	for _, track := range MusicTracks() {
+		if wanted[track.ID] {
+			tracks = append(tracks, track)
+			delete(wanted, track.ID)
+		}
+	}
+	if len(wanted) != 0 {
+		for id := range wanted {
+			return nil, fmt.Errorf("buildtime: unknown music track %q", id)
+		}
+	}
+	return tracks, nil
 }
 
 // PrintMusicPlan writes a stable JSON dry-run summary to output.
