@@ -1419,6 +1419,12 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   done when: a Web Audio graph with per-channel gain nodes decodes streamed encoded chunks (MediaSource or decodeAudioData on complete segments) and voice PCM, applies play/stop/crossfade/loop/gain commands, ducks music and ambience about 8 dB under voice, and starts after the existing Enable table audio tap; no blocking in JS callbacks; native tests for the mix-state logic; live check in the browser.
   status: open (launch after INT-006)
 
+- [ ] WEB-017 · preview query parsing and phone staticcheck
+  why: PHONE-021 found that the shell's previewName parses location.search with its leading '?', so ?preview= fixture URLs fall back to the join screen (likely also DM-021's blocked screenshots), and staticcheck fails on the unused srdAttributionURL in web/phone/end.go.
+  lane: L-WEB-SHELL · block: 11–14 · paths: `web/shell/preview*.go`, `web/phone/end*.go` · depends: WEB-012, PHONE-019
+  done when: /dm?preview=<name> and /p?preview=<name> render their fixtures with no gRPC connection (native test for the parser with and without '?'); the unused constant is used by the end screen's attribution link or removed; staticcheck clean on web/shell and web/phone; Edge screenshot of one DM and one phone preview.
+  status: claimed luna
+
 ## 19. Phone
 
 The player's controller: character creation, sheet, legal moves, push-to-talk, combat taps.
