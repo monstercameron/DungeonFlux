@@ -82,6 +82,7 @@ func TestJoinErrorMessage_ClassifiesServerFailures(t *testing.T) {
 		{name: "wrong room", err: errors.New("room code is invalid"), want: "We couldn't find that room. Check the code on the DM screen."},
 		{name: "full room", err: errors.New("no seat available"), want: "That table is full. Ask the DM for another seat."},
 		{name: "unknown", err: errors.New("transport unavailable"), want: "We couldn't join the table: transport unavailable"},
+		{name: "stale seat", err: errors.New("seat token is invalid"), want: "Your saved seat expired. Join the table again."},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -89,6 +90,17 @@ func TestJoinErrorMessage_ClassifiesServerFailures(t *testing.T) {
 				t.Fatalf("message = %q, want %q", got, test.want)
 			}
 		})
+	}
+}
+
+func TestInitialJoinPhase_RequiresRoomAndToken(t *testing.T) {
+	if got := initialJoinPhase(" room ", " saved "); got != JoinPending {
+		t.Fatalf("phase = %q, want pending", got)
+	}
+	for _, tc := range [][2]string{{"", "saved"}, {"room", ""}} {
+		if got := initialJoinPhase(tc[0], tc[1]); got != JoinIdle {
+			t.Fatalf("initialJoinPhase(%q, %q) = %q, want idle", tc[0], tc[1], got)
+		}
 	}
 }
 

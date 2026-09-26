@@ -50,6 +50,14 @@ func NewJoinModel(client joinRPC, roomCode string) *JoinModel {
 	return &JoinModel{client: client, state: JoinSnapshot{RoomCode: normalizeRoomCode(roomCode), Phase: JoinIdle, Locale: "en"}}
 }
 
+// initialJoinPhase selects the first render state for a room with a saved seat.
+func initialJoinPhase(roomCode, seatToken string) JoinPhase {
+	if normalizeRoomCode(roomCode) != "" && strings.TrimSpace(seatToken) != "" {
+		return JoinPending
+	}
+	return JoinIdle
+}
+
 // SetLocale settles the join locale sent with the next join request.
 func (m *JoinModel) SetLocale(locale string) string {
 	if m == nil {
@@ -153,6 +161,8 @@ func joinErrorMessage(err error) string {
 	}
 	message := strings.ToLower(status.Convert(err).Message())
 	switch {
+	case strings.Contains(message, "seat token"), strings.Contains(message, "invalid token"), strings.Contains(message, "expired token"):
+		return "Your saved seat expired. Join the table again."
 	case strings.Contains(message, "full"), strings.Contains(message, "seat") && strings.Contains(message, "available"):
 		return "That table is full. Ask the DM for another seat."
 	case strings.Contains(message, "room"), strings.Contains(message, "code"), strings.Contains(message, "not found"):

@@ -13,36 +13,43 @@ import (
 	"github.com/monstercameron/GoWebComponents/v6/ui"
 )
 
-const phoneSeatStorageKey = "dungeonflux.phone.seat_token"
-const phoneNameStorageKey = "dungeonflux.phone.player_name"
-
 // JoinScreen returns the phone room-code and QR-link join component.
 func JoinScreen(client *Client) router.Component {
 	return func(_ router.Attrs) *router.Element {
-		room := ui.UseState(browserRoomCode())
+		initialRoom := browserRoomCode()
+		savedToken := browserSeatToken(initialRoom)
+		room := ui.UseState(initialRoom)
 		name := ui.UseState(browserPlayerName())
 		locale := NewLocaleModel(BrowserLocales())
-		view := ui.UseState(JoinSnapshot{RoomCode: room.Get(), Phase: JoinIdle, Locale: locale.Active()})
+		model := ui.UseState(NewJoinModel(client, initialRoom))
+		view := ui.UseState(JoinSnapshot{RoomCode: initialRoom, Phase: initialJoinPhase(initialRoom, savedToken), Locale: locale.Active()})
+		ui.UseEffect(func() func() {
+			if !hasSavedSeat(room.Get(), savedToken) {
+				return func() {}
+			}
+			startPhoneJoin(model.Get(), savedToken, name.Get(), locale.Active(), view.Set)
+			return func() {}
+		}, client, initialRoom)
 		join := ui.UseEvent(func() {
-			model := NewJoinModel(client, room.Get())
-			model.SetPlayerName(name.Get())
-			model.SetLocale(locale.Active())
+			current := model.Get()
+			current.SetRoomCode(room.Get())
+			current.SetPlayerName(name.Get())
+			current.SetLocale(locale.Active())
 			modelState := view.Get()
 			modelState.Phase = JoinPending
 			modelState.Locale = locale.Active()
 			view.Set(modelState)
-			result := model.StartJoin(context.Background(), browserSeatToken())
+			startPhoneJoin(current, browserSeatToken(room.Get()), name.Get(), locale.Active(), view.Set)
 			storeBrowserPlayerName(name.Get())
-			go func() {
-				state := model.ApplyJoin(<-result)
-				if state.Phase == JoinJoined {
-					storeBrowserSeatToken(state.SeatToken)
-				}
-				view.Set(state)
-			}()
 		})
-		change := ui.UseEvent(func(event ui.InputEvent) { room.Set(event.GetValue()) })
-		nameChange := ui.UseEvent(func(event ui.InputEvent) { name.Set(event.GetValue()) })
+		change := ui.UseEvent(func(event ui.InputEvent) {
+			room.Set(event.GetValue())
+			model.Get().SetRoomCode(event.GetValue())
+		})
+		nameChange := ui.UseEvent(func(event ui.InputEvent) {
+			name.Set(event.GetValue())
+			model.Get().SetPlayerName(event.GetValue())
+		})
 		state := view.Get()
 		active := state.Locale
 		if active == "" {
@@ -84,6 +91,25 @@ func JoinScreen(client *Client) router.Component {
 	}
 }
 
+func startPhoneJoin(model *JoinModel, token, playerName, locale string, set func(JoinSnapshot)) {
+	if model == nil {
+		return
+	}
+	model.SetPlayerName(playerName)
+	model.SetLocale(locale)
+	roomCode := model.Snapshot().RoomCode
+	result := model.StartJoin(context.Background(), token)
+	go func() {
+		state := model.ApplyJoin(<-result)
+		if state.Phase == JoinJoined {
+			storeBrowserSeatToken(roomCode, state.SeatToken)
+		} else if strings.TrimSpace(token) != "" {
+			clearBrowserSeatToken(roomCode)
+		}
+		set(state)
+	}()
+}
+
 // languageSwitcher renders the join-screen language control. Choosing a
 // language re-renders the join copy and travels in the next join request.
 func languageSwitcher(locale *LocaleModel, view ui.State[JoinSnapshot]) ui.Node {
@@ -110,30 +136,6 @@ func browserRoomCode() string {
 		return ""
 	}
 	return value.String()
-}
-
-func browserSeatToken() string {
-	value := js.Global().Get("localStorage").Call("getItem", phoneSeatStorageKey)
-	if value.IsNull() || value.IsUndefined() {
-		return ""
-	}
-	return value.String()
-}
-
-func storeBrowserSeatToken(token string) {
-	js.Global().Get("localStorage").Call("setItem", phoneSeatStorageKey, token)
-}
-
-func browserPlayerName() string {
-	value := js.Global().Get("localStorage").Call("getItem", phoneNameStorageKey)
-	if value.IsNull() || value.IsUndefined() {
-		return ""
-	}
-	return value.String()
-}
-
-func storeBrowserPlayerName(name string) {
-	js.Global().Get("localStorage").Call("setItem", phoneNameStorageKey, strings.TrimSpace(name))
 }
 
 func statusRole(state JoinSnapshot) string {
