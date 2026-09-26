@@ -103,13 +103,13 @@ The skeleton everything else builds in: module, pinned tools, gate script, CI, a
   done when: `go version` prints go1.26.8 windows/arm64.; gate green (≥ 70% coverage where applicable)
   status: done 28b9afc (toolchain go1.26.8 auto-switch from go.mod)
 
-- [x] REPO-004 · Hour-0 tool installs (splat-transform, lego, ffmpeg check)
+- [ ] REPO-004 · Hour-0 tool installs (splat-transform, lego, ffmpeg check)
   why: Build-time jobs need splat-transform under Node 22+, lego v5 for the certificate, and ffmpeg 9, all native on Windows.
   lane: L-OPS · block: 0–1 · paths: none (machine) · depends: none
   done when: Each tool prints its version; the versions are recorded in the hand-in.; gate green (≥ 70% coverage where applicable)
   status: open
 
-- [ ] REPO-005 · scripts/gate.ps1 lane gate
+- [x] REPO-005 · scripts/gate.ps1 lane gate
   why: Every todo is accepted by one command that formats, vets, lints, tests, and measures coverage only on the packages the todo touched.
   lane: ORCH · block: 0–1 · paths: `scripts/gate.ps1` · depends: REPO-001
   done when: `gate.ps1 -Todo <ID>` reads the todo's `paths:` from TODOS.md, runs gofmt -l, go vet, staticcheck, go test with coverage ≥ 70% per touched package (exclusions per AGENTS §14), archtest; exits non-zero on any failure.
@@ -315,7 +315,7 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
   done when: with config/fake.json every effect kind the engine emits has a registered executor (test enumerates vocab effect kinds); live config builds adapters only when keys exist, else fails fast naming the missing env var.
   status: done 6cb9bea
 
-- [x] BASE-012 · lobby QR code and room code at start-up
+- [ ] BASE-012 · lobby QR code and room code at start-up
   why: Phones join by scanning a QR on the DM screen, so start-up writes the join URL QR PNG as an asset and prints the room code.
   lane: ORCH · block: 5–8 · paths: `internal/wire/qr*.go`, `internal/wire/wire.go` · depends: BASE-010
   done when: rsc.io/qr PNG stored under the asset store and referenced by the lobby View; test decodes nothing but checks PNG header and URL.
@@ -325,7 +325,7 @@ Small shared packages that every lane depends on. Two Sonnet helpers write them 
 
 The generic table-driven machine that every phase, nested flow, and combat reuses.
 
-- [ ] FSM-001 · internal/core/fsm table, transitions, guards
+- [x] FSM-001 · internal/core/fsm table, transitions, guards
   why: All game flow is explicit state machines, so a generic table with states, events, guards, and actions is the base of the engine.
   lane: L-ENG · block: 0–1 · paths: `internal/core/fsm/table*.go` · depends: CON-001
   done when: Unknown event in a state is rejected with a reason; table-driven tests; gate green.
@@ -443,13 +443,13 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: The engine needs one entry point that owns state, applies an envelope, and returns effects as data, with no I/O.
   lane: L-ENG · block: 1–5 · paths: `internal/game/state*.go`, `internal/game/game.go` · depends: FSM-004, CON-006
   done when: `game.New(OneShot, seed)` and `Step` compile against ports.Engine; purity archtest passes.; gate green (≥ 70% coverage where applicable)
-  status: committed dd070ca · review: tests fail in internal/game
+  status: committed dd070ca · review: re-check after ENG-014 (internal/game tests mid-integration)
 
 - [ ] ENG-002 · game/phase thin top table and dispatcher
   why: The run moves Lobby → Creation → Opening → Conversation → Check → Resolution → HookEvent → Combat → Cliffhanger → End, and the top table only routes to phase subpackages.
   lane: L-ENG · block: 1–5 · paths: `internal/game/phase/*.go` · depends: ENG-001
   done when: All phases registered as stubs; Skip and Pause work at top level; tests.; gate green (≥ 70% coverage where applicable)
-  status: committed 2e6977b · review: tests fail in internal/game/phase
+  status: committed 2e6977b · review: re-check after ENG-014 (internal/game tests mid-integration)
 
 - [x] ENG-003 · game Inspect (read-only)
   why: dfctl and the hour-5 gate need to read machine states, seed, dice counter, and timers without changing anything.
@@ -503,7 +503,7 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   why: dfctl and gates need to start directly in combat, reset, and force the next d20, all as engine events.
   lane: L-ENG · block: 8–11 · paths: `internal/game/debug*.go`, `internal/game/state*.go`, `internal/game/game.go` · depends: ENG-002, RULES-001
   done when: Accepted only when the debug flag is set in OneShot config; tests.; gate green (≥ 70% coverage where applicable)
-  status: committed 7c0dbad · review: tests fail in internal/game
+  status: committed 7c0dbad · review: re-check after ENG-014 (internal/game tests mid-integration)
 
 - [x] ENG-012 · Music and shot cues per state
   why: Music changes and camera shots follow the state machine, so the engine emits cue effects at bar-aligned points.
@@ -531,7 +531,7 @@ Each phase is a separate subpackage with its own table, registered into the top 
   why: Players create characters on their phones by picking species and gender, and the engine rolls the rest.
   lane: L-ENG · block: 1–5 · paths: `internal/game/phase/creation/**` · depends: ENG-002, RULES-003
   done when: pc_locked from both seats advances; build is deterministic per seat; tests.; gate green (≥ 70% coverage where applicable)
-  status: committed 799cca4 · review: tests fail in internal/game/phase
+  status: committed 799cca4 · review: re-check after ENG-014 (internal/game tests mid-integration)
 
 - [x] PH-CRE-002 · phase/creation: portrait and flavor slots
   why: Each character gets a generated portrait and flavor text used later in scenes and video.
@@ -643,7 +643,7 @@ The drowned-thrall fight: fixed turn order, R-D1–R-D7 rules, bell flee, 30 s c
   why: The engine decides SPLAT or FLAT from the room-level splat_ready report and projects View.Battlefield from Opening entry.
   lane: L-ENG · block: 8–11 · paths: `internal/game/battlefield*.go` · depends: CON-005
   done when: Mode rule tested for ready, failed, and missing reports.; gate green (≥ 70% coverage where applicable)
-  status: committed 3ede2ed · review: tests fail in internal/game/phase
+  status: committed 3ede2ed · review: re-check after ENG-014 (internal/game tests mid-integration)
 
 - [x] COMBAT-010 · combatsim purity: time only for time.Duration
   why: The full gate's archtest fails because internal/game/combat/combatsim/sim.go uses the time package beyond time.Duration, which breaks the purity rule for sim code.
@@ -673,13 +673,13 @@ Deterministic virtual-time simulation of whole runs.
   done when: Paths 7, 8, and stubbed 1 at hour 5; 1–2 at hour 8.; gate green (≥ 70% coverage where applicable)
   status: done 0779803
 
-- [x] SIM-004 · walk/story paths
+- [ ] SIM-004 · walk/story paths
   why: Story paths cover conversation, check success and failure, resolution, and the hook.
   lane: L-ENG · block: 8–11 · paths: `internal/sim/walk/story/**` · depends: PH-HOOK-001
   done when: All story paths end within 5 simulated minutes, ≤ 3 entries per state.; gate green (≥ 70% coverage where applicable)
   status: claimed luna
 
-- [ ] SIM-005 · walk/voice paths
+- [x] SIM-005 · walk/voice paths
   why: Voice paths cover PTT, STT failure, typed fallback, and interrupted NPC lines.
   lane: L-ENG · block: 8–11 · paths: `internal/sim/walk/voice/**` · depends: PH-CONV-001
   done when: All voice paths pass.; gate green (≥ 70% coverage where applicable)
@@ -691,7 +691,7 @@ Deterministic virtual-time simulation of whole runs.
   done when: All input paths pass.; gate green (≥ 70% coverage where applicable)
   status: done 2852dae
 
-- [x] SIM-007 · walk/full paths including combat
+- [ ] SIM-007 · walk/full paths including combat
   why: The whole demo must walk from lobby to end, including combat outcomes, in sim.
   lane: L-ENG · block: 11–14 · paths: `internal/sim/walk/full/**` · depends: COMBAT-008
   done when: Combat paths 26–34, 37 pass in sim at hour 14.; gate green (≥ 70% coverage where applicable)
@@ -701,7 +701,7 @@ Deterministic virtual-time simulation of whole runs.
 
 SQLite persistence: one writer goroutine, WAL, event log, runs, assets, cache, recordings.
 
-- [ ] STORE-001 · store/sqlite schema and migrations
+- [x] STORE-001 · store/sqlite schema and migrations
   why: Runs, event log, assets, cache, and recordings need tables that the pure-Go driver creates on start.
   lane: L-STORE · block: 5–8 · paths: `internal/store/sqlite/schema*.go` · depends: CON-006
   done when: Migrations apply idempotently on an empty file.; gate green (≥ 70% coverage where applicable)
@@ -841,13 +841,13 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   done when: Chunks reach voice/in; stream closes cleanly on cancel.; gate green (≥ 70% coverage where applicable)
   status: done bf2cb28
 
-- [x] API-010 · /tts MP3 fallback route (conditional)
+- [ ] API-010 · /tts MP3 fallback route (conditional)
   why: If the hour-2 spike shows WebSocket PCM playback fails on a phone, an HTTP MP3 route is the fallback.
   lane: L-API · block: 8–11 · paths: `internal/api/tts_http*.go` · depends: VOUT-006
   done when: Built only if the spike fails; serves the MP3 path.; gate green (≥ 70% coverage where applicable)
   status: open
 
-- [ ] API-011 · api/debug DebugService on a loopback listener
+- [x] API-011 · api/debug DebugService on a loopback listener
   why: dfctl needs native gRPC, which the tunnel cannot serve, so a separate grpc.Server listens on 127.0.0.1:port+1000 only when debug is on.
   lane: L-API · block: 2–5 · paths: `internal/api/debug/**` · depends: CON-008, ENG-003
   done when: Registered only with server.debug=true; token checked in metadata; read RPCs return Inspect/View.; gate green (≥ 70% coverage where applicable)
@@ -859,7 +859,7 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   done when: Each RPC posts an envelope; engine rejections return exit-code-1 errors.; gate green (≥ 70% coverage where applicable)
   status: done 1457283
 
-- [x] API-013 · HostView log tail
+- [ ] API-013 · HostView log tail
   why: The host debug panel shows the last 50 Warn/Error records.
   lane: L-API · block: 8–11 · paths: `internal/api/logtail*.go` · depends: BASE-003
   done when: Ring buffer handler feeds HostView.log_tail; tests.; gate green (≥ 70% coverage where applicable)
@@ -869,7 +869,7 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
 
 SchemaFlux for OpenAI-dialect links, Gemini and Haiku adapters, model chains, budget, and the executors that turn effects into model calls.
 
-- [ ] LLM-001 · adapters/llm/schemaflux (Luna, Cerebras)
+- [x] LLM-001 · adapters/llm/schemaflux (Luna, Cerebras)
   why: Luna and Qwen go through SchemaFlux's provider layer only, with per-link reasoning effort added to the request body.
   lane: L-LLM · block: 1–5 · paths: `internal/adapters/llm/schemaflux/**` · depends: CON-006, BASE-004
   done when: Strict-schema JSON and streamed text against httptest fixtures; no global SchemaFlux state.; gate green (≥ 70% coverage where applicable)
@@ -921,7 +921,7 @@ SchemaFlux for OpenAI-dialect links, Gemini and Haiku adapters, model chains, bu
   why: A transcript becomes a structured intent (dialogue, act, move_id) the engine can accept or reject.
   lane: L-LLM · block: 8–11 · paths: `internal/llmexec/interpret.go` · depends: LLM-005, CONT-002
   done when: Schema-valid output mapped to events; tests.; gate green (≥ 70% coverage where applicable)
-  status: committed ddae0dc · review: coverage 63.8% in internal/llmexec
+  status: committed ddae0dc · review: coverage 63.8% in internal/llmexec (LLM-012 follow-up)
 
 - [x] LLM-010 · llmexec Opening and character_flavor
   why: Opening narration and character flavor are model outputs with fallbacks.
@@ -991,13 +991,13 @@ Spoken lines from text to PCM on the DM tab.
   done when: Tests with fakes.; gate green (≥ 70% coverage where applicable)
   status: done 2b84b2f
 
-- [x] VOUT-006 · voice/out MP3 path (conditional)
+- [ ] VOUT-006 · voice/out MP3 path (conditional)
   why: Only if the hour-2 spike fails: request ElevenLabs mp3_44100_128 for the HTTP fallback.
   lane: L-VOUT · block: 8–11 · paths: `internal/voice/out/mp3*.go` · depends: VOUT-001
   done when: Built only on spike failure.; gate green (≥ 70% coverage where applicable)
   status: open
 
-- [ ] VOUT-007 · adapters/tts/openai fallback
+- [x] VOUT-007 · adapters/tts/openai fallback
   why: A second TTS vendor keeps lines playing if ElevenLabs fails.
   lane: L-VOUT · block: 8–11 · paths: `internal/adapters/tts/openai/**` · depends: CON-006
   done when: Request and response tested against fixtures.; gate green (≥ 70% coverage where applicable)
@@ -1107,7 +1107,7 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   done when: scripts/buildweb.ps1 builds artifacts/wasm/dungeonflux.wasm (+ .br) and copies wasm_exec.js from the building toolchain; index.html boots the bundle.
   status: done 95d0be9
 
-- [x] WEB-008 · one bundle: shell boot composes dm, phone, and host screens
+- [ ] WEB-008 · one bundle: shell boot composes dm, phone, and host screens
   why: web/host was built as its own main package and the shell router never mounts the DM, phone, host, or about screens, so the single WASM bundle cannot serve /dm, /p, and /host.
   lane: L-WEB-SHELL · block: 5–8 · paths: `web/shell/boot*.go`, `web/shell/router*.go`, `web/shell/compose*.go`, `web/host/main_*.go`, `web/host/mount*.go` · depends: WEB-001, WEB-005, WEB-006, DM-001, HOST-001
   done when: web/host is a library with a Mount entry (no package main); the shell router mounts /dm, /p, /host, and /about with the shared client injected through narrow interfaces (screens never import the web/shell root, only its subpackages); client reports start on boot; GOOS=js GOARCH=wasm go build ./web/shell passes and native tests cover the route table.
@@ -1163,13 +1163,13 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
 
 The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
 
-- [ ] DM-001 · web/dm lobby page with Listen audio
+- [x] DM-001 · web/dm lobby page with Listen audio
   why: The hour-5 gate needs a DM tab that shows the room code and plays Listen audio.
   lane: L-WEB-DM · block: 1–5 · paths: `web/dm/lobby*.go` · depends: WEB-004
   done when: Lobby shows QR and seats; canned opening plays.; gate green (≥ 70% coverage where applicable)
   status: done 4fb3234
 
-- [x] DM-002 · web/dm scene layer and stills
+- [ ] DM-002 · web/dm scene layer and stills
   why: Scenes are layered stills with the characters, driven by SceneView.
   lane: L-WEB-DM · block: 5–8 · paths: `web/dm/scene*.go` · depends: DM-001
   done when: Scene renders from View.; gate green (≥ 70% coverage where applicable)
@@ -1209,13 +1209,13 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
 
 The operator page: Start, Pause, Skip, Reset, Force d20, and debug panel.
 
-- [ ] HOST-001 · web/host minimal host page
+- [x] HOST-001 · web/host minimal host page
   why: Every gate needs Start, Pause, Skip, Reset, and Force d20 buttons from hour 5.
   lane: L-WEB-HOST · block: 1–5 · paths: `web/host/**` · depends: WEB-002, API-007
   done when: Buttons send HostService commands.; gate green (≥ 70% coverage where applicable)
   status: done 27cd897
 
-- [x] HOST-002 · web/host full host UI
+- [ ] HOST-002 · web/host full host UI
   why: The stage operator needs run status, feature flags, cut-order toggles, and the log tail.
   lane: L-WEB-HOST · block: 14–17 · paths: `web/host/**` · depends: HOST-001
   done when: Shows HostView and log_tail; flags toggle.; gate green (≥ 70% coverage where applicable)
@@ -1225,7 +1225,7 @@ The operator page: Start, Pause, Skip, Reset, Force d20, and debug panel.
 
 PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets; the only JavaScript.
 
-- [ ] SPLAT-001 · web/splat df-splat.mjs PlayCanvas module
+- [x] SPLAT-001 · web/splat df-splat.mjs PlayCanvas module
   why: The battlefield renders the Marble splat in PlayCanvas 2.22.4 on a canvas.
   lane: L-WEB-SPLAT · block: 1–5 · paths: `web/splat/js/**` · depends: none
   done when: Tavern splat renders in Edge.; gate green (≥ 70% coverage where applicable)
@@ -1261,7 +1261,7 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
   done when: Reports SPLAT_READY or SPLAT_FAILED.; gate green (≥ 70% coverage where applicable)
   status: done 84da990
 
-- [x] SPLAT-007 · splat client-side mode switching
+- [ ] SPLAT-007 · splat client-side mode switching
   why: The client follows View.Battlefield mode and switches to FLAT on failure.
   lane: L-WEB-SPLAT · block: 14–17 · paths: `web/splat/mode*.go` · depends: SPLAT-006, COMBAT-009
   done when: Switching tested in the browser.; gate green (≥ 70% coverage where applicable)
@@ -1271,25 +1271,25 @@ PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets;
 
 Command-line reads and demo writes for agents and the developer.
 
-- [ ] DFCTL-001 · cmd/dfctl skeleton, flags, output
+- [x] DFCTL-001 · cmd/dfctl skeleton, flags, output
   why: Agents need one CLI with JSON-lines output, --pretty, and exit codes 0/1/2.
   lane: L-OPS · block: 1–5 · paths: `cmd/dfctl/**` · depends: CON-009
   done when: Parses flags; formats fixtures; gate green.
   status: done 052acbd
 
-- [x] DFCTL-002 · dfctl read verbs
+- [ ] DFCTL-002 · dfctl read verbs
   why: state, view, legal, scopes, assets, events, logs, clients, costs let agents check the game without a browser.
   lane: L-OPS · block: 5–8 · paths: `cmd/dfctl/read*.go` · depends: DFCTL-001, API-011
   done when: Each verb against a fake DebugService.; gate green (≥ 70% coverage where applicable)
   status: claimed luna
 
-- [ ] DFCTL-003 · dfctl demo write verbs
+- [x] DFCTL-003 · dfctl demo write verbs
   why: send, act, say, dice force d20=N, and reset drive the game through engine events.
   lane: L-OPS · block: 5–8 · paths: `cmd/dfctl/write*.go` · depends: DFCTL-001, API-012
   done when: Each verb against a fake DebugService.; gate green (≥ 70% coverage where applicable)
   status: done 4a7d791
 
-- [x] DFCTL-004 · dfctl goto combat wrapper
+- [ ] DFCTL-004 · dfctl goto combat wrapper
   why: Starting straight in combat is the debug_start: combat config, wrapped for convenience.
   lane: L-OPS · block: 8–11 · paths: `cmd/dfctl/goto*.go` · depends: DFCTL-003, ENG-011
   done when: Restarts a lane server with debug_start: combat.; gate green (≥ 70% coverage where applicable)
@@ -1299,7 +1299,7 @@ Command-line reads and demo writes for agents and the developer.
 
 Media generated before the show: stills, portraits, clips, splats, sounds, music, canned lines, and the manifest.
 
-- [ ] OPS-001 · scripts/buildtime job runner and manifest writer
+- [x] OPS-001 · scripts/buildtime job runner and manifest writer
   why: Every build-time job writes takes and a manifest entry, so wire can load assets by logical name.
   lane: L-OPS · block: 0–1 · paths: `scripts/buildtime/run*.go`, `scripts/buildtime/manifest*.go` · depends: REPO-001
   done when: manifest.json written under artifacts/runtime/buildtime/.; gate green (≥ 70% coverage where applicable)
@@ -1335,13 +1335,13 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   done when: SOG and lite SOG in buildtime; metric_scale_factor and ground_plane_offset recorded.; gate green (≥ 70% coverage where applicable)
   status: done 5ec44fe
 
-- [x] OPS-007 · Nav-authoring hand-in at hour 5
+- [ ] OPS-007 · Nav-authoring hand-in at hour 5
   why: The developer picks cells in the splat pick mode and the result becomes battlefield_tavern.json input.
   lane: L-OPS · block: 1–5 · paths: `scripts/buildtime/nav*.go` · depends: OPS-006, SPLAT-005
   done when: Pick output converted to the nav layer.; gate green (≥ 70% coverage where applicable)
   status: open
 
-- [ ] OPS-008 · Thrall still, cut-out, and billboard loops
+- [x] OPS-008 · Thrall still, cut-out, and billboard loops
   why: The thrall needs a still, cut-out, and four billboard loops with measured contact_ms.
   lane: L-OPS · block: 1–5 · paths: `scripts/buildtime/thrall*.go` · depends: OPS-003
   done when: Loops in manifest with contact_ms.; gate green (≥ 70% coverage where applicable)
@@ -1389,7 +1389,7 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   done when: Samples saved.; gate green (≥ 70% coverage where applicable)
   status: done e07f57a
 
-- [x] OPS-016 · TLS certificate via lego DNS challenge
+- [ ] OPS-016 · TLS certificate via lego DNS challenge
   why: The stage server needs a valid certificate for dm.{domain}, issued early because DNS is slow.
   lane: L-OPS · block: 0–1 · paths: `scripts/buildtime/cert.ps1` · depends: REPO-004
   done when: Certificate files in artifacts/runtime/show/tls.; gate green (≥ 70% coverage where applicable)
@@ -1465,7 +1465,7 @@ Keeping the build honest: per-commit checks, the 30-minute full gate, checkpoint
   done when: Spike server builds.; gate green (≥ 70% coverage where applicable)
   status: claimed L-SPIKE luna
 
-- [ ] SPIKE-002 · Spike real-phone MediaRecorder → Talk → STT
+- [x] SPIKE-002 · Spike real-phone MediaRecorder → Talk → STT
   why: iOS and Android container headers must work before the real voice lanes build on them.
   lane: L-SPIKE · block: 1–5 · paths: `scripts/spike/**` · depends: SPIKE-001
   done when: Spoken phrase from each phone returns the right transcript; PCM plays on the DM tab.; gate green (≥ 70% coverage where applicable)
