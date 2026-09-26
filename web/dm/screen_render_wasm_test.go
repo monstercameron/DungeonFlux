@@ -62,4 +62,7 @@ func TestLayerStyle_ClipIsAboveSceneAndOverlaysAreSeparated(t *testing.T) {
 	if layerStyle(LayerDice)["inset"] == layerStyle(LayerTimer)["inset"] {
 		t.Fatal("dice and timer overlays share the same position")
 	}
+	if layerStyle(LayerTimer)["width"] == "100%" || layerStyle(LayerTimer)["height"] == "100%" {
+		t.Fatal("timer overlay should size to its content")
+	}
 }

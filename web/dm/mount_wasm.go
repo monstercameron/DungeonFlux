@@ -220,12 +220,14 @@ func appendLayer(children []ui.Node, layer Layer, content ui.Node) []ui.Node {
 }
 
 func layerStyle(layer Layer) map[string]string {
-	style := map[string]string{"position": "absolute", "width": "100%", "height": "100%", "z-index": layerZIndex(layer)}
+	style := map[string]string{"position": "absolute", "width": "100%", "height": "100%", "pointer-events": "none", "z-index": layerZIndex(layer)}
 	switch layer {
 	case LayerDice:
 		style["inset"] = "18% 0 auto"
+		style["width"], style["height"] = "auto", "auto"
 	case LayerTimer:
 		style["inset"] = "auto 2rem 2rem auto"
+		style["width"], style["height"] = "auto", "auto"
 	default:
 		style["inset"] = "0"
 	}
