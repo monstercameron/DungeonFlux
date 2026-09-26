@@ -1,6 +1,7 @@
 package wire
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -10,6 +11,7 @@ import (
 	llmanthropic "github.com/monstercameron/DungeonFlux/internal/adapters/llm/anthropic"
 	llmgemini "github.com/monstercameron/DungeonFlux/internal/adapters/llm/gemini"
 	llmschema "github.com/monstercameron/DungeonFlux/internal/adapters/llm/schemaflux"
+	soundeleven "github.com/monstercameron/DungeonFlux/internal/adapters/sound/elevenlabs"
 	stteleven "github.com/monstercameron/DungeonFlux/internal/adapters/stt/elevenlabs"
 	ttseleven "github.com/monstercameron/DungeonFlux/internal/adapters/tts/elevenlabs"
 	ttsopenai "github.com/monstercameron/DungeonFlux/internal/adapters/tts/openai"
@@ -28,13 +30,14 @@ type adapterSet struct {
 	video ports.VideoGen
 	stt   ports.STT
 	tts   ports.TTS
+	sound ports.SoundGen
 }
 
 func buildAdapters(cfg config.Config, logger *slog.Logger) (adapterSet, error) {
 	if err := requireLiveKeys(cfg); err != nil {
 		return adapterSet{}, err
 	}
-	set := adapterSet{llm: newFakeLLM(), image: newFakeImage(), video: newFakeVideo(), stt: fakeSTT{}, tts: fakeTTS{}}
+	set := adapterSet{llm: newFakeLLM(), image: newFakeImage(), video: newFakeVideo(), stt: fakeSTT{}, tts: fakeTTS{}, sound: fakeSound{}}
 	var err error
 	if isLive(cfg, "llm") {
 		set.llm, err = liveLLM(cfg, logger)
@@ -62,6 +65,12 @@ func buildAdapters(cfg config.Config, logger *slog.Logger) (adapterSet, error) {
 	}
 	if isLive(cfg, "tts") {
 		set.tts, err = liveTTS(cfg, logger)
+		if err != nil {
+			return adapterSet{}, err
+		}
+	}
+	if isLive(cfg, "sound") {
+		set.sound, err = liveSound(cfg, logger)
 		if err != nil {
 			return adapterSet{}, err
 		}
@@ -174,6 +183,27 @@ func liveTTS(cfg config.Config, logger *slog.Logger) (ports.TTS, error) {
 	default:
 		return nil, fmt.Errorf("wire: unsupported live TTS vendor %q", adapter.Vendor)
 	}
+}
+
+func liveSound(cfg config.Config, logger *slog.Logger) (ports.SoundGen, error) {
+	adapter := cfg.Adapters["sound"]
+	if !strings.EqualFold(adapter.Vendor, "elevenlabs") {
+		return nil, fmt.Errorf("wire: unsupported live sound vendor %q", adapter.Vendor)
+	}
+	client := httpx.NewVendorClient(adapter.Vendor, cfg.Timeouts.TTS, logger)
+	return soundeleven.New(adapter.APIKey, adapter.BaseURL, client, logger), nil
+}
+
+type fakeSound struct{}
+
+func (fakeSound) Generate(ctx context.Context, request ports.SoundRequest) (ports.Sound, error) {
+	if err := ctx.Err(); err != nil {
+		return ports.Sound{}, err
+	}
+	if request.Seconds <= 0 {
+		return ports.Sound{}, errors.New("wire: fake sound duration must be positive")
+	}
+	return ports.Sound{Bytes: []byte("fake sound"), MIME: "audio/mpeg", DurationMS: int(request.Seconds * 1000)}, nil
 }
 
 func vendorConfig(cfg config.Config, vendor string) (string, string) {

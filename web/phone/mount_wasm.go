@@ -41,7 +41,7 @@ func Mount(client PhoneClient, seatToken, locale string) router.Component {
 			creation: NewCreationModel(client, seatToken, 0),
 			sheet:    NewSheetModel(), moves: NewMovesModel(client, seatToken),
 			typed: NewTypedInputModel(client, seatToken), dice: NewDiceModel(client, seatToken),
-			combat: NewCombatModel(client, seatToken), ptt: NewPTTModel(client, seatToken, 0), end: NewEndModel(),
+			combat: NewCombatModel(client, seatToken), ptt: NewPTTModel(client, seatToken, 0), end: NewEndModel(), audio: newPhoneAudio(client, seatToken),
 		}
 		return ui.CreateElement(phoneView, props)
 	}
@@ -58,6 +58,7 @@ type phoneViewProps struct {
 	combat    *CombatModel
 	ptt       *PTTModel
 	end       *EndModel
+	audio     *PhoneAudio
 }
 
 func phoneError(locale, message string) ui.Node {
@@ -94,6 +95,13 @@ func phoneView(props phoneViewProps) ui.Node {
 		locale = "en"
 	}
 	props.typed.SetLocale(locale)
+	ui.UseEffect(func() func() {
+		return func() {
+			if props.audio != nil {
+				props.audio.CloseAudio()
+			}
+		}
+	}, props.audio)
 	return renderPhoneScreen(SelectScreen(state), props, locale)
 }
 
@@ -104,24 +112,24 @@ func renderPhoneScreen(kind ScreenKind, props phoneViewProps, locale string) ui.
 	frame.Connection = ConnectionOnline
 	switch kind {
 	case ScreenCreate:
-		return frameScreen(frame, ui.CreateElement(CreationScreen(props.creation)))
+		return frameScreen(frame, ui.CreateElement(CreationScreen(props.creation)), props.audio, locale)
 	case ScreenDice:
-		return frameScreen(frame, ui.CreateElement(DiceScreen(props.dice)))
+		return frameScreen(frame, ui.CreateElement(DiceScreen(props.dice)), props.audio, locale)
 	case ScreenCombat:
-		return frameScreen(frame, ui.CreateElement(func() ui.Node { return combatScreen(props.combat, locale) }))
+		return frameScreen(frame, ui.CreateElement(func() ui.Node { return combatScreen(props.combat, locale) }), props.audio, locale)
 	case ScreenEnd:
-		return frameScreen(frame, ui.CreateElement(EndScreen(props.end)))
+		return frameScreen(frame, ui.CreateElement(EndScreen(props.end)), props.audio, locale)
 	case ScreenConversation:
-		return frameScreen(frame, ui.CreateElement(func() ui.Node { return conversationScreen(props, locale) }))
+		return frameScreen(frame, ui.CreateElement(func() ui.Node { return conversationScreen(props, locale) }), props.audio, locale)
 	case ScreenMoves:
-		return frameScreen(frame, ui.CreateElement(MovesScreen(props.moves)))
+		return frameScreen(frame, ui.CreateElement(MovesScreen(props.moves)), props.audio, locale)
 	default:
-		return frameScreen(frame, ui.CreateElement(SheetScreen(props.sheet)))
+		return frameScreen(frame, ui.CreateElement(SheetScreen(props.sheet)), props.audio, locale)
 	}
 }
 
-func frameScreen(model FrameModel, content ui.Node) ui.Node {
-	return ui.CreateElement(PhoneFrame(model, content, nil))
+func frameScreen(model FrameModel, content ui.Node, audio *PhoneAudio, locale string) ui.Node {
+	return ui.CreateElement(PhoneFrame(model, content, audioControls(audio, locale)))
 }
 
 func conversationScreen(props phoneViewProps, locale string) ui.Node {

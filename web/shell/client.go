@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
@@ -31,8 +32,9 @@ type WatchResult struct {
 
 // Client is the shell's asynchronous gRPC client over the bridge tunnel.
 type Client struct {
-	conn    *grpc.ClientConn
-	session sessionClient
+	conn         *grpc.ClientConn
+	session      sessionClient
+	playerNumber atomic.Int32
 }
 
 type sessionClient interface {
@@ -74,9 +76,28 @@ func (c *Client) Join(ctx context.Context, request *dungeonfluxv1.JoinRequest) <
 	result := make(chan UnaryResult[*dungeonfluxv1.JoinResponse], 1)
 	go func() {
 		value, err := c.session.Join(ctx, request)
+		if err == nil && value != nil {
+			c.playerNumber.Store(value.GetPlayerNumber())
+		}
 		result <- UnaryResult[*dungeonfluxv1.JoinResponse]{Value: value, Err: err}
 	}()
 	return result
+}
+
+// Listen opens the target-filtered audio stream for the joined client.
+func (c *Client) Listen(ctx context.Context, request *dungeonfluxv1.ListenRequest, options ...grpc.CallOption) (grpc.ServerStreamingClient[dungeonfluxv1.AudioMessage], error) {
+	if c == nil || c.conn == nil {
+		return nil, errors.New("shell client: connection is unavailable")
+	}
+	return dungeonfluxv1.NewAudioServiceClient(c.conn).Listen(ctx, request, options...)
+}
+
+// PlayerNumber returns the number from the most recent successful phone join.
+func (c *Client) PlayerNumber() int32 {
+	if c == nil {
+		return 0
+	}
+	return c.playerNumber.Load()
 }
 
 // Act starts Act without blocking the caller, which keeps UI callbacks short.

@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/monstercameron/DungeonFlux/internal/config"
@@ -51,7 +52,8 @@ func (i *roomInbox) PostAndWait(ctx context.Context, env domain.Envelope) (domai
 }
 
 func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *roomInbox, error) {
-	if _, err := newBudget(cfg.config); err != nil {
+	ledger, err := newBudget(cfg.config)
+	if err != nil {
 		return nil, nil, err
 	}
 	set, err := buildAdapters(cfg.config, cfg.logger)
@@ -71,7 +73,6 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 	pcm := voiceout.NewPCMExecutor(set.tts, audio)
 	canned := voiceout.NewCannedExecutor(assets, audio)
 	interpret := llmexec.NewInterpretExecutor(llmexec.InterpretConfig{LLM: set.llm})
-	portrait := media.NewPortraitExecutor(media.PortraitConfig{Images: set.image, Assets: assets})
 	composeSource := assets.Read
 	if fakeMode {
 		composeSource = func(ctx context.Context, id domain.AssetID) ([]byte, error) {
@@ -82,16 +83,14 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 			return fakePNG(), nil
 		}
 	}
-	compose := media.NewComposeStillExecutor(media.ComposeStillConfig{Source: composeSource, Assets: assets})
-	clip := media.NewClipExecutor(media.ClipConfig{Videos: set.video, Assets: assets, Download: func(ctx context.Context, url string) ([]byte, error) {
-		downloader, ok := set.video.(interface {
-			Download(context.Context, string) ([]byte, error)
-		})
-		if !ok {
-			return nil, errors.New("wire: video adapter does not support downloads")
-		}
-		return downloader.Download(ctx, url)
-	}})
+	references := &referenceRegistry{assets: make(map[domain.SeatID]media.ReferenceAssets)}
+	referenceInbox := func(in ports.Inbox) ports.Inbox {
+		return &referenceCaptureInbox{next: in, registry: references}
+	}
+	voicePack := media.NewVoicePackExecutor(media.VoicePackConfig{
+		Sounds: set.sound, Assets: assets, Budget: ledger, Fake: fakeMode,
+		Fallbacks: loadVoiceFallbacks(filepath.Join("artifacts", "runtime", "buildtime", "manifest.json")),
+	})
 	runtime.Handle(runner, loggedExecutor(cfg.logger, transcriber.Execute))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, interpret.Execute))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, llmexec.NewCharacterFlavorExecutor(set.llm).Execute))
@@ -99,10 +98,40 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 	runtime.Handle(runner, loggedExecutor(cfg.logger, canned.PlayCanned))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, llmexec.NewPrerenderTextExecutor(set.llm).Execute))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, voiceout.NewRenderLinesExecutor(set.tts, assets).Execute))
-	runtime.Handle(runner, loggedExecutor(cfg.logger, portrait.Execute))
-	runtime.Handle(runner, loggedExecutor(cfg.logger, media.NewReferenceExecutor(media.ReferenceConfig{Images: set.image, Assets: assets}).Execute))
-	runtime.Handle(runner, loggedExecutor(cfg.logger, compose.Execute))
-	runtime.Handle(runner, loggedExecutor(cfg.logger, clip.Execute))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, func(ctx context.Context, effect domain.GenerateImage, scope domain.Scope, in ports.Inbox) {
+		config := media.PortraitConfig{Images: set.image, Assets: assets, References: references.snapshot(), ReferenceSource: assets.Read}
+		media.NewPortraitExecutor(config).Execute(ctx, effect, scope, in)
+	}))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, func(ctx context.Context, effect domain.GenerateCharacterReference, scope domain.Scope, in ports.Inbox) {
+		fallbackSheet, fallbacks := referenceFallback(effect)
+		config := media.ReferenceConfig{Images: set.image, Assets: assets, Budget: ledger, FallbackSheet: fallbackSheet, Fallbacks: fallbacks}
+		ref := media.NewReferenceExecutor(config)
+		captured := referenceInbox(in)
+		var group sync.WaitGroup
+		group.Add(2)
+		go func() { defer group.Done(); ref.Execute(ctx, effect, scope, captured) }()
+		go func() { defer group.Done(); voicePack.Execute(ctx, effect, scope, in) }()
+		group.Wait()
+	}))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, func(ctx context.Context, effect domain.ComposeStill, scope domain.Scope, in ports.Inbox) {
+		source := media.ReferenceSource(assets.Read)
+		config := media.ComposeStillConfig{Source: composeSource, Assets: assets, References: references.forEffect(effect.Slot), ReferenceInput: referenceInput(source)}
+		media.NewComposeStillExecutor(config).Execute(ctx, effect, scope, in)
+	}))
+	runtime.Handle(runner, loggedExecutor(cfg.logger, func(ctx context.Context, effect domain.GenerateClip, scope domain.Scope, in ports.Inbox) {
+		source := media.ReferenceSource(assets.Read)
+		config := media.ClipConfig{Videos: set.video, Assets: assets, References: references.forEffect(effect.Slot), ReferenceFrame: referenceFrame(source)}
+		config.Download = func(downloadCtx context.Context, url string) ([]byte, error) {
+			downloader, ok := set.video.(interface {
+				Download(context.Context, string) ([]byte, error)
+			})
+			if !ok {
+				return nil, errors.New("wire: video adapter does not support downloads")
+			}
+			return downloader.Download(downloadCtx, url)
+		}
+		media.NewClipExecutor(config).Execute(ctx, effect, scope, in)
+	}))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, billboardExecutor(cfg.config.Server.DataDir, fakeMode)))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, func(_ context.Context, effect domain.ReleaseLine, _ domain.Scope, _ ports.Inbox) {
 		pcm.Cancel(effect.UtteranceID)

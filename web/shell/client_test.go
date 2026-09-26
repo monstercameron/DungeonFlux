@@ -78,6 +78,22 @@ func TestAsyncJoin_DoesNotRequireCallerToBlock(t *testing.T) {
 	}
 }
 
+func TestAsyncJoin_RecordsPlayerNumberForPhoneAudio(t *testing.T) {
+	client := &Client{session: &fakeSession{join: &dungeonfluxv1.JoinResponse{PlayerNumber: 2}}}
+	if result := <-client.Join(context.Background(), &dungeonfluxv1.JoinRequest{}); result.Err != nil {
+		t.Fatalf("join error = %v", result.Err)
+	}
+	if got := client.PlayerNumber(); got != 2 {
+		t.Fatalf("player number = %d, want 2", got)
+	}
+}
+
+func TestClient_ListenRejectsUnavailableConnection(t *testing.T) {
+	if _, err := (&Client{}).Listen(context.Background(), &dungeonfluxv1.ListenRequest{}); err == nil {
+		t.Fatal("Listen accepted a client without a connection")
+	}
+}
+
 func TestAsyncActAndSay_ReturnResponses(t *testing.T) {
 	client := &Client{session: &fakeSession{}}
 	act := <-client.Act(context.Background(), &dungeonfluxv1.ActRequest{})
