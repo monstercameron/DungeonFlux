@@ -27,6 +27,7 @@ type AudioChunk struct {
 	SampleRate    uint32                 `protobuf:"varint,2,opt,name=sample_rate,json=sampleRate,proto3" json:"sample_rate,omitempty"`
 	PcmS16Le      []byte                 `protobuf:"bytes,3,opt,name=pcm_s16le,json=pcmS16le,proto3" json:"pcm_s16le,omitempty"`
 	Final         bool                   `protobuf:"varint,4,opt,name=final,proto3" json:"final,omitempty"`
+	MimeType      string                 `protobuf:"bytes,5,opt,name=mime_type,json=mimeType,proto3" json:"mime_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -89,21 +90,198 @@ func (x *AudioChunk) GetFinal() bool {
 	return false
 }
 
+func (x *AudioChunk) GetMimeType() string {
+	if x != nil {
+		return x.MimeType
+	}
+	return ""
+}
+
+type Transcript struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Transcript) Reset() {
+	*x = Transcript{}
+	mi := &file_echo_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Transcript) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Transcript) ProtoMessage() {}
+
+func (x *Transcript) ProtoReflect() protoreflect.Message {
+	mi := &file_echo_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Transcript.ProtoReflect.Descriptor instead.
+func (*Transcript) Descriptor() ([]byte, []int) {
+	return file_echo_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Transcript) GetText() string {
+	if x != nil {
+		return x.Text
+	}
+	return ""
+}
+
+type ListenRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SeatToken     string                 `protobuf:"bytes,1,opt,name=seat_token,json=seatToken,proto3" json:"seat_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListenRequest) Reset() {
+	*x = ListenRequest{}
+	mi := &file_echo_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListenRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListenRequest) ProtoMessage() {}
+
+func (x *ListenRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_echo_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListenRequest.ProtoReflect.Descriptor instead.
+func (*ListenRequest) Descriptor() ([]byte, []int) {
+	return file_echo_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ListenRequest) GetSeatToken() string {
+	if x != nil {
+		return x.SeatToken
+	}
+	return ""
+}
+
+type PCMFrame struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Sequence      uint64                 `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	SampleRate    uint32                 `protobuf:"varint,2,opt,name=sample_rate,json=sampleRate,proto3" json:"sample_rate,omitempty"`
+	PcmS16Le      []byte                 `protobuf:"bytes,3,opt,name=pcm_s16le,json=pcmS16le,proto3" json:"pcm_s16le,omitempty"`
+	Final         bool                   `protobuf:"varint,4,opt,name=final,proto3" json:"final,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PCMFrame) Reset() {
+	*x = PCMFrame{}
+	mi := &file_echo_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PCMFrame) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PCMFrame) ProtoMessage() {}
+
+func (x *PCMFrame) ProtoReflect() protoreflect.Message {
+	mi := &file_echo_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PCMFrame.ProtoReflect.Descriptor instead.
+func (*PCMFrame) Descriptor() ([]byte, []int) {
+	return file_echo_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *PCMFrame) GetSequence() uint64 {
+	if x != nil {
+		return x.Sequence
+	}
+	return 0
+}
+
+func (x *PCMFrame) GetSampleRate() uint32 {
+	if x != nil {
+		return x.SampleRate
+	}
+	return 0
+}
+
+func (x *PCMFrame) GetPcmS16Le() []byte {
+	if x != nil {
+		return x.PcmS16Le
+	}
+	return nil
+}
+
+func (x *PCMFrame) GetFinal() bool {
+	if x != nil {
+		return x.Final
+	}
+	return false
+}
+
 var File_echo_proto protoreflect.FileDescriptor
 
 const file_echo_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"echo.proto\x12\bspike.v1\"|\n" +
+	"echo.proto\x12\bspike.v1\"\x99\x01\n" +
 	"\n" +
 	"AudioChunk\x12\x1a\n" +
 	"\bsequence\x18\x01 \x01(\x04R\bsequence\x12\x1f\n" +
 	"\vsample_rate\x18\x02 \x01(\rR\n" +
 	"sampleRate\x12\x1b\n" +
 	"\tpcm_s16le\x18\x03 \x01(\fR\bpcmS16le\x12\x14\n" +
-	"\x05final\x18\x04 \x01(\bR\x05final2@\n" +
-	"\x04Echo\x128\n" +
-	"\x06Stream\x12\x14.spike.v1.AudioChunk\x1a\x14.spike.v1.AudioChunk(\x010\x01BJZHgithub.com/monstercameron/DungeonFlux/scripts/spike/gen/spike/v1;spikev1b\x06proto3"
+	"\x05final\x18\x04 \x01(\bR\x05final\x12\x1b\n" +
+	"\tmime_type\x18\x05 \x01(\tR\bmimeType\" \n" +
+	"\n" +
+	"Transcript\x12\x12\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text\".\n" +
+	"\rListenRequest\x12\x1d\n" +
+	"\n" +
+	"seat_token\x18\x01 \x01(\tR\tseatToken\"z\n" +
+	"\bPCMFrame\x12\x1a\n" +
+	"\bsequence\x18\x01 \x01(\x04R\bsequence\x12\x1f\n" +
+	"\vsample_rate\x18\x02 \x01(\rR\n" +
+	"sampleRate\x12\x1b\n" +
+	"\tpcm_s16le\x18\x03 \x01(\fR\bpcmS16le\x12\x14\n" +
+	"\x05final\x18\x04 \x01(\bR\x05final2v\n" +
+	"\x05Voice\x124\n" +
+	"\x04Talk\x12\x14.spike.v1.AudioChunk\x1a\x14.spike.v1.Transcript(\x01\x127\n" +
+	"\x06Listen\x12\x17.spike.v1.ListenRequest\x1a\x12.spike.v1.PCMFrame0\x01BJZHgithub.com/monstercameron/DungeonFlux/scripts/spike/gen/spike/v1;spikev1b\x06proto3"
 
 var (
 	file_echo_proto_rawDescOnce sync.Once
@@ -117,15 +295,20 @@ func file_echo_proto_rawDescGZIP() []byte {
 	return file_echo_proto_rawDescData
 }
 
-var file_echo_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_echo_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_echo_proto_goTypes = []any{
-	(*AudioChunk)(nil), // 0: spike.v1.AudioChunk
+	(*AudioChunk)(nil),    // 0: spike.v1.AudioChunk
+	(*Transcript)(nil),    // 1: spike.v1.Transcript
+	(*ListenRequest)(nil), // 2: spike.v1.ListenRequest
+	(*PCMFrame)(nil),      // 3: spike.v1.PCMFrame
 }
 var file_echo_proto_depIdxs = []int32{
-	0, // 0: spike.v1.Echo.Stream:input_type -> spike.v1.AudioChunk
-	0, // 1: spike.v1.Echo.Stream:output_type -> spike.v1.AudioChunk
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	0, // 0: spike.v1.Voice.Talk:input_type -> spike.v1.AudioChunk
+	2, // 1: spike.v1.Voice.Listen:input_type -> spike.v1.ListenRequest
+	1, // 2: spike.v1.Voice.Talk:output_type -> spike.v1.Transcript
+	3, // 3: spike.v1.Voice.Listen:output_type -> spike.v1.PCMFrame
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -142,7 +325,7 @@ func file_echo_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_echo_proto_rawDesc), len(file_echo_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   1,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

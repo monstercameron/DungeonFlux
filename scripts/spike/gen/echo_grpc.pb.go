@@ -19,96 +19,136 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Echo_Stream_FullMethodName = "/spike.v1.Echo/Stream"
+	Voice_Talk_FullMethodName   = "/spike.v1.Voice/Talk"
+	Voice_Listen_FullMethodName = "/spike.v1.Voice/Listen"
 )
 
-// EchoClient is the client API for Echo service.
+// VoiceClient is the client API for Voice service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type EchoClient interface {
-	Stream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[AudioChunk, AudioChunk], error)
+type VoiceClient interface {
+	Talk(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[AudioChunk, Transcript], error)
+	Listen(ctx context.Context, in *ListenRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[PCMFrame], error)
 }
 
-type echoClient struct {
+type voiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewEchoClient(cc grpc.ClientConnInterface) EchoClient {
-	return &echoClient{cc}
+func NewVoiceClient(cc grpc.ClientConnInterface) VoiceClient {
+	return &voiceClient{cc}
 }
 
-func (c *echoClient) Stream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[AudioChunk, AudioChunk], error) {
+func (c *voiceClient) Talk(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[AudioChunk, Transcript], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &Echo_ServiceDesc.Streams[0], Echo_Stream_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &Voice_ServiceDesc.Streams[0], Voice_Talk_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[AudioChunk, AudioChunk]{ClientStream: stream}
+	x := &grpc.GenericClientStream[AudioChunk, Transcript]{ClientStream: stream}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Echo_StreamClient = grpc.BidiStreamingClient[AudioChunk, AudioChunk]
+type Voice_TalkClient = grpc.ClientStreamingClient[AudioChunk, Transcript]
 
-// EchoServer is the server API for Echo service.
-// All implementations must embed UnimplementedEchoServer
-// for forward compatibility.
-type EchoServer interface {
-	Stream(grpc.BidiStreamingServer[AudioChunk, AudioChunk]) error
-	mustEmbedUnimplementedEchoServer()
+func (c *voiceClient) Listen(ctx context.Context, in *ListenRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[PCMFrame], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Voice_ServiceDesc.Streams[1], Voice_Listen_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ListenRequest, PCMFrame]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
 }
 
-// UnimplementedEchoServer must be embedded to have
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Voice_ListenClient = grpc.ServerStreamingClient[PCMFrame]
+
+// VoiceServer is the server API for Voice service.
+// All implementations must embed UnimplementedVoiceServer
+// for forward compatibility.
+type VoiceServer interface {
+	Talk(grpc.ClientStreamingServer[AudioChunk, Transcript]) error
+	Listen(*ListenRequest, grpc.ServerStreamingServer[PCMFrame]) error
+	mustEmbedUnimplementedVoiceServer()
+}
+
+// UnimplementedVoiceServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedEchoServer struct{}
+type UnimplementedVoiceServer struct{}
 
-func (UnimplementedEchoServer) Stream(grpc.BidiStreamingServer[AudioChunk, AudioChunk]) error {
-	return status.Error(codes.Unimplemented, "method Stream not implemented")
+func (UnimplementedVoiceServer) Talk(grpc.ClientStreamingServer[AudioChunk, Transcript]) error {
+	return status.Error(codes.Unimplemented, "method Talk not implemented")
 }
-func (UnimplementedEchoServer) mustEmbedUnimplementedEchoServer() {}
-func (UnimplementedEchoServer) testEmbeddedByValue()              {}
+func (UnimplementedVoiceServer) Listen(*ListenRequest, grpc.ServerStreamingServer[PCMFrame]) error {
+	return status.Error(codes.Unimplemented, "method Listen not implemented")
+}
+func (UnimplementedVoiceServer) mustEmbedUnimplementedVoiceServer() {}
+func (UnimplementedVoiceServer) testEmbeddedByValue()               {}
 
-// UnsafeEchoServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to EchoServer will
+// UnsafeVoiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to VoiceServer will
 // result in compilation errors.
-type UnsafeEchoServer interface {
-	mustEmbedUnimplementedEchoServer()
+type UnsafeVoiceServer interface {
+	mustEmbedUnimplementedVoiceServer()
 }
 
-func RegisterEchoServer(s grpc.ServiceRegistrar, srv EchoServer) {
-	// If the following call panics, it indicates UnimplementedEchoServer was
+func RegisterVoiceServer(s grpc.ServiceRegistrar, srv VoiceServer) {
+	// If the following call panics, it indicates UnimplementedVoiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&Echo_ServiceDesc, srv)
+	s.RegisterService(&Voice_ServiceDesc, srv)
 }
 
-func _Echo_Stream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(EchoServer).Stream(&grpc.GenericServerStream[AudioChunk, AudioChunk]{ServerStream: stream})
+func _Voice_Talk_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(VoiceServer).Talk(&grpc.GenericServerStream[AudioChunk, Transcript]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Echo_StreamServer = grpc.BidiStreamingServer[AudioChunk, AudioChunk]
+type Voice_TalkServer = grpc.ClientStreamingServer[AudioChunk, Transcript]
 
-// Echo_ServiceDesc is the grpc.ServiceDesc for Echo service.
+func _Voice_Listen_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ListenRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(VoiceServer).Listen(m, &grpc.GenericServerStream[ListenRequest, PCMFrame]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Voice_ListenServer = grpc.ServerStreamingServer[PCMFrame]
+
+// Voice_ServiceDesc is the grpc.ServiceDesc for Voice service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Echo_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "spike.v1.Echo",
-	HandlerType: (*EchoServer)(nil),
+var Voice_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "spike.v1.Voice",
+	HandlerType: (*VoiceServer)(nil),
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Stream",
-			Handler:       _Echo_Stream_Handler,
-			ServerStreams: true,
+			StreamName:    "Talk",
+			Handler:       _Voice_Talk_Handler,
 			ClientStreams: true,
+		},
+		{
+			StreamName:    "Listen",
+			Handler:       _Voice_Listen_Handler,
+			ServerStreams: true,
 		},
 	},
 	Metadata: "echo.proto",

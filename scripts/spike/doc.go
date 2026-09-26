@@ -1,2 +1,2 @@
-// Command spike hosts the throwaway audio tunnel probe.
+// Command spike hosts the throwaway real-phone audio tunnel probe.
 package main
