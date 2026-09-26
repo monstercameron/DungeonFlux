@@ -1975,11 +1975,11 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   lane: L-OPS · paths: `scripts/generate-supersplat-colliders.ps1` · depends: OPS-019
   done when: a PowerShell script uses the official pinned SplatTransform tool to generate scene-aligned voxel colliders locally, records generation provenance, supports both scene profiles, and the lane gate passes.
   status: done b9af9fc (renumbered from OPS-020/OPS-022 to avoid concurrent ID collisions; scoped gate failures 0)
-- [ ] OPS-SPLAT-002 · expand collider coverage across scene walkways
+- [x] OPS-SPLAT-002 · expand collider coverage across scene walkways
   why: The developer requests grid coverage across all visible walkable terrain, including foreground paths outside the initial battle crop.
   lane: L-OPS · paths: `scripts/generate-supersplat-colliders.ps1` · depends: OPS-SPLAT-001
   done when: canonical colliders include the main visible paths and surrounding lawn in both scenes, generation defaults reproduce those bounds, provenance and binary sizes are verified, and the lane gate passes.
-  status: claimed Codex 2026-09-26
+  status: done 7fd7434 (scoped gate failures 0; canonical binaries and provenance verified)
 ## 25. Test server, gates, and checkpoints
 
 Keeping the build honest: per-commit checks, the 30-minute full gate, checkpoints, and e2e tests.
