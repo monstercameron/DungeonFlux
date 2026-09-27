@@ -18,7 +18,7 @@ func TestBattleStageFromViewMapsWoodedPathTokensAndCamera(t *testing.T) {
 		Highlights: []*dungeonfluxv1.Highlight{{Kind: "target", Cells: []*dungeonfluxv1.Cell{{C: 5, R: 0}, {C: 6, R: 0}}}},
 	}
 	got := BattleStageFromView(view, 7)
-	if !got.Enabled || got.Init.SceneURL != splat.WoodedPathSceneURL || got.Init.Grid.Cols != 16 || len(got.Init.Grid.Walkable) != 78 {
+	if !got.Enabled || got.Init.SceneURL != splat.WoodedPathSceneURL || got.Init.Grid.Cols != 16 || len(got.Init.Grid.Walkable) != 109 {
 		t.Fatalf("stage init = %#v", got.Init)
 	}
 	if len(got.Scene.Tokens) != 3 || got.Scene.Tokens[0].ID != "pc-1" || got.Scene.Tokens[0].Kind != "rogue" || got.Scene.Tokens[2].ID != "thrall" {

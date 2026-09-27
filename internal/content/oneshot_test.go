@@ -53,7 +53,7 @@ func TestOneShotValidate_RejectsMalformedInputs(t *testing.T) {
 
 func TestOneShotValidate_RejectsUnwalkableSpawn(t *testing.T) {
 	story := DefaultOneShot()
-	story.Encounter.Battlefield.Spawns[0].Cell = domain.Cell{C: 0, R: 0}
+	story.Encounter.Battlefield.Spawns[0].Cell = domain.Cell{C: 10, R: 0}
 	if err := story.Validate(); err == nil {
 		t.Fatal("Validate accepted a spawn on blocked terrain")
 	}
@@ -61,7 +61,7 @@ func TestOneShotValidate_RejectsUnwalkableSpawn(t *testing.T) {
 
 func TestOneShotValidate_RequiresThrallDistanceFromSeatOne(t *testing.T) {
 	story := DefaultOneShot()
-	story.Encounter.Battlefield.Spawns[2].Cell = domain.Cell{C: 3, R: 0}
+	story.Encounter.Battlefield.Spawns[2].Cell = domain.Cell{C: 9, R: 5}
 	if err := story.Validate(); err == nil {
 		t.Fatal("Validate accepted a thrall spawn too close to seat one")
 	}

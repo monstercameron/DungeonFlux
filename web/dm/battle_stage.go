@@ -132,13 +132,20 @@ func stageTokens(tokens []*dungeonfluxv1.Token, cards []*dungeonfluxv1.BuildCard
 		if anim == "" {
 			anim = "idle"
 		}
-		result = append(result, splat.Token{ID: stageTokenID(token, index), Kind: kind, Name: token.GetName(), Cell: splat.Cell{int(token.GetCell().GetC()), int(token.GetCell().GetR())}, Path: stageCells(token.GetPath()), HeightM: 1.8, Portrait: token.GetPortraitUrl(), Anim: anim, AnimSeq: token.GetAnimSeq(), StepMS: int64(token.GetStepMs()), Clips: copyClips(token.GetClips()), Statuses: append([]string(nil), token.GetStatuses()...)})
+		result = append(result, splat.Token{ID: stageTokenID(token, index), Kind: kind, Name: token.GetName(), Cell: splat.Cell{int(token.GetCell().GetC()), int(token.GetCell().GetR())}, Path: stageCells(token.GetPath()), HeightM: heroHeightM, Portrait: token.GetPortraitUrl(), Anim: anim, AnimSeq: token.GetAnimSeq(), StepMS: int64(token.GetStepMs()), Clips: copyClips(token.GetClips()), Statuses: append([]string(nil), token.GetStatuses()...)})
 		if kind == "thrall" {
-			result[len(result)-1].HeightM = 1.6
+			result[len(result)-1].HeightM = thrallHeightM
 		}
 	}
 	return result
 }
+
+// Token heights on the TV are larger than life on purpose: at 1.8 m on 1.5 m
+// cells the heroes read as specks from the tactical camera.
+const (
+	heroHeightM   = 2.7
+	thrallHeightM = 2.5
+)
 
 func stageTokenID(token *dungeonfluxv1.Token, index int) string {
 	if strings.Contains(strings.ToLower(token.GetName()), "thrall") {

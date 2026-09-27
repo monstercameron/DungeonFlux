@@ -77,7 +77,7 @@ func TestCombatEntry_UsesRolledPartyAndAuthoredWalkableSpawns(t *testing.T) {
 	if view.Combat.Tokens[1].Name != "Korr" || view.Combat.Tokens[1].Kind != "pc-barbarian-dwarf" || view.Combat.Tokens[1].Portrait != "ui/species_dwarf" {
 		t.Fatalf("seat two identity = %+v", view.Combat.Tokens[1])
 	}
-	if view.Combat.Tokens[2].Cell != (domain.Cell{C: 2, R: 4}) || view.Combat.Tokens[2].HP != 12 || view.Combat.Tokens[2].HPMax != 12 {
+	if view.Combat.Tokens[2].Cell != (domain.Cell{C: 9, R: 2}) || view.Combat.Tokens[2].HP != 12 || view.Combat.Tokens[2].HPMax != 12 {
 		t.Fatalf("thrall = %+v", view.Combat.Tokens[2])
 	}
 	seatOne, _ := machine.creation.Seat(1)

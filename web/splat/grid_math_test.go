@@ -34,10 +34,10 @@ func TestCameraPresets_hasCombatAndFallbackViews(t *testing.T) {
 
 func TestWoodedPathGridMatchesColliderCells(t *testing.T) {
 	grid := WoodedPathGrid()
-	if grid.Cols != 16 || grid.Rows != 10 || len(grid.Walkable) != 78 {
+	if grid.Cols != 16 || grid.Rows != 10 || len(grid.Walkable) != 109 {
 		t.Fatalf("unexpected wooded path grid: %#v", grid)
 	}
-	for _, cell := range []Cell{{2, 0}, {3, 0}, {6, 0}, {12, 9}} {
+	for _, cell := range []Cell{{8, 6}, {10, 6}, {9, 2}, {13, 9}} {
 		if !IsWalkable(grid, cell) {
 			t.Fatalf("cell %v should be walkable", cell)
 		}
