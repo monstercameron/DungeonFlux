@@ -1698,13 +1698,19 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   done when: Resync and a 25 s idle watchdog resubscribe the watch stream without surfacing an error; visibilitychange/online/pageshow trigger it (plus a 1.5 s retry); the offline repro shows the right screen within 2 s; unit tests cover resync and idle.
   status: done 0fdc351
   follow-up: the TV (web/dm/mount_wasm.go) and host (web/host/client.go) run their own watch loops without this; see EMK-002.
-  regression (found 2026-09-27 playtest, reproduced locally): every joined phone now posts a join event every 25 s, matching the idle resubscribe; cause not yet traced; fix pending before PR #7 merges.
+  regression (found 2026-09-27 playtest): every joined phone posted a join event every 25 s from the idle resubscribe; fixed by EMK-003 1533aa1.
 
 - [ ] EMK-002 · TV and host watch loops resubscribe like the phone
   why: web/dm and web/host have separate watch loops that also reconnect only on an error, so a sleeping laptop or a dead connection leaves the TV or host panel stale (Dennis #19 TV lag, #35 stale host phase may share this cause).
   lane: ORCH (emmaka) · paths: `web/dm/mount_wasm.go`, `web/host/client.go` · depends: EMK-001
   done when: both loops use the shell client's Resync and idle watchdog (or the same mechanism); an offline repro on /dm and /host recovers within 2 s.
   status: open
+
+- [x] EMK-003 · a watch resubscribe no longer re-posts the phone's join
+  why: The 2026-09-27 Droplet playtest logged a join from every phone every 25 s: the Watch handler called Join on every subscribe, so each resubscribe (EMK-001's idle watchdog) re-announced the seat, stepped the engine and redrew every screen; it also doubled the join at each page load.
+  lane: ORCH (emmaka) · paths: `internal/api/session_watch*.go`, `internal/wire/api_services.go`, `internal/wire/watch_rejoin_test.go` · depends: EMK-001
+  done when: Watch resolves a seated phone token without posting; DM/host/unknown tokens still authenticate via Join; e2e shows 1 join after one Join and three Watch subscriptions; a 60 s idle phone logs 1 join.
+  status: done 1533aa1
 
 ## 19. Phone
 
