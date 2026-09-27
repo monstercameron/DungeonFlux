@@ -338,6 +338,12 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: combat tokens and initiative portraits resolve the created hero portrait on both clients, distinct heroes do not collapse to one species image, tests cover generated/fallback portraits, and API gate plus real creation-to-combat playtest pass.
   status: claimed live_report_audit 2026-09-27; parent backfills observed worker edits pending scope confirmation
 
+- [x] QA-057 · Use the in-game Mother Vell artwork on the marketing page
+  why: The landing page labeled unrelated young concept-art characters as Mother Vell, breaking identity continuity with the actual game.
+  lane: ORCH (Codex) · paths: `website/index.html`, `website/styles.css`, `website/assets/scene-barkeep-vell.webp`, `website/assets/vell-avatar.webp`, `TODOS.md`, `docs/devlog.html` · depends: QA-052
+  done when: the persuasion scene and narration avatar use the actual game barkeep artwork, alternative text matches it, and the responsive page is visually verified.
+  status: done (this commit); copied actual in-game backdrop bytes, verified desktop scene and viewport preview in isolated browser; JavaScript syntax check and architecture gate green. No new artwork generated; temporary server PID 34988 stopped.
+
 ### Kill cam (developer-directed single writer, 2026-09-27)
 
 - [ ] KC-010 · Generate opponent-facing idle, walk and attack loops from hero references
