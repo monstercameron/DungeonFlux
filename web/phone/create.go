@@ -46,6 +46,12 @@ type CreationSnapshot struct {
 	Error        string
 	Locale       string
 	StatusText   string
+	// Renaming, RenameDraft, and RenameError track the hero-name editor
+	// opened from the build card (§ generated, player-editable hero names).
+	// The generated or last-saved name itself lives on Build.Name.
+	Renaming    bool
+	RenameDraft string
+	RenameError string
 }
 
 // CreationOption is one choice shown by a character-creation picker.
