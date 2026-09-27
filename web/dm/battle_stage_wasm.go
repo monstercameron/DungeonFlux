@@ -233,6 +233,11 @@ func stageSnapshotKey(stage BattleStageModel) string {
 		for _, cell := range token.Path {
 			fmt.Fprintf(&builder, "%d,%d;", cell[0], cell[1])
 		}
+		// Clips arrive minutes into combat (fal loops); without them in the
+		// key a token gaining its video looked unchanged and kept the stand-in.
+		for _, name := range []string{"idle", "attack", "hit", "fall"} {
+			fmt.Fprintf(&builder, "%s=%s;", name, token.Clips[name])
+		}
 	}
 	for _, highlight := range stage.Scene.Highlights {
 		builder.WriteString(highlight.Kind)
