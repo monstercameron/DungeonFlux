@@ -37,16 +37,19 @@ const (
 
 // CreationSnapshot is the render-safe state of the creation screen.
 type CreationSnapshot struct {
-	SeatToken    string
-	PlayerNumber int32
-	Species      string
-	Gender       string
-	Class        string
-	Build        *df.BuildCard
-	Phase        CreationPhase
-	Error        string
-	Locale       string
-	StatusText   string
+	SeatToken        string
+	PlayerNumber     int32
+	Species          string
+	Gender           string
+	Class            string
+	Build            *df.BuildCard
+	Phase            CreationPhase
+	Error            string
+	Locale           string
+	StatusText       string
+	TimerRemainingMS int64
+	TimerTotalMS     int64
+	TimerFrozen      bool
 	// Renaming, RenameDraft, and RenameError track the hero-name editor
 	// opened from the build card (§ generated, player-editable hero names).
 	// The generated or last-saved name itself lives on Build.Name.
@@ -186,6 +189,13 @@ func (m *CreationModel) ApplyScreenState(state *df.ScreenState) CreationSnapshot
 	}
 	m.state.Locale = phoneLocale(phone)
 	m.state.StatusText = phone.GetStatusText()
+	if timer := phone.GetTurnTimer(); timer != nil {
+		m.state.TimerRemainingMS = timer.GetRemainingMs()
+		m.state.TimerTotalMS = timer.GetTotalMs()
+		m.state.TimerFrozen = timer.GetFrozen()
+	} else {
+		m.state.TimerRemainingMS, m.state.TimerTotalMS, m.state.TimerFrozen = 0, 0, false
+	}
 	return m.Snapshot()
 }
 

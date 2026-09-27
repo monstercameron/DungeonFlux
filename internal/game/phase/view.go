@@ -261,8 +261,25 @@ func (m Machine) viewSeats() []domain.SeatView {
 	seats := cloneSeats(m.seats)
 	for index := range seats {
 		seats[index].Moves = m.LegalMoveViews(seats[index].Seat)
+		if timer, ok := m.creationTimer(); ok {
+			seats[index].TurnTimer = timer
+		}
 	}
 	return seats
+}
+
+func (m Machine) creationTimer() (domain.TimerView, bool) {
+	if m.State() != vocab.StateCreation || !m.creationActive || !m.timersEnabled {
+		return domain.TimerView{}, false
+	}
+	remaining := creationTimeoutDuration - m.creationElapsed
+	if remaining < 0 {
+		remaining = 0
+	}
+	return domain.TimerView{
+		Name: "creation_timeout", RemainingMS: remaining.Milliseconds(),
+		TotalMS: creationTimeoutDuration.Milliseconds(), Frozen: m.paused,
+	}, true
 }
 
 func enabledMove(id vocab.MoveID, enabled bool, disabledReason string) domain.MoveView {

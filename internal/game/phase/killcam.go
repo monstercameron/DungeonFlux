@@ -15,6 +15,12 @@ import (
 // SetTime supplies monotonic engine time for cinematic reconnect seeks. Paused
 // intervals are excluded; the room's pausable timer owns playback completion.
 func (m *Machine) SetTime(at time.Duration) {
+	if at > m.now && m.State() == vocab.StateCreation && m.creationActive && !m.paused {
+		m.creationElapsed += at - m.now
+		if m.creationElapsed > creationTimeoutDuration {
+			m.creationElapsed = creationTimeoutDuration
+		}
+	}
 	if at > m.now && m.killcam.URL != "" && !m.paused {
 		m.killcamTime += at - m.now
 	}

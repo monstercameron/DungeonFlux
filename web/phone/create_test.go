@@ -75,6 +75,17 @@ func TestCreationModel_ProjectsCharacterFieldsAndLock(t *testing.T) {
 	}
 }
 
+func TestCreationModel_ProjectsAuthoritativeCreationTimer(t *testing.T) {
+	model := NewCreationModel(&actFake{}, "seat", 1)
+	state := &df.ScreenState{Phase: "creation", View: &df.ScreenState_Phone{Phone: &df.PhoneView{
+		TurnTimer: &df.Timer{RemainingMs: 21999, TotalMs: 30000, Frozen: true},
+	}}}
+	got := model.ApplyScreenState(state)
+	if got.TimerRemainingMS != 21999 || got.TimerTotalMS != 30000 || !got.TimerFrozen {
+		t.Fatalf("creation timer = %+v", got)
+	}
+}
+
 func TestCreationClasses_AreTwelveStableCopies(t *testing.T) {
 	classes := CreationClasses()
 	if len(classes) != 12 || classes[0].ID != "barbarian" || classes[len(classes)-1].ID != "wizard" {

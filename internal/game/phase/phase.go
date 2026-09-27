@@ -21,21 +21,22 @@ import (
 )
 
 const (
-	eventStart        vocab.EventKind = "phase_start"
-	eventCreationEnd  vocab.EventKind = "phase_creation_end"
-	eventOpeningEnd   vocab.EventKind = "phase_opening_end"
-	eventTalk         vocab.EventKind = "phase_talk"
-	eventPersuade     vocab.EventKind = "phase_persuade"
-	eventStepAway     vocab.EventKind = "phase_step_away"
-	eventLeave        vocab.EventKind = "phase_leave"
-	eventRoll         vocab.EventKind = "phase_roll"
-	eventResolution   vocab.EventKind = "phase_resolution"
-	eventCombat       vocab.EventKind = "phase_combat"
-	eventCliffhanger  vocab.EventKind = "phase_cliffhanger"
-	eventSkip         vocab.EventKind = "phase_skip"
-	eventReset        vocab.EventKind = "phase_reset"
-	idleHookTimerName                 = "idle_hook"
-	idleHookDelay                     = 15 * time.Second
+	eventStart              vocab.EventKind = "phase_start"
+	eventCreationEnd        vocab.EventKind = "phase_creation_end"
+	eventOpeningEnd         vocab.EventKind = "phase_opening_end"
+	eventTalk               vocab.EventKind = "phase_talk"
+	eventPersuade           vocab.EventKind = "phase_persuade"
+	eventStepAway           vocab.EventKind = "phase_step_away"
+	eventLeave              vocab.EventKind = "phase_leave"
+	eventRoll               vocab.EventKind = "phase_roll"
+	eventResolution         vocab.EventKind = "phase_resolution"
+	eventCombat             vocab.EventKind = "phase_combat"
+	eventCliffhanger        vocab.EventKind = "phase_cliffhanger"
+	eventSkip               vocab.EventKind = "phase_skip"
+	eventReset              vocab.EventKind = "phase_reset"
+	idleHookTimerName                       = "idle_hook"
+	idleHookDelay                           = 15 * time.Second
+	creationTimeoutDuration                 = 30 * time.Second
 )
 
 // Definition describes one registered top-level phase.
@@ -59,6 +60,8 @@ type Machine struct {
 	table                                    fsm.Machine
 	paused, conversationDone, strictCreation bool
 	timersEnabled, defaultTimersEnabled      bool
+	creationActive                           bool
+	creationElapsed                          time.Duration
 	lobbyAudioSent                           bool
 	moveUIOff                                bool
 	oneShot                                  domain.OneShot

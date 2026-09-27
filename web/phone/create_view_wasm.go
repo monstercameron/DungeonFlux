@@ -40,7 +40,7 @@ func CreationScreen(model *CreationModel) router.Component {
 			creationPicker(model, refresh, "gender", "Gender", creationGenders, snapshot.Gender, pickerDisabled),
 			creationClassPicker(model, refresh, locale, snapshot.Class, pickerDisabled))
 		return html.Section(html.Props{Class: "df-phone-create", Role: "main", Style: creationContentStyle()},
-			creationHeading(locale, snapshot.Build != nil), choices,
+			creationHeading(locale, snapshot.Build != nil), creationTimerNode(snapshot), choices,
 			creationBuildCard(model, refresh, locale, snapshot),
 			creationRolledStats(locale, snapshot),
 			html.Div(html.Props{Style: map[string]string{"margin-top": "auto", "padding-top": "2px"}}, action,
