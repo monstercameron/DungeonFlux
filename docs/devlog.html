@@ -87,6 +87,12 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-replaced-timer-callback">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-replaced-timer-callback">An old timer callback could expire a newly started turn</a></h2>
+  <p>While tracing checkpoint restoration, the audit found that every recreated timer started at generation one. A callback already running when its timer was stopped could therefore match a replacement timer with the same name and expire the new turn. The same collision was possible after cancel, run reset, stop-all, and disabling then enabling turn timers. QA-003 binds each callback to its exact timer instance in addition to its arm generation. A controlled clock reproduces all five stale-callback sequences without sleeps or timing luck: each failed before the fix, and each now leaves the replacement timer intact until its own callback runs. This also prevents abandoned attempts from cutting short the next retry.</p>
+</li>
+
 <li class="entry" data-kind="issue" id="e-20260927-dfctl-token-help">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-dfctl-token-help">Debug CLI help exposed the environment token as a flag default</a></h2>

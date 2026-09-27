@@ -178,13 +178,14 @@ func (t *Timers) freezeLocked(name string) {
 
 func (t *Timers) armLocked(entry *timerEntry) {
 	generation := entry.generation
-	entry.timer = t.clk.AfterFunc(entry.remaining, func() { t.fire(entry.name, generation) })
+	entry.timer = t.clk.AfterFunc(entry.remaining, func() { t.fire(entry, generation) })
 }
 
-func (t *Timers) fire(name string, generation uint64) {
+func (t *Timers) fire(armed *timerEntry, generation uint64) {
 	t.mu.Lock()
+	name := armed.name
 	entry := t.byName[name]
-	if entry == nil || entry.generation != generation || entry.paused {
+	if entry != armed || entry.generation != generation || entry.paused {
 		t.mu.Unlock()
 		return
 	}
