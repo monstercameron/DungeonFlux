@@ -48,13 +48,20 @@ func (s *sessionService) Watch(req *df.WatchRequest, stream df.SessionService_Wa
 	if req == nil || stream == nil {
 		return status.Error(codes.InvalidArgument, "watch request is required")
 	}
-	join, err := s.SessionServer.Join(ctx, &df.JoinRequest{RoomCode: s.room, SeatToken: req.GetSeatToken(), DmToken: req.GetSeatToken(), HostToken: req.GetSeatToken()})
-	if err != nil {
-		return err
+	// A phone that already holds its seat is only looked up: its join was
+	// posted when it joined, and re-posting on every (re)subscribe churned the
+	// engine every time a client resubscribed. DM, host, and unknown tokens
+	// still authenticate through Join.
+	seat, seated := s.SessionServer.WatchSeat(req.GetSeatToken())
+	if !seated {
+		join, err := s.SessionServer.Join(ctx, &df.JoinRequest{RoomCode: s.room, SeatToken: req.GetSeatToken(), DmToken: req.GetSeatToken(), HostToken: req.GetSeatToken()})
+		if err != nil {
+			return err
+		}
+		seatNumber, _ := strconv.Atoi(join.GetSeatId())
+		seat = domain.SeatID(seatNumber)
 	}
 	kind := df.ClientKind_CLIENT_KIND_PHONE
-	seatNumber, _ := strconv.Atoi(join.GetSeatId())
-	seat := domain.SeatID(seatNumber)
 	if req.GetSeatToken() == s.dm {
 		kind = df.ClientKind_CLIENT_KIND_DM
 		seat = 0
