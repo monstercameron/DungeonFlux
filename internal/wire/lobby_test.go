@@ -37,8 +37,8 @@ func TestWithPublicURLs(t *testing.T) {
 		wantJoin  string
 	}{
 		{name: "no public url keeps the LAN join url", wantURLs: local, wantJoin: local[1]},
-		{name: "public url leads and becomes the join url", publicURL: "https://play.example.com/",
-			wantURLs: append([]string{"https://play.example.com/dm?token=dm+1", "https://play.example.com/host?t=host", "https://play.example.com/p?room=DF-ROOM"}, local...),
+		{name: "public url leads, drops unreachable LAN urls, and becomes the join url", publicURL: "https://play.example.com/",
+			wantURLs: []string{"https://play.example.com/dm?token=dm+1", "https://play.example.com/host?t=host", "https://play.example.com/p?room=DF-ROOM", local[0]},
 			wantJoin: "https://play.example.com/p?room=DF-ROOM"},
 	}
 	for _, tc := range tests {

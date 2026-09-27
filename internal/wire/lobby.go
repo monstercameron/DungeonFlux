@@ -8,8 +8,10 @@ import (
 )
 
 // withPublicURLs puts the DM, host, and phone URLs for publicURL ahead of the
-// local tester URLs and returns the public phone URL as the join URL. With no
-// public URL it returns urls unchanged and the preferred LAN join URL.
+// localhost tester URLs and returns the public phone URL as the join URL. The
+// LAN and public-IP URLs are dropped: behind a TLS proxy and firewall only the
+// public origin and localhost are reachable. With no public URL it returns
+// urls unchanged and the preferred LAN join URL.
 func withPublicURLs(publicURL string, urls []string, port int, room, dmToken, hostToken string) ([]string, string) {
 	if publicURL == "" {
 		return urls, preferredLANJoinURL(urls, port, room)
@@ -20,7 +22,12 @@ func withPublicURLs(publicURL string, urls []string, port int, room, dmToken, ho
 		base + "/host?t=" + url.QueryEscape(hostToken),
 		base + "/p?room=" + url.QueryEscape(room),
 	}
-	return append(public, urls...), public[2]
+	for _, raw := range urls {
+		if parsed, err := url.Parse(raw); err == nil && parsed.Hostname() == "localhost" {
+			public = append(public, raw)
+		}
+	}
+	return public, public[2]
 }
 
 // preferredLANJoinURL returns the first phone URL whose host is a usable

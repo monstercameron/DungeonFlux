@@ -86,6 +86,10 @@ func (w *writeLoop) run(conn *sql.Conn) {
 		err := req.work(req.ctx, conn)
 		if req.ack != nil {
 			req.ack <- err
+		} else if err != nil {
+			// Enqueued writes have no caller waiting for the result; log the
+			// failure so a rejected write is never silent.
+			w.logger.Error("sqlite write failed", "err", err)
 		}
 	}
 }

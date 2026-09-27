@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -41,7 +42,6 @@ func main() {
 	if err != nil {
 		fatal(err)
 	}
-	defer app.Close()
 
 	server := &http.Server{Addr: fmt.Sprintf(":%d", cfg.Server.Port), Handler: app.Handler()}
 	serveErr := make(chan error, 1)
@@ -51,16 +51,31 @@ func main() {
 	defer stop()
 	select {
 	case <-stopCtx.Done():
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
-		defer cancel()
-		if err := server.Shutdown(shutdownCtx); err != nil {
+		if err := shutdown(server, app, shutdownTimeout, os.Stderr); err != nil {
 			fatal(err)
 		}
 	case err := <-serveErr:
+		closeErr := app.Close()
 		if !errors.Is(err, http.ErrServerClosed) {
-			fatal(err)
+			fatal(errors.Join(err, closeErr))
 		}
 	}
+}
+
+// shutdown drains server for up to timeout, then force-closes connections
+// still busy (for example a phone mid-download of the WASM bundle or a clip),
+// and always closes app so queued events are flushed to the store. A forced
+// close after the grace period is expected on a live table, so it is reported
+// on stderr rather than returned. app is closed exactly once.
+func shutdown(server *http.Server, app io.Closer, timeout time.Duration, stderr io.Writer) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	var closeErr error
+	if err := server.Shutdown(ctx); err != nil {
+		_, _ = fmt.Fprintf(stderr, "shutdown: %v after %s; closing remaining connections\n", err, timeout)
+		closeErr = server.Close()
+	}
+	return errors.Join(closeErr, app.Close())
 }
 
 const shutdownTimeout = 5 * time.Second
