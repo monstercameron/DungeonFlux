@@ -87,6 +87,12 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-offline-reply-caption">
+  <div class="entry-head"><time datetime="2026-09-27T09:27-04:00">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">ORCH</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-offline-reply-caption">Match the offline reply to its recording</a></h2>
+  <p>The fake language adapter displayed a placeholder response while the fake speech adapter played Mother Vell's authored canned reply. Both outputs were individually valid but contradicted each other in the same conversation. The fake reply now reads the text from the same content record that selects the cached speech asset. A regression test exercises two player questions and checks the caption, recording identity, and returned audio bytes. The wire gate passes. This fixes the offline NPC reply pairing; microphone ownership, contextual live dialogue, and the broader provider fallback chain remain separate open work.</p>
+</li>
+
 <li class="entry" data-kind="decision" id="e-20260927-marketing-javascript-boundary">
   <div class="entry-head"><time datetime="2026-09-27T09:25-04:00">Sep 27, 2026</time><span class="kind">Decision</span><span class="who">ORCH</span></div>
   <h2 class="entry-title"><a href="#e-20260927-marketing-javascript-boundary">Keep marketing scripts outside the game boundary</a></h2>

@@ -41,7 +41,8 @@ func (fakeLLM) StreamText(ctx context.Context, req ports.TextRequest) (ports.Tex
 	text := "The rain hammers the Drowned Lantern. The bell tower waits beyond the river."
 	switch req.Meta.Role {
 	case vocab.RoleNPCReply:
-		text = "Mother Vell studies you, amused. Ask your question plainly."
+		line, _ := content.CannedLineByID(string(fakeTTSCanned[vocab.RoleNPCReply]))
+		text = line.Text
 	case vocab.RoleNPCReveal, vocab.RoleNPCRefuse:
 		text = scriptedOutcomeText(req.Meta.Role)
 	case vocab.RoleStrangerLines:

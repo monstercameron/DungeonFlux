@@ -308,11 +308,11 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
 
 
 
-- [ ] QA-051 · Match the offline NPC reply caption to its cached speech
+- [x] QA-051 · Match the offline NPC reply caption to its cached speech
   why: In fake mode Mother Vell displayed a model placeholder while fake TTS played the different prerecorded canned reply.
   lane: ORCH (Codex) · paths: `internal/wire/fake.go`, `internal/wire/fake_dialogue_test.go`, `TODOS.md`, `docs/devlog.html` · depends: QA-042
   done when: the fake NPC reply uses the same content line selected by its cached TTS asset and a regression test verifies the text/asset pairing; broader STT and live-fallback work remains QA-045/EMK-009.
-  status: claimed Codex 2026-09-27; independent atomic part of open QA-045
+  status: done (this commit); gate artifacts/test/QA-051/gate-20260927-092425.log green; dialogue caption/asset pairing regression passes; wire coverage excluded by AGENTS section 14. Independent atomic part of open QA-045.
 
 - [x] QA-052 · Allow JavaScript only in the standalone marketing site in addition to existing exceptions
   why: The developer explicitly approved website/ as a marketing-only exception on 2026-09-27; game code must retain its existing Go-first boundary.
