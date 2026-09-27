@@ -73,3 +73,27 @@ func TestProjectDM_CombatPortraitsMatchPartyCards(t *testing.T) {
 		t.Fatalf("initiative portrait = %q", got)
 	}
 }
+
+func TestProjectPhone_CombatInitiativePreservesGeneratedPortrait(t *testing.T) {
+	view := domain.View{
+		Path:   vocab.StateCombat,
+		Seats:  []domain.SeatView{{Seat: 1, Character: &domain.Character{Name: "Lyra", Species: "elf", Gender: "female", Portrait: "sha-lyra"}}},
+		Combat: &domain.CombatView{Tokens: []domain.TokenView{{ID: "pc-1", Name: "Lyra", Portrait: "ui/species_elf"}}, TurnOrder: []domain.TurnEntry{{TokenID: "pc-1", Name: "Lyra", Portrait: "ui/species_elf"}}},
+	}
+	out := ProjectPhone(view, 1)
+	if got := out.GetTurnOrder()[0].GetPortraitUrl(); got != "sha-lyra" {
+		t.Fatalf("generated phone initiative portrait = %q", got)
+	}
+}
+
+func TestProjectPhone_CombatInitiativeKeepsGenericPortraitWithoutCharacter(t *testing.T) {
+	view := domain.View{
+		Path:   vocab.StateCombat,
+		Seats:  []domain.SeatView{{Seat: 1}},
+		Combat: &domain.CombatView{Tokens: []domain.TokenView{{ID: "pc-1", Portrait: "ui/species_elf"}}, TurnOrder: []domain.TurnEntry{{TokenID: "pc-1", Portrait: "ui/species_elf"}}},
+	}
+	out := ProjectPhone(view, 1)
+	if got := out.GetTurnOrder()[0].GetPortraitUrl(); got != "ui/species_elf" {
+		t.Fatalf("generic phone initiative portrait = %q", got)
+	}
+}

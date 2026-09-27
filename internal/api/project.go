@@ -195,9 +195,9 @@ func projectPhone(view domain.View, seat domain.SeatID) *df.PhoneView {
 		break
 	}
 	if view.Combat != nil {
-		out.Combat = projectPhoneCombat(*view.Combat)
+		out.Combat = projectPhoneCombat(*view.Combat, view.Seats)
 		out.Combat = projectPhoneCombatMap(out.Combat, view, seat)
-		out.TurnOrder = projectTurnOrder(view.Combat.TurnOrder)
+		out.TurnOrder = projectTurnOrderForSeats(view.Combat.TurnOrder, view.Seats)
 	}
 	if view.Dice != nil {
 		// INT-009: the phone needs the same check/attack roll the TV shows
@@ -574,10 +574,10 @@ func projectTurnOrder(entries []domain.TurnEntry) []*df.TurnOrderEntry {
 	return out
 }
 
-func projectPhoneCombat(combat domain.CombatView) *df.CombatView {
+func projectPhoneCombat(combat domain.CombatView, seats []domain.SeatView) *df.CombatView {
 	out := &df.CombatView{ContactInMs: combat.Contact.RemainingMS}
 	if len(combat.Tokens) > 0 {
-		token := projectTokens(combat.Tokens)[0]
+		token := projectTokensForSeats(combat.Tokens, seats)[0]
 		out.TokenId, out.Hp, out.HpMax, out.Statuses, out.MyTurn = token.TokenId, token.Hp, token.HpMax, token.Statuses, token.Active
 	}
 	return out

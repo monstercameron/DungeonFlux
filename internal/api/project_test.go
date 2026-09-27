@@ -103,7 +103,7 @@ func TestProject_NilAndUnknownValues(t *testing.T) {
 	if ProjectHost(view).RunMode != "" || projectCharacter(nil) != nil || timerRemaining(nil) != 0 {
 		t.Fatal("nil and direct projection cases were not handled")
 	}
-	if got := projectPhoneCombat(domain.CombatView{Tokens: []domain.TokenView{{ID: "t", Active: true, Status: "bloodied"}}}); !got.MyTurn || got.TokenId != "t" {
+	if got := projectPhoneCombat(domain.CombatView{Tokens: []domain.TokenView{{ID: "t", Active: true, Status: "bloodied"}}}, nil); !got.MyTurn || got.TokenId != "t" {
 		t.Fatalf("phone combat token = %#v", got)
 	}
 }
