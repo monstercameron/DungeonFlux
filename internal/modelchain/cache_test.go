@@ -122,8 +122,11 @@ func TestRecordReplay_JSONFallbackAndForcedText(t *testing.T) {
 }
 
 func TestRecordReplay_LiveFailureUsesRecording(t *testing.T) {
-	key := ports.RecKey{Adapter: "x"}
-	store := &memoryRecordings{values: map[ports.RecKey]domain.Recording{key: {Text: "saved"}}}
+	store := &memoryRecordings{values: map[ports.RecKey]domain.Recording{}}
+	record := RecordReplay(fakeLLM{streamFn: func(context.Context) (ports.TextStream, error) {
+		return newFakeStream("saved"), nil
+	}}, store, "x")
+	runRehearsalCall(t, record, rehearsalCall{stream: true}, "saved")
 	link := fakeLLM{jsonFn: func(context.Context) (json.RawMessage, error) { return nil, errors.New("down") }, streamFn: func(context.Context) (ports.TextStream, error) { return nil, errors.New("down") }}
 	decorator := RecordReplay(link, store, "x")
 	stream, err := decorator.StreamText(context.Background(), ports.TextRequest{})

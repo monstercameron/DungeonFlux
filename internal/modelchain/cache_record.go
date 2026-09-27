@@ -23,7 +23,10 @@ type recordedLLM struct {
 }
 
 func (r recordedLLM) JSON(ctx context.Context, req ports.TextRequest, schema ports.Schema) (json.RawMessage, error) {
-	key := recordingKey(r.adapter, req)
+	key, err := recordingKey(r.adapter, req, "json", schema)
+	if err != nil {
+		return nil, err
+	}
 	if req.Meta.ForceReplay {
 		return r.readJSON(ctx, key)
 	}
@@ -41,7 +44,10 @@ func (r recordedLLM) JSON(ctx context.Context, req ports.TextRequest, schema por
 }
 
 func (r recordedLLM) StreamText(ctx context.Context, req ports.TextRequest) (ports.TextStream, error) {
-	key := recordingKey(r.adapter, req)
+	key, err := recordingKey(r.adapter, req, "text", ports.Schema{})
+	if err != nil {
+		return nil, err
+	}
 	if req.Meta.ForceReplay {
 		value, err := r.readText(ctx, key)
 		if err != nil {
@@ -107,10 +113,6 @@ func (s *recordStream) Recv() (string, error) {
 func (s *recordStream) Close() error {
 	s.done = true
 	return s.source.Close()
-}
-
-func recordingKey(adapter string, req ports.TextRequest) ports.RecKey {
-	return ports.RecKey{Adapter: adapter, Phase: req.Meta.Phase, Seat: req.Meta.Seat, Index: req.Meta.Index}
 }
 
 func newReplayStream(text string) ports.TextStream {

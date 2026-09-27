@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-rehearsal-recording-isolation">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-rehearsal-recording-isolation">Rehearsal recordings cannot overwrite another response contract</a></h2>
+  <p>Tracing the unwired Safe Mode control exposed a recording collision beneath it. All text roles used the same adapter namespace, and a recording key included only that namespace, phase, seat, and call index. A Spanish reply, a JSON interpretation, or another schema could overwrite an English narration at the same position. Five regression cases reproduced these collisions. Recording namespaces now include the role, language, response format, and JSON schema while preserving the sequence position and ignoring the live prompt and run identity. Legacy entries are deliberately not read because their original response contract cannot be recovered reliably; they require a fresh rehearsal. The modelchain gate and wire integration tests pass. Deterministic call positions, complete stream recording, offline media playback, and the authoritative host control remain separate audit todos.</p>
+</li>
 <li class="entry" data-kind="issue" id="e-20260927-start-waits-for-players">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-start-waits-for-players">Start waits for both players to be ready</a></h2>

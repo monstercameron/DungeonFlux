@@ -180,6 +180,36 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: selecting either language updates the form and join request, the chosen language survives normal renders, and browser verification covers both choices.
   status: done (this commit); WASM render test covers Spanish, field edits and switching back to English; shell gate artifacts/test/QA-029/gate-20260927-063346.log green with 84.9% coverage; live Spanish join and English companion verified
 
+- [x] QA-030 · Isolate rehearsal recordings by role, language and response contract
+  why: Every LLM decorator shares the sequence adapter namespace, so same-index calls with different roles, languages or schemas can overwrite each other and replay incompatible output.
+  lane: ORCH (Codex) · paths: `internal/modelchain/cache_record.go`, `internal/modelchain/cache_test.go`, `internal/modelchain/recording_key.go`, `internal/modelchain/recording_key_test.go`, `TODOS.md`, `docs/devlog.html` · depends: none
+  done when: recording and forced replay keep roles, languages, JSON schemas and streamed prose separate while preserving phase, seat and sequence semantics; malformed schemas fail before calling a provider; the modelchain gate is green.
+  status: done (this commit); gate artifacts/test/QA-030/gate-20260927-065548.log; modelchain 80.7%; wire integration suite passed; legacy ambiguous recordings require a new rehearsal
+
+- [ ] QA-031 · Preserve complete stream results and respect cancellation when caching
+  why: Recording and cache streams drop text returned alongside EOF and persist with a background context, allowing canceled or truncated calls to replace valid results.
+  lane: ORCH (Codex) · paths: pending bounded stream lifecycle breakdown · depends: QA-030
+  done when: terminal text is retained, canceled or failed streams never become successful cache entries, cache storage observes caller cancellation, and regressions pass.
+  status: open
+
+- [ ] QA-032 · Assign deterministic rehearsal call positions across retries
+  why: Most executors leave call phase and index at zero, so repeated calls within a role still overwrite one recording and cannot follow a rehearsed sequence.
+  lane: ORCH (Codex) · paths: pending runtime metadata and checkpoint breakdown · depends: QA-030
+  done when: effect dispatch supplies stable phase, seat and call indexes, speculative cancellations do not consume a committed position, and Reset/checkpoint replay restores sequence alignment.
+  status: open
+
+- [ ] QA-033 · Replay recorded speech and media without live providers
+  why: The existing sequence wrapper covers only LLM text; Safe Mode must also use cached audio and media and avoid live vendor calls.
+  lane: ORCH (Codex) · paths: pending adapter decorators and composition breakdown · depends: QA-030, QA-031, QA-032
+  done when: rehearsed text, speech and media play from recordings; missing recordings produce explicit cached/canned fallbacks; a provider spy proves no live calls while Safe Mode is active.
+  status: open
+
+- [ ] QA-034 · Wire authoritative Safe Mode through host, engine and executors
+  why: The host optimistically changes local state for an unsupported engine command and cannot report or restore the actual replay policy.
+  lane: ORCH (Codex) · paths: pending contract and host policy breakdown · depends: QA-033
+  done when: Safe Mode on/off is acknowledged by the engine, projected to all host sessions, honored by executors, restored by Reset/checkpoints, and verified through the live host UI.
+  status: open
+
 ### Kill cam (developer-directed single writer, 2026-09-27)
 
 - [x] KC-004 · Remove unused domain scaffolding exposed by the feature gate
