@@ -70,9 +70,9 @@ func (e *NPCReplyExecutor) Execute(ctx context.Context, effect domain.StartLine,
 
 func (e *NPCReplyExecutor) request(effect domain.StartLine) (ports.TextRequest, error) {
 	values := map[string]string{
-		"persona":      "Gravelly, amused, protective of her regulars; evasive until persuaded.",
-		"public_facts": "Mother Vell keeps the Drowned Lantern. The lamplighter vanished, and the tavern stands beside the river.",
-		"conversation": effect.Input,
+		"persona":      "A one-eyed barkeep with a rough, dry wit; fond of her patrons and wary of strangers; evasive until persuaded.",
+		"public_facts": "Mother Vell runs the Drowned Lantern, a smugglers' tavern in a flooded town. The lamplighter vanished last night.",
+		"conversation": patronLine(effect.Input),
 	}
 	text, err := e.template.Render(values)
 	if err != nil {
@@ -91,11 +91,12 @@ func (e *NPCReplyExecutor) consume(ctx context.Context, stream ports.TextStream,
 		chunk, err := stream.Recv()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				if validateErr := prompts.ValidateText(vocab.RoleNPCReply, text.String()); validateErr != nil {
+				spoken := spokenText(text.String())
+				if validateErr := prompts.ValidateText(vocab.RoleNPCReply, spoken); validateErr != nil || leaksClue(spoken) {
 					postFailure(ctx, scope, in, effect.UtteranceID, vocab.ErrBadOutput)
 					return
 				}
-				postNarration(ctx, scope, in, effect, "", text.String(), true)
+				postNarration(ctx, scope, in, effect, "", spoken, true)
 				postEvent(ctx, scope, in, domain.LineDone{UtteranceID: effect.UtteranceID})
 				return
 			}

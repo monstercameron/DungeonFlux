@@ -96,11 +96,12 @@ func (e *OutcomeExecutor) consume(ctx context.Context, stream ports.TextStream, 
 	for {
 		chunk, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
-			if validateErr := prompts.ValidateText(effect.Role, text.String()); validateErr != nil {
+			spoken := spokenText(text.String())
+			if validateErr := prompts.ValidateText(effect.Role, spoken); validateErr != nil {
 				postFailure(ctx, scope, in, effect.UtteranceID, vocab.ErrBadOutput)
 				return
 			}
-			postNarration(ctx, scope, in, effect, "", text.String(), true)
+			postNarration(ctx, scope, in, effect, "", spoken, true)
 			postEvent(ctx, scope, in, domain.LineDone{UtteranceID: effect.UtteranceID})
 			return
 		}

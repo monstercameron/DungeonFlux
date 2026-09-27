@@ -76,11 +76,12 @@ func (e *OpeningExecutor) Execute(ctx context.Context, effect domain.StartLine, 
 	for {
 		chunk, recvErr := stream.Recv()
 		if errors.Is(recvErr, io.EOF) {
-			if err := prompts.ValidateText(vocab.RoleOpening, text.String()); err != nil {
+			spoken := spokenText(text.String())
+			if err := prompts.ValidateText(vocab.RoleOpening, spoken); err != nil {
 				postLineFailure(ctx, scope, in, effect.UtteranceID, vocab.ErrBadOutput)
 				return
 			}
-			postNarration(ctx, scope, in, effect, "", text.String(), true)
+			postNarration(ctx, scope, in, effect, "", spoken, true)
 			post(ctx, in, scope, domain.LineDone{UtteranceID: effect.UtteranceID})
 			return
 		}
