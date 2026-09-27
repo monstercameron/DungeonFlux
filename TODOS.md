@@ -2358,6 +2358,30 @@ The developer explicitly authorized reviewing, fixing, and safely merging the op
   done when: spec/runtime gaps and contradictory combat timing are documented; only a coherent, validated proposal is merged.
   status: claimed Codex 2026-09-27
 
+- [ ] REVIEW-005 · Finalize integration against the latest PR heads
+  why: PR 7 merged the current main during review; its current head must be included and the reviewed commits need an accurate completion ledger.
+  lane: ORCH (Codex) · paths: `TODOS.md`, `artifacts/test/PR-REVIEW/**` · depends: REVIEW-001, REVIEW-002, REVIEW-003, REVIEW-004
+  done when: latest PR heads are ancestors of the validated integration; PR 1 blockers and verification evidence are recorded.
+  status: claimed Codex 2026-09-27
+
+- [ ] REVIEW-006 · Release canceled audio debug counters
+  why: Canceled utterances never receive final frames, leaving debug counters retained for the page lifetime.
+  lane: L-WEB-SHELL · paths: `web/shell/audio/debuglog.go`, `web/shell/audio/debuglog_test.go` · depends: REVIEW-002
+  done when: single and global cancellation clear only the appropriate counters; audio gate passes.
+  status: claimed Codex 2026-09-27
+
+- [ ] REVIEW-007 · Wait for Windows executable cleanup after supervisor tests
+  why: The full gate intermittently fails deleting a copied child executable after Process.Wait has completed.
+  lane: L-OPS · paths: `scripts/devserver/supervisor_test.go` · depends: none
+  done when: test cleanup stops owned children and retries temporary executable deletion within a bounded deadline, failing if the file remains locked; supervisor and full gates pass.
+  status: claimed Codex 2026-09-27
+
+- [ ] REVIEW-008 · Keep dfctl restart test output inside its temporary directory
+  why: The restart test writes debug-combat.json into the package directory on every gate run.
+  lane: L-OPS · paths: `cmd/dfctl/goto_test.go` · depends: none
+  done when: restart configuration assertions still pass and all generated files are isolated under t.TempDir; dfctl gate passes.
+  status: claimed Codex 2026-09-27
+
 ## 22. Splat battlefield
 
 - [x] API-025 · Replay prepared billboard assets through authenticated dfctl events
