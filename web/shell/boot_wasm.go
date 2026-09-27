@@ -23,6 +23,7 @@ func main() {
 		registerBootErrorRoutes(parseRouter, err)
 	} else {
 		registerRoutes(parseRouter, client)
+		installResyncTriggers(client)
 	}
 	parseRouter.Mount("#app")
 	installBrowserAssets(context.Background(), client)

@@ -1691,6 +1691,27 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   done when: /preview and direct fixtures load through the normal server, fresh art updates without reload, no live game connection in static fixtures; tests and gate green.
   status: done ae597d1
 
+- [x] EMK-001 · phones resubscribe after sleep, app switch, or a dead connection
+  why: Dennis's 2026-09-27 review #32/#27: phones went stale and stayed on an old screen until reloaded. Reproduced: a phone offline while the host advanced kept an open WebSocket that had lost the updates, and showed the creation screen for 30+ s after reconnecting.
+  lane: ORCH (emmaka) · paths: `web/shell/client.go`, `web/shell/client_resync*.go`, `web/shell/resync_wasm.go`, `web/shell/boot_wasm.go` · depends: WEB-002
+  note: EMK-* IDs are this branch's todos (emmaka), numbered apart from main's lanes so they never collide; this one was committed as WEB-025 in 0fdc351.
+  done when: Resync and a 25 s idle watchdog resubscribe the watch stream without surfacing an error; visibilitychange/online/pageshow trigger it (plus a 1.5 s retry); the offline repro shows the right screen within 2 s; unit tests cover resync and idle.
+  status: done 0fdc351
+  follow-up: the TV (web/dm/mount_wasm.go) and host (web/host/client.go) run their own watch loops without this; see EMK-002.
+  regression (found 2026-09-27 playtest): every joined phone posted a join event every 25 s from the idle resubscribe; fixed by EMK-003 1533aa1.
+
+- [ ] EMK-002 · TV and host watch loops resubscribe like the phone
+  why: web/dm and web/host have separate watch loops that also reconnect only on an error, so a sleeping laptop or a dead connection leaves the TV or host panel stale (Dennis #19 TV lag, #35 stale host phase may share this cause).
+  lane: ORCH (emmaka) · paths: `web/dm/mount_wasm.go`, `web/host/client.go` · depends: EMK-001
+  done when: both loops use the shell client's Resync and idle watchdog (or the same mechanism); an offline repro on /dm and /host recovers within 2 s.
+  status: open
+
+- [x] EMK-003 · a watch resubscribe no longer re-posts the phone's join
+  why: The 2026-09-27 Droplet playtest logged a join from every phone every 25 s: the Watch handler called Join on every subscribe, so each resubscribe (EMK-001's idle watchdog) re-announced the seat, stepped the engine and redrew every screen; it also doubled the join at each page load.
+  lane: ORCH (emmaka) · paths: `internal/api/session_watch*.go`, `internal/wire/api_services.go`, `internal/wire/watch_rejoin_test.go` · depends: EMK-001
+  done when: Watch resolves a seated phone token without posting; DM/host/unknown tokens still authenticate via Join; e2e shows 1 join after one Join and three Watch subscriptions; a 60 s idle phone logs 1 join.
+  status: done 1533aa1
+
 ## 19. Phone
 
 - [x] WEB-027 · Clearly distinguish silent visual previews from the live table
@@ -2315,8 +2336,8 @@ The developer explicitly authorized reviewing, fixing, and safely merging the op
 
 - [ ] REVIEW-001 · Integrate PR 7 phone resubscription and complete display reconnection
   why: Sleeping phones and silent Watch streams need recovery without duplicate join events; the PR also identifies TV and host recovery as unfinished.
-  lane: ORCH (Codex) · paths: PR 7 paths plus `web/dm/mount_wasm.go`, `web/host/mount_wasm.go`, `web/shell/**`, `internal/api/session_watch*.go`, `internal/wire/watch_rejoin_test.go` · depends: PLAN-022
-  done when: PR 7 diff and regression fix are reviewed; reconnect tests and relevant gates pass on the integrated tree; TV/host follow-up is resolved or explicitly tracked.
+  lane: ORCH (Codex) · paths: PR 7 paths plus `web/dm/mount_wasm.go`, `web/host/mount_wasm.go`, `web/host/client*.go`, `web/shell/**`, `internal/api/session_watch*.go`, `internal/wire/watch_rejoin_test.go` · depends: PLAN-022
+  done when: PR 7 diff and regression fix are reviewed; reconnect tests and relevant gates pass on the integrated tree; TV/host follow-up is resolved; the manifest composition regression uses self-contained image fixtures in isolated checkouts.
   status: claimed Codex 2026-09-27
 
 - [ ] REVIEW-002 · Integrate PR 6 microphone lifetime and resolve UI conflicts
