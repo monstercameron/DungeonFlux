@@ -124,7 +124,14 @@ message Clip { string url = 1; int64 offset_ms = 2; bool playing = 3; string the
 message Layer { string id = 1; string url = 2; float x = 3; float y = 4; float scale = 5; bool highlight = 6; }
 message Music { string track_id = 1; string url = 2; int64 loop_start_ms = 3; int64 loop_end_ms = 4; int32 bpm = 5; float level = 6; float duck = 7; string cue = 8; }
 message SoundEffect { string id = 1; string url = 2; }
-message BuildCard { int32 player_number = 1; string name = 2; string class_name = 3; string portrait_url = 4; }
+message BuildCard {
+  int32 player_number = 1;
+  string name = 2;
+  string class_name = 3;
+  string portrait_url = 4;
+  Character character = 5;
+  bool ready = 6;
+}
 message Shot { string id = 1; bool fallback = 2; }
 message LobbySeat {
   string seat_id = 1;

@@ -161,7 +161,7 @@ func projectLobbySeats(seats []domain.SeatView) []*df.LobbySeat {
 			Name:         name,
 			Joined:       seat.Connected,
 			Locale:       seat.Locale,
-			Ready:        seat.Build != nil || seat.Character != nil,
+			Ready:        seatReady(seat),
 		})
 	}
 	return out
@@ -315,7 +315,7 @@ func phoneStatus(view domain.View, seat domain.SeatView) string {
 		return "Waiting for the host"
 	case vocab.StateCreation:
 		if seat.Character == nil {
-			return "Choose a species and gender"
+			return "Choose a species, gender, and class"
 		}
 		return "Your hero is ready to lock in"
 	case vocab.StateOpening:
@@ -348,11 +348,14 @@ func projectBuildCards(seats []domain.SeatView) []*df.BuildCard {
 			continue
 		}
 		species, gender := "", ""
+		character := projectCharacter(seat.Character)
 		if seat.Character != nil {
 			species, gender = seat.Character.Species, seat.Character.Gender
+			character.Build = projectCharacterBuild(seat.Character, seat.Build)
+			character.Locked = seatReady(seat)
 		}
 		out = append(out, &df.BuildCard{PlayerNumber: int32(seat.Build.PlayerNumber), Name: seat.Build.Name,
-			ClassName: seat.Build.Class, PortraitUrl: heroPortrait(string(seat.Build.Portrait), species, gender)})
+			ClassName: seat.Build.Class, PortraitUrl: heroPortrait(string(seat.Build.Portrait), species, gender), Character: character, Ready: seatReady(seat)})
 	}
 	return out
 }

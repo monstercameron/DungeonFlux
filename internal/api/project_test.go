@@ -145,7 +145,7 @@ func TestProjectPhone_StatusFallbackFollowsPhase(t *testing.T) {
 		want  string
 	}{
 		{name: "lobby", phase: vocab.StateLobby, want: "Waiting for the host"},
-		{name: "creation", phase: vocab.StateCreation, want: "Choose a species and gender"},
+		{name: "creation", phase: vocab.StateCreation, want: "Choose a species, gender, and class"},
 		{name: "opening", phase: vocab.StateOpening, want: "The story is beginning"},
 		{name: "check", phase: vocab.StateCheck, want: "The engine is rolling your Persuasion"},
 		{name: "combat", phase: vocab.StateCombat, want: "Choose your combat move"},
