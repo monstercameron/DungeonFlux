@@ -61,6 +61,7 @@ func baseView() *dungeonfluxv1.DMView {
 func lobbyPreview() *dungeonfluxv1.ScreenState {
 	view := baseView()
 	view.Callout = "ROOM: FLUX"
+	view.Lobby = &dungeonfluxv1.Lobby{RoomCode: "FLUX", JoinUrl: "/p?room=FLUX"}
 	return state("lobby", view)
 }
 
