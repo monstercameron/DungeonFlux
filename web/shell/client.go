@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/url"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -35,6 +36,9 @@ type Client struct {
 	conn         *grpc.ClientConn
 	session      sessionClient
 	playerNumber atomic.Int32
+	resyncMu     sync.Mutex
+	resyncC      chan struct{}
+	idleResync   time.Duration
 }
 
 type sessionClient interface {
@@ -131,13 +135,23 @@ func (c *Client) watchLoop(ctx context.Context, request *dungeonfluxv1.WatchRequ
 	defer close(results)
 	delay := minWatchRetry
 	for ctx.Err() == nil {
-		stream, err := c.session.Watch(ctx, request)
+		streamCtx, cancelStream := context.WithCancel(ctx)
+		received := make(chan struct{}, 1)
+		kicked := c.superviseStream(streamCtx, cancelStream, received)
+		stream, err := c.session.Watch(streamCtx, request)
 		if err == nil {
 			delay = minWatchRetry
-			err = c.receiveWatch(ctx, stream, results)
+			err = c.receiveWatch(streamCtx, stream, results, received)
 		}
+		cancelStream()
 		if ctx.Err() != nil {
 			return
+		}
+		if kicked.Load() {
+			// A resync or the idle watchdog dropped the stream on purpose:
+			// resubscribe now and let the replayed snapshot correct the screen.
+			delay = minWatchRetry
+			continue
 		}
 		if err != nil {
 			if !sendWatchResult(ctx, results, WatchResult{Err: err}) {
@@ -154,11 +168,15 @@ func (c *Client) watchLoop(ctx context.Context, request *dungeonfluxv1.WatchRequ
 	}
 }
 
-func (c *Client) receiveWatch(ctx context.Context, stream grpc.ServerStreamingClient[dungeonfluxv1.WatchMessage], results chan<- WatchResult) error {
+func (c *Client) receiveWatch(ctx context.Context, stream grpc.ServerStreamingClient[dungeonfluxv1.WatchMessage], results chan<- WatchResult, received chan<- struct{}) error {
 	for ctx.Err() == nil {
 		message, err := stream.Recv()
 		if err != nil {
 			return err
+		}
+		select {
+		case received <- struct{}{}:
+		default:
 		}
 		if !sendWatchResult(ctx, results, WatchResult{Message: message}) {
 			return ctx.Err()
