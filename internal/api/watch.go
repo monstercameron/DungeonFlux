@@ -3,8 +3,10 @@ package api
 import (
 	"context"
 	"sync"
+	"time"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
+	"github.com/monstercameron/DungeonFlux/internal/clock"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 )
 
@@ -20,6 +22,8 @@ type WatchHub struct {
 	// a client that connects to an idle room still gets its first snapshot.
 	latest    domain.View
 	hasLatest bool
+	clock     clock.Clock
+	published time.Time
 }
 
 type watchSubscriber struct {
@@ -35,7 +39,7 @@ type watchSubscriber struct {
 
 // NewWatchHub creates an empty snapshot hub.
 func NewWatchHub() *WatchHub {
-	return &WatchHub{subs: make(map[uint64]*watchSubscriber), kinds: make(map[domain.SeatID]df.ClientKind), locales: make(map[domain.SeatID]string)}
+	return &WatchHub{subs: make(map[uint64]*watchSubscriber), kinds: make(map[domain.SeatID]df.ClientKind), locales: make(map[domain.SeatID]string), clock: clock.Real{}}
 }
 
 // RememberLocale records the settled locale for a seat. Views published
@@ -86,7 +90,7 @@ func (h *WatchHub) Subscribe(ctx context.Context, kind df.ClientKind, seat domai
 	sub := &watchSubscriber{hub: h, id: h.next, kind: kind, seat: seat, queue: make(chan domain.View, 1), output: make(chan *df.WatchMessage, 1), done: make(chan struct{})}
 	h.subs[sub.id] = sub
 	if h.hasLatest {
-		sub.queue <- h.latest.DeepCopy()
+		sub.queue <- h.reconnectView()
 	}
 	h.mu.Unlock()
 	go sub.send(ctx)
@@ -99,6 +103,7 @@ func (h *WatchHub) Publish(view domain.View) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.latest, h.hasLatest = view.DeepCopy(), true
+	h.published = h.clock.Now()
 	for _, sub := range h.subs {
 		if sub.closed {
 			continue
