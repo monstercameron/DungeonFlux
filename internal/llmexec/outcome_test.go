@@ -68,7 +68,7 @@ func TestOutcome_Execute_streamsNarrationAndCompletes(t *testing.T) {
 }
 
 func TestOutcome_Execute_failures(t *testing.T) {
-	overlong := strings.Repeat("word ", 30)
+	overlong := strings.Repeat("word ", 31)
 	cases := []struct {
 		name string
 		llm  *fakes.FakeLLM
