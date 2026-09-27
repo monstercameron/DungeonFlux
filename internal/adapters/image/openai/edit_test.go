@@ -84,3 +84,28 @@ func TestAdapter_GenerateWithReferencesPostsEditAndParsesImage(t *testing.T) {
 func base64Fixture() string {
 	return "iVBORw0KGgo="
 }
+
+func TestBuildReferenceEditRequest_LabelsEachReferenceWithItsImageType(t *testing.T) {
+	pngData := []byte("\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR")
+	jpegData := []byte("\xff\xd8\xff\xe0\x00\x10JFIF\x00")
+	webpData := []byte("RIFF\x00\x00\x00\x00WEBPVP8 ")
+	body, contentType, err := buildReferenceEditRequest(ports.ImageRequest{Prompt: "keep outfit"}, [][]byte{pngData, jpegData, webpData})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reader := multipart.NewReader(bytes.NewReader(body), strings.TrimPrefix(contentType, "multipart/form-data; boundary="))
+	var got []string
+	for {
+		part, err := reader.NextPart()
+		if err != nil {
+			break
+		}
+		if part.FormName() == "image[]" {
+			got = append(got, part.Header.Get("Content-Type")+" "+part.FileName())
+		}
+	}
+	want := []string{"image/png reference-0.png", "image/jpeg reference-1.jpg", "image/webp reference-2.webp"}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("reference parts = %v, want %v (the edits endpoint rejects application/octet-stream)", got, want)
+	}
+}

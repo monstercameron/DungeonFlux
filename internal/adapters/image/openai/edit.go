@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"strings"
 
 	"github.com/monstercameron/DungeonFlux/internal/httpx"
@@ -69,7 +70,13 @@ func buildReferenceEditRequest(req ports.ImageRequest, references [][]byte) ([]b
 		if len(data) == 0 {
 			return nil, "", fmt.Errorf("reference image %d is empty", index)
 		}
-		part, err := writer.CreateFormFile("image[]", fmt.Sprintf("reference-%d.png", index))
+		// CreateFormFile labels every part application/octet-stream, which the
+		// edits endpoint rejects; it accepts only image/png, jpeg and webp.
+		kind := http.DetectContentType(data)
+		header := make(textproto.MIMEHeader)
+		header.Set("Content-Disposition", fmt.Sprintf(`form-data; name="image[]"; filename="reference-%d%s"`, index, referenceExtension(kind)))
+		header.Set("Content-Type", kind)
+		part, err := writer.CreatePart(header)
 		if err != nil {
 			return nil, "", fmt.Errorf("create reference image %d: %w", index, err)
 		}
@@ -81,6 +88,16 @@ func buildReferenceEditRequest(req ports.ImageRequest, references [][]byte) ([]b
 		return nil, "", fmt.Errorf("close reference request: %w", err)
 	}
 	return body.Bytes(), writer.FormDataContentType(), nil
+}
+
+func referenceExtension(kind string) string {
+	switch kind {
+	case "image/jpeg":
+		return ".jpg"
+	case "image/webp":
+		return ".webp"
+	}
+	return ".png"
 }
 
 var _ interface {
