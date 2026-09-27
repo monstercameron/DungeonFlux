@@ -187,6 +187,12 @@ The skeleton everything else builds in: module, pinned tools, gate script, CI, a
   done when: scripts/env.ps1 dot-sources .env into the current PowerShell process (KEY=VALUE, # comments, no echo of values); the supervisor reads .env and passes DF_* keys only in the child's environment; .env.example lists every DF_* variable with empty values and one-line purposes; no value is ever logged or printed; tests use a temp .env with fake values.
   status: committed be314be
 
+- [x] REPO-018 · generate the dfctl debug token when DF_DEBUG_TOKEN is unset
+  why: A local run with config/fake.json exited with "DF_DEBUG_TOKEN is required when server.debug=true" although the README says the fake config needs no keys; the README also pointed dfctl at port 19446 instead of 9446.
+  lane: ORCH · paths: `internal/wire/debug_token*.go`, `internal/wire/wire.go`, `README.md` · depends: REPO-016
+  done when: with DF_DEBUG_TOKEN unset the server writes a crypto/rand token to <data-dir>/debug.token (0600, never logged) and dfctl state works with it; a set DF_DEBUG_TOKEN is used unchanged and writes no file; tests cover both.
+  status: done a5d461a
+
 ## 2. Contracts
 
 The shared vocabulary, domain types, ports, and protobuf API every lane codes against. ORCH writes these first; lanes that need only vocab/domain start at 0:45.
@@ -1610,6 +1616,12 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   lane: L-WEB-SHELL · paths: `web/shell/assets*.go` · depends: DM-033, WEB-022
   done when: scheduleAssetRouteRefresh also calls dm.ArtChanged(); verified live with a fresh /dm load straight into opening, dialogue and end, each showing its background without a reload.
   status: open
+
+- [x] WEB-024 · stop the router's per-render view transitions
+  why: GoWebComponents v6 wraps every route render in document.startViewTransition; Watch updates re-render faster than a transition completes, so /dm and /p logged about 50 unhandled "Transition was skipped" page errors every 8 s.
+  lane: ORCH · paths: `web/shell/boot_wasm.go` · depends: WEB-001
+  done when: the router is created with view transitions off; a headless load of /dm, /p, and /host logs no "Transition was skipped" error.
+  status: done c6cd079
 
 ## 19. Phone
 
