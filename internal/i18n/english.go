@@ -222,6 +222,10 @@ func EnglishEntries() map[string]Entry {
 		"dm.clip_label":    {Text: "DungeonFlux scene clip"},
 		"dm.end_title":     {Text: "The bell remembers."},
 		"dm.end_subtitle":  {Text: "Thank you for playing DungeonFlux."},
+		"dm.end_header":    {Text: "The tale continues"},
+		"dm.end_hook":      {Text: "Midnight has tolled, and whoever rang the bell already knows your names."},
+		"dm.end_party":     {Text: "The heroes of this tale"},
+		"dm.end_next":      {Text: "The host can begin a new tale."},
 
 		"host.title":       {Text: "DungeonFlux Host"},
 		"host.run":         {Text: "Run status"},
