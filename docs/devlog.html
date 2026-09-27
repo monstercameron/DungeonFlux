@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-persistent-hero-billboards">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-persistent-hero-billboards">Prepared battle heroes survive new runs</a></h2>
+  <p>The reference-conditioned paladin and rogue loops existed on disk but were attached through debug asset events. The billboard hub correctly discarded those per-run events at reset, leaving new rooms with pixel stand-ins. Five existing four-second clips now live in the permanent build-time manifest and asset store. Startup verifies their SHA-256 hashes before registering them. Combat selects these defaults by hero class and battlefield scene, independently of seat order; live hero results take precedence. Reset clears live identity state while retaining the prepared catalogue. Offline tests cover new runs, swapped seats, wrong scenes, missing and corrupt assets, and live overrides. The wire gate passed. A fresh live room and a DM reload both displayed the generated heroes at their engine cells with the existing color grade and tilt shift. No vendor calls or additional generation spend were needed. These prepared identities cover paladin and rogue; other classes retain their existing fallback path.</p>
+</li>
 <li class="entry" data-kind="issue" id="e-20260927-creation-fallback-sheets">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-creation-fallback-sheets">Creation deadlines now publish complete heroes</a></h2>

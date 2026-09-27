@@ -23,6 +23,7 @@ type billboardHub struct {
 	perRunUSD float64
 	sceneID   string
 	thrall    map[string]string
+	prepared  map[string]map[string]string
 	refs      map[domain.SeatID]media.ReferenceAssets
 	classes   map[domain.SeatID]string
 	started   map[domain.SeatID]domain.AssetID
@@ -43,6 +44,7 @@ func newBillboardHub(cfg config.Config, oneShotCatalogue []domain.Asset, sceneUR
 		perRunUSD: cfg.Budget.PerRunUSD,
 		sceneID:   sceneID(sceneURL),
 		thrall:    thrallClips(oneShotCatalogue),
+		prepared:  preparedHeroClips(oneShotCatalogue, sceneURL),
 	}
 	hub.still = func() ([]byte, error) {
 		return loadManifestAsset(manifestPath(), levelStillName(hub.sceneID, "tactical"))
@@ -80,7 +82,8 @@ func thrallClips(catalogue []domain.Asset) map[string]string {
 }
 
 // reset starts a new run: loops of the previous run are cancelled and
-// forgotten, and the per-run fal cap starts again.
+// forgotten, and the per-run fal cap starts again. Prepared catalogue loops
+// remain available for the matching hero class and battlefield.
 func (h *billboardHub) reset() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -241,5 +244,12 @@ func (h *billboardHub) clipsFor(token domain.TokenView) map[string]string {
 	if _, err := fmt.Sscanf(string(token.ID), "pc-%d", &seat); err != nil {
 		return nil
 	}
-	return h.clips[seat]
+	clips := make(map[string]string)
+	for action, url := range h.preparedClipsFor(token) {
+		clips[action] = url
+	}
+	for action, url := range h.clips[seat] {
+		clips[action] = url
+	}
+	return clips
 }

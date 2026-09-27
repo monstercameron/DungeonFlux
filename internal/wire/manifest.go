@@ -67,6 +67,7 @@ func LoadManifest(path string, logger *slog.Logger) (ManifestResult, error) {
 	}
 	applyManifest(&story, manifest, filepath.Dir(path), logger)
 	applyKillcams(&story, manifest, filepath.Dir(path))
+	applyPreparedBillboards(&story, manifest, filepath.Dir(path))
 	return ManifestResult{OneShot: story, Hash: hex.EncodeToString(digest[:])}, nil
 }
 
