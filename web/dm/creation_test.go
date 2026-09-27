@@ -14,7 +14,7 @@ func TestCreationModelFromView_ProjectsPicksAndBuilds(t *testing.T) {
 		BuildCards: []*dungeonfluxv1.BuildCard{{PlayerNumber: 2, Name: "Rook", ClassName: "Paladin", PortraitUrl: "rook.png"}},
 	}
 	model := CreationModelFromView(view)
-	if model.Seats[0].Species != "elf" || model.Seats[0].Gender != "female" || model.Seats[0].Class != "rogue" || model.Seats[0].ClassCrestURL != "" || model.Seats[0].Status != "Ready to roll" {
+	if model.Seats[0].Species != "Elf" || model.Seats[0].Gender != "Female" || model.Seats[0].Class != "Rogue" || model.Seats[0].ClassCrestURL != "" || model.Seats[0].Status != "Ready to roll" {
 		t.Fatalf("seat 1 = %#v", model.Seats[0])
 	}
 	if !model.Seats[1].Ready || model.Seats[1].Name != "Rook" || model.Seats[1].Class != "Paladin" {
@@ -32,7 +32,7 @@ func TestCreationModelFromView_NilHasPhonePrompt(t *testing.T) {
 func TestCreationModelFromView_ClassChoiceIsVisibleBeforeRoll(t *testing.T) {
 	model := CreationModelFromView(&dungeonfluxv1.DMView{Callout: "creation seat=2 class=wizard"})
 	seat := model.Seats[1]
-	if seat.Class != "wizard" || seat.Status != "Choice received" || seat.Ready {
+	if seat.Class != "Wizard" || seat.Status != "Choice received" || seat.Ready {
 		t.Fatalf("seat = %#v", seat)
 	}
 }

@@ -94,7 +94,7 @@ func TestLobbyStatus_ReflectsWaitingAndReadyStates(t *testing.T) {
 	}
 	model.Seats[0] = Seat{Number: 1, Joined: true, Ready: true}
 	model.Seats[1] = Seat{Number: 2, Joined: true, Ready: true}
-	if got := LobbyStatus(model); got != "Ready — the host can start" {
+	if got := LobbyStatus(model); got != "Begin the tale" {
 		t.Fatalf("ready status = %q", got)
 	}
 }

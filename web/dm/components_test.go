@@ -29,7 +29,7 @@ func TestCanvasScale_InvalidViewportUsesUnitScale(t *testing.T) {
 }
 
 func TestSpacedRoomCode_SeparatesEveryCharacter(t *testing.T) {
-	if got := SpacedRoomCode(" df-fake "); got != "D F - F A K E" {
+	if got := SpacedRoomCode(" df-fake "); got != "D F  -  F A K E" {
 		t.Fatalf("spaced code = %q", got)
 	}
 	if got := SpacedRoomCode(" "); got != "—" {
