@@ -47,13 +47,25 @@ func SelectLayers(state *dungeonfluxv1.ScreenState) []Layer {
 	case "creation":
 		return []Layer{LayerCreation, LayerMusic}
 	case "opening":
-		return []Layer{LayerScene, LayerClip, LayerMusic}
+		// The establishing shot is not always wired to a playable clip asset
+		// (DMView.Clip is only populated for the hook and cliffhanger beats);
+		// mounting LayerClip without one draws an opaque fallback still over
+		// the whole stage and hides the scene's title card, party rail and DM
+		// narration underneath it. Only add the clip surface when there is
+		// clip data for it to show.
+		if hasClip(state.GetDm()) {
+			return []Layer{LayerScene, LayerClip, LayerMusic}
+		}
+		return []Layer{LayerScene, LayerMusic}
 	case "exploration", "conversation", "check", "resolution":
 		layers := []Layer{LayerScene, LayerMusic}
 		if phase == "exploration" && state.GetDm() != nil {
 			layers = []Layer{LayerScene, LayerHUD, LayerMusic}
 		}
-		if phase == "check" || phase == "resolution" {
+		if phase == "check" {
+			// Resolution narrates the outcome through Mother Vell's line on
+			// the scene caption; keeping the roll card mounted here covered
+			// that narration with the dice layer's result panel.
 			layers = append(layers, LayerDice)
 		}
 		return layers
@@ -68,6 +80,11 @@ func SelectLayers(state *dungeonfluxv1.ScreenState) []Layer {
 	default:
 		return []Layer{LayerLobby}
 	}
+}
+
+// hasClip reports whether a DM view carries a playable establishing clip.
+func hasClip(view *dungeonfluxv1.DMView) bool {
+	return view != nil && view.GetClip() != nil && strings.TrimSpace(view.GetClip().GetUrl()) != ""
 }
 
 // PhaseName returns a normalized phase name suitable for CSS state classes.

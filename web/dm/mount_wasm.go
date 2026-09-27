@@ -380,6 +380,8 @@ func layerZIndex(layer Layer) string {
 		return "50"
 	case LayerScene:
 		return "10"
+	case LayerHUD:
+		return "15"
 	default:
 		return "1"
 	}

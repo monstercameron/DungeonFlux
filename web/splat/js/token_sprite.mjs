@@ -6,6 +6,86 @@ const WIDTH_RATIO = 0.72;
 const PIXEL_WIDTH = 64;
 const PIXEL_HEIGHT = 80;
 
+// Token base (DM-038 / R1-COMBAT): a soft ring underfoot so a pixel stand-in
+// or a not-yet-arrived clip still reads as a placed combatant rather than a
+// floating block. Gold for player and neutral tokens, blood for the enemy,
+// matching the lamplight/blood palette (assets/concept, AGENTS.md).
+const BASE_GOLD = [0.906, 0.761, 0.478];
+const BASE_BLOOD = [0.702, 0.216, 0.184];
+const BASE_VERTEX = `
+attribute vec3 aPosition;
+attribute vec2 aUv0;
+uniform mat4 matrix_model;
+uniform mat4 matrix_viewProjection;
+varying vec2 vUv0;
+void main(void) {
+  vUv0 = aUv0;
+  gl_Position = matrix_viewProjection * matrix_model * vec4(aPosition, 1.0);
+}`;
+const BASE_FRAGMENT = `
+precision highp float;
+uniform vec3 uColor;
+varying vec2 vUv0;
+void main(void) {
+  float dist = length(vUv0 - vec2(0.5)) * 2.0;
+  float ring = 1.0 - smoothstep(0.62, 0.82, dist);
+  float ringEdge = smoothstep(0.5, 0.62, dist) * (1.0 - smoothstep(0.82, 0.92, dist));
+  float fill = (1.0 - smoothstep(0.0, 0.6, dist)) * 0.22;
+  float alpha = clamp(max(fill, ringEdge * 0.85), 0.0, 0.85) * ring + ringEdge * 0.85;
+  if (dist > 0.92) discard;
+  gl_FragColor = vec4(uColor, clamp(alpha, 0.0, 0.85));
+}`;
+
+function makeBaseMesh(pc, app) {
+  const mesh = new pc.Mesh(app.graphicsDevice);
+  mesh.setPositions([-0.5, 0, -0.5, 0.5, 0, -0.5, 0.5, 0, 0.5, -0.5, 0, 0.5]);
+  mesh.setNormals([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]);
+  mesh.setUvs(0, [0, 0, 1, 0, 1, 1, 0, 1]);
+  mesh.setIndices([0, 1, 2, 0, 2, 3]);
+  mesh.update();
+  return mesh;
+}
+
+const BASE_DIAMETER_RATIO = 1.5;
+const BASE_LIFT_M = 0.015;
+
+/**
+ * createTokenBase makes a flat gold/blood disc that sits under a token's
+ * feet. It is its own top-level entity (never a child of the sprite's own
+ * non-uniformly scaled, yaw-billboarded entity, which would skew a naive
+ * child disc): the sprite's faceCamera keeps it positioned at
+ * (sprite x, ground y, sprite z) every time the sprite itself moves, and it
+ * carries no rotation of its own, so it always reads as a flat ring on the
+ * ground regardless of the sprite's facing.
+ */
+function createTokenBase(pc, app, { role, layer, diameter }) {
+  const mesh = makeBaseMesh(pc, app);
+  const material = new pc.ShaderMaterial({
+    uniqueName: "df-token-base",
+    vertexGLSL: BASE_VERTEX,
+    fragmentGLSL: BASE_FRAGMENT,
+    attributes: { aPosition: pc.SEMANTIC_POSITION, aUv0: pc.SEMANTIC_TEXCOORD0 },
+  });
+  material.setParameter("uColor", role === "enemy" ? BASE_BLOOD : BASE_GOLD);
+  material.blendType = pc.BLEND_NORMAL;
+  material.depthWrite = false;
+  material.depthTest = true;
+  material.cull = pc.CULLFACE_NONE;
+  material.update();
+  const instance = new pc.MeshInstance(mesh, material);
+  const entity = new pc.Entity("df-token-base");
+  entity.addComponent("render", { meshInstances: [instance], layers: [layer ?? pc.LAYERID_WORLD] });
+  entity.setLocalScale(diameter, 1, diameter);
+  app.root.addChild(entity);
+  let destroyed = false;
+  return {
+    entity, mesh, material,
+    /** placeUnder moves the disc to the ground point under a sprite whose feet sit at `groundY`. */
+    placeUnder(x, groundY, z) { if (!destroyed) entity.setLocalPosition(x, groundY + BASE_LIFT_M, z); },
+    destroy() { if (destroyed) return; destroyed = true; entity.destroy(); mesh.destroy(); material.destroy(); },
+  };
+}
+
 const ROLE_ALIASES = Object.freeze({
   player: "player", pc: "player", hero: "player",
   enemy: "enemy", villain: "enemy", thrall: "enemy", monster: "enemy",
@@ -123,17 +203,22 @@ export function createTokenSprite({ pc, app, token, layer } = {}) {
   entity.setLocalScale(width, height, 1);
   entity.setLocalPosition(0, height / 2, 0);
   app.root.addChild(entity);
+  const base = createTokenBase(pc, app, { role, layer, diameter: width * BASE_DIAMETER_RATIO });
+  base.placeUnder(0, 0, 0);
   let destroyed = false;
   const faceCamera = (camera) => {
-    if (destroyed || !camera) return;
-    const at = entity.getPosition(), eye = camera.getPosition();
+    if (destroyed) return;
+    const at = entity.getPosition?.();
+    if (at) base.placeUnder(at.x, at.y - height / 2, at.z);
+    if (!camera || !at) return;
+    const eye = camera.getPosition();
     const dx = eye.x - at.x, dz = eye.z - at.z;
     if (Math.abs(dx) + Math.abs(dz) > 1e-5) entity.setEulerAngles(0, Math.atan2(dx, dz) * 180 / Math.PI, 0);
   };
   const destroy = () => {
     if (destroyed) return;
     destroyed = true;
-    entity.destroy(); mesh.destroy(); texture.destroy(); material.destroy();
+    entity.destroy(); mesh.destroy(); texture.destroy(); material.destroy(); base.destroy();
   };
   return { entity, height, width, role, material, mesh, texture, canvas, faceCamera, destroy, video: false };
 }
@@ -183,6 +268,8 @@ function createClipSprite({ pc, app, token, layer }) {
   // Reported height excludes the margin under the feet, so the controller's
   // "centre = ground + height / 2" placement puts the feet on the ground.
   const height = quadHeight * (1 - 2 * CLIP_FEET);
+  const base = createTokenBase(pc, app, { role: roleForToken(token), layer, diameter: width * BASE_DIAMETER_RATIO });
+  base.placeUnder(0, 0, 0);
   let destroyed = false, current = { url: "" }, clips = { ...(token?.clips ?? {}) }, paused = false;
   const play = () => { if (!paused && !destroyed) video.play()?.catch?.(() => {}); };
   const show = (anim) => {
@@ -196,8 +283,11 @@ function createClipSprite({ pc, app, token, layer }) {
   video.addEventListener("ended", () => { if (!current.hold) show("idle"); });
   show(token?.anim);
   const faceCamera = (camera) => {
-    if (destroyed || !camera) return;
-    const at = entity.getPosition(), eye = camera.getPosition();
+    if (destroyed) return;
+    const at = entity.getPosition?.();
+    if (at) base.placeUnder(at.x, at.y - height / 2, at.z);
+    if (!camera || !at) return;
+    const eye = camera.getPosition();
     const dx = eye.x - at.x, dz = eye.z - at.z;
     if (Math.abs(dx) + Math.abs(dz) > 1e-5) entity.setEulerAngles(0, Math.atan2(dx, dz) * 180 / Math.PI, 0);
   };
@@ -217,7 +307,7 @@ function createClipSprite({ pc, app, token, layer }) {
       if (destroyed) return;
       destroyed = true;
       video.pause(); video.removeAttribute("src"); video.load();
-      entity.destroy(); mesh.destroy(); texture.destroy(); material.destroy();
+      entity.destroy(); mesh.destroy(); texture.destroy(); material.destroy(); base.destroy();
     },
   };
 }

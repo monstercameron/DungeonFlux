@@ -56,7 +56,7 @@ func CombatComponent(view *dungeonfluxv1.DMView, sequence ...uint64) router.Comp
 		} else if !model.UseSplat {
 			children = append(children, fallback...)
 		}
-		hud := []ui.Node{combatVignette(), combatPartyRail(model), combatEnemyCard(model), combatTimer(model.Timer), combatTopTitle(locale, model), combatActionBar()}
+		hud := []ui.Node{combatVignette(), combatPartyRail(model), combatEnemyCard(model), combatTimer(model.Timer), combatTopTitle(locale, model), combatInitiativeStrip(locale, model), combatActionBar()}
 		children = append(children, html.Div(html.Props{Style: map[string]string{"position": "absolute", "inset": "0", "z-index": "2", "pointer-events": "none"}}, hud...))
 		return html.Section(html.Props{Class: "df-dm-combat", Role: "img", Aria: map[string]string{"label": T(locale, "dm.combat_label", nil)}, Style: map[string]string{"position": "relative", "width": "100%", "height": "100%", "overflow": "hidden"}},
 			html.Div(html.Props{Class: "df-dm-combat-stage", Style: combatStageStyle(model)}, children...),
@@ -65,7 +65,7 @@ func CombatComponent(view *dungeonfluxv1.DMView, sequence ...uint64) router.Comp
 }
 
 func combatStageStyle(model CombatModel) map[string]string {
-	style := map[string]string{"position": "relative", "width": "100%", "height": "100%", "background": "radial-gradient(circle at 50% 45%,#27303b,#0d1118 76%)", "background-size": "cover", "background-position": "center", "filter": "saturate(.94) contrast(1.05)"}
+	style := map[string]string{"position": "relative", "width": "100%", "height": "100%", "background-image": "radial-gradient(circle at 50% 45%,#27303b,#0d1118 76%)", "background-size": "cover", "background-position": "center", "filter": "saturate(.94) contrast(1.05)"}
 	if imageURL := combatImageURL(model); imageURL != "" {
 		style["background-image"] = "linear-gradient(180deg,rgba(7,10,15,.08),rgba(7,10,15,.52)),url('" + imageURL + "')"
 	}
@@ -79,6 +79,33 @@ func combatTopTitle(locale string, model CombatModel) ui.Node {
 		html.Div(html.Props{Style: map[string]string{"color": "#efe6d2", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "27px"}}, ui.Text(combatBanner(model))),
 		html.Span(html.Props{Hidden: locale == "", Style: map[string]string{"display": "none"}}, ui.Text(locale)),
 	)
+}
+
+// combatInitiativeStrip shows the fixed turn order with portraits (DM-038):
+// the server already sends it (View.turn_order), this was simply never drawn.
+func combatInitiativeStrip(locale string, model CombatModel) ui.Node {
+	if len(model.TurnOrder) == 0 {
+		return html.Div(html.Props{Hidden: true})
+	}
+	items := make([]ui.Node, 0, len(model.TurnOrder)+1)
+	items = append(items, html.Span(html.Props{Style: map[string]string{"color": "#e7c27a", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "16px", "letter-spacing": ".08em", "text-transform": "uppercase", "margin-right": "6px"}}, ui.Text(T(locale, "ui.dm.round", map[string]string{"round": strconv.Itoa(int(model.Round))}))))
+	for _, turn := range model.TurnOrder {
+		portrait := artSrc(turn.Portrait)
+		if portrait == "" {
+			portrait = artSrc("ui/logo_emblem")
+		}
+		ring, opacity := "2px solid rgba(231,194,122,.4)", "1"
+		if turn.Active {
+			ring = "3px solid #e7c27a"
+		}
+		if turn.Done {
+			opacity = ".45"
+		}
+		items = append(items, html.Div(html.Props{Style: map[string]string{"display": "flex", "flex-direction": "column", "align-items": "center", "gap": "3px", "opacity": opacity}},
+			html.Img(html.Props{Src: portrait, Alt: turn.Name, Style: map[string]string{"width": "46px", "height": "46px", "border-radius": "50%", "object-fit": "cover", "border": ring, "box-shadow": "0 4px 10px rgba(0,0,0,.5)"}}),
+		))
+	}
+	return html.Div(html.Props{Class: "df-dm-combat-initiative", Role: "list", Style: map[string]string{"position": "absolute", "left": "460px", "right": "460px", "top": "192px", "display": "flex", "align-items": "center", "justify-content": "center", "gap": "12px", "padding": "8px 18px", "border": "1px solid rgba(184,137,58,.5)", "border-radius": "10px", "background": "rgba(12,18,28,.72)"}}, items...)
 }
 
 func combatGrid(segments []CombatSegment) ui.Node {

@@ -228,8 +228,8 @@
   },
   "registration_note": "Path and adjacent clearing preview uses a visual calibration estimate of 0.4 metres per source unit (2.5 source units per metre, based on architecture/path framing), with automatic collider candidates and terrain-height support on 1.524m logical cells. Physical scan units remain approximate; generated 0.2m occupancy is not a surveyed navigation mesh.",
   "color_grade": {
-    "theme": "forest",
-    "strength": 0.7,
+    "theme": "harbor",
+    "strength": 0.85,
     "enabled": true
   }
 }
