@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="decision" id="e-20260927-timer-checkpoints">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Decision</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-timer-checkpoints">Room retries must restore countdowns as well as game state</a></h2>
+  <p>The CLI checkpoint investigation found that engine replay alone cannot reproduce a saved scene: running timers would retain the abandoned attempt's deadlines, and paused timers would lose their remaining duration. The runtime now captures timer values without retaining clock handles. Restoring replaces every timer instance, preserves pause state, scope and the current pacing policy, and computes fresh deadlines from the saved remaining time. Repeated restores leave the saved checkpoint unchanged, while callbacks from replaced instances are rejected. Fake-clock tests cover running, paused, non-pausable, overdue and empty checkpoints; the runtime gate passed at 78.6% statement coverage. This is the timer foundation for QA-005. The CLI save/load controller still needs engine replay, work cancellation and result isolation before end-to-end retries are available.</p>
+</li>
 <li class="entry" data-kind="issue" id="e-20260927-reload-ready-recovery">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-reload-ready-recovery">Development reload waits for the application</a></h2>

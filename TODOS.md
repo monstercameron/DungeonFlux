@@ -114,6 +114,12 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   lane: ORCH (Codex) · paths: `TODOS.md` · depends: QA-010, QA-015, QA-016, QA-012
   done when: all four repairs have pushed commit and gate references, fresh browser findings and remaining gaps are recorded, and the server stays available for review.
   status: done (this commit); evidence artifacts/test/QA-AUDIT/checkpoint-03.json; full gate artifacts/test/ORCH/gate-20260927-052841.log green
+- [x] QA-019 · Preserve timer state for repeatable room checkpoints
+  why: Restoring only engine state leaves abandoned timers active and loses paused countdowns, making retries differ from the saved scene.
+  lane: L-RT (Codex) · paths: `TODOS.md`, `internal/runtime/timers_checkpoint.go`, `internal/runtime/timers_checkpoint_test.go`, `docs/devlog.html` · depends: QA-003
+  done when: timer checkpoints preserve remaining durations, paused state, scope and active policy; repeated restores replace old callbacks; fake-clock regressions and runtime gate pass.
+  status: done (this commit); runtime 78.6%; artifacts/test/QA-019/gate-20260927-053904.log green; foundation for QA-005, not the complete CLI feature
+
 ### Kill cam (developer-directed single writer, 2026-09-27)
 
 - [x] KC-004 · Remove unused domain scaffolding exposed by the feature gate
