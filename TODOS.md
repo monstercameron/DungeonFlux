@@ -211,11 +211,11 @@ The skeleton everything else builds in: module, pinned tools, gate script, CI, a
   done when: SIGTERM during a slow download force-closes it after the grace period, closes the app once, and exits 0; covered by a test and the Droplet repro.
   status: done a50400c
 
-- [ ] REPO-022 · print only reachable tester URLs when server.public_url is set
+- [x] REPO-022 · print only reachable tester URLs when server.public_url is set
   why: On the Droplet the start-up list also prints http://<public-ip>:8444 and private-network URLs that the firewall blocks, which testers copy by mistake.
   lane: ORCH · paths: `internal/wire/urls*.go`, `internal/wire/lobby*.go` · depends: REPO-019
   done when: with public_url set, the printed and urls.txt lists hold the public URLs plus localhost only; without it the LAN list is unchanged; tests cover both.
-  status: open
+  status: done 43a2140
 
 ## 2. Contracts
 
