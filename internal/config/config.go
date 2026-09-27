@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -32,6 +33,11 @@ type ServerConfig struct {
 	HostToken      string   `json:"host_token"`
 	DMToken        string   `json:"dm_token"`
 	AllowedOrigins []string `json:"allowed_origins"`
+	// PublicURL is the externally reachable origin (for example
+	// "https://play.example.com") behind a TLS proxy. When set, the join URL,
+	// the lobby QR code, and the first tester URLs use it instead of the
+	// machine's LAN address.
+	PublicURL string `json:"public_url"`
 }
 
 // AdapterConfig identifies one vendor adapter and its optional endpoint.
@@ -150,6 +156,9 @@ func (c Config) Validate() error {
 	if c.Server.LogLevel != "debug" && c.Server.LogLevel != "info" && c.Server.LogLevel != "warn" && c.Server.LogLevel != "error" {
 		return fmt.Errorf("server.log_level must be debug, info, warn, or error")
 	}
+	if err := validatePublicURL(c.Server.PublicURL); err != nil {
+		return err
+	}
 	if c.Timeouts.CharacterFlavor <= 0 || c.Timeouts.Interpret <= 0 || c.Timeouts.SpokenFirstToken <= 0 || c.Timeouts.Prerender <= 0 || c.Timeouts.Portrait <= 0 || c.Timeouts.TTS <= 0 {
 		return fmt.Errorf("all timeouts must be positive")
 	}
@@ -171,6 +180,18 @@ func (c Config) Validate() error {
 		if strings.TrimSpace(role) == "" || len(chain) == 0 {
 			return fmt.Errorf("model chain %q must not be empty", role)
 		}
+	}
+	return nil
+}
+
+func validatePublicURL(raw string) error {
+	if raw == "" {
+		return nil
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" ||
+		parsed.User != nil || (parsed.Path != "" && parsed.Path != "/") || parsed.RawQuery != "" || parsed.Fragment != "" {
+		return fmt.Errorf("server.public_url must be an http or https origin such as https://play.example.com")
 	}
 	return nil
 }

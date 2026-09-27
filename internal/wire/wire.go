@@ -118,12 +118,12 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 		_ = logFile.Close()
 		return nil, err
 	}
+	urls, joinURL := withPublicURLs(cfg.Server.PublicURL, urls, cfg.Server.Port, roomID, dmToken, hostToken)
 	if err := writeURLs(cfg.Server.DataDir, urls); err != nil {
 		_ = store.Close()
 		_ = logFile.Close()
 		return nil, err
 	}
-	joinURL := preferredLANJoinURL(urls, cfg.Server.Port, roomID)
 	qrURL, err := writeJoinQR(cfg.Server.DataDir, joinURL)
 	if err != nil {
 		_ = store.Close()

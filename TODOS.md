@@ -193,6 +193,12 @@ The skeleton everything else builds in: module, pinned tools, gate script, CI, a
   done when: with DF_DEBUG_TOKEN unset the server writes a crypto/rand token to <data-dir>/debug.token (0600, never logged) and dfctl state works with it; a set DF_DEBUG_TOKEN is used unchanged and writes no file; tests cover both.
   status: done a5d461a
 
+- [x] REPO-019 · server.public_url for the join link and QR behind a TLS proxy
+  why: On the DigitalOcean Droplet (Best Use of DigitalOcean) the join URL and lobby QR pointed at the machine's private IP, so phones on other networks could not join.
+  lane: ORCH · paths: `internal/config/config*.go`, `internal/wire/lobby*.go`, `internal/wire/wire.go` · depends: REPO-018
+  done when: a valid public_url leads the tester URLs and is the join URL and QR target; invalid values fail config validation; a headless run against the Droplet joins two phones and starts from the host page.
+  status: done 55a9758
+
 ## 2. Contracts
 
 The shared vocabulary, domain types, ports, and protobuf API every lane codes against. ORCH writes these first; lanes that need only vocab/domain start at 0:45.
