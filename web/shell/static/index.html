@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="df-booting">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,19 +11,105 @@
   <link rel="preload" href="/fonts/CormorantGaramond-normal-400-600.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/fonts/Inter-normal-400-700.woff2" as="font" type="font/woff2" crossorigin>
   <style>
-    @font-face { font-family: "Cinzel"; font-style: normal; font-weight: 400 700; font-display: swap; src: url("/fonts/Cinzel-normal-400-700.woff2") format("woff2"); }
-    @font-face { font-family: "Cormorant Garamond"; font-style: normal; font-weight: 400 600; font-display: swap; src: url("/fonts/CormorantGaramond-normal-400-600.woff2") format("woff2"); }
-    @font-face { font-family: "Cormorant Garamond"; font-style: italic; font-weight: 400; font-display: swap; src: url("/fonts/CormorantGaramond-italic-400.woff2") format("woff2"); }
-    @font-face { font-family: "Inter"; font-style: normal; font-weight: 400 700; font-display: swap; src: url("/fonts/Inter-normal-400-700.woff2") format("woff2"); }
+    /* font-display: block, not swap: the app stays hidden behind the splash
+       until the fonts are ready, so swap only ever showed a Georgia flash. */
+    @font-face { font-family: "Cinzel"; font-style: normal; font-weight: 400 700; font-display: block; src: url("/fonts/Cinzel-normal-400-700.woff2") format("woff2"); }
+    @font-face { font-family: "Cormorant Garamond"; font-style: normal; font-weight: 400 600; font-display: block; src: url("/fonts/CormorantGaramond-normal-400-600.woff2") format("woff2"); }
+    @font-face { font-family: "Cormorant Garamond"; font-style: italic; font-weight: 400; font-display: block; src: url("/fonts/CormorantGaramond-italic-400.woff2") format("woff2"); }
+    @font-face { font-family: "Inter"; font-style: normal; font-weight: 400 700; font-display: block; src: url("/fonts/Inter-normal-400-700.woff2") format("woff2"); }
     :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
-    html, body { margin: 0; min-height: 100%; background: #10131b; color: #f3eee4; }
+    html, body { margin: 0; min-height: 100%; background: #0b1220; color: #f3eee4; }
     body { min-height: 100vh; }
-    #app { display: block; width: 100%; min-height: 100vh; }
-    #status { opacity: .72; margin: 0; min-height: 100vh; display: grid; place-items: center; text-align: center; }
+    #app { display: block; width: 100%; min-height: 100vh; transition: opacity 900ms ease; }
+
+    /* First impression. The splash paints from the first byte, before the
+       WASM bundle loads. The app renders underneath at opacity 0 and the two
+       crossfade once the shell reports the screen ready (web/shell/splash_wasm.go):
+       first snapshot in, fonts loaded, the phase's key art decoded. */
+    html.df-booting #app { opacity: 0; }
+    #df-splash {
+      position: fixed; inset: 0; z-index: 2147483000;
+      display: grid; place-items: center; padding: 24px; box-sizing: border-box;
+      background:
+        radial-gradient(ellipse 60% 45% at 50% 42%, rgba(240, 170, 70, .10), transparent 70%),
+        radial-gradient(ellipse 90% 70% at 70% 0%, rgba(79, 130, 190, .22), transparent 65%),
+        linear-gradient(180deg, #0d1a2e 0%, #0b1220 55%, #070b14 100%);
+      transition: opacity 800ms ease, visibility 0s linear 800ms;
+    }
+    html.df-revealed #df-splash { opacity: 0; visibility: hidden; }
+    html.df-revealed .df-splash-inner { transform: scale(1.03); }
+    .df-splash-inner { display: grid; justify-items: center; gap: 22px; max-width: 40rem; text-align: center; transition: transform 800ms ease; }
+    .df-splash-mark { margin: 0; font: 700 clamp(40px, 6vw, 84px)/1 "Cinzel", Georgia, serif; letter-spacing: -.01em; }
+    .df-splash-mark span { -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .df-splash-mark .d { background-image: linear-gradient(180deg, #fff1c4, #e6b45e 48%, #9a6b2a); }
+    .df-splash-mark .f { background-image: linear-gradient(180deg, #eafaff, #7fd0f2 48%, #2f7fae); }
+    .df-splash-kicker { margin: -10px 0 0; font: 600 clamp(11px, 1vw, 14px)/1.4 "Cinzel", Georgia, serif; letter-spacing: .22em; text-transform: uppercase; color: #c9a15a; }
+
+    /* The spinner is a lantern: a gilt ring of three arcs turning around a
+       flickering flame. */
+    .df-splash-lantern { position: relative; width: 92px; height: 92px; }
+    .df-splash-ring { position: absolute; inset: 0; animation: df-splash-turn 2.6s linear infinite; }
+    .df-splash-ring circle { fill: none; stroke: #e6b45e; stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: 52 26; filter: drop-shadow(0 0 6px rgba(230, 180, 94, .55)); }
+    .df-splash-ring.is-inner { inset: 14px; animation-duration: 3.8s; animation-direction: reverse; }
+    .df-splash-ring.is-inner circle { stroke: #7fd0f2; stroke-width: 1.6; stroke-dasharray: 20 14; opacity: .75; filter: drop-shadow(0 0 5px rgba(127, 208, 242, .5)); }
+    .df-splash-flame { position: absolute; left: 50%; top: 50%; width: 18px; height: 26px; margin: -15px 0 0 -9px; border-radius: 50% 50% 45% 45% / 62% 62% 38% 38%; background: radial-gradient(ellipse 50% 60% at 50% 65%, #fff6d8, #ffc65a 45%, #ff7a1f 80%, transparent 100%); box-shadow: 0 0 22px 6px rgba(255, 150, 50, .45); animation: df-splash-flicker 1.4s ease-in-out infinite; transform-origin: 50% 90%; }
+    @keyframes df-splash-turn { to { transform: rotate(360deg); } }
+    @keyframes df-splash-flicker { 0%, 100% { transform: scale(1) rotate(-2deg); opacity: .95; } 30% { transform: scale(1.08, .94) rotate(2deg); opacity: 1; } 55% { transform: scale(.94, 1.06) rotate(-1deg); opacity: .85; } 80% { transform: scale(1.04) rotate(1deg); opacity: 1; } }
+
+    .df-splash-title { margin: 0; font: 600 clamp(24px, 2.6vw, 38px)/1.15 "Cormorant Garamond", Georgia, serif; color: #f3eee4; }
+    .df-splash-cta { margin: 0; max-width: 34rem; font: 400 clamp(17px, 1.4vw, 22px)/1.45 "Cormorant Garamond", Georgia, serif; color: #cfc6b4; }
+    .df-splash-stage { margin: 0; font: 500 13px/1.4 Inter, system-ui, sans-serif; letter-spacing: .08em; color: #8e98a8; min-height: 1.4em; }
+    .df-splash-stage::after { content: ""; display: inline-block; width: 1.2em; text-align: left; animation: df-splash-dots 1.6s steps(4, end) infinite; }
+    @keyframes df-splash-dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
+
+    /* One welcome per client: the TV greets the room, the phone greets the player. */
+    .df-splash-copy { display: none; }
+    html:not([data-route]) .df-splash-copy[data-for="dm"],
+    html[data-route="dm"] .df-splash-copy[data-for="dm"],
+    html[data-route="p"] .df-splash-copy[data-for="p"],
+    html[data-route="host"] .df-splash-copy[data-for="host"],
+    html[data-route="other"] .df-splash-copy[data-for="other"] { display: contents; }
+
+    #df-splash.is-error .df-splash-lantern, #df-splash.is-error .df-splash-stage::after { display: none; }
+    #df-splash.is-error .df-splash-stage { color: #f0a58f; font-size: 15px; letter-spacing: .02em; }
   </style>
 </head>
 <body>
-  <main id="app"><p id="status">Loading DungeonFlux…</p></main>
+  <script>
+    (function () {
+      var p = location.pathname.replace(/\/+$/, "");
+      document.documentElement.setAttribute("data-route", p === "/dm" || p === "" ? "dm" : p === "/p" || p.indexOf("/p/") === 0 ? "p" : p === "/host" ? "host" : "other");
+    }());
+  </script>
+  <div id="df-splash">
+    <div class="df-splash-inner">
+      <h1 class="df-splash-mark" aria-label="DungeonFlux"><span class="d">Dungeon</span><span class="f">Flux</span></h1>
+      <p class="df-splash-kicker">AI dungeon master for fifth-edition fantasy</p>
+      <div class="df-splash-lantern" aria-hidden="true">
+        <svg class="df-splash-ring" viewBox="0 0 92 92"><circle cx="46" cy="46" r="43"/></svg>
+        <svg class="df-splash-ring is-inner" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30"/></svg>
+        <span class="df-splash-flame"></span>
+      </div>
+      <div class="df-splash-copy" data-for="dm">
+        <h2 class="df-splash-title">Welcome to the Drowned Lantern</h2>
+        <p class="df-splash-cta">Gather your party and keep your phones close. When the doors open, scan the code on screen to take your seat.</p>
+      </div>
+      <div class="df-splash-copy" data-for="p">
+        <h2 class="df-splash-title">Welcome, adventurer</h2>
+        <p class="df-splash-cta">Your character sheet is on its way. Keep this page open; it becomes your controller.</p>
+      </div>
+      <div class="df-splash-copy" data-for="host">
+        <h2 class="df-splash-title">Host controls</h2>
+        <p class="df-splash-cta">Connecting to the table.</p>
+      </div>
+      <div class="df-splash-copy" data-for="other">
+        <h2 class="df-splash-title">Welcome</h2>
+        <p class="df-splash-cta">The table is almost ready.</p>
+      </div>
+      <p class="df-splash-stage" id="status" role="status" aria-live="polite">Lighting the lanterns</p>
+    </div>
+  </div>
+  <main id="app"></main>
   <script src="/wasm_exec.js"></script>
   <script>
     // Dev live reload: open a client once with ?live=1 and it reloads itself
@@ -49,11 +135,16 @@
       const status = document.getElementById("status");
       try {
         const go = new Go();
+        // no-cache, not no-store: the browser always revalidates, so a new
+        // build is never masked, but an unchanged bundle is a 304 instead of
+        // a full re-download on every visit.
         const result = await WebAssembly.instantiateStreaming(
-          fetch("/app/dungeonflux.wasm", { cache: "no-store" }), go.importObject);
+          fetch("/app/dungeonflux.wasm", { cache: "no-cache" }), go.importObject);
+        status.textContent = "Setting the table";
         go.run(result.instance);
       } catch (error) {
-        status.textContent = "DungeonFlux could not start.";
+        document.getElementById("df-splash").classList.add("is-error");
+        status.textContent = "DungeonFlux could not start. Reload the page to try again.";
         console.error(error);
       }
     }());

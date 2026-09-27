@@ -27,7 +27,11 @@ func main() {
 	}
 	parseRouter.Mount("#app")
 	installBrowserAssets(context.Background(), client)
-	removeBootStatus()
+	if err != nil {
+		revealNow()
+	} else {
+		revealWhenReady(RouteForPath(js.Global().Get("location").Get("pathname").String()))
+	}
 	select {}
 }
 
@@ -65,16 +69,5 @@ func reportBootError(err error) {
 	console := js.Global().Get("console")
 	if console.Truthy() {
 		console.Call("error", "DungeonFlux shell client unavailable: "+err.Error())
-	}
-}
-
-func removeBootStatus() {
-	document := js.Global().Get("document")
-	if !document.Truthy() {
-		return
-	}
-	status := document.Call("getElementById", "status")
-	if status.Truthy() {
-		status.Call("remove")
 	}
 }

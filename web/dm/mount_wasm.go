@@ -257,6 +257,9 @@ func dmToken() string {
 var tableAudioUnlocked bool
 
 func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handler, preview ...bool) ui.Node {
+	if len(preview) == 0 || !preview[0] {
+		noteRevealScreen(state)
+	}
 	now := transitionNowMS()
 	tvTransitions.Observe(state, now)
 	tx, active := tvTransitions.Active(now)
