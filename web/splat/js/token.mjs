@@ -28,6 +28,14 @@ function routeFor(grid, entry, token, path) {
   if (!adjacentCells(current,route[0])) return null;
   return route.map(cell => cellPosition(grid,cell));
 }
+/** animationRestarted reports whether a snapshot should restart its clip.
+ * A sequence can stay stable while the authoritative animation changes at a
+ * fixed position (for example an attack from idle), so the animation itself
+ * is part of the restart key.
+ */
+export function animationRestarted(previousToken, nextToken, previousSeq, nextSeq) {
+  return nextSeq > previousSeq || (nextSeq === previousSeq && String(nextToken?.anim ?? "") !== String(previousToken?.anim ?? ""));
+}
 class TokenController {
   constructor({pc,app,grid,layer,spriteLayer,camera,effects,reducedMotion=false,onState=()=>{}}) {
     Object.assign(this,{pc,app,grid,layer,spriteLayer: spriteLayer ?? pc?.LAYERID_WORLD,camera,effects,reducedMotion,onState});
@@ -47,7 +55,12 @@ class TokenController {
     if (gone(token)) { this.remove(token.id); return; }
     const seq = Number(token.anim_seq ?? 0);
     if (!Number.isSafeInteger(seq) || seq < 0 || !validTokenCell(this.grid,token.cell)) return;
-    if (entry && seq <= entry.seq) { entry.token = {...entry.token,name:token.name ?? entry.token.name,clips:token.clips ?? entry.token.clips}; this.adoptClips(entry,token,false); return; }
+    if (entry && seq <= entry.seq) {
+      const restart = animationRestarted(entry.token,token,entry.seq,seq);
+      entry.token = {...entry.token,name:token.name ?? entry.token.name,clips:token.clips ?? entry.token.clips};
+      this.adoptClips(entry,token,restart);
+      return;
+    }
     if (entry && role(entry.token) !== role(token)) { this.remove(token.id); entry=null; }
     const path = normalizeTokenPath(this.grid,token);
     if (!path) return;
@@ -98,6 +111,10 @@ class TokenController {
   snap(entry) {
     place(entry,cellPosition(this.grid,entry.token.cell));
     entry.queue=[]; entry.elapsed=0; entry.start=entry.position.slice();
+    if (entry.token.anim === "walk") {
+      entry.token={...entry.token,anim:"idle"};
+      entry.sprite.play?.("idle");
+    }
   }
   advance(entry,dt) {
     if (!entry.queue.length || dt <= 0) return false;
