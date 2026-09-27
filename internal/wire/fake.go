@@ -39,8 +39,15 @@ func (fakeLLM) StreamText(ctx context.Context, req ports.TextRequest) (ports.Tex
 		return nil, err
 	}
 	text := "The rain hammers the Drowned Lantern. The bell tower waits beyond the river."
-	if req.Meta.Role == vocab.RoleNPCReply {
+	switch req.Meta.Role {
+	case vocab.RoleNPCReply:
 		text = "Mother Vell studies you, amused. Ask your question plainly."
+	case vocab.RoleNPCReveal, vocab.RoleNPCRefuse:
+		text = scriptedOutcomeText(req.Meta.Role)
+	case vocab.RoleStrangerLines:
+		text = "A soaked stranger stumbles through the door. The letter followed me from the river."
+	case vocab.RoleCliffhanger:
+		text = "The bell tolls midnight, and someone beyond the river knows your names."
 	}
 	return &fakeTextStream{ctx: ctx, text: text}, nil
 }
