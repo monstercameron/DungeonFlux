@@ -11,9 +11,12 @@ import (
 // baked into the ui/logo_wordmark art, in the same box the wordmark's own
 // background-image mask uses (df-lobby-title-plate at 740px wide, dmLobbyFinishCSS).
 // The box below is the crest's source region (x520-981, y75-585 of the 1536x1024
-// wordmark) scaled by 740/1536.
+// wordmark) scaled by 740/1536. The clip has an opaque black background, so the
+// box blends with lighten (black drops out, the lantern and embers stay) and a
+// feathered mask removes the rectangle's edges; the still crest underneath
+// fills in anything the mask fades.
 const lobbyCrestCSS = `
-.df-lobby-crest{position:absolute;left:250px;top:36px;width:222px;height:246px;overflow:hidden;pointer-events:none;z-index:1}
+.df-lobby-crest{position:absolute;left:250px;top:36px;width:222px;height:246px;overflow:hidden;pointer-events:none;z-index:1;mix-blend-mode:lighten;-webkit-mask-image:radial-gradient(ellipse 50% 50% at 50% 50%,#000 62%,transparent 100%);mask-image:radial-gradient(ellipse 50% 50% at 50% 50%,#000 62%,transparent 100%)}
 .df-lobby-crest-video{display:block;width:100%;height:100%;object-fit:cover;object-position:center;filter:brightness(1.3) contrast(1.18) saturate(1.1)}
 `
 
