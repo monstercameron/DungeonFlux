@@ -29,7 +29,8 @@ func lobbySurfaceStyle() map[string]string {
 }
 
 func titlePlateAt(wordmark string) ui.Node {
-	return html.Div(html.Props{Class: "df-lobby-title-plate", Style: absoluteStyle(250, 60, 750, 205)}, TitlePlate(wordmark, "DungeonFlux", titleSubtitle))
+	return html.Div(html.Props{Class: "df-lobby-title-plate", Style: absoluteStyle(250, 60, 750, 205)},
+		TitlePlate(wordmark, "DungeonFlux", titleSubtitle), lobbyCrestLoop())
 }
 
 func lobbyTagline() ui.Node {
