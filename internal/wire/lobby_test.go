@@ -1,6 +1,7 @@
 package wire
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/monstercameron/DungeonFlux/internal/api"
@@ -24,6 +25,29 @@ func TestPreferredLANJoinURL_FallsBackToLocalhost(t *testing.T) {
 	got := preferredLANJoinURL([]string{"http://localhost:18197/p?room=DF-ROOM"}, 18197, "DF-ROOM")
 	if got != "http://localhost:18197/p?room=DF-ROOM" {
 		t.Fatalf("preferredLANJoinURL() = %q", got)
+	}
+}
+
+func TestWithPublicURLs(t *testing.T) {
+	local := []string{"http://localhost:8444/p?room=DF-ROOM", "http://10.0.0.9:8444/p?room=DF-ROOM"}
+	tests := []struct {
+		name      string
+		publicURL string
+		wantURLs  []string
+		wantJoin  string
+	}{
+		{name: "no public url keeps the LAN join url", wantURLs: local, wantJoin: local[1]},
+		{name: "public url leads and becomes the join url", publicURL: "https://play.example.com/",
+			wantURLs: append([]string{"https://play.example.com/dm?token=dm+1", "https://play.example.com/host?t=host", "https://play.example.com/p?room=DF-ROOM"}, local...),
+			wantJoin: "https://play.example.com/p?room=DF-ROOM"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			urls, join := withPublicURLs(tc.publicURL, append([]string(nil), local...), 8444, "DF-ROOM", "dm 1", "host")
+			if join != tc.wantJoin || strings.Join(urls, " ") != strings.Join(tc.wantURLs, " ") {
+				t.Fatalf("withPublicURLs() = %q, %q; want %q, %q", urls, join, tc.wantURLs, tc.wantJoin)
+			}
+		})
 	}
 }
 

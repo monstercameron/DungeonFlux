@@ -50,6 +50,8 @@ func TestLoad_rejectsInvalidValues(t *testing.T) {
 		{"bad port", strings.Replace(validJSON("local"), `"port":18101`, `"port":0`, 1), "server.port"},
 		{"bad timeout", strings.Replace(validJSON("local"), `"interpret":"2.5s"`, `"interpret":"0s"`, 1), "timeouts"},
 		{"bad mode", strings.Replace(validJSON("local"), `"mode":"fake"`, `"mode":"other"`, 1), "mode"},
+		{"public url without scheme", strings.Replace(validJSON("local"), `"port":18101`, `"port":18101,"public_url":"play.example.com"`, 1), "public_url"},
+		{"public url with path", strings.Replace(validJSON("local"), `"port":18101`, `"port":18101,"public_url":"https://play.example.com/p"`, 1), "public_url"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -57,6 +59,16 @@ func TestLoad_rejectsInvalidValues(t *testing.T) {
 				t.Fatalf("Load() error = %v, want %q", err, tc.want)
 			}
 		})
+	}
+}
+
+func TestLoad_acceptsPublicURL(t *testing.T) {
+	cfg, err := Load(writeConfig(t, strings.Replace(validJSON("local"), `"port":18101`, `"port":18101,"public_url":"https://play.example.com"`, 1)))
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.Server.PublicURL != "https://play.example.com" {
+		t.Fatalf("PublicURL = %q", cfg.Server.PublicURL)
 	}
 }
 
