@@ -106,9 +106,9 @@ func projectDM(view domain.View, lobby ...LobbyProjection) *df.DMView {
 	}
 	if view.Battlefield != nil {
 		out.Battlefield = projectBattlefield(*view.Battlefield)
-		out.Tokens = projectTokens(view.Battlefield.Tokens)
+		out.Tokens = projectTokensForSeats(view.Battlefield.Tokens, view.Seats)
 		out.Highlights = projectHighlights(view.Battlefield.Highlights)
-		out.TurnOrder = projectTurnOrder(view.Battlefield.TurnOrder)
+		out.TurnOrder = projectTurnOrderForSeats(view.Battlefield.TurnOrder, view.Seats)
 		out.Round = int32(view.Battlefield.Round)
 		out.CombatBanner = view.Battlefield.Mode
 		out.ContactInMs = view.Battlefield.Contact.RemainingMS
@@ -116,13 +116,13 @@ func projectDM(view domain.View, lobby ...LobbyProjection) *df.DMView {
 	}
 	if view.Combat != nil {
 		if len(view.Combat.Tokens) > 0 {
-			out.Tokens = projectTokens(view.Combat.Tokens)
+			out.Tokens = projectTokensForSeats(view.Combat.Tokens, view.Seats)
 		}
 		if len(view.Combat.Highlights) > 0 {
 			out.Highlights = projectHighlights(view.Combat.Highlights)
 		}
 		if len(view.Combat.TurnOrder) > 0 {
-			out.TurnOrder = projectTurnOrder(view.Combat.TurnOrder)
+			out.TurnOrder = projectTurnOrderForSeats(view.Combat.TurnOrder, view.Seats)
 		}
 		out.Round = int32(view.Combat.Round)
 		out.CombatBanner = view.Combat.Banner
@@ -490,6 +490,43 @@ func projectTokens(tokens []domain.TokenView) []*df.Token {
 		}
 		out = append(out, &df.Token{TokenId: string(token.ID), Name: token.Name, PortraitUrl: string(token.Portrait), Cell: projectCell(token.Cell), Hp: int32(token.HP), HpMax: int32(token.HPMax), Active: token.Active, Statuses: statuses,
 			Kind: token.Kind, Path: projectCells(token.Path), Anim: token.Anim, AnimSeq: token.AnimSeq, Clips: projectClips(token.Clips), StepMs: int32(token.StepMS)})
+	}
+	return out
+}
+
+// projectTokensForSeats preserves the same portrait selector used by the
+// party cards when combat tokens are rendered. Combat token views carry only
+// the generic species selector, while the seat character also carries the
+// chosen gender and any generated portrait asset.
+func projectTokensForSeats(tokens []domain.TokenView, seats []domain.SeatView) []*df.Token {
+	out := projectTokens(tokens)
+	for index := range out {
+		seat, ok := combatSeatForToken(tokens[index].ID, seats)
+		if !ok || seat.Character == nil {
+			continue
+		}
+		out[index].PortraitUrl = heroPortrait(string(seat.Character.Portrait), seat.Character.Species, seat.Character.Gender)
+	}
+	return out
+}
+
+func combatSeatForToken(id domain.TokenID, seats []domain.SeatView) (domain.SeatView, bool) {
+	for _, seat := range seats {
+		if "pc-"+strconv.Itoa(int(seat.Seat)) == string(id) {
+			return seat, true
+		}
+	}
+	return domain.SeatView{}, false
+}
+
+func projectTurnOrderForSeats(entries []domain.TurnEntry, seats []domain.SeatView) []*df.TurnOrderEntry {
+	out := projectTurnOrder(entries)
+	for index := range out {
+		seat, ok := combatSeatForToken(entries[index].TokenID, seats)
+		if !ok || seat.Character == nil {
+			continue
+		}
+		out[index].PortraitUrl = heroPortrait(string(seat.Character.Portrait), seat.Character.Species, seat.Character.Gender)
 	}
 	return out
 }

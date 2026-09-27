@@ -46,3 +46,30 @@ func TestHeroPortrait_GenericSelectorRespectsChosenGender(t *testing.T) {
 		})
 	}
 }
+
+func TestProjectDM_CombatPortraitsMatchPartyCards(t *testing.T) {
+	view := domain.View{
+		Path: vocab.StateCombat,
+		Seats: []domain.SeatView{
+			{Seat: 1, Character: &domain.Character{Name: "Lyra", Species: "elf", Gender: "female"}},
+			{Seat: 2, Character: &domain.Character{Name: "Korr", Species: "elf", Gender: "male"}},
+		},
+		Battlefield: &domain.BattlefieldView{
+			Tokens: []domain.TokenView{
+				{ID: "pc-1", Name: "Lyra", Portrait: "ui/species_elf"},
+				{ID: "pc-2", Name: "Korr", Portrait: "ui/species_elf"},
+			},
+			TurnOrder: []domain.TurnEntry{{TokenID: "pc-1", Name: "Lyra", Portrait: "ui/species_elf"}, {TokenID: "pc-2", Name: "Korr", Portrait: "ui/species_elf"}},
+		},
+	}
+	out := ProjectDM(view)
+	if got := out.GetTokens()[0].GetPortraitUrl(); got != "ui/species_elf_female" {
+		t.Fatalf("seat one combat portrait = %q", got)
+	}
+	if got := out.GetTokens()[1].GetPortraitUrl(); got != "ui/species_elf_male" {
+		t.Fatalf("seat two combat portrait = %q", got)
+	}
+	if got := out.GetTurnOrder()[1].GetPortraitUrl(); got != "ui/species_elf_male" {
+		t.Fatalf("initiative portrait = %q", got)
+	}
+}
