@@ -332,17 +332,41 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: the test retains exact responsive position checks, asserts the adopted 6.5% size, and the complete DM WASM suite plus lane gate pass.
   status: done (this commit); full DM WASM suite passes under wasm_exec_node, gate artifacts/test/QA-054/gate-20260927-093719.log green, coverage 91.4%; independent reviewer traced intentional size change to 9cb5d85 and obsolete assertion to d899bf1
 
-- [ ] QA-055 · Keep combat portraits consistent with the created heroes
+- [x] QA-055 · Keep combat portraits consistent with the created heroes
   why: The report found party cards showing identical species portraits while battlefield heroes differed; combat projection must preserve generated or gender-specific portraits from creation.
   lane: live_report_audit · paths: `internal/api/project.go`, `internal/api/project_creation_test.go` · depends: API-023, DM-042
   done when: combat tokens and initiative portraits resolve the created hero portrait on both clients, distinct heroes do not collapse to one species image, tests cover generated/fallback portraits, and API gate plus real creation-to-combat playtest pass.
-  status: claimed live_report_audit 2026-09-27; parent backfills observed worker edits pending scope confirmation
+  status: done ec52c26; parent source review and gate artifacts/test/REPORT-REVIEW/gate-20260927-094544.log green, API 86.9%; real run proved generated names/HP, portrait regression covers same-species gender distinction. Phone follow-up QA-056.
 
 - [x] QA-057 · Use the in-game Mother Vell artwork on the marketing page
   why: The landing page labeled unrelated young concept-art characters as Mother Vell, breaking identity continuity with the actual game.
   lane: ORCH (Codex) · paths: `website/index.html`, `website/styles.css`, `website/assets/scene-barkeep-vell.webp`, `website/assets/vell-avatar.webp`, `TODOS.md`, `docs/devlog.html` · depends: QA-052
   done when: the persuasion scene and narration avatar use the actual game barkeep artwork, alternative text matches it, and the responsive page is visually verified.
   status: done (this commit); copied actual in-game backdrop bytes, verified desktop scene and viewport preview in isolated browser; JavaScript syntax check and architecture gate green. No new artwork generated; temporary server PID 34988 stopped.
+
+- [x] QA-056 · Keep phone initiative portraits consistent with the TV
+  why: QA-055 corrected DM combat portraits but phone initiative still used the generic species projection.
+  lane: live_report_audit · paths: `internal/api/project.go`, `internal/api/project_creation_test.go`, `internal/api/project_test.go` · depends: QA-055
+  done when: phone initiative preserves generated/gender-specific portraits and missing-character fallback, API gate passes, and parent reviews the diff.
+  status: done 66287e8; parent source review and REPORT-REVIEW gate green, API 86.9%; todo recorded late after worker committed.
+
+- [ ] QA-058 · Explain the move from tavern to wooded battlefield
+  why: The developer chose on 2026-09-27 to keep the existing wooded battlefield and revise the story transition rather than regenerate the scene.
+  lane: live_report_audit · paths: `internal/content/oneshot.go`, `internal/content/oneshot_test.go`, `web/dm/combat.go`, `web/dm/combat_wasm.go`, `web/dm/combat_test.go`, `web/phone/screen.go`, `web/phone/screen_test.go` · depends: QA-014
+  done when: the authored story and visible combat introduction explain heroes driving the thrall outside onto the wooded river path, location labels agree, cached speech is not relabeled with mismatching text, the existing phase durations remain unchanged, and relevant gates/WASM visual review pass.
+  status: claimed live_report_audit 2026-09-27; parent updates binding plan separately
+
+- [x] QA-059 · Give exploration preview heroes valid known HP
+  why: Old preview screenshots said HP unavailable despite the live projection supplying build HP, making review evidence misleading.
+  lane: live_report_audit · paths: `web/dm/preview.go`, `web/dm/preview_test.go` · depends: DM-042
+  done when: deterministic fixture builds have valid HP/AC and the HUD projects it, with native and WASM checks green.
+  status: done 758c3d7; parent source review and REPORT-REVIEW gate green, DM 91.7%; real live exploration already has HP, deterministic preview now agrees. Todo recorded late after worker committed.
+
+- [x] QA-060 · Record the developer's wooded-battlefield story decision
+  why: The developer explicitly chose to retain the existing wooded splat and revise the transition; the binding specification must no longer demand an indoor tavern battle.
+  lane: ORCH (Codex) · paths: `plan.md`, `TODOS.md`, `docs/devlog.html` · depends: none
+  done when: section 0 records the chosen wooded setting and bridge while preserving the three-minute run, combat deadline, and cached cinematic duration.
+  status: done (this commit); section 0 and combat sequence updated to the developer-selected wooded path; timing and cache requirements preserved.
 
 ### Kill cam (developer-directed single writer, 2026-09-27)
 
@@ -354,7 +378,7 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
 
 - [ ] KC-011 · Play walk loops during authoritative battlefield movement
   why: The renderer previously switched only attack/hit/fall clips and could not display the newly requested walk animation.
-  lane: battle_animation · paths: `web/splat/js/token.mjs`, `web/splat/js/token_sprite.mjs`, `web/splat/js/token.test.mjs`, `web/splat/js/token_sprite.test.mjs` · depends: KC-010
+  lane: battle_animation · paths: `web/splat/js/token.mjs`, `web/splat/js/token_sprite.mjs`, `web/splat/js/token.test.mjs`, `web/splat/js/token_sprite.test.mjs`, `web/splat/js/billboard.mjs` · depends: KC-010
   done when: walk loops while queued movement is active, idle returns on arrival, paused/reduced-motion paths stay coherent, existing grading and tilt-shift stay intact, and tests plus browser playtest pass.
   status: claimed battle_animation 2026-09-27
 
