@@ -232,7 +232,7 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   why: The GPT-6 correction needs completion evidence and a public explanation of its demo timing behavior.
   lane: ORCH (Codex) · paths: `TODOS.md`, `docs/devlog.html` · depends: QA-036
   done when: the subagent change is independently reviewed and gated, cached videos are verified, and remaining timing limitations are recorded.
-  status: done (this commit); full verification artifacts/test/QA-AUDIT/checkpoint-09.json
+  status: done 174ab8d; independent gate artifacts/test/QA-036/gate-20260927-072241.log; full gate artifacts/test/ORCH/gate-20260927-072132.log; combined report creation blocked by automatic approval review
 
 - [ ] QA-039 · Dispatch entry effects when starting directly at a debug phase
   why: The debug_start constructor discards phase-entry effects, including the new combat deadline, while normal and event-driven transitions dispatch them.
