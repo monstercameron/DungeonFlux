@@ -373,7 +373,12 @@ func (m *Machine) startCheck() (Result, error) {
 	if _, err = m.check.Step(domain.Act{Move: vocab.MovePersuade}); err != nil {
 		return Result{}, err
 	}
-	return m.step(eventPersuade)
+	// This is an animation completion timer, not an optional player deadline.
+	// Without it the runtime never delivers the event the check waits for.
+	return m.transition(eventPersuade, []domain.Effect{domain.StartTimer{
+		Name: "roll_resolved", After: 3 * time.Second, Pausable: true,
+		Scope: domain.Scope{Machine: vocab.MachineSession},
+	}})
 }
 
 func (m *Machine) stepCheck(event domain.Event) (Result, error) {
