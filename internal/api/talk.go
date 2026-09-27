@@ -114,6 +114,7 @@ func (s *TalkServer) receiveTalk(stream df.VoiceService_TalkServer, session Talk
 				return err
 			}
 			stats.add(len(request.GetChunk().GetData()))
+			s.logChunk(session, request.GetChunk().GetSeq(), len(request.GetChunk().GetData()), stats)
 		case request.GetEnd() != nil:
 			s.logTalk("talk ended", session, stats)
 			return s.endTalk(stream, session)

@@ -14,7 +14,7 @@ import (
 
 func captureLogger() (*slog.Logger, *bytes.Buffer) {
 	var buffer bytes.Buffer
-	return slog.New(slog.NewTextHandler(&buffer, nil)), &buffer
+	return slog.New(slog.NewTextHandler(&buffer, &slog.HandlerOptions{Level: slog.LevelDebug})), &buffer
 }
 
 func talkServerWithSeat(t *testing.T) (*TalkServer, string) {
@@ -47,7 +47,7 @@ func TestTalkServer_logsEachRecording(t *testing.T) {
 			name:     "sent recording",
 			tail:     []*df.TalkRequest{chunkRequest(0, 3), chunkRequest(1, 5), {Message: &df.TalkRequest_End{End: &df.TalkEnd{}}}},
 			wantLine: `msg="talk ended"`,
-			wantMore: []string{"chunks=2", "bytes=8", "audio_ms=200"},
+			wantMore: []string{"chunks=2", "bytes=8", "audio_ms=200", `msg="talk audio receiving"`, `msg="talk chunk received"`, "seq=1", "total_chunks=2", "total_bytes=8"},
 		},
 		{
 			name:     "stream dropped before TalkEnd",

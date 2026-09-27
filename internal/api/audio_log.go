@@ -95,3 +95,13 @@ func (h *ListenHub) voiceListeners() int {
 	}
 	return count
 }
+
+// logChunk records one received audio chunk: the first of a recording at Info
+// ("talk audio receiving"), and every chunk at Debug with its running totals.
+func (s *TalkServer) logChunk(session TalkSession, seq uint64, size int, stats talkStats) {
+	args := []any{"seat", int(session.Seat), "utterance", string(session.UtteranceID), "seq", seq, "bytes", size, "total_chunks", stats.chunks, "total_bytes", stats.bytes}
+	if stats.chunks == 1 {
+		s.log().Info("talk audio receiving", args...)
+	}
+	s.log().Debug("talk chunk received", args...)
+}
