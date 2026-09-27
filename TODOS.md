@@ -282,16 +282,22 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: rejection/network errors are visible, drafts remain available for retry, duplicate sends are rejected while pending, and keyboard submission and turn gating are checked.
   status: open
 
-- [ ] QA-047 · Enforce authoritative chat eligibility and speech lifecycle
-  why: Phase dispatch can acknowledge ignored out-of-turn Say events, PhoneView always projects PTT idle, and the standalone PTT machine is not connected to the production phase state.
-  lane: ORCH (Codex) · paths: pending API, phase and phone projection breakdown · depends: QA-043
-  done when: wrong-turn/busy/paused messages reject clearly, one utterance owns capture and reply, STT failures and pause reach the phone, and stale transcription cannot replace a newer turn.
-  status: open
+- [x] QA-047 · Reject unavailable typed chat and own pending NPC replies
+  why: Say can report success for an ignored wrong-turn message, and the reply is unprotected until the first audio chunk arrives.
+  lane: ORCH (Codex) · paths: `internal/game/phase/chat_guard.go`, `internal/game/phase/phase.go`, `internal/game/phase/phase_test.go`, `internal/sim/walk/voice/voice_test.go`, `internal/game/phase/conversation/conversation.go`, `internal/game/phase/conversation/conversation_test.go`, `internal/game/phase/conversation/reply_owner_test.go`, `internal/game/game.go`, `internal/game/chat_guard_test.go`, `TODOS.md`, `docs/devlog.html` · depends: QA-043
+  done when: wrong-phase/turn/busy/paused typed messages reject with a useful reason, reply preparation is busy immediately, stale speech completion cannot unlock a newer reply, and matching completion during pause permits retry after resume; lane gate green.
+  status: done (this commit); isolated tracked-source gate artifacts/test/QA-047/source/artifacts/test/QA-047/gate-20260927-085035.log green: game 94.7%, phase 80.9%, conversation 92.8%, voice walk 83.3%; shared-tree gate blocked solely by unrelated untracked website/script.js
 
 - [ ] QA-048 · Supply accurate NPC context and chat subtitles
   why: Interpret receives the player's LastText as NPCLastLine, and NPCReply receives only the latest patron message under a conversation-so-far label; player subtitle/history behavior needs verification.
   lane: ORCH (Codex) · paths: pending bounded dialogue history and projection breakdown · depends: QA-043
   done when: NPC and player lines retain their correct speaker identities, bounded context reaches the reply and intent prompts, and displayed/spoken content agrees across clients.
+  status: open
+
+- [ ] QA-049 · Connect authoritative microphone ownership and recovery
+  why: The production Talk stream acknowledges queueing rather than engine acceptance, PTT always projects idle, and capture/transcription state is not owned by the conversation; action buttons can also bypass speech guards.
+  lane: ORCH (Codex) · paths: pending API, phase and phone projection breakdown · depends: QA-047
+  done when: wrong-turn/busy/paused voice and actions reject, one utterance owns capture and reply, STT failures and pause reach the phone, and stale transcription/classifier results cannot replace or stall a newer turn.
   status: open
 
 ### Kill cam (developer-directed single writer, 2026-09-27)

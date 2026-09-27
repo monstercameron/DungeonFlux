@@ -110,7 +110,7 @@ func TestWalkVoice_STTFailureTypedSayUsesSameDialoguePath(t *testing.T) {
 func TestWalkVoice_InterruptedReplyRejectsPersuadeUntilLineStops(t *testing.T) {
 	w := newWalk(t)
 	w.toConversation(t)
-	w.voice = conversation.State{Seat: 1, NPCReplies: 1}
+	w.voice = conversation.State{Seat: 1, NPCReplies: 1, ActiveUtteranceID: "reply-1"}
 	started, err := conversation.Step(w.voice, conversation.Event{
 		Event: domain.LineFirstAudio{UtteranceID: "reply-1"},
 	})
@@ -179,7 +179,7 @@ func TestWalkVoice_RejectedMoveCanBeRedeliveredAsDialogue(t *testing.T) {
 func TestWalkVoice_AcceptedSpokenPersuadeDropsHeldReply(t *testing.T) {
 	w := newWalk(t)
 	w.toConversation(t)
-	w.voice = conversation.State{Seat: 1, NPCReplies: 1}
+	w.voice = conversation.State{Seat: 1, NPCReplies: 1, ActiveUtteranceID: "reply-1"}
 	w.speech(t, "move-3", "I try to persuade her")
 	held := domain.StartLine{UtteranceID: "move-3", Role: vocab.RoleNPCReply, Hold: true}
 	if !held.Hold {
@@ -205,7 +205,7 @@ func TestWalkVoice_AcceptedSpokenPersuadeDropsHeldReply(t *testing.T) {
 func TestWalkVoice_LineFailureAndSkipCancelTheCurrentAudio(t *testing.T) {
 	w := newWalk(t)
 	w.toConversation(t)
-	w.voice = conversation.State{Seat: 1, NPCReplies: 1, VoiceBusy: true}
+	w.voice = conversation.State{Seat: 1, NPCReplies: 1, VoiceBusy: true, ActiveUtteranceID: "live-1"}
 	failed := w.interpreted(t, domain.LineFailed{UtteranceID: "live-1"})
 	if failed.State.VoiceBusy {
 		t.Fatal("failed line remained busy")

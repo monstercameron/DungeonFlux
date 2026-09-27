@@ -169,10 +169,18 @@ func (m *Machine) Step(event domain.Event) (Result, error) {
 	if cmd, ok := event.(domain.HostCmd); ok {
 		return m.stepHost(cmd)
 	}
+	if say, ok := event.(domain.Say); ok {
+		if err := m.validateSay(say); err != nil {
+			return Result{}, err
+		}
+	}
 	if timer, ok := event.(domain.TimerFired); ok && !m.timersEnabled && isTurnTimer(timer.Name) {
 		return Result{}, &fsm.Rejection{State: m.State(), Event: event.Kind(), Reason: fsm.ReasonGuardRejected}
 	}
 	if m.paused {
+		if out, handled, err := m.finishPausedReply(event); handled {
+			return out, err
+		}
 		return Result{}, &fsm.Rejection{State: m.State(), Event: event.Kind(), Reason: fsm.ReasonGuardRejected}
 	}
 	return m.stepPhase(event)

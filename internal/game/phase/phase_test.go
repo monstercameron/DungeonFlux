@@ -268,11 +268,14 @@ func TestMachine_DebugCombatAndPassiveCallbacks(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, event := range []domain.Event{
-		domain.Join{Seat: 1}, domain.Say{Seat: 1, Text: "hello"}, domain.AssetReady{Slot: "portrait", Asset: domain.Asset{ID: "portrait"}},
+		domain.Join{Seat: 1}, domain.AssetReady{Slot: "portrait", Asset: domain.Asset{ID: "portrait"}},
 	} {
 		if _, err := machine.Step(event); err != nil {
 			t.Fatalf("passive event %T: %v", event, err)
 		}
+	}
+	if _, err := machine.Step(domain.Say{Seat: 1, UtteranceID: "lobby-chat", Text: "hello"}); err == nil {
+		t.Fatal("lobby chat was acknowledged without a conversation")
 	}
 	if err := machine.Goto(vocab.StateCombat); err != nil {
 		t.Fatal(err)

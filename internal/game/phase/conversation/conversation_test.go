@@ -64,7 +64,7 @@ func TestStep_InterpretFailedUsesKeywordFallback(t *testing.T) {
 }
 
 func TestStep_IgnoresStaleAndUnsupportedEvents(t *testing.T) {
-	state := State{Seat: 1, UtteranceInFlight: true}
+	state := State{Seat: 1, UtteranceInFlight: true, ActiveUtteranceID: "u5"}
 	result, err := Step(state, Event{Event: domain.Interpreted{UtteranceID: "old", CleanText: "hi", InterpretationKind: InterpretationDialogue}})
 	if err != nil || len(result.Events) != 0 || result.State.UtteranceInFlight != state.UtteranceInFlight {
 		t.Fatalf("stale result = %#v, err = %v", result, err)
@@ -110,7 +110,7 @@ func TestStep_KeywordStepAwayAndVoiceLifecycle(t *testing.T) {
 	if err != nil || !result.State.IdleElapsed {
 		t.Fatalf("idle timer = %#v, err %v", result, err)
 	}
-	result, err = Step(State{}, Event{Event: domain.LineFirstAudio{UtteranceID: "u6"}})
+	result, err = Step(State{ActiveUtteranceID: "u6"}, Event{Event: domain.LineFirstAudio{UtteranceID: "u6"}})
 	if err != nil || !result.State.VoiceBusy {
 		t.Fatalf("line first audio = %#v, err %v", result, err)
 	}

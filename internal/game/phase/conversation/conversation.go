@@ -75,7 +75,7 @@ func Step(state State, input Event) (Result, error) {
 
 func (r *Result) transcribed(event domain.Transcribed) {
 	text := strings.TrimSpace(event.Text)
-	if event.UtteranceID == "" || r.State.Done || text == "" {
+	if event.UtteranceID == "" || r.State.Done || text == "" || r.State.UtteranceInFlight || r.State.VoiceBusy {
 		return
 	}
 	r.State.UtteranceInFlight = true
@@ -141,6 +141,7 @@ func (r *Result) dialogue(id domain.UtteranceID, text string) {
 		return
 	}
 	r.State.NPCReplies++
+	r.State.VoiceBusy = true
 	r.State.LastText = text
 	r.Events = append(r.Events, domain.UtteranceFinal{Seat: r.State.Seat, UtteranceID: id, CleanText: text})
 	r.Effects = append(r.Effects, domain.StartLine{UtteranceID: id, Role: vocab.RoleNPCReply, Speaker: "Mother Vell", Input: text})
@@ -171,10 +172,13 @@ func (r *Result) emitMove(move vocab.MoveID) {
 }
 
 func (r *Result) voiceBusy(id domain.UtteranceID, busy bool) {
-	if id == "" || r.State.Done {
+	if id == "" || r.State.Done || id != r.State.ActiveUtteranceID {
 		return
 	}
 	r.State.VoiceBusy = busy
+	if !busy {
+		r.State.ActiveUtteranceID = ""
+	}
 }
 
 func eventSeat(seat domain.SeatID) domain.SeatID {

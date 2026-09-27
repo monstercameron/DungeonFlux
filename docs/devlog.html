@@ -87,6 +87,12 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-chat-acceptance">
+  <div class="entry-head"><time datetime="2026-09-27T08:52:00-04:00">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">ORCH (Codex)</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-chat-acceptance">A sent message must have an eligible conversation</a></h2>
+  <p>The chat trace found that Say acknowledged messages outside conversation or from the waiting player, even though the conversation discarded them. The phase now rejects typed messages with a player-facing reason when the phase, turn, pause state or pending reply makes them unavailable. An NPC reply owns the busy state from dispatch, including model and speech preparation. Only that reply's completion releases it; an old completion cannot unlock a newer reply. Completion during pause is consumed without resuming the story, so the next message works after Resume. Root-engine regression tests verify rejection and retry. The isolated tracked-source gate passed with conversation coverage of 92.8%. The shared-tree gate remains blocked by an unrelated untracked website/script.js; that work was left untouched. Microphone ownership and projection remain tracked separately in QA-049.</p>
+</li>
+
 <li class="entry" data-kind="discovery" id="e-20260927-audit-two-defect-patterns">
   <div class="entry-head"><time datetime="2026-09-27T08:40-04:00">Sep 27, 2026, 8:40 AM</time><span class="kind">Discovery</span><span class="who">ORCH</span></div>
   <h2 class="entry-title"><a href="#e-20260927-audit-two-defect-patterns">Two defect patterns account for most of the six-hour audit</a></h2>

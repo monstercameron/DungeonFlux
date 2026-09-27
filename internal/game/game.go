@@ -2,6 +2,7 @@
 package game
 
 import (
+	"errors"
 	"time"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
@@ -233,6 +234,10 @@ func (s *State) dispatch(event domain.Event) domain.StepOut {
 	previous := s.path
 	result, err := s.phase.Step(event)
 	if err != nil {
+		var rejection *phase.ChatRejection
+		if errors.As(err, &rejection) {
+			return s.rejected(rejection.Reason)
+		}
 		return s.rejected("unaccepted_event")
 	}
 	s.path = s.phase.State()
