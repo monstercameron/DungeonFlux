@@ -61,6 +61,13 @@ func TestCreationModel_ProjectsCharacterFieldsAndLock(t *testing.T) {
 	if got.Class != "rogue" || got.Species != "human" || got.Gender != "female" || got.StatusText != "Your hero is ready to lock in" || got.Phase != CreationRolling {
 		t.Fatalf("rolled snapshot = %+v", got)
 	}
+	if got.Build.GetCharacter().GetBuild().GetHpMax() != 11 {
+		t.Fatal("rolled stats lost")
+	}
+	got.Build.Character.Build.HpMax = 999
+	if model.Snapshot().Build.Character.Build.HpMax != 11 {
+		t.Fatal("snapshot aliases model build")
+	}
 	state.GetPhone().GetCharacter().Locked = true
 	got = model.ApplyScreenState(state)
 	if got.Phase != CreationLocked {

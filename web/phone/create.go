@@ -4,6 +4,7 @@ package phone
 import (
 	"context"
 	"errors"
+	"google.golang.org/protobuf/proto"
 	"strings"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
@@ -96,10 +97,7 @@ func (m *CreationModel) Snapshot() CreationSnapshot {
 	}
 	state := m.state
 	if state.Build != nil {
-		state.Build = &df.BuildCard{
-			PlayerNumber: state.Build.GetPlayerNumber(), Name: state.Build.GetName(),
-			ClassName: state.Build.GetClassName(), PortraitUrl: state.Build.GetPortraitUrl(),
-		}
+		state.Build = proto.Clone(state.Build).(*df.BuildCard)
 	}
 	return state
 }
@@ -170,7 +168,7 @@ func (m *CreationModel) ApplyScreenState(state *df.ScreenState) CreationSnapshot
 		return m.Snapshot()
 	}
 	if character := phone.GetCharacter(); character != nil {
-		m.state.Build = &df.BuildCard{Name: character.GetName(), ClassName: character.GetClassName(), PortraitUrl: character.GetPortraitUrl(), PlayerNumber: m.state.PlayerNumber}
+		m.state.Build = &df.BuildCard{Name: character.GetName(), ClassName: character.GetClassName(), PortraitUrl: character.GetPortraitUrl(), PlayerNumber: m.state.PlayerNumber, Character: proto.Clone(character).(*df.Character)}
 		if character.GetSpecies() != "" {
 			m.state.Species = strings.ToLower(character.GetSpecies())
 		}

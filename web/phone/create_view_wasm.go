@@ -42,6 +42,7 @@ func CreationScreen(model *CreationModel) router.Component {
 		return html.Section(html.Props{Class: "df-phone-create", Role: "main", Style: creationContentStyle()},
 			creationHeading(locale, snapshot.Build != nil), choices,
 			creationBuildCard(model, refresh, locale, snapshot),
+			creationRolledStats(locale, snapshot),
 			html.Div(html.Props{Style: map[string]string{"margin-top": "auto", "padding-top": "2px"}}, action,
 				html.P(html.Props{Role: "status", Aria: map[string]string{"live": "polite"}, Style: map[string]string{"min-height": "18px", "margin": "7px 0 0", "color": "#a89f8c", "font-size": "12px", "line-height": "1.35", "text-align": "center"}}, html.Text(creationStatus(snapshot)))),
 		)
@@ -127,6 +128,7 @@ func creationBuildCard(model *CreationModel, refresh stateCounter, locale string
 	if src != "" {
 		portrait = html.Div(html.Props{Style: map[string]string{"width": "76px", "height": "96px", "flex": "0 0 76px", "border-radius": "8px", "border": "1px solid rgba(217,164,65,.5)", "background": "#25232b", "overflow": "hidden"}}, html.Img(html.Props{Src: src, Alt: build.GetName(), Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))
 	}
+	portrait = html.WithKey(portrait, "creation-portrait:"+src)
 	return html.Section(html.Props{Class: "df-phone-create-build", Style: map[string]string{"display": "flex", "gap": "12px", "align-items": "center", "padding": "10px", "border": "1px solid #d9a441", "border-radius": "10px", "background": "linear-gradient(135deg, rgba(47,39,31,.96), rgba(17,21,29,.98))", "box-shadow": "inset 0 0 24px rgba(217,164,65,.08)"}}, portrait, html.Div(html.Props{Style: map[string]string{"min-width": "0", "flex": "1 1 auto"}}, creationNameRow(model, refresh, locale, snapshot), html.P(html.Props{Style: map[string]string{"margin": "3px 0 0", "color": "#efe6d2", "font-size": "13px", "letter-spacing": ".08em", "text-transform": "uppercase"}}, html.Text(build.GetClassName()))))
 }
 
@@ -158,4 +160,18 @@ func creationLockButton(lock ui.Handler, locale string) ui.Node {
 
 func creationLockedButton(locale string) ui.Node {
 	return PrimaryButton(creationLockedLabel(locale), ui.Handler{}, true)
+}
+
+func creationRolledStats(locale string, snapshot CreationSnapshot) ui.Node {
+	build := snapshot.Build.GetCharacter().GetBuild()
+	if build == nil {
+		return nil
+	}
+	return html.Section(html.Props{Style: map[string]string{"display": "grid", "gap": "12px", "padding": "14px", "border": "1px solid rgba(217,164,65,.3)", "background": "rgba(12,18,25,.86)", "border-radius": "8px"}},
+		sheetStats(locale, SheetSnapshot{Abilities: sheetAbilityValues(build.GetAbilities())}),
+		html.Div(html.Props{Style: map[string]string{"display": "flex", "justify-content": "space-between", "color": "#e7c27a", "font-size": "15px"}},
+			html.Strong(html.Props{}, html.Text("HP "+strconv.Itoa(int(build.GetHpMax())))),
+			html.Strong(html.Props{}, html.Text("AC "+strconv.Itoa(int(build.GetAc()))))),
+		HPBar(build.GetHp(), build.GetHpMax()),
+	)
 }
