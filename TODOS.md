@@ -326,6 +326,18 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: reconnecting phones and TV receive elapsed-adjusted creation time, frozen/off timers remain unchanged, values clamp at zero, cached snapshots are not mutated, and API gate passes.
   status: done (this commit); API gate artifacts/test/QA-053/gate-20260927-093332.log green, coverage 86.9%; independent pr9_review source review accepted.
 
+- [x] QA-054 · Align the WASM token-size regression with the reviewed battlefield design
+  why: QA-014 deliberately reduced flat hero tokens to 6.5% but the older DM-008 render test still expected 10%, hiding the usefulness of the full WASM suite.
+  lane: ORCH (Codex) · paths: `web/dm/screen_render_wasm_test.go`, `TODOS.md`, `docs/devlog.html` · depends: QA-014
+  done when: the test retains exact responsive position checks, asserts the adopted 6.5% size, and the complete DM WASM suite plus lane gate pass.
+  status: done (this commit); full DM WASM suite passes under wasm_exec_node, gate artifacts/test/QA-054/gate-20260927-093719.log green, coverage 91.4%; independent reviewer traced intentional size change to 9cb5d85 and obsolete assertion to d899bf1
+
+- [ ] QA-055 · Keep combat portraits consistent with the created heroes
+  why: The report found party cards showing identical species portraits while battlefield heroes differed; combat projection must preserve generated or gender-specific portraits from creation.
+  lane: live_report_audit · paths: `internal/api/project.go`, `internal/api/project_creation_test.go` · depends: API-023, DM-042
+  done when: combat tokens and initiative portraits resolve the created hero portrait on both clients, distinct heroes do not collapse to one species image, tests cover generated/fallback portraits, and API gate plus real creation-to-combat playtest pass.
+  status: claimed live_report_audit 2026-09-27; parent backfills observed worker edits pending scope confirmation
+
 ### Kill cam (developer-directed single writer, 2026-09-27)
 
 - [ ] KC-010 · Generate opponent-facing idle, walk and attack loops from hero references

@@ -68,7 +68,7 @@ func TestCombatTokens_RenderAsResponsivePercentages(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderToString() error = %v", err)
 	}
-	for _, want := range []string{"left:50%", "top:50%", "width:10%"} {
+	for _, want := range []string{"left:50%", "top:50%", "width:6.5%"} {
 		if !strings.Contains(markup, want) {
 			t.Fatalf("token markup missing %q: %s", want, markup)
 		}

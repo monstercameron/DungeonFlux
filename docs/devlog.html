@@ -87,6 +87,12 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-wasm-token-size-assertion">
+  <div class="entry-head"><time datetime="2026-09-27T09:38-04:00">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">ORCH</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-wasm-token-size-assertion">Restore the full TV WASM regression suite</a></h2>
+  <p>Running the browser-targeted Go tests exposed an older assertion that flat battlefield tokens occupied ten percent of the scene width. QA-014 had intentionally reduced the tokens to 6.5 percent, but its matching render assertion had not changed. An independent reviewer traced the implementation and assertion to their original commits. The test now checks the adopted width while retaining exact responsive position checks. The full DM WASM suite passes under the Go Node runner, and the native lane gate passes with 91.4% coverage. No production layout changed in this repair.</p>
+</li>
+
 <li class="entry" data-kind="issue" id="e-20260927-creation-countdown-reconnect">
   <div class="entry-head"><time datetime="2026-09-27T09:36-04:00">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">ORCH</span></div>
   <h2 class="entry-title"><a href="#e-20260927-creation-countdown-reconnect">A reconnect must not restart the visible deadline</a></h2>
