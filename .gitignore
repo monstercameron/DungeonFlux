@@ -1,6 +1,18 @@
 # All generated output lives under artifacts/ (see AGENTS.md section 4).
 artifacts/*
 !artifacts/.gitkeep
+!artifacts/go.mod
+# Build-time generated media (paid to generate) are versioned through Git LFS.
+!artifacts/runtime/
+artifacts/runtime/*
+!artifacts/runtime/buildtime/
+# The battle splats the scene profiles reference (web/splat/scenes/*.json), via LFS.
+!artifacts/media/
+artifacts/media/*
+!artifacts/media/supersplat/
+artifacts/media/supersplat/*
+!artifacts/media/supersplat/64bb46d5/
+!artifacts/media/supersplat/colliders/
 
 # Runtime data if a stray run writes outside artifacts/
 *.db

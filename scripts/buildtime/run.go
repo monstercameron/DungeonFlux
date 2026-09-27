@@ -1,0 +1,81 @@
+package main
+
+import (
+	"context"
+	"errors"
+	"flag"
+	"fmt"
+	"os"
+	"sort"
+	"strings"
+)
+
+// Job is one independently runnable build-time asset job.
+type Job struct {
+	Name string
+	Run  func(context.Context, *ManifestWriter) error
+}
+
+// RunJobs executes jobs, then writes the manifest when all jobs succeed.
+func RunJobs(ctx context.Context, writer *ManifestWriter, jobs []Job) error {
+	if writer == nil {
+		return errors.New("buildtime: nil manifest writer")
+	}
+	ordered := append([]Job(nil), jobs...)
+	sort.Slice(ordered, func(i, j int) bool { return ordered[i].Name < ordered[j].Name })
+	for _, job := range ordered {
+		if strings.TrimSpace(job.Name) == "" || job.Run == nil {
+			return errors.New("buildtime: every job needs a name and function")
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if err := job.Run(ctx, writer); err != nil {
+			return fmt.Errorf("job %q: %w", job.Name, err)
+		}
+	}
+	_, err := writer.Write()
+	return err
+}
+
+func main() {
+	if len(os.Args) > 1 && (os.Args[1] == "billboards" || os.Args[1] == "level-still") {
+		if err := runBillboardCommand(os.Args[1], os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "register" {
+		if err := runRegister(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
+	root := flag.String("root", "artifacts/runtime/buildtime", "build-time output directory")
+	flag.Parse()
+	writer, err := NewManifestWriter(*root)
+	if err == nil {
+		err = RunJobs(context.Background(), writer, nil)
+	}
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func runRegister(args []string) error {
+	flags := flag.NewFlagSet("register", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+	root := flags.String("root", "artifacts/runtime/buildtime", "build-time output directory")
+	scan := flags.Bool("scan", false, "register known generated stills")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if !*scan {
+		return errors.New("buildtime: register requires --scan")
+	}
+	_, err := RegisterScannedStills(*root)
+	return err
+}

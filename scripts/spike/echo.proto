@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package spike.v1;
+
+option go_package = "github.com/monstercameron/DungeonFlux/scripts/spike/gen/spike/v1;spikev1";
+
+service Voice {
+  rpc Talk(stream AudioChunk) returns (Transcript);
+  rpc Listen(ListenRequest) returns (stream PCMFrame);
+}
+
+message AudioChunk {
+  uint64 sequence = 1;
+  uint32 sample_rate = 2;
+  bytes pcm_s16le = 3;
+  bool final = 4;
+  string mime_type = 5;
+}
+
+message Transcript {
+  string text = 1;
+}
+
+message ListenRequest {
+  string seat_token = 1;
+}
+
+message PCMFrame {
+  uint64 sequence = 1;
+  uint32 sample_rate = 2;
+  bytes pcm_s16le = 3;
+  bool final = 4;
+}

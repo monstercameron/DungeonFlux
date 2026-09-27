@@ -1,0 +1,11 @@
+SRD 5.2.1 data source
+- PDF: https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf
+- PDF SHA-256: 8974902D109D6E63672D7C490BDE9CCF052410503D9CFA768237154FBC5E3D87
+- Open5e repository: https://github.com/open5e/open5e-api
+- Open5e branch/commit: staging / 0acbf263c74caf8ad080af7a16d86d3700a1ac8f
+- Open5e path: data/v2/wizards-of-the-coast/srd-2024/*.json
+- 5e-bits repository: https://github.com/5e-bits/5e-srd-api
+- 5e-bits tag: 5e-srd-api-v7.0.0
+- 5e-bits resolved commit: 843a40171eb94ee60368d19d24138f8364fe666d
+- Plan-recorded 5e-bits commit: b2835eb6b33b5063dba835bb1cdb68668d4ce126
+- 5e-bits path: packages/5e-database/src/2024/en/*.json

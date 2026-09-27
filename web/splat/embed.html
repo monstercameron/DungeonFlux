@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DungeonFlux embedded battle viewers</title>
+<style>
+  :root{color-scheme:dark;font:14px/1.35 system-ui,sans-serif}*{box-sizing:border-box}body{margin:0;background:#070b12;color:#eaf2ff}.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px;position:sticky;top:0;background:#0b1421;z-index:2}.stage{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px}.viewer-card{min-width:0;height:min(62vh,620px);min-height:420px;resize:both;overflow:auto;position:relative;border:1px solid #334358;border-radius:8px;background:#111b2a}.viewer-card canvas{display:block;width:100%;height:100%;min-height:0;touch-action:none}.viewer-hud{position:absolute;inset:0;pointer-events:none;padding:8px}.df-battle-controls[hidden],.df-show-controls[hidden]{display:none!important}.df-battle-controls,.df-show-controls{pointer-events:auto;max-width:100%;border:1px solid #334358;border-radius:8px;background:rgb(8 14 24 / 92%);padding:7px}.df-battle-controls{display:flex;flex-wrap:wrap;gap:5px}.df-control-row{display:flex;flex-wrap:wrap;gap:4px;align-items:center}.df-control-label{color:#8da5bc;font-size:12px}button,select,input{border:1px solid #526981;border-radius:5px;padding:5px 7px;color:#eaf2ff;background:#162538;font:inherit}button:hover,button[aria-pressed=true]{background:#245070;border-color:#72d7e6}.status{margin-top:6px;white-space:pre-wrap;color:#b7c8dc}.error{color:#ffaaa8}.credits{position:absolute;bottom:8px;left:8px;right:8px;font-size:11px;text-shadow:0 1px 3px black;background:rgb(8 14 24 / 80%);padding:4px;pointer-events:auto}.credits a{color:#d5edff}@media(max-width:760px){.stage{grid-template-columns:1fr}.viewer-card{height:48vh;min-height:320px}}
+</style></head><body>
+<div class="toolbar"><button id="show-controls" type="button">Show controls</button><button id="hide-controls" type="button">Hide controls</button><button id="resize" type="button">Resize forest</button><button id="dispose-a" type="button">Dispose forest</button><button id="mount-a" type="button">Mount forest</button><span>Two independent embedded battle viewers</span></div>
+<main class="stage"><article class="viewer-card" id="card-a"><canvas id="battle-a" aria-label="Battle viewer A"></canvas><div class="viewer-hud" id="hud-a"><div class="status" id="status-a">Loading scene A…</div><div class="credits"><a href="https://superspl.at/scene/64bb46d5">Wooded Path - luckysplat</a> | <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a></div></div></article><article class="viewer-card" id="card-b"><canvas id="battle-b" aria-label="Battle viewer B"></canvas><div class="viewer-hud" id="hud-b"><div class="status" id="status-b">Loading scene B…</div><div class="credits"><a href="https://superspl.at/scene/cb2fddd6">Dittrich's Tomb - zenta</a> | <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/">CC BY-NC-ND 4.0</a><br>Scene credits Ing. arch. Daniel Dworschak.</div></div></article></main>
+<section style="padding:12px;max-width:1000px"><h1>Embed a battlefield in your canvas</h1>
+<p>Give the canvas a CSS width and height. Each instance owns its renderer and listeners, and keeps the supplied element in place. Controls and camera input can be toggled independently. Pass <code>controlsContainer</code> to place optional controls in a host-owned sidebar or overlay; otherwise they use the canvas parent in normal flow. The renderer does not reparent the canvas or change its host layout.</p>
+<pre><code>import { createBattleViewer } from "/web/splat/js/battle_viewer.mjs";
+const battle = createBattleViewer({ canvas, controls: false, cameraControls: false });
+const unsubscribe = battle.onEvent(event =&gt; console.log(event.type));
+await battle.load("/web/splat/scenes/64bb46d5.json");
+battle.setControlsVisible(true);
+battle.setCameraControlsEnabled(true);
+battle.setTokens([{ id: "hero", kind: "player", cell: [c, r], anim_seq: 1 }]);
+battle.follow("hero");
+battle.effects({ shake: { amplitude_px: 8, duration_ms: 200 } });
+// When the host view unmounts:
+unsubscribe(); battle.dispose();</code></pre>
+<p><code>load()</code> accepts a profile URL, profile object, PLY, SOG or LOD manifest URL. Relative assets in fetched profiles resolve from the profile URL; inline objects resolve from the host document or <code>baseURL</code>. Failed loads reject and emit an error; superseded or disposed loads reject with <code>AbortError</code>.</p>
+<table><tr><th>API</th><th>Purpose</th></tr><tr><td>send / setTokens / setCamera / follow</td><td>Apply ordered authoritative scene snapshots or individual presentation commands.</td></tr><tr><td>setGridVisible / setCharactersVisible / setVisible</td><td>Toggle scene layers and canvas visibility.</td></tr><tr><td>effects / setEffectsEnabled / setColorGrade / setLOD / pause</td><td>Control presentation; effects may omit seq for an automatic sequence.</td></tr><tr><td>getState / onEvent / resize / dispose</td><td>Read detached state, subscribe with an unsubscribe callback, resize and release owned resources.</td></tr></table>
+<p><code>onEvent()</code> emits <code>loading</code>, <code>ready</code>, <code>state</code>, <code>tokens</code>, <code>scene</code>, <code>stats</code>, <code>error</code> and <code>disposed</code>. Events include a detached state snapshot; <code>ready</code> includes the filtered grid. Errors carry <code>code</code> and <code>detail</code>. <code>setTokens()</code>, <code>setCamera()</code> and <code>effects()</code> return false for stale sequenced commands. Malformed token/camera sequence arguments throw; invalid effect commands return false. Automatic sequences share the same counters as explicit game commands.</p>
+<p><code>dispose()</code> is idempotent: it removes owned controls, input and resize listeners, releases renderer resources and restores managed styles. The host canvas remains in place and can be mounted again. A canvas can have one active battle renderer; use separate canvases for independent instances. This renderer requires WebGL2. Hosts can read attribution from <code>getState().source</code>. <code>createBattleRuntime()</code> in <code>battle_runtime.mjs</code> exposes the same scene API without any control-panel code.</p>
+<p>Tokens use valid supported cells from <code>getState().grid</code>. Token paths omit the starting cell and require an advancing <code>anim_seq</code>. Explicit scene, camera and effects sequences reject stale updates. Use <code>send({v:1,type:"scene",seq,visible,tokens,camera})</code> for game snapshots. The example supplies local stand-ins; the API does not choose game moves.</p>
+</section>
+<script type="module">
+  import { createBattleViewer } from "./js/battle_viewer.mjs";
+  import { createBattleDemo } from "./js/battle_demo.mjs";
+  const make = (id, hud, source) => {
+    let demo;
+    const status = document.querySelector(hud + " .status");
+    const viewer = createBattleViewer({canvas:document.querySelector(id),controls:false,controlsContainer:document.querySelector(hud),onMove:()=>demo?.move()});
+    demo = createBattleDemo(viewer);
+    const unsubscribe = viewer.onEvent(event => {
+      if (event.type === "ready") { status.textContent = `${event.playable} supported cells - 5 ft squares`; status.className = "status"; }
+      if (event.type === "error") { status.textContent = event.detail; status.className = "status error"; }
+      if (event.type === "disposed") status.textContent = "Disposed; canvas retained";
+    });
+    viewer.load(source).catch(error => { if(error.name !== "AbortError") status.textContent = error.message; });
+    return {viewer,demo,dispose() {demo.dispose();viewer.dispose();unsubscribe();}};
+  };
+  let a = make("#battle-a","#hud-a","./scenes/64bb46d5.json");
+  const b = make("#battle-b","#hud-b","./scenes/cb2fddd6.json");
+  const live = fn => { if (!a.viewer.getState().disposed) fn(a.viewer); fn(b.viewer); };
+  document.querySelector("#show-controls").onclick = () => live(viewer => viewer.setControlsVisible(true));
+  document.querySelector("#hide-controls").onclick = () => live(viewer => viewer.setControlsVisible(false));
+  document.querySelector("#resize").onclick = () => {const card=document.querySelector("#card-a");card.style.height=card.style.height ? "" : "480px";};
+  document.querySelector("#dispose-a").onclick = () => a.dispose();
+  document.querySelector("#mount-a").onclick = () => {if(a.viewer.getState().disposed) a=make("#battle-a","#hud-a","./scenes/64bb46d5.json");};
+  window.addEventListener("beforeunload",()=>{a.dispose();b.dispose();});
+</script></body></html>

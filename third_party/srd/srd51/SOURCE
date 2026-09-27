@@ -1,0 +1,10 @@
+SRD 5.1 data source
+- PDF: https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf
+- PDF SHA-256: 2504D2A0ABB0A4D491A939BE4F17910A2DDE0312570AB8D208080225CCF0A1F0
+- Open5e repository: https://github.com/open5e/open5e-api
+- Open5e branch/commit: staging / 0acbf263c74caf8ad080af7a16d86d3700a1ac8f
+- Open5e path: data/v2/wizards-of-the-coast/srd-2014/*.json
+- 5e-bits repository: https://github.com/5e-bits/5e-srd-api
+- 5e-bits tag: 5e-srd-api-v7.0.0
+- 5e-bits resolved commit: 843a40171eb94ee60368d19d24138f8364fe666d
+- 5e-bits path: packages/5e-database/src/2014/en/*.json

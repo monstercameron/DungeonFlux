@@ -1,0 +1,50 @@
+{
+  "server": {
+    "port": 18101,
+    "debug": true,
+    "log_level": "debug",
+    "data_dir": "artifacts/runtime/ORCH-CFG",
+    "room_code": "DF-FAKE",
+    "allowed_origins": ["http://localhost:18101"]
+  },
+  "adapters": {
+    "llm": {"vendor": "local", "mode": "fake", "base_url": "http://127.0.0.1:8080/v1"},
+    "image": {"vendor": "openai", "mode": "fake"},
+    "video": {"vendor": "segmind", "mode": "fake"},
+    "stt": {"vendor": "elevenlabs", "mode": "fake"},
+    "tts": {"vendor": "elevenlabs", "mode": "fake"},
+    "sound": {"vendor": "elevenlabs", "mode": "fake"}
+  },
+  "models": {
+    "chains": {
+      "opening": ["local:fake"],
+      "npc_reply": ["local:fake"],
+      "interpret": ["local:fake"],
+      "character_flavor": ["local:fake"],
+      "stranger_lines": ["local:fake"],
+      "cliffhanger": ["local:fake"],
+      "combat_outcomes": ["local:fake"]
+    }
+  },
+  "timeouts": {
+    "character_flavor": "10s",
+    "interpret": "2.5s",
+    "spoken_first_token": "3s",
+    "prerender": "20s",
+    "portrait": "22s",
+    "tts": "5s"
+  },
+  "features": {
+    "combat_move_ui": true,
+    "turn_timers": true,
+    "live_pc_loops": false,
+    "live_video": false,
+    "sequence_mode": false,
+    "splat": true,
+    "music": false,
+    "budget_enforce": false
+  },
+  "battlefield": {"nav_path": "internal/content/battlefield_tavern.json"},
+  "budget": {"per_run_usd": 0, "hard_usd": 0},
+  "debug_start": ""
+}

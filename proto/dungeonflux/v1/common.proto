@@ -1,0 +1,341 @@
+syntax = "proto3";
+
+package dungeonflux.v1;
+
+option go_package = "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1;dungeonfluxv1";
+
+message Empty {}
+
+enum ClientKind {
+  CLIENT_KIND_UNSPECIFIED = 0;
+  CLIENT_KIND_DM = 1;
+  CLIENT_KIND_PHONE = 2;
+  CLIENT_KIND_HOST = 3;
+}
+
+enum ReportKind {
+  REPORT_KIND_UNSPECIFIED = 0;
+  REPORT_KIND_PLAYBACK_DONE = 1;
+  REPORT_KIND_CLIP_ENDED = 2;
+  REPORT_KIND_SPLAT_READY = 3;
+  REPORT_KIND_SPLAT_FAILED = 4;
+  REPORT_KIND_CLIENT_STATE = 5;
+  REPORT_KIND_CLIENT_SCREENSHOT = 6;
+}
+
+enum DiceState {
+  DICE_STATE_UNSPECIFIED = 0;
+  DICE_STATE_OFFERED = 1;
+  DICE_STATE_ROLLING = 2;
+  DICE_STATE_RESOLVED = 3;
+}
+
+enum DiceKind {
+  DICE_KIND_UNSPECIFIED = 0;
+  DICE_KIND_CHECK = 1;
+  DICE_KIND_ATTACK = 2;
+}
+
+enum PTTState {
+  PTT_STATE_UNSPECIFIED = 0;
+  PTT_STATE_IDLE = 1;
+  PTT_STATE_RECORDING = 2;
+  PTT_STATE_TRANSCRIBING = 3;
+  PTT_STATE_FAILED = 4;
+}
+
+enum HostCommandKind {
+  HOST_COMMAND_KIND_UNSPECIFIED = 0;
+  HOST_COMMAND_KIND_START = 1;
+  HOST_COMMAND_KIND_PAUSE = 2;
+  HOST_COMMAND_KIND_RESUME = 3;
+  HOST_COMMAND_KIND_FORCE_D20 = 4;
+  HOST_COMMAND_KIND_SAFE_MODE = 5;
+  HOST_COMMAND_KIND_SKIP = 6;
+  HOST_COMMAND_KIND_RESET = 7;
+  HOST_COMMAND_KIND_TIMER_ADD = 8;
+  HOST_COMMAND_KIND_TIMERS_OFF = 9;
+  HOST_COMMAND_KIND_SPLAT_OFF = 10;
+  HOST_COMMAND_KIND_ROOM_LOCALE = 11;
+}
+
+message Cell { int32 c = 1; int32 r = 2; }
+message Option { string id = 1; string label = 2; }
+// Text carries a localizable string as a key plus arguments. Clients render
+// it through the catalog for the view locale; fallback covers unknown keys.
+message Text {
+  string key = 1;
+  map<string, string> args = 2;
+  int32 count = 3;
+  string fallback = 4;
+}
+message Move {
+  string move_id = 1;
+  string label = 2;
+  bool enabled = 3;
+  string reason = 4;
+  repeated Option options = 5;
+  MovePreview preview = 6;
+  string target_id = 7;
+  Cell cell = 8;
+  string label_key = 9;
+  Text reason_msg = 10;
+}
+message MovePreview {
+  int32 modifier = 1;
+  int32 vs = 2;
+  double p_success = 3;
+  DamagePreview damage = 4;
+}
+message DamagePreview { string dice = 1; int32 bonus = 2; }
+
+message Timer {
+  string seat = 1;
+  int64 remaining_ms = 2;
+  int64 total_ms = 3;
+  bool frozen = 4;
+}
+message Narration {
+  string speaker = 1;
+  string text_so_far = 2;
+  bool done = 3;
+  string line_id = 4;
+}
+message Subtitle { int32 player_number = 1; string text = 2; }
+message Dice {
+  DiceState state = 1;
+  int32 d20 = 2;
+  int32 modifier = 3;
+  int32 dc = 4;
+  string outcome = 5;
+  DiceKind kind = 6;
+  string vs_label = 7;
+  bool crit = 8;
+  Damage damage = 9;
+}
+message Damage {
+  string dice = 1;
+  repeated int32 faces = 2;
+  int32 bonus = 3;
+  int32 total = 4;
+  string type = 5;
+}
+message Clip { string url = 1; int64 offset_ms = 2; bool playing = 3; string then = 4; }
+message Layer { string id = 1; string url = 2; float x = 3; float y = 4; float scale = 5; bool highlight = 6; }
+message Music { string track_id = 1; string url = 2; int64 loop_start_ms = 3; int64 loop_end_ms = 4; int32 bpm = 5; float level = 6; float duck = 7; string cue = 8; }
+message SoundEffect { string id = 1; string url = 2; }
+message BuildCard { int32 player_number = 1; string name = 2; string class_name = 3; string portrait_url = 4; }
+message Shot { string id = 1; bool fallback = 2; }
+message LobbySeat {
+  string seat_id = 1;
+  int32 player_number = 2;
+  string name = 3;
+  bool joined = 4;
+  string locale = 5;
+  bool ready = 6;
+}
+message Lobby {
+  string room_code = 1;
+  string join_url = 2;
+  string qr_url = 3;
+}
+
+message Battlefield {
+  string mode = 1;
+  bool visible = 2;
+  string scene_url = 3;
+  string lite_url = 4;
+  string transform = 5;
+  Grid grid = 6;
+  FlatBattlefield flat = 7;
+  repeated Camera cameras = 8;
+  Camera camera = 9;
+  repeated Highlight highlights = 10;
+  int64 contact_in_ms = 11;
+  Shake shake = 12;
+}
+message Grid { Cell origin = 1; float cell_m = 2; int32 cols = 3; int32 rows = 4; repeated Cell walkable = 5; }
+message FlatBattlefield { string image_url = 1; repeated float floor_quad_px = 2; }
+message Camera { string preset = 1; string focus_token_id = 2; uint64 seq = 3; bool follow = 4; int64 duration_ms = 5; }
+message Shake { float amplitude_px = 1; int64 duration_ms = 2; uint64 seq = 3; }
+message Token {
+  string token_id = 1;
+  string name = 2;
+  string portrait_url = 3;
+  Cell cell = 4;
+  int32 hp = 5;
+  int32 hp_max = 6;
+  bool active = 7;
+  repeated string statuses = 8;
+  string kind = 9;
+  repeated Cell path = 10;
+  string anim = 11;
+  uint64 anim_seq = 12;
+  map<string, string> clips = 13;
+  // step_ms is the walk pace per path cell; 0 means 250 ms. A Dash walks
+  // faster (anim "dash", R-D8).
+  int32 step_ms = 14;
+}
+message Highlight { Cell cell = 1; string kind = 2; repeated Cell cells = 3; }
+message TurnOrderEntry { string token_id = 1; string name = 2; string portrait_url = 3; int32 hp = 4; int32 hp_max = 5; bool active = 6; bool done = 7; }
+message CombatView { string token_id = 1; int32 hp = 2; int32 hp_max = 3; repeated string statuses = 4; bool my_turn = 5; int32 move_left_cells = 6; MiniGrid mini_grid = 7; int64 contact_in_ms = 8; }
+message MiniGrid {
+  int32 cols = 1; int32 rows = 2; repeated Cell walkable = 3; repeated Cell reachable = 4; Cell me = 5; Cell thrall = 6;
+  // The top-down combat map (R-D3, R-D8): every token, the dash-only cells,
+  // and the engine path to each reachable cell. Reach is empty for the
+  // watching seat. The phone never pathfinds.
+  repeated MapToken tokens = 7;
+  repeated Cell dash_reachable = 8;
+  repeated ReachPath paths = 9;
+  string me_token_id = 10;
+  bool can_dash = 11;
+  int32 walk_step_ms = 12;
+  int32 dash_step_ms = 13;
+}
+message MapToken {
+  string token_id = 1; string name = 2; string kind = 3; Cell cell = 4; int32 hp = 5; int32 hp_max = 6;
+  bool me = 7; bool enemy = 8; bool down = 9; bool active = 10; string portrait_url = 11; int32 seat = 12;
+  repeated Cell path = 13; string anim = 14; uint64 anim_seq = 15; int32 step_ms = 16;
+}
+message ReachPath { Cell cell = 1; repeated Cell path = 2; bool dash = 3; }
+
+message DMView {
+  string background_url = 1;
+  repeated Layer layers = 2;
+  Clip clip = 3;
+  Narration narration = 4;
+  Subtitle subtitle = 5;
+  Dice dice = 6;
+  Timer turn_timer = 7;
+  string callout = 8;
+  repeated BuildCard build_cards = 9;
+  Shot shot = 10;
+  Music music = 11;
+  string ambience_url = 12;
+  repeated SoundEffect sfx = 13;
+  Battlefield battlefield = 14;
+  repeated Token tokens = 15;
+  repeated Highlight highlights = 16;
+  repeated TurnOrderEntry turn_order = 17;
+  int32 round = 18;
+  string combat_banner = 19;
+  repeated string preload = 20;
+  string locale = 21;
+  Text notice = 22;
+  repeated LobbySeat seats = 23;
+  Lobby lobby = 24;
+  int64 contact_in_ms = 25;
+  Shake shake = 26;
+}
+message CharacterFlavor {
+  string name = 1;
+  string look = 2;
+  string hook = 3;
+}
+message CharacterBuild {
+  repeated int32 abilities = 1;
+  repeated string save_profs = 2;
+  map<string, string> skill_profs = 3;
+  int32 hp = 4;
+  int32 hp_max = 5;
+  int32 ac = 6;
+}
+message Character {
+  string name = 1;
+  string class_name = 2;
+  int32 persuasion_modifier = 3;
+  string portrait_url = 4;
+  string hook_text = 5;
+  string species = 6;
+  string gender = 7;
+  CharacterFlavor flavor = 8;
+  CharacterBuild build = 9;
+  bool locked = 10;
+}
+message PTT { bool enabled = 1; PTTState state = 2; }
+message PhoneView { Character character = 1; repeated Move moves = 2; PTT ptt = 3; Timer turn_timer = 4; string status_text = 5; CombatView combat = 6; string locale = 7; Text status_msg = 8; Narration narration = 9; }
+message AssetSlot { string name = 1; string state = 2; }
+message HostView { DMView dm = 1; repeated string event_log_tail = 2; repeated AssetSlot asset_slots = 3; string run_mode = 4; int32 next_d20 = 5; int64 combat_cap_remaining_ms = 6; repeated string log_tail = 7; string locale = 8; string room_locale = 9; }
+message ScreenState {
+  uint64 version = 1;
+  string phase = 2;
+  string spotlight_seat = 3;
+  bool paused = 4;
+  oneof view { DMView dm = 5; PhoneView phone = 6; HostView host = 7; }
+  string locale = 8;
+}
+
+message WatchRequest { string seat_token = 1; }
+message ClientCommand { string command_id = 1; string verb = 2; string arg = 3; }
+message JoinRequest { string room_code = 1; ClientKind kind = 2; string seat_token = 3; string host_token = 4; string dm_token = 5; string locale = 6; string player_name = 7; }
+message JoinResponse { string seat_id = 1; string seat_token = 2; int32 player_number = 3; string locale = 4; }
+message ActRequest { string seat_token = 1; string move_id = 2; string arg = 3; string target_id = 4; Cell cell = 5; }
+message ActResponse { bool accepted = 1; string reason = 2; }
+message SayRequest { string seat_token = 1; string text = 2; }
+message SayResponse { bool accepted = 1; string reason = 2; string utterance_id = 3; }
+message ReportRequest { string seat_token = 1; ReportKind kind = 2; string id = 3; string client_state = 4; bytes png = 5; string command_id = 6; }
+message ReportResponse {}
+
+message TalkStart { string seat_token = 1; string mime_type = 2; }
+message AudioChunk { uint64 seq = 1; bytes data = 2; }
+message TalkEnd {}
+message TalkRequest { oneof message { TalkStart start = 1; AudioChunk chunk = 2; TalkEnd end = 3; } }
+message ChunkAck { uint64 seq = 1; }
+message Transcript { string text = 1; bool final = 2; }
+message TalkStop { string reason = 1; }
+message TalkError { string message = 1; }
+message TalkResponse { oneof message { ChunkAck ack = 1; Transcript transcript = 2; TalkStop stop = 3; TalkError error = 4; } }
+
+message ListenRequest { string seat_token = 1; }
+message AudioFrame { string utterance_id = 1; string speaker = 2; uint64 seq = 3; int32 sample_rate = 4; bytes pcm_s16le = 5; bool final = 6; }
+message AudioCancel { string utterance_id = 1; bool all = 2; }
+enum AudioChannel {
+  AUDIO_CHANNEL_UNSPECIFIED = 0;
+  AUDIO_CHANNEL_VOICE = 1;
+  AUDIO_CHANNEL_MUSIC = 2;
+  AUDIO_CHANNEL_AMBIENCE = 3;
+  AUDIO_CHANNEL_SFX = 4;
+}
+enum AudioTargetKind {
+  AUDIO_TARGET_KIND_UNSPECIFIED = 0;
+  AUDIO_TARGET_KIND_DM = 1;
+  AUDIO_TARGET_KIND_SEAT = 2;
+  AUDIO_TARGET_KIND_ALL_PHONES = 3;
+}
+message AudioTarget { AudioTargetKind kind = 1; int32 seat = 2; }
+message EncodedAudioChunk {
+  string codec_mime = 1;
+  uint64 seq = 2;
+  bytes data = 3;
+  bool final = 4;
+  int32 duration_ms = 5;
+}
+enum AudioMixCommandKind {
+  AUDIO_MIX_COMMAND_KIND_UNSPECIFIED = 0;
+  AUDIO_MIX_COMMAND_KIND_PLAY = 1;
+  AUDIO_MIX_COMMAND_KIND_STOP = 2;
+  AUDIO_MIX_COMMAND_KIND_CROSSFADE = 3;
+  AUDIO_MIX_COMMAND_KIND_DUCK = 4;
+}
+message AudioMixCommand {
+  AudioMixCommandKind kind = 1;
+  string track_id = 2;
+  int64 start_at_ms = 3;
+  int32 duration_ms = 4;
+  bool loop = 5;
+  float gain = 6;
+  float duck = 7;
+}
+message AudioMessage {
+  oneof message {
+    AudioFrame frame = 1;
+    AudioCancel cancel = 2;
+    EncodedAudioChunk chunk = 3;
+    AudioMixCommand mix = 4;
+  }
+  AudioChannel channel = 5;
+  AudioTarget target = 6;
+}
+
+message HostCommand { string host_token = 1; HostCommandKind command = 2; int32 d20 = 3; bool on = 4; int32 seconds = 5; string locale = 6; }
+message HostAck { bool ok = 1; string reason = 2; }

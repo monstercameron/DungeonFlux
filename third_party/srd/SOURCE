@@ -1,0 +1,30 @@
+DungeonFlux SRD vendoring record
+Fetched: 2026-09-26
+
+SRD 5.1 reference PDF
+- URL: https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf
+- Local path: srd51/SRD_CC_v5.1.pdf
+- SHA-256: 2504D2A0ABB0A4D491A939BE4F17910A2DDE0312570AB8D208080225CCF0A1F0
+
+SRD 5.2.1 reference PDF
+- URL: https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf
+- Local path: srd521/SRD_CC_v5.2.1.pdf
+- SHA-256: 8974902D109D6E63672D7C490BDE9CCF052410503D9CFA768237154FBC5E3D87
+
+Open5e open5e-api
+- Repository: https://github.com/open5e/open5e-api
+- Branch: staging
+- Commit: 0acbf263c74caf8ad080af7a16d86d3700a1ac8f
+- Vendored paths: data/v2/wizards-of-the-coast/srd-2014/*.json -> srd51/open5e/
+  and data/v2/wizards-of-the-coast/srd-2024/*.json -> srd521/open5e/
+
+5e-bits 5e-srd-api
+- Repository: https://github.com/5e-bits/5e-srd-api
+- Tag: 5e-srd-api-v7.0.0
+- Resolved commit at fetch: 843a40171eb94ee60368d19d24138f8364fe666d
+- Plan-recorded commit: b2835eb6b33b5063dba835bb1cdb68668d4ce126
+- Vendored paths: packages/5e-database/src/2014/en/*.json -> srd51/5e-bits/
+  and packages/5e-database/src/2024/en/*.json -> srd521/5e-bits/
+
+This directory is build-time reference data. Runtime code must not fetch these
+sources or depend on network availability.

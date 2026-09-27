@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package dungeonflux.v1;
+
+option go_package = "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1;dungeonfluxv1";
+
+// AssetService transfers immutable build-time and runtime assets after boot.
+service AssetService {
+  rpc Get(AssetRequest) returns (stream AssetChunk);
+  rpc Manifest(AssetManifestRequest) returns (AssetManifestResponse);
+}
+
+message AssetRequest {
+  string name = 1;
+  string sha256 = 2;
+}
+
+message AssetChunk {
+  string name = 1;
+  string sha256 = 2;
+  string content_type = 3;
+  uint64 size = 4;
+  uint64 offset = 5;
+  bytes data = 6;
+  bool final = 7;
+}
+
+message AssetManifestRequest {}
+
+message AssetManifestEntry {
+  string name = 1;
+  string sha256 = 2;
+  string content_type = 3;
+  uint64 size = 4;
+}
+
+message AssetManifestResponse {
+  repeated AssetManifestEntry assets = 1;
+}

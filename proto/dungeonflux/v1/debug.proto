@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package dungeonflux.v1;
+
+option go_package = "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1;dungeonfluxv1";
+
+import "dungeonflux/v1/common.proto";
+
+service DebugService {
+  rpc State(DebugRoom) returns (DebugState);
+  rpc View(ViewRequest) returns (ScreenState);
+  rpc Legal(SeatRequest) returns (LegalMoves);
+  rpc Scopes(DebugRoom) returns (ScopeTree);
+  rpc Assets(DebugRoom) returns (AssetList);
+  rpc Events(EventsRequest) returns (stream EventRecord);
+  rpc Logs(LogsRequest) returns (stream LogRecord);
+  rpc Clients(DebugRoom) returns (ClientList);
+  rpc Costs(DebugRoom) returns (CostReport);
+  rpc Send(SendRequest) returns (SendResponse);
+  rpc Act(DebugActRequest) returns (SendResponse);
+  rpc Say(DebugSayRequest) returns (SendResponse);
+  rpc DiceForce(DiceForceRequest) returns (SendResponse);
+  rpc Reset(ResetRequest) returns (SendResponse);
+  rpc Snapshot(SnapshotRequest) returns (SnapshotResponse);
+  rpc Vendor(VendorRequest) returns (VendorResponse);
+  rpc Client(ClientRequest) returns (ClientResponse);
+}
+
+message DebugRoom { string room = 1; }
+message ViewRequest { string room = 1; string seat = 2; string view = 3; }
+message SeatRequest { string room = 1; string seat = 2; }
+message DebugState { string phase = 1; string machines_json = 2; string seed = 3; uint64 run_index = 4; uint64 dice_counter = 5; string seats_json = 6; string timers_json = 7; }
+message LegalMoves { repeated Move moves = 1; }
+message ScopeTree { string scopes_json = 1; }
+message AssetList { repeated AssetSlot slots = 1; }
+message EventsRequest { string room = 1; uint64 since = 2; bool follow = 3; }
+message LogsRequest { string room = 1; string level = 2; string trace_id = 3; bool follow = 4; }
+message EventRecord { uint64 seq = 1; int64 t_ms = 2; string machine = 3; uint64 epoch = 4; string scope_key = 5; string from = 6; string event = 7; string payload_json = 8; string to = 9; repeated string effects_json = 10; string outputs_json = 11; }
+message LogRecord { string time = 1; string level = 2; string message = 3; string attributes_json = 4; }
+message ClientList { repeated ClientInfo clients = 1; }
+message ClientInfo { string id = 1; ClientKind kind = 2; string seat = 3; string state_json = 4; }
+message CostReport { repeated VendorCost vendors = 1; double total_usd = 2; }
+message VendorCost { string vendor = 1; double usd = 2; uint64 calls = 3; }
+message SendRequest { string room = 1; string event = 2; string payload_json = 3; }
+message DebugActRequest { string room = 1; string seat = 2; string move_id = 3; string arg = 4; string target_id = 5; Cell cell = 6; }
+message DebugSayRequest { string room = 1; string seat = 2; string text = 3; }
+message DiceForceRequest { string room = 1; int32 d20 = 2; }
+message ResetRequest { string room = 1; string seed = 2; }
+message SendResponse { bool accepted = 1; string reason = 2; uint64 seq = 3; repeated string effects_json = 4; }
+message SnapshotRequest { string room = 1; string operation = 2; bytes data = 3; }
+message SnapshotResponse { bool ok = 1; string reason = 2; bytes data = 3; }
+message VendorRequest { string room = 1; string operation = 2; string payload_json = 3; }
+message VendorResponse { bool ok = 1; string reason = 2; string result_json = 3; }
+message ClientRequest { string room = 1; string client_id = 2; string verb = 3; string arg = 4; }
+message ClientResponse { bool ok = 1; string reason = 2; string path = 3; }

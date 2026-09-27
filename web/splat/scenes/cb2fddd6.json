@@ -1,0 +1,239 @@
+{
+  "title": "Dittrich's Tomb",
+  "scene_url": "../../../artifacts/media/supersplat/cb2fddd6/lod-meta.json",
+  "voxel_collider": {
+    "url": "../../../artifacts/media/supersplat/colliders/cb2fddd6.voxel.json",
+    "floor_y": 0,
+    "step_height": 0.3,
+    "height": 1.8,
+    "inset": 0.15,
+    "all_candidates": true,
+    "floor_search_min": -1.0,
+    "floor_search_max": 1.4,
+    "support_radius": 0.15,
+    "max_floor_slope": 0.45
+  },
+  "lod": 4,
+  "transform": {
+    "scale": 0.4,
+    "offset_y": 0,
+    "rot_y_deg": 0,
+    "translate": [
+      0,
+      3.4,
+      0
+    ]
+  },
+  "grid": {
+    "origin": [
+      -2.4,
+      -2.2096
+    ],
+    "cell_m": 1.524,
+    "cols": 16,
+    "rows": 10,
+    "walkable": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      72,
+      73,
+      74,
+      75,
+      76,
+      77,
+      78,
+      79,
+      88,
+      89,
+      90,
+      91,
+      92,
+      93,
+      94,
+      95,
+      104,
+      105,
+      106,
+      107,
+      108,
+      109,
+      110,
+      111,
+      115,
+      116,
+      117,
+      118,
+      119,
+      120,
+      121,
+      122,
+      123,
+      124,
+      125,
+      126,
+      127,
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      141,
+      142,
+      143
+    ]
+  },
+  "cameras": {
+    "TACTICAL": {
+      "position": [
+        0,
+        8.6,
+        9
+      ],
+      "target": [
+        3.8,
+        0.8,
+        -1.2
+      ],
+      "fov": 52
+    },
+    "COMBAT_EST": {
+      "position": [
+        0,
+        6.8,
+        10
+      ],
+      "target": [
+        2.8,
+        1,
+        -1.2
+      ],
+      "fov": 54
+    },
+    "TURN_FOCUS": {
+      "position": [
+        0.5,
+        5,
+        6.5
+      ],
+      "target": [
+        3.8,
+        0.8,
+        -1.2
+      ],
+      "fov": 52
+    },
+    "IMPACT": {
+      "position": [
+        0.5,
+        5,
+        6.5
+      ],
+      "target": [
+        3.8,
+        0.8,
+        -1.2
+      ],
+      "fov": 52
+    },
+    "KO": {
+      "position": [
+        0,
+        9.6,
+        10
+      ],
+      "target": [
+        3.8,
+        0.8,
+        -1.2
+      ],
+      "fov": 54
+    },
+    "VICTORY": {
+      "position": [
+        0,
+        6.8,
+        10
+      ],
+      "target": [
+        2.8,
+        1,
+        -1.2
+      ],
+      "fov": 54
+    },
+    "SOURCE": {
+      "position": [
+        1.629066,
+        4.1497748,
+        7.7684968
+      ],
+      "target": [
+        -0.2919048,
+        3.4771764,
+        1.9463264
+      ],
+      "fov": 85
+    },
+    "SURVEY": {
+      "position": [
+        0,
+        12,
+        11
+      ],
+      "target": [
+        3.8,
+        0.8,
+        -1.2
+      ],
+      "fov": 58
+    }
+  },
+  "source": {
+    "title": "Dittrichova hrobka / Dittrich's tomb (mauzoleum) Krásná lípa",
+    "author": "zenta",
+    "url": "https://superspl.at/scene/cb2fddd6",
+    "manifest": "https://d28zzqy0iyovbz.cloudfront.net/cb2fddd6/v1/lod-meta.json",
+    "license": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+    "credits": "Scene description credits Ing. arch. Daniel Dworschak."
+  },
+  "registration_note": "Courtyard and side lawn preview uses a visual calibration estimate of 0.4 metres per source unit (2.5 source units per metre, based on architecture/door framing), with automatic collider candidates and terrain-height support on 1.524m logical cells. Physical scan units remain approximate; generated 0.2m occupancy is not a surveyed navigation mesh.",
+  "color_grade": {
+    "theme": "crypt",
+    "strength": 0.6,
+    "enabled": true
+  }
+}

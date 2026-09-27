@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DungeonFlux</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    html, body { margin: 0; min-height: 100%; background: #10131b; color: #f3eee4; }
+    body { min-height: 100vh; }
+    #app { display: block; width: 100%; min-height: 100vh; }
+    #status { opacity: .72; margin: 0; min-height: 100vh; display: grid; place-items: center; text-align: center; }
+  </style>
+</head>
+<body>
+  <main id="app"><p id="status">Loading DungeonFlux…</p></main>
+  <script src="/wasm_exec.js"></script>
+  <script>
+    // Dev live reload: open a client once with ?live=1 and it reloads itself
+    // whenever the rebuilt bundle's ETag changes (the query is remembered
+    // because the router drops it). Off for players by default.
+    (function () {
+      try {
+        if (new URLSearchParams(location.search).get("live") === "1") sessionStorage.setItem("df-live", "1");
+        if (sessionStorage.getItem("df-live") !== "1") return;
+        let seen = "";
+        setInterval(async function () {
+          try {
+            const tag = (await fetch("/app/dungeonflux.wasm", { method: "HEAD", cache: "no-store" })).headers.get("ETag") || "";
+            if (seen && tag && tag !== seen) location.reload();
+            if (tag) seen = tag;
+          } catch (e) { /* server restarting */ }
+        }, 2000);
+      } catch (e) { /* storage blocked */ }
+    }());
+  </script>
+  <script>
+    (async function () {
+      const status = document.getElementById("status");
+      try {
+        const go = new Go();
+        const result = await WebAssembly.instantiateStreaming(
+          fetch("/app/dungeonflux.wasm", { cache: "no-store" }), go.importObject);
+        go.run(result.instance);
+      } catch (error) {
+        status.textContent = "DungeonFlux could not start.";
+        console.error(error);
+      }
+    }());
+  </script>
+</body>
+</html>

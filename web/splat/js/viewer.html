@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DungeonFlux Splat Viewer</title>
+  <style>
+    :root { color-scheme: dark; font: 14px/1.35 system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #070b12; }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+    #hud { position: fixed; inset: 0; pointer-events: none; }
+    #toolbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 10px; }
+    #toolbar, #status { width: fit-content; max-width: calc(100vw - 20px); border: 1px solid #334358;
+      border-radius: 8px; background: rgb(8 14 24 / 88%); box-shadow: 0 5px 22px rgb(0 0 0 / 30%); }
+    #toolbar { pointer-events: auto; }
+    button { border: 1px solid #526981; border-radius: 5px; padding: 6px 9px; color: #eaf2ff;
+      background: #162538; cursor: pointer; font: inherit; }
+    button:hover, button[aria-pressed="true"] { background: #245070; border-color: #72d7e6; }
+    button:disabled { cursor: wait; opacity: .55; }
+    #status, #token-status { margin: 0 10px; padding: 7px 10px; color: #b7c8dc; white-space: pre-wrap; }
+    #token-status { width: fit-content; border: 1px solid #334358; border-radius: 7px; background: rgb(8 14 24 / 88%); font-size: 12px; }
+    #status[data-kind="error"] { color: #ffaaa8; border-color: #a24e5b; }
+    .label { color: #7f9bb7; margin-right: 3px; }
+    select { border: 1px solid #526981; border-radius: 5px; padding: 6px 9px; color: #eaf2ff; background: #162538; font: inherit; }
+    #source-details { margin: 0 10px; width: fit-content; max-width: min(720px, calc(100vw - 20px)); color: #9fb5ca; border: 1px solid #334358; border-radius: 7px; background: rgb(8 14 24 / 88%); }
+    #source-details summary { padding: 5px 9px; cursor: pointer; }
+    #source-info { padding: 0 9px 7px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .spacer { flex: 1 1 10px; }
+    .help { color: #8da5bc; font-size: 12px; }
+    .df-show-controls { pointer-events: auto; margin: 10px; } [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <canvas id="df-splat-viewer" aria-label="Gaussian splat viewer"></canvas>
+  <div id="hud">
+    <div id="toolbar">
+      <span class="label">Camera</span>
+      <span id="presets"></span>
+      <label class="label" for="lod-selector">LOD</label>
+      <select id="lod-selector" aria-label="Splat level of detail" disabled>
+        <option value="auto">Auto (stream)</option>
+      </select>
+      <label class="label" for="theme-grade">Theme</label>
+      <select id="theme-grade" aria-label="Color grade theme"><option value="neutral">Neutral</option></select>
+      <label class="label" for="grade-strength">Grade</label>
+      <input id="grade-strength" type="range" min="0" max="1" step="0.05" value="0.7" aria-label="Color grade strength">
+      <span class="spacer"></span>
+      <button id="grid-toggle" type="button" aria-pressed="true">Grid</button>
+      <button id="characters-toggle" type="button" aria-pressed="false">Characters</button>
+      <label class="label" for="follow-selector">Follow</label>
+      <select id="follow-selector" aria-label="Follow combatant"><option value="off">Off</option></select>
+      <button id="move-demo" type="button">Move</button>
+      <button id="pause-toggle" type="button" aria-pressed="false">Pause</button>
+      <button id="tilt-toggle" type="button" aria-pressed="false">Tilt</button>
+      <label class="label" for="effect-strength">Effect</label>
+      <input id="effect-strength" type="range" min="0.5" max="2" step="0.25" value="1" aria-label="Effect strength">
+      <button id="motion-toggle" type="button" aria-pressed="false" title="Enable or disable camera animation">Motion</button>
+      <button id="shake-effect" type="button">Shake</button>
+      <button id="pan-effect" type="button">Pan wide</button>
+      <button id="stop-effects" type="button">Stop</button>
+      <button id="export-picks" type="button">Export picks</button>
+      <span class="help">Drag to orbit · Scroll to zoom · Choose a view to reset</span>
+    </div>
+    <div id="status">Waiting for ?src=scene.ply (or .sog)…</div>
+    <div id="token-status" aria-live="polite">Characters ready</div>
+    <details id="source-details"><summary>Source details</summary><div id="source-info">No profile loaded.</div></details>
+  </div>
+  <script type="module" src="./viewer.mjs"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package dungeonflux.v1;
+
+option go_package = "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1;dungeonfluxv1";
+
+import "dungeonflux/v1/common.proto";
+
+service SessionService {
+  rpc Join(JoinRequest) returns (JoinResponse);
+  rpc Act(ActRequest) returns (ActResponse);
+  rpc Say(SayRequest) returns (SayResponse);
+  rpc Watch(WatchRequest) returns (stream WatchMessage);
+  rpc Report(ReportRequest) returns (ReportResponse);
+}
+
+message WatchMessage {
+  oneof message {
+    ScreenState state = 1;
+    ClientCommand command = 2;
+  }
+}
+
+service VoiceService { rpc Talk(stream TalkRequest) returns (stream TalkResponse); }
+service AudioService { rpc Listen(ListenRequest) returns (stream AudioMessage); }
+service HostService { rpc Command(HostCommand) returns (HostAck); }
