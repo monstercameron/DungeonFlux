@@ -89,7 +89,7 @@ func TestPhoneRender_ConversationUpdatePreservesDraft(t *testing.T) {
 }
 
 func TestPhoneRender_AllPhaseFactories(t *testing.T) {
-	for _, name := range []string{"creation-pick", "sheet", "legal-moves", "ptt-idle", "dice-offered", "combat-my-turn", "end"} {
+	for _, name := range []string{"creation-pick", "creation-rolled", "sheet", "legal-moves", "ptt-idle", "dice-offered", "combat-my-turn", "end"} {
 		t.Run(name, func(t *testing.T) {
 			fixture := render.New(t)
 			preview, _ := Preview(name)
