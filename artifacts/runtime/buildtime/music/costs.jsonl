@@ -41,3 +41,12 @@
 {"vendor":"elevenlabs","model":"music_v2_5","track":"STING_COMBAT_START","take":1,"attempt":1,"seconds":4,"cost_usd":0.01,"succeeded":true}
 {"vendor":"elevenlabs","model":"music_v2_5","track":"STING_COMBAT_START","take":2,"attempt":1,"seconds":4,"cost_usd":0.01,"succeeded":true}
 {"vendor":"elevenlabs","model":"music_v2_5","track":"STING_COMBAT_START","take":3,"attempt":1,"seconds":4,"cost_usd":0.01,"succeeded":true}
+{"vendor":"elevenlabs","model":"music_v2_5","track":"STING_BELL_TOLL","take":1,"attempt":1,"seconds":4,"cost_usd":0.01,"succeeded":true}
+{"vendor":"elevenlabs","model":"music_v2_5","track":"STING_VICTORY","take":1,"attempt":1,"seconds":6,"cost_usd":0.015,"succeeded":true}
+{"vendor":"elevenlabs","model":"music_v2_5","track":"STING_BELL_TOLL","take":2,"attempt":1,"seconds":4,"cost_usd":0.01,"succeeded":true}
+{"vendor":"elevenlabs","model":"music_v2_5","track":"STING_VICTORY","take":2,"attempt":1,"seconds":6,"cost_usd":0.015,"succeeded":true}
+{"vendor":"elevenlabs","model":"music_v2_5","track":"STING_BELL_TOLL","take":3,"attempt":1,"seconds":4,"cost_usd":0.01,"succeeded":true}
+{"vendor":"elevenlabs","model":"music_v2_5","track":"STING_VICTORY","take":3,"attempt":1,"seconds":6,"cost_usd":0.015,"succeeded":true}
+{"vendor":"elevenlabs","model":"music_v2_5","track":"STING_CLIFF_HIT","take":1,"attempt":1,"seconds":6,"cost_usd":0.015,"succeeded":true}
+{"vendor":"elevenlabs","model":"music_v2_5","track":"STING_CLIFF_HIT","take":2,"attempt":1,"seconds":6,"cost_usd":0.015,"succeeded":true}
+{"vendor":"elevenlabs","model":"music_v2_5","track":"STING_CLIFF_HIT","take":3,"attempt":1,"seconds":6,"cost_usd":0.015,"succeeded":true}
