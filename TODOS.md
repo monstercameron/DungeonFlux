@@ -174,11 +174,11 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: Watch uses the joined seat's locale without extra registry calls, remembered overrides still work, each party member keeps their own language, and reconnect tests pass.
   status: done (this commit); API gate artifacts/test/QA-028/gate-20260927-062838.log green with 86.6% coverage; mixed-language Watch and reconnect regression tests pass
 
-- [ ] QA-029 · Make the join-page language selector change the chosen language
+- [x] QA-029 · Make the join-page language selector change the chosen language
   why: Tapping Español in the live join form leaves English selected and joins in English, independently of the repaired Watch locale handling.
-  lane: ORCH (Codex) · paths: pending join model and screen investigation · depends: QA-028
+  lane: ORCH (Codex) · paths: `web/shell/join_wasm.go`, `web/shell/join_render_wasm_test.go`, `docs/devlog.html` · depends: QA-028
   done when: selecting either language updates the form and join request, the chosen language survives normal renders, and browser verification covers both choices.
-  status: open; reproduced on player tab 25 during QA-027 verification
+  status: done (this commit); WASM render test covers Spanish, field edits and switching back to English; shell gate artifacts/test/QA-029/gate-20260927-063346.log green with 84.9% coverage; live Spanish join and English companion verified
 
 ### Kill cam (developer-directed single writer, 2026-09-27)
 

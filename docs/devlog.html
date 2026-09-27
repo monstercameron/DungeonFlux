@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-join-language-selection">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-join-language-selection">The join language selector keeps the player's choice</a></h2>
+  <p>The join form's Español button changed a temporary locale model and requested a render. That render immediately constructed a new model from the browser's English preference, so the button appeared inert and the subsequent join sent English. The locale model now lives in component state. A WASM render regression clicks Spanish, edits the player's name, and switches back to English, checking the rendered join label at each step. Browser verification joined Lyra in Spanish alongside Brom in English and confirmed that their waiting screens used the separate chosen languages. The shell gate passed at 84.9 percent native statement coverage; the browser-dependent regression also passed under the Go WASM runtime.</p>
+</li>
 <li class="entry" data-kind="issue" id="e-20260927-reset-keeps-players">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-reset-keeps-players">Reset keeps the players who already joined</a></h2>

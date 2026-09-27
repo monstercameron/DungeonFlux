@@ -23,4 +23,18 @@ func TestJoinRender_NameThenRoomUpdatesFrame(t *testing.T) {
 	if !strings.Contains(f.Text(), "Room link recognized") {
 		t.Fatal("room entry stayed stale: " + f.Text())
 	}
+	f.ByRole("button", "Español").Click()
+	if !strings.Contains(f.Text(), "Unirse a la mesa") {
+		t.Fatal("language selection did not update join copy: " + f.Text())
+	}
+	// Editing another field renders the component again; the explicit choice
+	// must still win over the browser's English default.
+	f.InputByID("player-name", "Lyria")
+	if !strings.Contains(f.Text(), "Unirse a la mesa") {
+		t.Fatal("field edit reset the selected language: " + f.Text())
+	}
+	f.ByRole("button", "English").Click()
+	if !strings.Contains(f.Text(), "Join table") {
+		t.Fatal("could not switch back to English: " + f.Text())
+	}
 }

@@ -20,7 +20,7 @@ func JoinScreen(client *Client) router.Component {
 		savedToken := browserSeatToken(initialRoom)
 		room := ui.UseState(initialRoom)
 		name := ui.UseState(browserPlayerName())
-		locale := NewLocaleModel(BrowserLocales())
+		locale := ui.UseState(NewLocaleModel(BrowserLocales())).Get()
 		model := ui.UseState(NewJoinModel(client, initialRoom))
 		view := ui.UseState(JoinSnapshot{RoomCode: initialRoom, Phase: initialJoinPhase(initialRoom, savedToken), Locale: locale.Active()})
 		ui.UseEffect(func() func() {
