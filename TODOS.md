@@ -164,9 +164,15 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
 
 - [ ] QA-027 · Preserve joined player identities through host Reset
   why: Live Reset leaves both authenticated player streams connected but removes their engine identities, so names and Ready actions disappear despite the confirmation promising seats stay joined.
-  lane: ORCH (Codex) · paths: pending room-state join wiring and reset integration test · depends: QA-025
+  lane: ORCH (Codex) · paths: `internal/runtime/room.go`, `internal/runtime/rooms.go`, `internal/runtime/room_identity.go`, `internal/runtime/room_identity_test.go`, `internal/wire/e2e_reset_identity_test.go`, `docs/devlog.html` · depends: QA-025
   done when: Reset keeps both seats, names, locales and usable streams while clearing run readiness; repeated resets pass native integration and browser verification.
-  status: open; reproduced in the live two-player lobby during QA-025 verification
+  status: claimed Codex 2026-09-27; retain accepted Join identity in room-owned state and replay its name with locale after Reset
+
+- [x] QA-028 · Preserve each player's language in live Watch snapshots
+  why: Join accepts Spanish but Watch defaults to English because its locale registry is never populated, and localization overwrites every party member's own language.
+  lane: ORCH (Codex) · paths: `internal/api/watch.go`, `internal/api/localize.go`, `internal/api/watch_locale_test.go`, `docs/devlog.html` · depends: none
+  done when: Watch uses the joined seat's locale without extra registry calls, remembered overrides still work, each party member keeps their own language, and reconnect tests pass.
+  status: done (this commit); API gate artifacts/test/QA-028/gate-20260927-062838.log green with 86.6% coverage; mixed-language Watch and reconnect regression tests pass
 
 ### Kill cam (developer-directed single writer, 2026-09-27)
 

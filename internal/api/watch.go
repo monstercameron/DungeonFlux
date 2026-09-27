@@ -57,11 +57,19 @@ func (h *WatchHub) RememberLocale(seat domain.SeatID, locale string) {
 	h.mu.Unlock()
 }
 
-func (h *WatchHub) localeFor(seat domain.SeatID) string {
+func (h *WatchHub) localeFor(seat domain.SeatID, view domain.View) string {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if tag, ok := h.locales[seat]; ok && tag != "" {
 		return tag
+	}
+	for _, joined := range view.Seats {
+		if joined.Seat == seat && joined.Locale != "" {
+			return joined.Locale
+		}
+	}
+	if view.Locale != "" {
+		return view.Locale
 	}
 	return "en"
 }
@@ -146,7 +154,7 @@ func (s *watchSubscriber) send(ctx context.Context) {
 			if !ok {
 				return
 			}
-			message := &df.WatchMessage{Message: &df.WatchMessage_State{State: ProjectLocalized(view, s.kind, s.seat, s.hub.localeFor(s.seat))}}
+			message := &df.WatchMessage{Message: &df.WatchMessage_State{State: ProjectLocalized(view, s.kind, s.seat, s.hub.localeFor(s.seat, view))}}
 			select {
 			case s.output <- message:
 			default:

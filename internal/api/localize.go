@@ -35,9 +35,9 @@ func LocalizeScreen(state *df.ScreenState, locale string) *df.ScreenState {
 // key-plus-arguments notice and seat status messages.
 func LocalizeDomainView(view domain.View, locale string) domain.View {
 	tag := i18n.Settle(locale, i18n.DefaultLocale)
+	view = view.DeepCopy()
 	view.Locale = tag
 	for i, seat := range view.Seats {
-		seat.Locale = tag
 		if key, args, ok := i18n.MatchEnglish(seat.StatusText); ok {
 			seat.StatusMsg = domain.LocalizedMessage{Key: key, Args: args, Fallback: seat.StatusText}
 		}

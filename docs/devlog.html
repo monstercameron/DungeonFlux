@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-watch-player-language">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-watch-player-language">Live updates honor the player's joined language</a></h2>
+  <p>A reset integration test joined one Spanish-speaking player and one English-speaking player, then received English for both before the reset even ran. The join service stored the chosen languages correctly, but Watch consulted an empty optional locale registry and defaulted to English. It now falls back to the authoritative joined-seat locale, while retaining explicit overrides. Localization also stops replacing every party member's locale with the viewer's language and works on a detached view. Regression tests cover initial subscriptions, reconnects, mixed-language parties, and locale precedence. The API gate passed with 86.6 percent statement coverage.</p>
+</li>
 <li class="entry" data-kind="issue" id="e-20260927-lobby-ready">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-lobby-ready">Ready now confirms each player's lobby state</a></h2>
