@@ -242,7 +242,7 @@ func creationSeatStrip(seats [2]CreationSeat, featured int32) ui.Node {
 // rolled (never active gold, which reads as "ready" before it is true), gold
 // once the roll is real, and lifted clear of the canvas's bottom edge.
 func creationLockup(seat CreationSeat) ui.Node {
-	label := "Lock In Character"
+	label := "Ready for adventure"
 	style := map[string]string{"position": "absolute", "left": "790px", "bottom": "48px", "width": "530px", "height": "68px", "z-index": "4", "display": "grid", "place-items": "center", "font-family": "Cinzel, Georgia, serif", "font-size": "26px"}
 	if seat.Ready {
 		style["border"], style["border-radius"] = "1px solid #e7c27a", "9px"
@@ -251,6 +251,9 @@ func creationLockup(seat CreationSeat) ui.Node {
 		style["color"] = "#211a12"
 	} else {
 		label = "Awaiting Roll"
+		if seat.HasStats {
+			label = "Confirm on your phone"
+		}
 		style["border"], style["border-radius"] = "1px solid rgba(184,159,120,.4)", "9px"
 		style["background"] = "rgba(16,22,30,.78)"
 		style["box-shadow"] = "inset 0 0 0 1px rgba(217,164,65,.12)"

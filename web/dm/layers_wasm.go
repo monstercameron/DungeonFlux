@@ -44,6 +44,9 @@ func phaseLayers(state *dungeonfluxv1.ScreenState, roomCode, extra string) []ui.
 		case LayerCallout:
 			content = CalloutComponent(CalloutViewFromDMView(view))(router.Attrs{})
 		case LayerClip:
+			if transitionPhase(phase) == "hook_event" && (!hasClip(view) || ClipModelFromView(view).UseFallback) {
+				continue // Keep the stranger tableau and its caption visible.
+			}
 			// Cliffhanger composes the clip into a graded, captioned moment
 			// (CliffhangerComponent, end_wasm.go) instead of showing the raw
 			// plate; every other clip phase (opening, hook) keeps the plain

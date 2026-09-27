@@ -174,7 +174,7 @@ func combatMapTokenNode(token CombatMapToken) ui.Node {
 
 func combatMapPortrait(token CombatMapToken) ui.Node {
 	if token.Enemy {
-		return html.Span(html.Props{Class: "df-cm-glyph", Aria: map[string]string{"hidden": "true"}}, html.Text(T("en", "phone.combat.enemy_glyph", nil)))
+		return html.Span(html.Props{Class: "df-cm-glyph", Aria: map[string]string{"hidden": "true"}}, html.Text("☠"))
 	}
 	src := portraitSrc(token.Portrait)
 	if src == "" {

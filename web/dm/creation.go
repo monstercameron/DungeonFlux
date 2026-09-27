@@ -165,6 +165,7 @@ func creationHeroStandIn(seat CreationSeat) string {
 		if url := ArtURL("ui/species_" + species + "_" + gender); url != "" {
 			return url
 		}
+		return ArtURL(classArtName(seat.Class))
 	}
 	if species != "" {
 		if url := ArtURL("ui/species_" + species); url != "" {

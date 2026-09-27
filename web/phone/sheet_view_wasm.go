@@ -282,7 +282,7 @@ func sheetPortrait(state SheetSnapshot) ui.Node {
 	if src := portraitSrc(state.PortraitURL); src != "" {
 		return html.Div(html.Props{Class: "df-phone-portrait", Style: style}, html.Img(html.Props{Src: src, Alt: state.Name, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))
 	}
-	if url := ArtURL(speciesArtAsset(state.Species)); url != "" {
+	if url := heroProxyArtGendered(state.Species, state.Gender, state.Class, state.Name); url != "" {
 		return html.Div(html.Props{Class: "df-phone-portrait", Style: style}, html.Img(html.Props{Src: url, Alt: state.Species, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))
 	}
 	return html.Div(html.Props{Class: "df-phone-portrait df-phone-portrait-fallback", Role: "img", Aria: map[string]string{"label": state.Name}, Style: style}, html.Text(sheetInitials(state.Name)))

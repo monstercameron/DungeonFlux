@@ -15,7 +15,7 @@ import (
 // primary action, and art that fades into ink.
 const phoneFinishCSS = `
 .df-phone-frame{background:radial-gradient(ellipse at 50% 0%,rgba(66,52,30,.28),transparent 55%),radial-gradient(ellipse at 50% 110%,rgba(24,40,58,.35),transparent 60%),#0a0e14!important}
-.df-phone-header{position:relative;background:linear-gradient(180deg,rgba(14,19,27,.98),rgba(9,13,19,.96))!important;border-bottom:0!important;box-shadow:0 8px 22px rgba(0,0,0,.5)!important}
+.df-phone-portrait-hero>div{z-index:1;text-shadow:0 2px 6px #000}.df-phone-header{position:relative;background:linear-gradient(180deg,rgba(14,19,27,.98),rgba(9,13,19,.96))!important;border-bottom:0!important;box-shadow:0 8px 22px rgba(0,0,0,.5)!important}
 .df-phone-header:after{position:absolute;left:14px;right:14px;bottom:0;height:1px;content:"";background:linear-gradient(90deg,transparent,rgba(231,194,122,.75) 20%,rgba(231,194,122,.75) 80%,transparent)}
 .df-phone-header:before{position:absolute;left:50%;bottom:-5px;z-index:1;width:9px;height:9px;margin-left:-5px;content:"";background:#e7c27a;transform:rotate(45deg);box-shadow:0 0 10px rgba(231,194,122,.8)}
 .df-phone-brand{font-family:Cinzel,'Cormorant Garamond',Georgia,serif!important;font-weight:600;letter-spacing:.01em;text-shadow:0 0 14px rgba(231,194,122,.3),0 2px 3px #000}
@@ -38,7 +38,7 @@ const phoneFinishCSS = `
 .df-phone-narration-portrait{border:2px solid #e7c27a!important;box-shadow:0 0 0 3px rgba(8,11,16,.9),0 0 16px rgba(231,194,122,.35)!important}
 .df-phone-narration strong,.df-phone-narration b{color:#e7c27a!important;font-family:Cinzel,Georgia,serif!important;letter-spacing:.04em}
 .df-phone-explore-scene,.df-phone-portrait-hero{position:relative;border:0!important;border-radius:0!important;box-shadow:none!important;margin-left:-14px!important;margin-right:-14px!important}
-.df-phone-explore-scene:after,.df-phone-portrait-hero:after{position:absolute;inset:0;pointer-events:none;content:"";background:linear-gradient(180deg,rgba(10,14,20,.1) 0%,transparent 30%,rgba(10,14,20,.35) 65%,#0a0e14 100%)}
+.df-phone-explore-scene:after,.df-phone-portrait-hero:after{z-index:0;position:absolute;inset:0;pointer-events:none;content:"";background:linear-gradient(180deg,rgba(10,14,20,.1) 0%,transparent 30%,rgba(10,14,20,.35) 65%,#0a0e14 100%)}
 .df-phone-icon-header h1,.df-phone-check-total,.df-phone-create-heading,.df-phone-waiting-title{font-family:Cinzel,'Cormorant Garamond',Georgia,serif!important;color:#f3e6c6!important;text-shadow:0 0 16px rgba(231,194,122,.28),0 2px 3px #000}
 .df-phone-icon-header div[aria-hidden],.df-phone-icon-header span[aria-hidden]{border:1px solid #e7c27a!important;background:radial-gradient(circle,rgba(231,194,122,.18),rgba(8,11,16,.9) 70%)!important;box-shadow:0 0 16px rgba(231,194,122,.3),inset 0 0 12px rgba(231,194,122,.2)!important;color:#f0d28f!important}
 .df-phone-check-quote{font-family:'Cormorant Garamond',Georgia,serif!important;font-style:italic;color:#e3d6bb!important}
