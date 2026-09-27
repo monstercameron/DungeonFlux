@@ -41,7 +41,10 @@ func phaseLayers(state *dungeonfluxv1.ScreenState, roomCode, extra string) []ui.
 		case LayerHUD:
 			content = ExplorationHUDComponent(state)(router.Attrs{})
 		case LayerCreation:
-			content = ui.CreateElement(creationLayer, creationLayerProps{view: view, revision: state.GetVersion()})
+			// Asset arrivals trigger a route render without changing the DM
+			// snapshot version. Include that render revision so a late portrait
+			// resolution updates the mounted creation fiber as well.
+			content = ui.CreateElement(creationLayer, creationLayerProps{view: view, revision: state.GetVersion() + routeRenders.Load()})
 		case LayerCallout:
 			content = CalloutComponent(CalloutViewFromDMView(view))(router.Attrs{})
 		case LayerClip:
