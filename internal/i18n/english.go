@@ -46,7 +46,6 @@ func EnglishEntries() map[string]Entry {
 		"dm.callout.prompt":                  {Text: "The Dungeon Master turns the thread."},
 		"dm.combat.title":                    {Text: "The Drowned Lantern"},
 		"dm.combat.enemy":                    {Text: "Enemy"},
-		"dm.combat.round":                    {Text: "Round"},
 		"dm.glyph.chevron":                   {Text: ">"},
 		"dm.glyph.star":                      {Text: "✦"},
 		"dm.glyph.objective":                 {Text: "✦"},

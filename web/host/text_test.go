@@ -66,6 +66,36 @@ func TestHostText_TesterLinkLabels(t *testing.T) {
 	}
 }
 
+func TestHostText_NewCopyRoutesThroughCatalog(t *testing.T) {
+	if HostKicker("en") != "CONTROL ROOM" || HostKicker("es") != "SALA DE CONTROL" {
+		t.Fatalf("kicker = %q / %q", HostKicker("en"), HostKicker("es"))
+	}
+	if ControlsHeading("en") != "Run controls" || StageToolsHeading("en") != "Stage tools" {
+		t.Fatalf("controls/stage headings changed")
+	}
+	if LinkLabelHost("en") != "Host controls" || LinkLabelDM("es") != "Pantalla del DM" {
+		t.Fatalf("link labels changed")
+	}
+	if TokenRevealLabel("en") != "Hold to reveal" {
+		t.Fatalf("token reveal label = %q", TokenRevealLabel("en"))
+	}
+	if ResetConfirmTitle("es") != "¿Reiniciar la partida?" {
+		t.Fatalf("reset confirm title es = %q", ResetConfirmTitle("es"))
+	}
+	if got := PhaseLine("en", "Combat"); got != "Phase: Combat" {
+		t.Fatalf("PhaseLine = %q", got)
+	}
+	if got := StatusSeatsValue("en", 1, 2); got != "1/2" {
+		t.Fatalf("StatusSeatsValue = %q", got)
+	}
+	if got := StatusFailures("en", 3); got != "3 failing" {
+		t.Fatalf("StatusFailures = %q", got)
+	}
+	if StatusAllClear("es") != "Todo en orden" {
+		t.Fatalf("StatusAllClear es = %q", StatusAllClear("es"))
+	}
+}
+
 func TestRoomLocaleSelector_SettleAndOptions(t *testing.T) {
 	selector := NewRoomLocaleSelector("es")
 	if selector.Selected != "es" {
