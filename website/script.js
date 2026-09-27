@@ -2,7 +2,7 @@
 // the narration type-in, the pinned TV and the roll are enhancements.
 
 // Where "Start a table" goes. Point this at the hosted table when one exists.
-var TRY_URL = 'https://github.com/monstercameron/DungeonFlux#run-it-locally';
+var TRY_URL = 'https://play.dungeonfluxdnd.com/dm';
 
 (function () {
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
