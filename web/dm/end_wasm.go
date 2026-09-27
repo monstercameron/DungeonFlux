@@ -8,8 +8,13 @@ import (
 	"github.com/monstercameron/GoWebComponents/v6/ui"
 )
 
-// CliffhangerComponent renders the final generated still and a shared speaker
-// caption, with a video clip retained when the runtime has one ready.
+// CliffhangerComponent composes the cliffhanger into one moment instead of
+// the raw clip plate: the clip or its CLIFF_GENERIC_TOWER-style browser
+// fallback (a slow tilt move on the single pinned still, plan.md §0.17),
+// a cool colour grade and vignette over it, and a caption card ("To be
+// continued…" plus the DM's line) that fades in once the grade has settled,
+// so the audience reads the beat as a deliberate cut rather than a stalled
+// frame.
 func CliffhangerComponent(model CliffhangerModel) router.Component {
 	return func(_ router.Attrs) *router.Element {
 		locale := localeOrDefault(model.Locale)
@@ -17,10 +22,17 @@ func CliffhangerComponent(model CliffhangerModel) router.Component {
 		if artURL := ArtURL("ui/cliffhanger"); artURL != "" {
 			clip.StillURL = artURL
 		}
-		return html.Section(html.Props{Class: "df-dm-cliffhanger", Role: "status", Aria: map[string]string{"live": "polite", "label": T(locale, "dm.clip_label", nil)}, Style: map[string]string{"position": "relative", "width": "100%", "height": "100%", "overflow": "hidden", "background": "#0f1117"}},
-			clipNode(clip),
-			html.Div(html.Props{Style: map[string]string{"position": "absolute", "inset": "0", "pointer-events": "none", "background": "linear-gradient(180deg,rgba(8,10,15,.12) 25%,rgba(8,10,15,.9) 100%),radial-gradient(circle at 50% 42%,transparent 25%,rgba(8,10,15,.55) 100%)"}}),
-			html.Div(html.Props{Style: map[string]string{"position": "absolute", "left": "260px", "right": "260px", "bottom": "72px", "padding": "22px 30px 10px", "pointer-events": "none"}}, SpeakerCaption(CaptionModel{Speaker: T(locale, "dm.speaker_dm", nil), Text: model.Caption})),
+		class := "df-dm-cliffhanger"
+		if clip.UseFallback {
+			class += " is-fallback-move"
+		}
+		return html.Section(html.Props{Class: class, Role: "status", Aria: map[string]string{"live": "polite", "label": T(locale, "dm.clip_label", nil)}},
+			html.Div(html.Props{Class: "df-dm-cliffhanger-frame"}, clipNode(clip)),
+			html.Div(html.Props{Class: "df-dm-cliffhanger-grade", Aria: map[string]string{"hidden": "true"}}),
+			html.Div(html.Props{Class: "df-dm-cliffhanger-card"},
+				html.P(html.Props{Class: "df-dm-cliffhanger-eyebrow"}, ui.Text(T(locale, "dm.cliffhanger_continued", nil))),
+				SpeakerCaption(CaptionModel{Speaker: T(locale, "dm.speaker_alt", nil), Text: model.Caption}),
+			),
 		)
 	}
 }

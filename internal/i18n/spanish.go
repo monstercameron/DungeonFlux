@@ -45,7 +45,6 @@ func SpanishEntries() map[string]Entry {
 		"dm.callout.prompt":                  {Text: "El Dungeon Master cambia el hilo."},
 		"dm.combat.title":                    {Text: "La Linterna Ahogada"},
 		"dm.combat.enemy":                    {Text: "Enemigo"},
-		"dm.combat.round":                    {Text: "Ronda"},
 		"dm.glyph.chevron":                   {Text: ">"},
 		"dm.glyph.star":                      {Text: "✦"},
 		"dm.glyph.objective":                 {Text: "✦"},

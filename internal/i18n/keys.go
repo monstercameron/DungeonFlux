@@ -99,7 +99,7 @@ func ScreenKeys() map[string][]string {
 			"dm.end_title", "dm.end_subtitle", "dm.end_header", "dm.end_hook", "dm.end_party", "dm.end_next",
 			"dm.cliffhanger_continued",
 			"canned.canned_cliffhanger_vell", "canned.canned_combat_slain_seat1", "canned.canned_combat_slain_seat2",
-			"dm.callout.steering", "dm.callout.prompt", "dm.combat.title", "dm.combat.enemy", "dm.combat.round",
+			"dm.callout.steering", "dm.callout.prompt", "dm.combat.title", "dm.combat.enemy",
 			"dm.glyph.chevron", "dm.glyph.star", "dm.glyph.objective", "dm.glyph.minimap", "dm.glyph.music",
 			"dm.brand", "dm.hp_unavailable", "dm.speaker_alt", "dm.create.title", "dm.create.hint",
 			"dm.create.stats", "dm.create.phone_controls", "dm.create.step_gender", "dm.create.step_race",

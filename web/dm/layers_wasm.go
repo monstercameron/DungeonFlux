@@ -18,6 +18,9 @@ func phaseLayers(state *dungeonfluxv1.ScreenState, roomCode, extra string) []ui.
 	locale := localeOrDefault(view.GetLocale())
 	phase := state.GetPhase()
 	extra = " df-dm-phase-" + PhaseName(state) + extra
+	if transitionPhase(phase) == "hook_event" {
+		scheduleBattlePrewarm(view)
+	}
 	var children []ui.Node
 	for _, layer := range SelectLayers(state) {
 		var content ui.Node
@@ -31,6 +34,9 @@ func phaseLayers(state *dungeonfluxv1.ScreenState, roomCode, extra string) []ui.
 			if strings.EqualFold(strings.TrimSpace(phase), "conversation") {
 				content = html.Div(html.Props{Style: map[string]string{"position": "relative", "width": "100%", "height": "100%"}}, content, DialogueComponent(DialogueModelFromState(state))(router.Attrs{}))
 			}
+			// Every painted scene screen shares one mood overlay (vignette,
+			// grain, river fog); see AtmosphereComponent (atmosphere_wasm.go).
+			content = html.Div(html.Props{Style: map[string]string{"position": "relative", "width": "100%", "height": "100%"}}, content, AtmosphereComponent()(router.Attrs{}))
 		case LayerHUD:
 			content = ExplorationHUDComponent(state)(router.Attrs{})
 		case LayerCreation:
@@ -38,13 +44,22 @@ func phaseLayers(state *dungeonfluxv1.ScreenState, roomCode, extra string) []ui.
 		case LayerCallout:
 			content = CalloutComponent(CalloutViewFromDMView(view))(router.Attrs{})
 		case LayerClip:
-			content = ClipComponent(ClipModelFromView(view))(router.Attrs{})
+			// Cliffhanger composes the clip into a graded, captioned moment
+			// (CliffhangerComponent, end_wasm.go) instead of showing the raw
+			// plate; every other clip phase (opening, hook) keeps the plain
+			// clip surface.
+			if strings.EqualFold(strings.TrimSpace(phase), "cliffhanger") {
+				content = CliffhangerComponent(CliffhangerModelFromView(view))(router.Attrs{})
+			} else {
+				content = ClipComponent(ClipModelFromView(view))(router.Attrs{})
+			}
+			content = html.Div(html.Props{Style: map[string]string{"position": "relative", "width": "100%", "height": "100%"}}, content, AtmosphereComponent()(router.Attrs{}))
 		case LayerDice:
 			content = DiceComponent(DiceViewFromDMView(view))(router.Attrs{})
 		case LayerTimer:
 			content = TimerComponent(TimerViewFromDMView(view))(router.Attrs{})
 		case LayerCombat:
-			content = CombatComponent(view)(router.Attrs{})
+			content = ui.CreateElement(combatLayer, combatLayerProps{view: view})
 		case LayerEnd:
 			content = EndCardComponent(EndCardModelFromView(view))(router.Attrs{})
 		default:
@@ -53,4 +68,18 @@ func phaseLayers(state *dungeonfluxv1.ScreenState, roomCode, extra string) []ui.
 		children = appendPhaseLayer(children, layer, phase, extra, content)
 	}
 	return children
+}
+
+// combatLayerProps carries the snapshot into combatLayer.
+type combatLayerProps struct {
+	view *dungeonfluxv1.DMView
+}
+
+// combatLayer gives the combat layer its own component fiber. Called inline,
+// CombatComponent's hooks lived on the screen's fiber: they kept their slots
+// (and deps) while the TV showed other phases, so their cleanup never ran on
+// the way out and the stage-claim effect saw unchanged deps on the next combat
+// entry and never bound the new canvas; the splat stayed hidden.
+func combatLayer(props combatLayerProps) ui.Node {
+	return CombatComponent(props.view)(router.Attrs{})
 }
