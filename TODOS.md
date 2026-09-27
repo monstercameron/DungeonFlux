@@ -16,11 +16,11 @@ The developer assigned Codex to create and implement this batch directly, withou
   done when: all report findings map to the atomic todos below; planning gate green.
   status: done 3c54d3c
 
-- [ ] PLAN-022 · Record repair hand-ins and completion evidence
+- [x] PLAN-022 · Record repair hand-ins and completion evidence
   why: Status must reflect independently checked commits and the final fresh-build playthrough.
   lane: ORCH (Codex, developer-directed) · paths: `TODOS.md` · depends: PHONE-036, PHONE-037, PHONE-038, DM-041, DM-042, ENG-035, API-023, WEB-025, INT-011
   done when: each completed item records its actual commit and gate evidence; unresolved findings remain explicit.
-  status: claimed Codex 2026-09-27; hand-ins: artifacts/lanes/UI-REPAIR/; visual report: artifacts/test/L-E2E/final-review/report.html
+  status: done 32403eb
 
 - [x] PLAN-001 · Project site on GitHub Pages, AGENTS.md, repo hygiene files
   lane: ORCH · paths: docs/, AGENTS.md, .gitignore, .gitattributes, artifacts/.gitkeep
@@ -1697,14 +1697,14 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   note: EMK-* IDs are this branch's todos (emmaka), numbered apart from main's lanes so they never collide; this one was committed as WEB-025 in 0fdc351.
   done when: Resync and a 25 s idle watchdog resubscribe the watch stream without surfacing an error; visibilitychange/online/pageshow trigger it (plus a 1.5 s retry); the offline repro shows the right screen within 2 s; unit tests cover resync and idle.
   status: done 0fdc351
-  follow-up: the TV (web/dm/mount_wasm.go) and host (web/host/client.go) run their own watch loops without this; see EMK-002.
+  follow-up: REVIEW-001 aa2ced0 supplies the same watchdog and browser wake signals to TV and host; EMK-002 retains the physical-device acceptance check.
   regression (found 2026-09-27 playtest): every joined phone posted a join event every 25 s from the idle resubscribe; fixed by EMK-003 1533aa1.
 
 - [ ] EMK-002 · TV and host watch loops resubscribe like the phone
   why: web/dm and web/host have separate watch loops that also reconnect only on an error, so a sleeping laptop or a dead connection leaves the TV or host panel stale (Dennis #19 TV lag, #35 stale host phase may share this cause).
   lane: ORCH (emmaka) · paths: `web/dm/mount_wasm.go`, `web/host/client.go` · depends: EMK-001
   done when: both loops use the shell client's Resync and idle watchdog (or the same mechanism); an offline repro on /dm and /host recovers within 2 s.
-  status: open
+  status: committed aa2ced0; shared recovery passes deterministic silent-stream/disconnection tests; the physical offline-to-online within-2-seconds check remains unverified.
 
 - [x] EMK-003 · a watch resubscribe no longer re-posts the phone's join
   why: The 2026-09-27 Droplet playtest logged a join from every phone every 25 s: the Watch handler called Join on every subscribe, so each resubscribe (EMK-001's idle watchdog) re-announced the seat, stepped the engine and redrew every screen; it also doubled the join at each page load.
@@ -2334,53 +2334,59 @@ The operator page: Start, Pause, Skip, Reset, Force d20, and debug panel.
 
 The developer explicitly authorized reviewing, fixing, and safely merging the open PRs. Integration uses an isolated worktree; no force-push or unrelated working-tree changes.
 
-- [ ] REVIEW-001 · Integrate PR 7 phone resubscription and complete display reconnection
+- [x] REVIEW-001 · Integrate PR 7 phone resubscription and complete display reconnection
   why: Sleeping phones and silent Watch streams need recovery without duplicate join events; the PR also identifies TV and host recovery as unfinished.
   lane: ORCH (Codex) · paths: PR 7 paths plus `web/dm/mount_wasm.go`, `web/host/mount_wasm.go`, `web/host/client*.go`, `web/shell/**`, `internal/api/session_watch*.go`, `internal/wire/watch_rejoin_test.go` · depends: PLAN-022
   done when: PR 7 diff and regression fix are reviewed; reconnect tests and relevant gates pass on the integrated tree; TV/host follow-up is resolved; the manifest composition regression uses self-contained image fixtures in isolated checkouts.
-  status: claimed Codex 2026-09-27
+  status: done aa2ced0
 
-- [ ] REVIEW-002 · Integrate PR 6 microphone lifetime and resolve UI conflicts
+- [x] REVIEW-002 · Integrate PR 6 microphone lifetime and resolve UI conflicts
   why: Recordings must survive snapshot rerenders and flush TalkEnd before releasing the stream while preserving current UI states.
   lane: ORCH (Codex) · paths: PR 6 paths plus `web/phone/ptt_test.go`, `web/phone/preview.go`, `web/phone/preview_wasm.go`, `web/phone/screen_render_wasm_test.go` · depends: REVIEW-001
   done when: conflicts are resolved without losing repaired preview behavior; microphone lifetime, native tests, WASM build and component tests pass.
-  status: claimed Codex 2026-09-27
+  status: done b92c3f1
 
-- [ ] REVIEW-003 · Integrate PR 8 and prevent rejected text from escaping through streamed deltas
+- [x] REVIEW-003 · Integrate PR 8 and prevent rejected text from escaping through streamed deltas
   why: The proposed final-text guard runs after raw deltas have already been published; dialogue must be checked before any subtitle or speech consumer receives it.
   lane: ORCH (Codex) · paths: PR 8 paths plus `internal/llmexec/*test.go` · depends: REVIEW-001
   done when: no rejected NPC clue or stage direction is emitted before validation, reveal stays functional, and fake-stream regression tests and gates pass.
-  status: claimed Codex 2026-09-27
+  status: done 7c62a77
 
-- [ ] REVIEW-004 · Evaluate PR 1 against the implemented demo and record merge readiness
+- [x] REVIEW-004 · Evaluate PR 1 against the implemented demo and record merge readiness
   why: The spec-only faster-opening proposal introduces unimplemented runtime rules and an unresolved six-turn combat rebalance.
   lane: ORCH (Codex) · paths: `TODOS.md`, `artifacts/test/PR-REVIEW/**` · depends: none
   done when: spec/runtime gaps and contradictory combat timing are documented; only a coherent, validated proposal is merged.
-  status: claimed Codex 2026-09-27
+  status: review complete; PR 1 remains open. The six-turn order contains only two enemy turns but escape requires a third; timing/cache/dialogue changes lack implementation and combat probabilities remain stale. Evidence: artifacts/test/PR-REVIEW/pr-1-assessment.json.
 
-- [ ] REVIEW-005 · Finalize integration against the latest PR heads
+- [x] REVIEW-005 · Finalize integration against the latest PR heads
   why: PR 7 merged the current main during review; its current head must be included and the reviewed commits need an accurate completion ledger.
   lane: ORCH (Codex) · paths: `TODOS.md`, `artifacts/test/PR-REVIEW/**` · depends: REVIEW-001, REVIEW-002, REVIEW-003, REVIEW-004
   done when: latest PR heads are ancestors of the validated integration; PR 1 blockers and verification evidence are recorded.
-  status: claimed Codex 2026-09-27
+  status: done e501b07
 
-- [ ] REVIEW-006 · Release canceled audio debug counters
+- [x] REVIEW-006 · Release canceled audio debug counters
   why: Canceled utterances never receive final frames, leaving debug counters retained for the page lifetime.
   lane: L-WEB-SHELL · paths: `web/shell/audio/debuglog.go`, `web/shell/audio/debuglog_test.go` · depends: REVIEW-002
   done when: single and global cancellation clear only the appropriate counters; audio gate passes.
-  status: claimed Codex 2026-09-27
+  status: done 0507ea0
 
-- [ ] REVIEW-007 · Wait for Windows executable cleanup after supervisor tests
+- [x] REVIEW-007 · Wait for Windows executable cleanup after supervisor tests
   why: The full gate intermittently fails deleting a copied child executable after Process.Wait has completed.
   lane: L-OPS · paths: `scripts/devserver/supervisor_test.go` · depends: none
   done when: test cleanup stops owned children and retries temporary executable deletion within a bounded deadline, failing if the file remains locked; supervisor and full gates pass.
-  status: claimed Codex 2026-09-27
+  status: done 690991e
 
-- [ ] REVIEW-008 · Keep dfctl restart test output inside its temporary directory
+- [x] REVIEW-008 · Keep dfctl restart test output inside its temporary directory
   why: The restart test writes debug-combat.json into the package directory on every gate run.
   lane: L-OPS · paths: `cmd/dfctl/goto_test.go` · depends: none
   done when: restart configuration assertions still pass and all generated files are isolated under t.TempDir; dfctl gate passes.
-  status: claimed Codex 2026-09-27
+  status: done 2619855
+
+- [x] REVIEW-009 · Record final PR integration evidence and completion ledger
+  why: The repaired PRs, remaining design blockers, and verification limits need a single reviewable hand-in.
+  lane: ORCH (Codex) · paths: `TODOS.md` · depends: REVIEW-001, REVIEW-002, REVIEW-003, REVIEW-004, REVIEW-005, REVIEW-006, REVIEW-007, REVIEW-008
+  done when: completion hashes and full-gate evidence are recorded; temporary review server is stopped; generated hand-ins list exact commit paths.
+  status: complete in this commit; hash recorded in artifacts/test/PR-REVIEW/report.json. Full gate: artifacts/test/ORCH/gate-20260927-031742.log, failures=0; review PID 27340 stopped. Physical microphone capture and real phone network handover remain untested.
 
 ## 22. Splat battlefield
 
