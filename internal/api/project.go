@@ -593,10 +593,10 @@ func ints32(values []int) []int32 {
 // phone always show the same stand-in, and so a paladin and a rogue of
 // different genders no longer collapse onto one shared male portrait.
 func heroPortrait(portrait, species, gender string) string {
-	if strings.TrimSpace(portrait) != "" {
+	species = strings.ToLower(strings.TrimSpace(species))
+	if strings.TrimSpace(portrait) != "" && portrait != "ui/species_"+species {
 		return portrait
 	}
-	species = strings.ToLower(strings.TrimSpace(species))
 	if species == "" {
 		return ""
 	}

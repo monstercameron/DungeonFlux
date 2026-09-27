@@ -31,3 +31,18 @@ func TestProjectCreation_StatsAndReadinessAgreeAcrossClients(t *testing.T) {
 		}
 	}
 }
+
+func TestHeroPortrait_GenericSelectorRespectsChosenGender(t *testing.T) {
+	for _, tc := range []struct{ name, portrait, gender, want string }{
+		{"empty", "", "female", "ui/species_elf_female"},
+		{"generic", "ui/species_elf", "female", "ui/species_elf_female"},
+		{"generated", "/assets/hero.png", "female", "/assets/hero.png"},
+		{"unspecified", "ui/species_elf", "", "ui/species_elf"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := heroPortrait(tc.portrait, "Elf", tc.gender); got != tc.want {
+				t.Fatalf("got %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
