@@ -598,41 +598,41 @@ Developer-directed visual refinement of the TV's opening moments, done by ORCH (
   done when: seven entries cover the audit's two defect patterns, silent Watch streams, streamed dialogue validation, the Windows executable lock, the PR integration and PR 1 decision, live-reload fingerprinting, and kill-cam pregeneration.
   status: done 716539e (committed inside the concurrent QA-043 commit, which took the whole file)
 
-- [ ] DM-049 · Play the lobby crest loop under reduced motion
+- [x] DM-049 · Play the lobby crest loop under reduced motion
   why: The crest loop was hidden by prefers-reduced-motion, which is on for the demo machine, so the TV only ever showed the still crest.
   lane: ORCH (Claude) · paths: `web/dm/lobby_crest_wasm.go` · depends: none
   done when: the crest video displays and loops with reduced motion on; DM gate green.
-  status: open
+  status: done aa043e5; gates: artifacts/test/L-WEB-DM/gate-20260927-100435.log (dm 91.9%), artifacts/test/L-WEB-SHELL/gate-20260927-100448.log (shell 84.9%); each commit tree vetted and tested in isolation
 
-- [ ] DM-050 · Blend the crest loop into the title art
+- [x] DM-050 · Blend the crest loop into the title art
   why: The clip's opaque black background showed as a hard rectangle over the sky and clipped the crest's arm tips.
   lane: ORCH (Claude) · paths: `web/dm/lobby_crest_wasm.go` · depends: DM-049
   done when: the loop blends with lighten plus a feathered radial mask, no box edge is visible against the sky, and the still crest fills the faded edges; DM gate green.
-  status: open
+  status: done 863d2b8; gates: artifacts/test/L-WEB-DM/gate-20260927-100435.log (dm 91.9%), artifacts/test/L-WEB-SHELL/gate-20260927-100448.log (shell 84.9%); each commit tree vetted and tested in isolation
 
-- [ ] DM-051 · Cache injected TV stylesheets per sheet id
+- [x] DM-051 · Cache injected TV stylesheets per sheet id
   why: injectStyleSheet remembered only the last sheet written, so with several component sheets on the lobby every render re-wrote every <style>, re-parsing CSS and risking restarted animations.
   lane: ORCH (Claude) · paths: `web/dm/theme_wasm.go` · depends: none
   done when: each sheet id is written once per distinct content; DM gate green.
-  status: open
+  status: done 21fb501; gates: artifacts/test/L-WEB-DM/gate-20260927-100435.log (dm 91.9%), artifacts/test/L-WEB-SHELL/gate-20260927-100448.log (shell 84.9%); each commit tree vetted and tested in isolation
 
-- [ ] DM-052 · Storm layer between the lobby art and its text
+- [x] DM-052 · Storm layer between the lobby art and its text
   why: The lobby was a still painting; the developer asked for fog, wind gusts and random lightning between the background and the foreground.
   lane: ORCH (Claude) · paths: `web/dm/weather.go`, `web/dm/weather_wasm.go`, `web/dm/weather_test.go`, `web/dm/mount_wasm.go`, `artifacts/runtime/buildtime/ui/title_sky_mask.png`, `artifacts/runtime/buildtime/assets/33b518f06f06f8b7be91e6863799087f345e506ded71b75e8799206e3c815be9.png` · depends: DM-051
   done when: fog flows continuously, gusts surge on coprime cycles, lightning volleys every 3–9 s (bursts of up to three, never under 600 ms apart) land only in open sky via the ui/title_sky_mask asset, the canvas keeps a stable slot outside the lobby; scheduler tests and DM gate green.
-  status: open (the manifest entry for ui/title_sky_mask was committed early inside fc51d72)
+  status: done 233895b; manifest entry committed early inside fc51d72; gates: artifacts/test/L-WEB-DM/gate-20260927-100435.log (dm 91.9%), artifacts/test/L-WEB-SHELL/gate-20260927-100448.log (shell 84.9%); each commit tree vetted and tested in isolation
 
-- [ ] WEB-028 · Hold a branded splash until the first screen is whole
+- [x] WEB-028 · Hold a branded splash until the first screen is whole
   why: The TV showed a plain loading line, then mounted before its art had arrived, so the background, wordmark, crest and panels popped in one by one; the WASM fetch used no-store and re-downloaded 29 MB on every visit.
   lane: ORCH (Claude) · paths: `web/shell/static/index.html`, `web/shell/splash_wasm.go`, `web/shell/boot_wasm.go`, `web/shell/compose_test.go`, `web/dm/reveal.go`, `web/dm/reveal_wasm.go`, `web/dm/reveal_test.go`, `web/dm/mount_wasm.go` · depends: none
   done when: a lantern spinner with a per-client welcome and call to action paints before the WASM; the TV crossfades in only after its first snapshot, fonts and the phase's key art are decoded (12 s cap with a console report of what was missing); the bundle is fetched with no-cache; shell and DM gates green.
-  status: open
+  status: done 5f82970; cold reveal 1.5 s, warm 1.0 s on the dev server; gates: artifacts/test/L-WEB-DM/gate-20260927-100435.log (dm 91.9%), artifacts/test/L-WEB-SHELL/gate-20260927-100448.log (shell 84.9%); each commit tree vetted and tested in isolation
 
-- [ ] DM-053 · Glow and sway the lobby status plate
+- [x] DM-053 · Glow and sway the lobby status plate
   why: The "Waiting for players" plate was static, and its clip-path cut off the glow its box-shadow was meant to give.
   lane: ORCH (Claude) · paths: `web/dm/lobby_wasm.go` · depends: DM-051
   done when: the plate sways like a hanging sign, a drop-shadow glow breathes on a separate cycle and a highlight crosses the gilt, including under reduced motion; DM gate green.
-  status: open
+  status: done 93896ad; gates: artifacts/test/L-WEB-DM/gate-20260927-100435.log (dm 91.9%), artifacts/test/L-WEB-SHELL/gate-20260927-100448.log (shell 84.9%); each commit tree vetted and tested in isolation
 
 ## 1. Repo, toolchain, and CI
 
