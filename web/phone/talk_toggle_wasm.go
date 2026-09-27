@@ -7,6 +7,7 @@ import (
 	"errors"
 	"sync"
 	"syscall/js"
+	"time"
 )
 
 // browserTalk holds one model's live browser recording: the MediaRecorder, the
@@ -123,12 +124,11 @@ func endTalk(model *PTTModel) {
 		recorder.Dispose()
 	}
 	stopTracks(stream)
-	if err := <-model.Stop(context.Background()); err != nil && notice == "" {
-		notice = err.Error()
+	stopErr := <-model.Stop(context.Background())
+	if stopErr != nil && notice == "" {
+		notice = stopErr.Error()
 	}
-	if cancel != nil {
-		cancel()
-	}
+	releaseTalk(cancel, stopErr == nil && notice == "")
 	model.Toggle().Finished(notice)
 	session.redraw()
 }
@@ -144,4 +144,22 @@ func watchTalk(ctx context.Context, model *PTTModel, recorder *BrowserRecorder) 
 		endTalk(model)
 	case <-ctx.Done():
 	}
+}
+
+// talkReleaseDelay is how long a sent recording's Talk stream stays open after
+// TalkEnd. Cancelling at once aborted the stream before the server read
+// TalkEnd, so the server saw a dropped stream and discarded the recording.
+const talkReleaseDelay = 10 * time.Second
+
+// releaseTalk frees a Talk context. A clean send lets the stream close on its
+// own and releases the context later; a failed one is cancelled now.
+func releaseTalk(cancel context.CancelFunc, sent bool) {
+	if cancel == nil {
+		return
+	}
+	if !sent {
+		cancel()
+		return
+	}
+	time.AfterFunc(talkReleaseDelay, cancel)
 }
