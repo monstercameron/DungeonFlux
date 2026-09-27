@@ -5,6 +5,7 @@ package i18n
 // stay as proper nouns.
 func SpanishEntries() map[string]Entry {
 	return map[string]Entry{
+		"dm.preview.silent":                  {Text: "Vista previa visual · Sin audio"},
 		"phone.check.listen":                 {Text: "Escucha cómo continúa la historia…"},
 		"dm.stranger_alt":                    {Text: "El desconocido empapado"},
 		"canned.canned_cliffhanger_vell":     {Text: "Medianoche. La campana de la torre que advirtio Madre Vell tañe y cada farol de la taberna se apaga. En la oscuridad vuelve a sonar, lenta y paciente. Quien tira de esa cuerda ya sabe vuestros nombres."},

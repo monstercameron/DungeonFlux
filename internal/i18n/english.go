@@ -6,6 +6,7 @@ package i18n
 // drift so the catalog cannot silently diverge from the game.
 func EnglishEntries() map[string]Entry {
 	return map[string]Entry{
+		"dm.preview.silent":                  {Text: "Visual preview · Audio off"},
 		"phone.check.listen":                 {Text: "Listen as the story continues…"},
 		"dm.stranger_alt":                    {Text: "The soaked stranger"},
 		"canned.canned_cliffhanger_vell":     {Text: "Midnight. The tower bell Mother Vell warned of tolls, and every lantern in the tavern gutters out. In the dark it rings again, slow and patient. Whoever pulls that rope already knows your names."},

@@ -105,7 +105,7 @@ func ScreenKeys() map[string][]string {
 			"dm.create.stats", "dm.create.phone_controls", "dm.create.step_gender", "dm.create.step_race",
 			"dm.create.step_class", "dm.create.generate", "dm.create.choices", "dm.create.glyph",
 			"dm.lobby.tagline", "dm.lobby.quote", "dm.lobby.scan", "dm.lobby.qr", "dm.lobby.qr_alt",
-			"dm.lobby.party_footer", "dm.scene.current", "dm.stranger_alt", "phone.check.listen",
+			"dm.lobby.party_footer", "dm.scene.current", "dm.stranger_alt", "phone.check.listen", "dm.preview.silent",
 		},
 		"host": {
 			"ui.host.start", "ui.host.pause", "ui.host.resume", "ui.host.skip",

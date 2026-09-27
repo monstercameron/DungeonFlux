@@ -58,5 +58,5 @@ func previewScreen(props previewProps) ui.Node {
 		fixture, _ = Preview("lobby")
 	}
 	useTransitionClock(fixture.State.GetPhase())
-	return compose(fixture.State, props.roomCode, props.unlock)
+	return compose(fixture.State, props.roomCode, props.unlock, true)
 }
