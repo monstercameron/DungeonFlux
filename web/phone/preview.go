@@ -2,6 +2,20 @@ package phone
 
 import df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 
+// previewPTT builds a presentation-only recorder; previews never access a mic.
+func previewPTT(view SeatView) *PTTModel {
+	m := NewPTTModel(nil, "preview", 1)
+	switch view.Phone.GetPtt().GetState() {
+	case df.PTTState_PTT_STATE_RECORDING:
+		m.state = PTTRecording
+	case df.PTTState_PTT_STATE_TRANSCRIBING:
+		m.state = PTTTranscribing
+	case df.PTTState_PTT_STATE_FAILED:
+		m.state = PTTFailed
+	}
+	return m
+}
+
 // PhonePreview is a named, deterministic phone state for review and demos.
 type PhonePreview struct {
 	Name   string

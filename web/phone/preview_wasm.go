@@ -59,7 +59,7 @@ func previewProps(view SeatView) phoneViewProps {
 		creation: NewCreationModel(nil, "preview-seat", 1), sheet: NewSheetModel(),
 		moves: NewMovesModel(nil, "preview-seat"), typed: NewTypedInputModel(nil, "preview-seat"),
 		dice: NewDiceModel(nil, "preview-seat"), combat: NewCombatModel(nil, "preview-seat"),
-		ptt: NewPTTModel(nil, "preview-seat", 1), end: NewEndModel(),
+		ptt: previewPTT(view), end: NewEndModel(),
 	}
 	state := &df.ScreenState{Phase: view.Phase, View: &df.ScreenState_Phone{Phone: view.Phone}}
 	props.creation.ApplyScreenState(state)
