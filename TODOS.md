@@ -39,6 +39,30 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: named checkpoints restore engine state and timers through the room loop, cancel abandoned work, preserve connected clients, reject stale results, and pass live CLI save-change-load-retry checks without restarting the app.
   status: open; runtime controller missing; BL-002 promoted by developer request
 
+- [x] QA-006 · Make the host Turn timers button read and change authoritative policy
+  why: A local false default and an off-only command make the host timer control misleading and irreversible.
+  lane: ORCH (Codex) · paths: `internal/domain/view.go`, `internal/game/state.go`, `internal/game/timers_test.go`, `proto/dungeonflux/v1/common.proto`, `gen/dungeonflux/v1/common.pb.go`, `internal/api/host.go`, `internal/api/project.go`, `internal/api/host_timers_test.go`, `web/host/model.go`, `web/host/model_test.go`, `web/host/mount_wasm.go`, `docs/devlog.html` · depends: none
+  done when: an explicit TIMERS_ON command reaches the engine/runtime, HostView exposes policy, the button uses snapshots and accessible pressed state, off/on/reload tests pass, and package/WASM gates and live verification are green.
+  status: done 5d7cc51; pushed; API 86.0%, game 94.0%, host 81.8%; live off/reload/on verified; full gate green
+
+- [x] QA-007 · Return authoritative acknowledgements for host and phone actions
+  why: Production RPCs report accepted enqueue before the room engine can reject an unsupported command or illegal move.
+  lane: ORCH (Codex) · paths: `internal/api/ack.go`, `internal/api/ack_test.go`, `internal/api/host.go`, `internal/api/act.go`, `internal/api/act_test.go`, `internal/api/host_test.go`, `internal/api/host_timers_test.go`, `docs/devlog.html` · depends: QA-006
+  done when: host commands, Act and Say wait for the engine reply, cancellation and enqueue failure return errors, delayed-rejection regression tests pass, and the API gate plus live rejection check are green.
+  status: done 1a628b8; pushed; API 86.3%; live host rejection verified
+
+- [x] QA-008 · Record the second audit checkpoint and outstanding controls
+  why: Timer-control verification and subsequent playtest findings need a durable completion ledger.
+  lane: ORCH (Codex) · paths: `TODOS.md` · depends: QA-006, QA-007, QA-009
+  done when: completed fixes have commit and gate references, live verification is recorded, and the ledger is pushed.
+  status: done (this commit); full gate artifacts/test/ORCH/gate-20260927-044846.log; evidence artifacts/test/QA-AUDIT/checkpoint-02.json
+
+- [x] QA-009 · Refresh cached client HTML when enabling development reload
+  why: Browsers with a cached pre-supervisor HTML page receive a 304 response and never get the reload module, even while source builds succeed.
+  lane: ORCH (Codex) · paths: `scripts/devserver/live.go`, `scripts/devserver/live_test.go`, `scripts/devserver/supervisor.go`, `docs/devlog.html` · depends: KC-005
+  done when: live HTML requests bypass downstream conditional caching, normal assets retain caching, regression tests pass, and the running supervisor injects the script on an existing client URL.
+  status: done 44d5f7d; pushed; tooling coverage 71.5%; original host URL now contains reload module
+
 ### Kill cam (developer-directed single writer, 2026-09-27)
 
 - [x] KC-004 · Remove unused domain scaffolding exposed by the feature gate
