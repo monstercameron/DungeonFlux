@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-lobby-ready">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-lobby-ready">Ready now confirms each player's lobby state</a></h2>
+  <p>The lobby advertised Ready as a legal move, but the phase dispatcher rejected the action and the phone hid the rejection. Readiness now belongs to the engine's joined-player records, independently of locking a character during creation. Both phones show the party's confirmed readiness, the table labels each ready player, and the host displays a ready count. Repeated joins retain the state; duplicate, paused, and unjoined actions are rejected. Native tests and the browser verified both seats and a phone reload. Reset testing also exposed a separate integration gap: the runtime's retained seat registry was never populated by normal joins. That issue is tracked as QA-027, alongside the normal Start guard in QA-026.</p>
+</li>
 <li class="entry" data-kind="issue" id="e-20260927-combat-end-cli">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-combat-end-cli">Combat end now accepts the command printed in its help</a></h2>

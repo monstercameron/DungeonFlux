@@ -11,7 +11,7 @@ func TestNewWaitingModel_ProjectsJoinedSeats(t *testing.T) {
 		PlayerName: " Astra Vale ", PlayerNumber: 2,
 		LobbySeats: []*df.LobbySeat{
 			{PlayerNumber: 1, Name: "Bram Stone", Joined: true},
-			{PlayerNumber: 2, Name: "Astra Vale", Joined: true},
+			{PlayerNumber: 2, Name: "Astra Vale", Joined: true, Ready: true},
 			{PlayerNumber: 3, Joined: false},
 		},
 	})
@@ -20,6 +20,26 @@ func TestNewWaitingModel_ProjectsJoinedSeats(t *testing.T) {
 	}
 	if model.Joined[1].Name != "Astra Vale" || model.Joined[1].Number != 2 {
 		t.Fatalf("joined = %+v", model.Joined)
+	}
+	if !model.Ready || !model.Joined[1].Ready || model.Joined[0].Ready {
+		t.Fatalf("readiness must come from this player's server seat: %+v", model)
+	}
+}
+
+func TestWaitingReadyLabel(t *testing.T) {
+	for _, tc := range []struct {
+		locale string
+		ready  bool
+		want   string
+	}{
+		{"en", false, "Getting ready"}, {"en", true, "Ready for adventure"},
+		{"es", false, "Preparándose"}, {"es", true, "Listo para la aventura"},
+	} {
+		t.Run(tc.want, func(t *testing.T) {
+			if got := WaitingReadyLabel(tc.locale, tc.ready); got != tc.want {
+				t.Fatalf("label = %q", got)
+			}
+		})
 	}
 }
 

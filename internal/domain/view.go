@@ -72,6 +72,7 @@ type SeatView struct {
 	PlayerNumber int
 	PlayerName   string
 	Connected    bool
+	LobbyReady   bool
 	Locale       string
 	Character    *Character
 	Build        *BuildCard

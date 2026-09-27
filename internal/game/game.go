@@ -48,6 +48,9 @@ func (s *State) LegalMoves(seat domain.SeatID) []vocab.MoveID {
 		return nil
 	}
 	moves := s.phase.LegalMoveViews(seat)
+	if s.path == vocab.StateLobby {
+		moves = s.lobbyMoves(seat)
+	}
 	ids := make([]vocab.MoveID, 0, len(moves))
 	for _, move := range moves {
 		if move.Enabled {
@@ -140,6 +143,9 @@ func (s *State) applyHost(cmd domain.HostCmd, env domain.Envelope) domain.StepOu
 }
 
 func (s *State) applyPhase(env domain.Envelope) domain.StepOut {
+	if act, ok := env.Event.(domain.Act); ok && s.path == vocab.StateLobby {
+		return s.applyLobbyReady(act, env)
+	}
 	if join, ok := env.Event.(domain.Join); ok {
 		if !s.applyJoin(join) {
 			return s.rejected("invalid_seat")
@@ -250,6 +256,9 @@ func (s *State) phaseCueEffects(previous vocab.StateID) []domain.Effect {
 }
 
 func (s *State) resetPhase() {
+	for index := range s.seats {
+		s.seats[index].LobbyReady = false
+	}
 	s.splatEnabled = s.defaultSplatEnabled
 	defaultTimers := s.phase.DefaultTurnTimersEnabled()
 	moveUI := s.phase.CombatMoveUI()

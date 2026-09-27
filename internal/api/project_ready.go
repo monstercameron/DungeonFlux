@@ -6,6 +6,9 @@ import (
 )
 
 func seatReady(seat domain.SeatView) bool {
+	if seat.LobbyReady {
+		return true
+	}
 	for _, move := range seat.Moves {
 		if move.ID == vocab.MoveReady {
 			return characterLocked(seat.Moves)

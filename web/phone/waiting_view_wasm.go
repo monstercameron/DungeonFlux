@@ -10,18 +10,21 @@ import (
 	"github.com/monstercameron/GoWebComponents/v6/ui"
 )
 
-// WaitingScreen renders the welcoming portrait lobby state: this seat, the
-// party gathering, and a Ready action once the engine offers one (the
-// "ready" legal move, the same move the old fallback showed alone with no
-// seat or party context around it).
+// WaitingScreen shows server-confirmed readiness beside each joined player.
 func WaitingScreen(model WaitingModel, locale string, moves *MovesModel) router.Component {
 	return func(_ router.Attrs) *router.Element {
 		refresh := ui.UseState(0)
+		pending := ui.UseState(false)
 		tap := ui.UseEvent(func() {
-			if moves == nil {
+			if moves == nil || pending.Get() {
 				return
 			}
-			go func() { moves.ApplyAct(<-moves.Tap(context.Background(), "ready")); refresh.Set(refresh.Get() + 1) }()
+			pending.Set(true)
+			go func() {
+				moves.ApplyAct(<-moves.Tap(context.Background(), "ready"))
+				pending.Set(false)
+				refresh.Set(refresh.Get() + 1)
+			}()
 		})
 		joined := make([]ui.Node, 0, len(model.Joined))
 		for _, seat := range model.Joined {
@@ -42,8 +45,17 @@ func WaitingScreen(model WaitingModel, locale string, moves *MovesModel) router.
 				html.Ul(html.Props{Class: "df-phone-waiting-list", Aria: map[string]string{"label": "Joined players"}, Style: map[string]string{"display": "grid", "gap": "7px", "margin": "10px 0 0", "padding": "0", "list-style": "none"}}, joined...),
 			),
 		}
-		if ready, ok := findMove(moves, "ready"); ok {
+		if model.Ready {
+			children = append(children, html.P(html.Props{Role: "status", Aria: map[string]string{"live": "polite"}, Style: map[string]string{"margin": "0", "padding": "18px", "border": "1px solid #6c9e80", "border-radius": "12px", "background": "#183327", "color": "#d5f0db", "text-align": "center", "font-size": "18px", "font-weight": "700"}}, html.Text("✓ "+WaitingReadyLabel(locale, true))))
+		} else if ready, ok := findMove(moves, "ready"); ok {
+			if pending.Get() {
+				ready.Enabled = false
+				ready.Reason = T(locale, "host.sending", map[string]string{"label": ready.Label})
+			}
 			children = append(children, html.Div(html.Props{Style: map[string]string{"padding": "0 2px"}}, moveCard(ready, tap)))
+		}
+		if moves != nil && moves.Snapshot().Error != "" {
+			children = append(children, html.P(html.Props{Role: "alert", Style: map[string]string{"margin": "0", "padding": "12px", "border-radius": "8px", "background": "#4b2025", "color": "#ffd8d2"}}, html.Text(moves.Snapshot().Error)))
 		}
 		children = append(children, html.Div(html.Props{Style: map[string]string{"margin-top": "auto", "padding": "14px 8px 8px", "text-align": "center"}}, html.Div(html.Props{Style: map[string]string{"width": "50px", "height": "2px", "margin": "0 auto 11px", "background": "#d9a441", "box-shadow": "0 0 12px rgba(217,164,65,.45)"}}), html.P(html.Props{Class: "df-phone-waiting-status", Role: "status", Aria: map[string]string{"live": "polite"}, Style: map[string]string{"margin": "0", "color": "#a89f8c", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "17px"}}, html.Text(WaitingStatus(locale)))))
 		return html.Section(html.Props{Class: "df-phone-waiting", Role: "main", Style: waitingContentStyle()}, children...)
@@ -65,7 +77,11 @@ func findMove(moves *MovesModel, moveID string) (MoveSnapshot, bool) {
 }
 
 func waitingSeat(seat WaitingSeat, locale string) ui.Node {
-	return html.Li(html.Props{Class: "df-phone-waiting-seat", Style: map[string]string{"min-height": "48px", "box-sizing": "border-box", "display": "flex", "align-items": "center", "justify-content": "space-between", "padding": "8px 11px", "border": "1px solid rgba(168,159,140,.28)", "border-radius": "8px", "background": "rgba(27,31,41,.82)", "color": "#efe6d2", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "17px"}}, html.Span(html.Props{}, html.Text(seat.Name)), html.Small(html.Props{Style: map[string]string{"color": "#a89f8c", "font-family": "Inter, system-ui, sans-serif", "font-size": "10px", "letter-spacing": ".06em", "text-transform": "uppercase"}}, html.Text(WaitingSeatLabel(locale, seat.Number))))
+	color := "#a89f8c"
+	if seat.Ready {
+		color = "#a8dcb6"
+	}
+	return html.Li(html.Props{Class: "df-phone-waiting-seat", Style: map[string]string{"min-height": "48px", "box-sizing": "border-box", "display": "flex", "align-items": "center", "justify-content": "space-between", "gap": "12px", "padding": "8px 11px", "border": "1px solid rgba(168,159,140,.28)", "border-radius": "8px", "background": "rgba(27,31,41,.82)", "color": "#efe6d2", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "17px"}}, html.Span(html.Props{}, html.Text(seat.Name)), html.Small(html.Props{Style: map[string]string{"color": color, "font-family": "Inter, system-ui, sans-serif", "font-size": "11px", "text-align": "right"}}, html.Text(WaitingSeatLabel(locale, seat.Number)+" · "+WaitingReadyLabel(locale, seat.Ready))))
 }
 
 func waitingContentStyle() map[string]string {

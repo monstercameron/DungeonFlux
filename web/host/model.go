@@ -72,6 +72,7 @@ type hostSnapshot struct {
 	TurnTotal      int64
 	Paused         bool
 	SeatsJoined    int
+	SeatsReady     int
 	SeatsTotal     int
 	Failures       int
 }
@@ -169,6 +170,9 @@ func snapshotFromState(state *df.ScreenState) hostSnapshot {
 			for _, seat := range seats {
 				if seat.GetJoined() {
 					snapshot.SeatsJoined++
+					if seat.GetReady() {
+						snapshot.SeatsReady++
+					}
 				}
 			}
 		}
@@ -189,6 +193,13 @@ func countFailures(lines []string) int {
 		}
 	}
 	return count
+}
+
+func lobbyReadiness(snapshot hostSnapshot) string {
+	if snapshot.Locale == "es" {
+		return strconv.Itoa(snapshot.SeatsReady) + "/" + strconv.Itoa(snapshot.SeatsTotal) + " listos"
+	}
+	return strconv.Itoa(snapshot.SeatsReady) + "/" + strconv.Itoa(snapshot.SeatsTotal) + " ready"
 }
 
 // humanizePhase turns an engine phase key (for example "hook_event") into a

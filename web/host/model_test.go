@@ -139,7 +139,7 @@ func TestIsPhase_helpers(t *testing.T) {
 func TestSnapshotFromState_projectsSeatsAndFailures(t *testing.T) {
 	state := &df.ScreenState{View: &df.ScreenState_Host{Host: &df.HostView{
 		LogTail: []string{"info: joined", "ERROR: adapter timeout"},
-		Dm:      &df.DMView{Seats: []*df.LobbySeat{{SeatId: "seat-1", Joined: true}, {SeatId: "seat-2", Joined: false}}},
+		Dm:      &df.DMView{Seats: []*df.LobbySeat{{SeatId: "seat-1", Joined: true, Ready: true}, {SeatId: "seat-2", Joined: false, Ready: true}}},
 	}}}
 	snapshot := snapshotFromState(state)
 	if snapshot.SeatsJoined != 1 || snapshot.SeatsTotal != 2 {
@@ -147,6 +147,13 @@ func TestSnapshotFromState_projectsSeatsAndFailures(t *testing.T) {
 	}
 	if snapshot.Failures != 1 {
 		t.Fatalf("failures = %d", snapshot.Failures)
+	}
+	if snapshot.SeatsReady != 1 || lobbyReadiness(snapshot) != "1/2 ready" {
+		t.Fatalf("readiness = %q", lobbyReadiness(snapshot))
+	}
+	snapshot.Locale = "es"
+	if lobbyReadiness(snapshot) != "1/2 listos" {
+		t.Fatal("readiness was not localized")
 	}
 }
 

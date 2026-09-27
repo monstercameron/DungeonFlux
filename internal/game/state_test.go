@@ -198,7 +198,7 @@ func playSounds(effects []domain.Effect) []domain.Effect {
 func TestStateStep_RejectionAndReset(t *testing.T) {
 	s := New(domain.OneShot{}, []byte{1, 2})
 	out := s.Step(domain.Envelope{Event: domain.Act{Seat: 1, Move: vocab.MoveReady}})
-	if out.Ack == nil || out.Ack.Accepted || out.Ack.Reason != "unaccepted_event" {
+	if out.Ack == nil || out.Ack.Accepted || out.Ack.Reason != "Join the room before marking ready" {
 		t.Fatalf("unexpected rejection: %#v", out.Ack)
 	}
 
@@ -270,6 +270,10 @@ func TestConsumeForcedD20_IsOneShot(t *testing.T) {
 
 func TestStateLegalMoves_SeatAndPause(t *testing.T) {
 	s := New(domain.OneShot{}, nil)
+	if got := s.LegalMoves(1); len(got) != 0 {
+		t.Fatalf("unjoined seat moves = %v", got)
+	}
+	s.Step(domain.Envelope{Event: domain.Join{Seat: 1}})
 	if got := s.LegalMoves(0); got != nil {
 		t.Fatalf("invalid seat moves = %v", got)
 	}

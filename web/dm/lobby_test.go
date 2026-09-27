@@ -93,6 +93,10 @@ func TestLobbyStatus_ReflectsWaitingAndReadyStates(t *testing.T) {
 		t.Fatalf("waiting status = %q", got)
 	}
 	model.Seats[0] = Seat{Number: 1, Joined: true, Ready: true}
+	model.Seats[1] = Seat{Number: 2, Joined: true}
+	if got := LobbyStatus(model); got != "Waiting for ready (1/2)" {
+		t.Fatalf("partially ready status = %q", got)
+	}
 	model.Seats[1] = Seat{Number: 2, Joined: true, Ready: true}
 	if got := LobbyStatus(model); got != "Begin the tale" {
 		t.Fatalf("ready status = %q", got)
@@ -100,6 +104,9 @@ func TestLobbyStatus_ReflectsWaitingAndReadyStates(t *testing.T) {
 }
 
 func TestSeatSubtitle_UsesSpeciesAndClassFallbacks(t *testing.T) {
+	if got := SeatSubtitle(Seat{Joined: true, Ready: true}); got != "Ready for adventure" {
+		t.Fatalf("ready subtitle = %q", got)
+	}
 	if got := SeatSubtitle(Seat{Species: "Wood Elf", Class: "Ranger"}); got != "Wood Elf Ranger" {
 		t.Fatalf("full subtitle = %q", got)
 	}

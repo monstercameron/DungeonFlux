@@ -90,6 +90,12 @@ func (s *State) view() domain.View {
 		}
 	}
 	view.Seats = mergeSeatViews(view.Seats, s.seats)
+	if s.path == vocab.StateLobby {
+		for index := range view.Seats {
+			view.Seats[index].LobbyReady = s.seats[index].LobbyReady
+			view.Seats[index].Moves = s.lobbyMoves(view.Seats[index].Seat)
+		}
+	}
 	view.Scene.Narration = s.narrationText
 	view.Scene.NarrationSpeaker = s.narrationSpeaker
 	view.Scene.NarrationLineID = s.narrationLineID

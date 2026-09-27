@@ -201,6 +201,9 @@ func statusStrip(props statusStripProps) ui.Node {
 	if pausedPill != nil {
 		nodes = append(nodes, pausedPill)
 	}
+	if isLobbyPhase(snapshot.Phase) {
+		nodes = append(nodes, statusPill("df-host-pill-ok", lobbyReadiness(snapshot)))
+	}
 	return html.Div(html.Props{Class: "df-host-status-strip", Aria: map[string]string{"live": "polite"}}, nodes...)
 }
 

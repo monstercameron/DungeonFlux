@@ -148,11 +148,17 @@ func LobbyStatus(model LobbyModel) string {
 	if ready == len(model.Seats) {
 		return "Begin the tale"
 	}
+	if joined == len(model.Seats) {
+		return "Waiting for ready (" + strconv.Itoa(ready) + "/" + strconv.Itoa(len(model.Seats)) + ")"
+	}
 	return "Waiting for players (" + strconv.Itoa(joined) + "/" + strconv.Itoa(len(model.Seats)) + ")"
 }
 
 // SeatSubtitle returns the species and class line for one party card.
 func SeatSubtitle(seat Seat) string {
+	if seat.Joined && seat.Ready {
+		return "Ready for adventure"
+	}
 	species, class := titleCaseWord(seat.Species), titleCaseWord(seat.Class)
 	if species != "" && class != "" {
 		return species + " " + class

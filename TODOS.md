@@ -150,11 +150,23 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: the documented command constructs the correct thrall outcome event, malformed arguments fail clearly, and CLI tests and live verification pass.
   status: done (this commit); CLI coverage 73.0%; artifacts/test/QA-024/gate-20260927-061029.log green; both documented outcomes accepted by real CLI and advanced combat to cliffhanger
 
-- [ ] QA-025 · Make lobby readiness visible and authoritative
+- [x] QA-025 · Make lobby readiness visible and authoritative
   why: Tapping Ready in the joined player lobby leaves the button and party state unchanged, with no confirmation or explanation.
-  lane: ORCH (Codex) · paths: pending phone waiting-screen and engine lobby investigation · depends: QA-007
+  lane: ORCH (Codex) · paths: `internal/domain/view.go`, `internal/game/game.go`, `internal/game/state.go`, `internal/game/lobby_ready.go`, `internal/game/lobby_ready_test.go`, `internal/game/state_test.go`, `internal/api/project_ready.go`, `internal/api/project_ready_test.go`, `web/phone/waiting.go`, `web/phone/waiting_view_wasm.go`, `web/phone/waiting_test.go`, `web/dm/lobby.go`, `web/dm/lobby_test.go`, `web/host/model.go`, `web/host/model_test.go`, `web/host/mount_wasm.go`, `docs/devlog.html` · depends: QA-007
   done when: the lobby offers a meaningful readiness action with visible server-confirmed state or accurately explains that only the host starts the game; no inert button remains.
-  status: open; reproduced on player tab 25 after both seats joined during QA-022 verification
+  status: done (this commit); gate artifacts/test/QA-025/gate-20260927-062236.log; both phones, DM and host reflect readiness; phone reload retains it; reset integration gap tracked in QA-027
+
+- [ ] QA-026 · Require both lobby players to be ready before normal Start
+  why: The binding lobby flow requires two ready seats, while Start currently bypasses that guard; Skip must remain the rehearsal override.
+  lane: ORCH (Codex) · paths: pending start guard and host control breakdown · depends: QA-025
+  done when: Start rejects missing or unready seats with a useful reason, the host shows readiness, two ready seats start creation, and Skip retains the documented defaults.
+  status: open
+
+- [ ] QA-027 · Preserve joined player identities through host Reset
+  why: Live Reset leaves both authenticated player streams connected but removes their engine identities, so names and Ready actions disappear despite the confirmation promising seats stay joined.
+  lane: ORCH (Codex) · paths: pending room-state join wiring and reset integration test · depends: QA-025
+  done when: Reset keeps both seats, names, locales and usable streams while clearing run readiness; repeated resets pass native integration and browser verification.
+  status: open; reproduced in the live two-player lobby during QA-025 verification
 
 ### Kill cam (developer-directed single writer, 2026-09-27)
 

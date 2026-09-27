@@ -10,12 +10,14 @@ type WaitingSeat struct {
 	Number int32
 	Name   string
 	Joined bool
+	Ready  bool
 }
 
 // WaitingModel contains the content needed by the lobby waiting screen.
 type WaitingModel struct {
 	PlayerName   string
 	PlayerNumber int32
+	Ready        bool
 	Joined       []WaitingSeat
 }
 
@@ -43,7 +45,10 @@ func NewWaitingModel(view SeatView) WaitingModel {
 		if name == "" {
 			name = fmt.Sprintf("Player %d", number)
 		}
-		model.Joined = append(model.Joined, WaitingSeat{Number: number, Name: name, Joined: true})
+		model.Joined = append(model.Joined, WaitingSeat{Number: number, Name: name, Joined: true, Ready: seat.GetReady()})
+		if number == model.PlayerNumber {
+			model.Ready = seat.GetReady()
+		}
 	}
 	return model
 }
@@ -62,6 +67,20 @@ func WaitingStatus(locale string) string {
 		return "Esperando a que el anfitrión comience"
 	}
 	return "Waiting for the host to start"
+}
+
+// WaitingReadyLabel labels the server-confirmed lobby readiness indicator.
+func WaitingReadyLabel(locale string, ready bool) string {
+	if strings.EqualFold(strings.TrimSpace(locale), "es") {
+		if ready {
+			return "Listo para la aventura"
+		}
+		return "Preparándose"
+	}
+	if ready {
+		return "Ready for adventure"
+	}
+	return "Getting ready"
 }
 
 // WaitingSeatLabel formats a seat number consistently across locales.
