@@ -39,7 +39,7 @@ func buildAdapters(cfg config.Config, logger *slog.Logger) (adapterSet, error) {
 	}
 	set := adapterSet{llm: newFakeLLM(), image: newFakeImage(), video: newFakeVideo(), stt: fakeSTT{}, tts: fakeTTS{}, sound: fakeSound{}}
 	var err error
-	if isLive(cfg, "llm") {
+	if isLiveLLM(cfg) {
 		set.llm, err = liveLLM(cfg, logger)
 		if err != nil {
 			return adapterSet{}, err
@@ -98,6 +98,33 @@ func envForVendor(vendor string) string {
 
 func isLive(cfg config.Config, name string) bool { return cfg.Adapters[name].Mode == "live" }
 
+// isLiveLLM reports whether any text adapter is live. Configs name it either
+// "llm" (fake.json) or one per vendor, "llm_openai" and so on (demo.json).
+func isLiveLLM(cfg config.Config) bool {
+	for name, adapter := range cfg.Adapters {
+		if (name == "llm" || strings.HasPrefix(name, "llm_")) && adapter.Mode == "live" {
+			return true
+		}
+	}
+	return false
+}
+
+// liveLLMProvider reports whether a chain link names a vendor this process can
+// call live: "recording:<role>" links replay stored responses and are not
+// vendors, and a vendor with no live adapter (no key configured) is skipped
+// rather than failing start-up.
+func liveLLMProvider(cfg config.Config, provider string) bool {
+	if strings.EqualFold(provider, "recording") {
+		return false
+	}
+	for _, adapter := range cfg.Adapters {
+		if strings.EqualFold(adapter.Vendor, provider) && adapter.Mode == "live" {
+			return true
+		}
+	}
+	return false
+}
+
 func liveLLM(cfg config.Config, logger *slog.Logger) (ports.LLM, error) {
 	links := cfg.Models.Chains["npc_reply"]
 	if len(links) == 0 {
@@ -112,11 +139,18 @@ func liveLLM(cfg config.Config, logger *slog.Logger) (ports.LLM, error) {
 		if provider == "" {
 			return nil, errors.New("wire: empty LLM provider")
 		}
+		if !liveLLMProvider(cfg, provider) {
+			logger.Info("llm chain link skipped", "link", link)
+			continue
+		}
 		adapter, err := llmLink(cfg, provider, logger)
 		if err != nil {
 			return nil, err
 		}
 		llms = append(llms, adapter)
+	}
+	if len(llms) == 0 {
+		return nil, fmt.Errorf("wire: no live LLM vendor in npc_reply chain %v", links)
 	}
 	return modelchain.New(llms, modelchain.Config{FirstTokenDeadline: cfg.Timeouts.SpokenFirstToken, Deadline: cfg.Timeouts.Interpret}), nil
 }
