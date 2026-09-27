@@ -40,6 +40,21 @@ type SlotView struct {
 	Asset AssetID
 }
 
+// CreationChoiceView carries the live choices for one creation seat before
+// the engine has produced a BuildCard. It remains additive to Character and
+// Build so unrolled selections are never mistaken for a built hero.
+type CreationChoiceView struct {
+	PlayerNumber int
+	PlayerName   string
+	Name         string
+	Species      string
+	Gender       string
+	Class        string
+	Portrait     AssetID
+	Rolled       bool
+	Ready        bool
+}
+
 // NarrationView is the current read-along line shared by the DM and phones.
 type NarrationView struct {
 	Speaker   string
@@ -80,6 +95,7 @@ type SeatView struct {
 	TurnTimer    TimerView
 	StatusText   string
 	StatusMsg    LocalizedMessage
+	Creation     *CreationChoiceView
 	// CombatMap is the seat's top-down combat movement map (combat only).
 	CombatMap *CombatMapView
 }
@@ -196,6 +212,12 @@ type View struct {
 func (v View) DeepCopy() View {
 	out := v
 	out.Seats = append([]SeatView(nil), v.Seats...)
+	for index := range out.Seats {
+		if v.Seats[index].Creation != nil {
+			choice := *v.Seats[index].Creation
+			out.Seats[index].Creation = &choice
+		}
+	}
 	out.Preload = append([]string(nil), v.Preload...)
 	out.Slots = append([]SlotView(nil), v.Slots...)
 	if v.Battlefield != nil {
