@@ -188,13 +188,17 @@ func themeStyles() ui.Node {
 	return html.Span(html.Props{Class: "df-dm-theme-anchor", Hidden: true})
 }
 
-var injectedDMCSS string
+// injectedDMCSS remembers the text written to each sheet id. One shared
+// "last sheet" string made every render rewrite every other sheet once
+// several components injected their own, re-parsing CSS and risking
+// restarts of running animations on each Watch update.
+var injectedDMCSS = map[string]string{}
 
 // injectStyleSheet writes the sheet into <head> once. A <style> child rendered
 // through html.Text is HTML-escaped (quotes, '>', '&'), which silently drops
 // quoted fonts, content:"" pseudo-elements and child combinators.
 func injectStyleSheet(id, css string) {
-	if injectedDMCSS == css {
+	if injectedDMCSS[id] == css {
 		return
 	}
 	doc := js.Global().Get("document")
@@ -208,5 +212,5 @@ func injectStyleSheet(id, css string) {
 		doc.Get("head").Call("appendChild", el)
 	}
 	el.Set("textContent", css)
-	injectedDMCSS = css
+	injectedDMCSS[id] = css
 }
