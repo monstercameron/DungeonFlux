@@ -20,7 +20,11 @@ func woodedPathBattlefield() domain.Battlefield {
 		Spawns:    []domain.Spawn{{Seat: 1, Cell: domain.Cell{C: 8, R: 6}}, {Seat: 2, Cell: domain.Cell{C: 10, R: 6}}, {Entity: "thrall", Cell: domain.Cell{C: 9, R: 2}}},
 		Door:      domain.Cell{C: 12, R: 9},
 		Cameras:   woodedPathCameras(),
-		Flat:      domain.FlatBattlefield{ImageURL: "battlefield_tavern_flat"},
+		// This still uses the curated TACTICAL camera (24,9,-2), looking at
+		// (20,.5,-13), vertical FOV 48, at 1920x1080. These projected ground
+		// corners match the logical grid origin and extent; offscreen corners
+		// are intentional, since the camera crops the edge of the battlefield.
+		Flat: domain.FlatBattlefield{ImageURL: "level_still_64bb46d5_tactical", FloorQuadPX: [4][2]float64{{525.44, 209.36}, {1923.94, 418.01}, {2708.17, 1838.64}, {-352.41, 702.35}}},
 	}
 }
 

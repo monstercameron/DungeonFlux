@@ -34,10 +34,10 @@ func TestCombatModelFromView_PreservesHUDWithoutBattlefield(t *testing.T) {
 	}
 }
 
-func TestCombatModelFromView_IgnoresSplatAndInvalidCells(t *testing.T) {
+func TestCombatModelFromView_SplatRetainsFallbackImageButRejectsInvalidCells(t *testing.T) {
 	view := &dungeonfluxv1.DMView{Battlefield: &dungeonfluxv1.Battlefield{Mode: "SPLAT", Grid: &dungeonfluxv1.Grid{Cols: 2, Rows: 2, Walkable: []*dungeonfluxv1.Cell{{C: -1, R: 0}}}, Flat: &dungeonfluxv1.FlatBattlefield{ImageUrl: "unused.png", FloorQuadPx: []float32{0, 0, 1, 0, 1, 1, 0, 1}}}, Tokens: []*dungeonfluxv1.Token{{TokenId: "bad", Cell: &dungeonfluxv1.Cell{C: 4, R: 4}}}}
 	got := CombatModelFromView(view)
-	if got.ImageURL != "" || len(got.Segments) != 0 || len(got.Tokens) != 0 {
+	if got.ImageURL != "unused.png" || len(got.Segments) != 0 || len(got.Tokens) != 0 {
 		t.Fatalf("invalid combat model = %#v", got)
 	}
 }

@@ -59,7 +59,7 @@ func defaultCatalogue() []domain.Asset {
 		{"battlefield_tavern_splat", vocab.AssetSplat}, {"battlefield_tavern_lite", vocab.AssetSplat},
 		{"/splat/scenes/64bb46d5.json", vocab.AssetSplat},
 		{"cb2fddd6", vocab.AssetSplat},
-		{"battlefield_tavern_flat", vocab.AssetImage}, {"thrall_loop_idle", vocab.AssetVideo},
+		{"level_still_64bb46d5_tactical", vocab.AssetImage}, {"battlefield_tavern_flat", vocab.AssetImage}, {"thrall_loop_idle", vocab.AssetVideo},
 		{"thrall_loop_attack", vocab.AssetVideo}, {"thrall_loop_hit", vocab.AssetVideo}, {"thrall_loop_fall", vocab.AssetVideo},
 		{"THEME_MAIN", vocab.AssetMusic}, {"COMBAT_SKIRMISH_LOOP", vocab.AssetMusic},
 		{"establishing_tavern", vocab.AssetVideo}, {"arrival_door", vocab.AssetVideo},

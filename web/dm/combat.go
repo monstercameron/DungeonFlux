@@ -24,6 +24,7 @@ type CombatSegment struct {
 type CombatToken struct {
 	ID         string
 	Name       string
+	Kind       string
 	Portrait   string
 	X          float32
 	Y          float32
@@ -104,6 +105,7 @@ func CombatModelFromViewAt(view *dungeonfluxv1.DMView, sequence uint64) CombatMo
 }
 
 func applyFlatFallback(model *CombatModel, view *dungeonfluxv1.DMView, stageGrid splat.Grid) {
+	model.ImageURL = view.GetBattlefield().GetFlat().GetImageUrl()
 	grid := view.GetBattlefield().GetGrid()
 	if grid == nil {
 		grid = protoGrid(stageGrid)
@@ -141,7 +143,7 @@ func projectedSplatTokens(view *dungeonfluxv1.DMView, sequence uint64) []CombatT
 		if !splat.IsWalkable(stage.Init.Grid, token.Cell) {
 			continue
 		}
-		result = append(result, CombatToken{ID: token.ID, Name: token.Name, Portrait: token.Portrait, HP: tokenHP(view, token.ID), HPMax: tokenMaxHP(view, token.ID), Active: tokenActive(view, token.ID), Statuses: append([]string(nil), token.Statuses...), Class: tokenClassByStageID(view, token.ID), CellColumn: int32(token.Cell[0]), CellRow: int32(token.Cell[1])})
+		result = append(result, CombatToken{ID: token.ID, Name: token.Name, Kind: token.Kind, Portrait: token.Portrait, HP: tokenHP(view, token.ID), HPMax: tokenMaxHP(view, token.ID), Active: tokenActive(view, token.ID), Statuses: append([]string(nil), token.Statuses...), Class: tokenClassByStageID(view, token.ID), CellColumn: int32(token.Cell[0]), CellRow: int32(token.Cell[1])})
 	}
 	if len(result) == 0 {
 		return nil
@@ -254,7 +256,7 @@ func projectedTokens(tokens []*dungeonfluxv1.Token, grid *dungeonfluxv1.Grid, qu
 		if !valid {
 			continue
 		}
-		result = append(result, CombatToken{ID: token.GetTokenId(), Name: token.GetName(), Portrait: token.GetPortraitUrl(), X: point.X, Y: point.Y, HP: token.GetHp(), HPMax: token.GetHpMax(), Active: token.GetActive(), Statuses: append([]string(nil), token.GetStatuses()...), Class: tokenClass(token, cards), CellColumn: cell.GetC(), CellRow: cell.GetR()})
+		result = append(result, CombatToken{ID: token.GetTokenId(), Name: token.GetName(), Kind: token.GetKind(), Portrait: token.GetPortraitUrl(), X: point.X, Y: point.Y, HP: token.GetHp(), HPMax: token.GetHpMax(), Active: token.GetActive(), Statuses: append([]string(nil), token.GetStatuses()...), Class: tokenClass(token, cards), CellColumn: cell.GetC(), CellRow: cell.GetR()})
 	}
 	return result
 }

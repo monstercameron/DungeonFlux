@@ -67,9 +67,9 @@ func CombatComponent(view *dungeonfluxv1.DMView, sequence ...uint64) router.Comp
 }
 
 func combatStageStyle(model CombatModel) map[string]string {
-	style := map[string]string{"position": "relative", "width": "100%", "height": "100%", "background-image": "radial-gradient(circle at 50% 45%,#27303b,#0d1118 76%)", "background-size": "cover", "background-position": "center", "filter": "saturate(.94) contrast(1.05)"}
+	style := map[string]string{"position": "relative", "width": "100%", "height": "100%", "background-image": "radial-gradient(circle at 50% 45%,#27303b,#0d1118 76%)", "background-size": "cover", "background-position": "center", "background-color": "#101a20"}
 	if imageURL := combatImageURL(model); imageURL != "" {
-		style["background-image"] = "linear-gradient(180deg,rgba(7,10,15,.08),rgba(7,10,15,.52)),url('" + imageURL + "')"
+		style["background-image"] = "linear-gradient(180deg,rgba(7,18,25,.18),rgba(7,14,23,.3)),url('" + imageURL + "')"
 	}
 	return style
 }
@@ -92,10 +92,7 @@ func combatInitiativeStrip(locale string, model CombatModel) ui.Node {
 	items := make([]ui.Node, 0, len(model.TurnOrder)+1)
 	items = append(items, html.Span(html.Props{Style: map[string]string{"color": "#e7c27a", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "16px", "letter-spacing": ".08em", "text-transform": "uppercase", "margin-right": "6px"}}, ui.Text(T(locale, "ui.dm.round", map[string]string{"round": strconv.Itoa(int(model.Round))}))))
 	for _, turn := range model.TurnOrder {
-		portrait := artSrc(turn.Portrait)
-		if portrait == "" {
-			portrait = artSrc("ui/logo_emblem")
-		}
+		portrait := combatTurnArt(turn, model.Tokens)
 		ring, opacity := "2px solid rgba(231,194,122,.4)", "1"
 		if turn.Active {
 			ring = "3px solid #e7c27a"
@@ -117,7 +114,7 @@ func combatInitiativeStrip(locale string, model CombatModel) ui.Node {
 func combatGrid(segments []CombatSegment) ui.Node {
 	children := make([]ui.Node, 0, len(segments))
 	for _, segment := range segments {
-		children = append(children, html.Line(html.Props{Raw: map[string]any{"x1": number(segment.From.X), "y1": number(segment.From.Y), "x2": number(segment.To.X), "y2": number(segment.To.Y), "stroke": "#e7c27a", "stroke-opacity": "0.62", "stroke-width": "3"}}))
+		children = append(children, html.Line(html.Props{Raw: map[string]any{"x1": number(segment.From.X), "y1": number(segment.From.Y), "x2": number(segment.To.X), "y2": number(segment.To.Y), "stroke": "#e7c27a", "stroke-opacity": "0.3", "stroke-width": "1.5"}}))
 	}
 	return html.Svg(html.Props{Class: "df-dm-combat-grid", Style: map[string]string{"position": "absolute", "inset": "0", "width": "100%", "height": "100%", "pointer-events": "none"}, Raw: map[string]any{"viewBox": "0 0 1920 1080", "preserveAspectRatio": "none", "aria-hidden": "true"}}, children...)
 }
@@ -138,16 +135,13 @@ func combatTokens(tokens []CombatToken) []ui.Node {
 		if status != "" {
 			label += " · " + status
 		}
-		portrait := artSrc(token.Portrait)
-		if portrait == "" {
-			portrait = artSrc("ui/logo_emblem")
-		}
-		bar := html.Div(html.Props{Style: map[string]string{"position": "absolute", "left": "8%", "right": "8%", "bottom": "12px", "height": "10px", "border": "2px solid #efe6d2", "border-radius": "8px", "background": "#291b1b", "overflow": "hidden"}}, html.Div(html.Props{Style: map[string]string{"width": combatHPPercent(token.HP, token.HPMax), "height": "100%", "background": combatHPColor(token.HP, token.HPMax)}}))
-		imageChildren := []ui.Node{html.Img(html.Props{Src: portrait, Alt: token.Name, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "contain"}}), bar}
+		portrait := combatTokenArt(token)
+		bar := html.Div(html.Props{Style: map[string]string{"position": "absolute", "left": "8%", "right": "8%", "bottom": "-8px", "height": "6px", "border": "1px solid #a6b2af", "border-radius": "8px", "background": "#291b1b", "overflow": "hidden"}}, html.Div(html.Props{Style: map[string]string{"width": combatHPPercent(token.HP, token.HPMax), "height": "100%", "background": combatHPColor(token.HP, token.HPMax)}}))
+		imageChildren := []ui.Node{html.Img(html.Props{Src: portrait, Alt: token.Name, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover", "object-position": "center 20%", "border-radius": "50%"}}), bar}
 		imageChildren = append(imageChildren, combatStatusIcons(token.Statuses)...)
-		image := html.Div(html.Props{Style: map[string]string{"position": "relative", "filter": tokenFilter(token.Statuses)}}, imageChildren...)
-		nodes = append(nodes, html.Div(html.Props{Class: "df-dm-combat-token", Style: map[string]string{"position": "absolute", "left": percent(token.X / 1920 * 100), "top": percent(token.Y / 1080 * 100), "transform": "translate(-50%,-50%)", "width": "10%", "text-align": "center"}, Raw: map[string]any{"data-token-id": token.ID, "data-active": strconv.FormatBool(token.Active)}},
-			image, html.Div(html.Props{Style: map[string]string{"color": "#efe6d2", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "22px", "font-weight": "600", "text-shadow": "0 2px 5px #000"}}, html.Text(label))),
+		image := html.Div(html.Props{Style: map[string]string{"position": "relative", "aspect-ratio": "1", "border-radius": "50%", "border": combatTokenBorder(token), "background": "#101a20", "box-shadow": "0 10px 24px #0009", "filter": tokenFilter(token.Statuses)}}, imageChildren...)
+		nodes = append(nodes, html.Div(html.Props{Class: "df-dm-combat-token", Style: map[string]string{"position": "absolute", "left": percent(token.X / 1920 * 100), "top": percent(token.Y / 1080 * 100), "transform": "translate(-50%,-50%)", "width": "6.5%", "text-align": "center", "transition": "left .3s ease,top .3s ease"}, Raw: map[string]any{"data-token-id": token.ID, "data-active": strconv.FormatBool(token.Active)}},
+			image, html.Div(html.Props{Style: map[string]string{"color": "#efe6d2", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "21px", "font-weight": "600", "margin-top": "13px", "padding": "2px 8px", "border-radius": "6px", "background": "#0a131dd9", "text-shadow": "0 2px 5px #000"}}, html.Text(label))),
 		)
 	}
 	return nodes
@@ -160,7 +154,7 @@ func combatPartyRail(model CombatModel) ui.Node {
 			continue
 		}
 		items = append(items, html.Div(html.Props{Style: map[string]string{"display": "grid", "grid-template-columns": "68px 1fr", "gap": "12px", "align-items": "center", "padding": "8px", "border": "1px solid rgba(184,137,58,.68)", "border-radius": "8px", "background": "rgba(12,18,28,.86)"}},
-			html.Img(html.Props{Src: artSrc(token.Portrait), Alt: token.Name, Style: map[string]string{"width": "64px", "height": "64px", "object-fit": "cover", "border": "1px solid #b8893a"}}),
+			html.Img(html.Props{Src: combatTokenArt(token), Alt: token.Name, Style: map[string]string{"width": "64px", "height": "64px", "object-fit": "cover", "border": "1px solid #b8893a"}}),
 			html.Div(html.Props{Style: map[string]string{"min-width": "0"}}, html.Strong(html.Props{Style: map[string]string{"display": "block", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "24px", "white-space": "nowrap", "overflow": "hidden", "text-overflow": "ellipsis"}}, ui.Text(token.Name)), html.Span(html.Props{Style: map[string]string{"color": "#2fb59a", "font-size": "18px"}}, ui.Text("HP "+strconv.Itoa(int(token.HP))+"/"+strconv.Itoa(int(token.HPMax))))),
 		))
 	}
@@ -207,13 +201,6 @@ func combatActionBar() ui.Node {
 
 func combatVignette() ui.Node {
 	return html.Div(html.Props{Style: map[string]string{"position": "absolute", "inset": "0", "pointer-events": "none", "box-shadow": "inset 0 0 120px rgba(0,0,0,.72),inset 0 -180px 160px rgba(0,0,0,.48)"}})
-}
-
-func combatImageURL(model CombatModel) string {
-	if artURL := ArtURL("battlefield_tavern_flat"); artURL != "" {
-		return artURL
-	}
-	return artSrc(model.ImageURL)
 }
 
 func combatBanner(model CombatModel) string {

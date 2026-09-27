@@ -87,11 +87,11 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: timeout produces complete playable heroes, phone sheets show their stats, and the 3D fight uses appropriate cached hero assets.
   status: open; reproduced during QA-010 rehearsal
 
-- [ ] QA-014 · Match the flat fallback to the active battlefield
+- [x] QA-014 · Match the flat fallback to the active battlefield
   why: Switching the outdoor 3D battle to flat mode shows indoor tavern art, a distorted grid, duplicate generic hero portraits and an emblem as the enemy token.
-  lane: ORCH (Codex) · paths: pending fallback-art and projection breakdown · depends: QA-010
+  lane: ORCH (Codex) · paths: `internal/content/battlefield_wooded.go`, `internal/content/battlefield_wooded_test.go`, `internal/content/oneshot.go`, `web/dm/combat.go`, `web/dm/combat_test.go`, `web/dm/combat_art.go`, `web/dm/combat_art_test.go`, `web/dm/combat_wasm.go`, `TODOS.md`, `docs/devlog.html` · depends: QA-010
   done when: flat mode preserves location, positioning and character identity with a readable grid, and visual checks pass.
-  status: open; screenshot evidence from live paused combat
+  status: done (this commit); gate artifacts/test/QA-014/gate-20260927-073133.log; content 93.6%, DM 91.4%; native/WASM builds and live paused flat/3D switch verified
 
 - [x] QA-015 · Finalize and project both heroes on creation timeout or Skip
   why: Bulk timeout leaves the player projections empty, misses already-rolled unlocked seats, and overwrites partial choices; Skip bypasses builds entirely.
