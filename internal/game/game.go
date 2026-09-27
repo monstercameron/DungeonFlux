@@ -103,6 +103,11 @@ func (s *State) apply(env domain.Envelope) domain.StepOut {
 }
 
 func (s *State) applyHost(cmd domain.HostCmd, env domain.Envelope) domain.StepOut {
+	if cmd.Cmd == vocab.HostStart && s.path == vocab.StateLobby {
+		if reason := s.lobbyStartReason(); reason != "" {
+			return s.rejected(reason)
+		}
+	}
 	if out, handled := s.applySplatToggle(cmd.Cmd, env); handled {
 		return out
 	}

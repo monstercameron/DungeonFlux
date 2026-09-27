@@ -63,6 +63,8 @@ func TestE2E_DfctlRunThroughLobby(t *testing.T) {
 	joinSeats(t, server.URL, cfg.Server.RoomCode)
 
 	phaseTrace := []string{"lobby"}
+	sendAct(t, debugClient, debugCtx, "1", "ready", "")
+	sendAct(t, debugClient, debugCtx, "2", "ready", "")
 	sendDebug(t, debugClient, debugCtx, "host_start")
 	assertPhase(t, debugClient, debugCtx, "DF-E2E", "creation", phaseTrace)
 	phaseTrace = append(phaseTrace, "creation")

@@ -73,6 +73,9 @@ func runHookPath(t *testing.T, timersEnabled bool) {
 	debugClient := df.NewDebugServiceClient(debugConn)
 	debugCtx := metadata.AppendToOutgoingContext(context.Background(), "x-df-debug-token", "eng29-e2e-token")
 
+	for _, token := range seats {
+		phoneAct(t, session, token, "ready", "")
+	}
 	sendHookDebug(t, debugClient, debugCtx, "host_start", "")
 	waitSimPhase(t, watch, "creation")
 	for seat, token := range seats {

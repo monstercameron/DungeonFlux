@@ -76,6 +76,7 @@ func TestLobbyReady_DoesNotLockCharacterCreation(t *testing.T) {
 	s := New(domain.OneShot{}, nil)
 	s.Step(domain.Envelope{Event: domain.Join{Seat: 1}})
 	s.Step(domain.Envelope{Event: domain.Act{Seat: 1, Move: vocab.MoveReady}})
+	readyLobby(t, s)
 	s.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostStart}})
 	if s.View().Path != vocab.StateCreation || s.View().Seats[0].LobbyReady || s.View().Seats[0].Character != nil {
 		t.Fatal("lobby readiness leaked into character creation")

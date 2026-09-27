@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-start-waits-for-players">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-start-waits-for-players">Start waits for both players to be ready</a></h2>
+  <p>The lobby could start with empty seats or players who had not chosen Ready, contrary to the two-ready-seat flow in plan section 0. The root engine now rejects Start until both joined players are ready and the game is unpaused. Rejections emit no effects, so they cannot start a timer or play the opening cue. The host disables Start and explains the missing step beside the controls in English or Spanish. Skip retains its rehearsal behavior. Unit tests cover missing seats, partial readiness, pause, reset, and default characters after Skip; a real RPC test checks the host acknowledgement against phone Ready actions. Browser testing verified the disabled button at one ready player, the enabled button at two, creation on Start, and the rehearsal override after Reset. The gate passed with 94.7 percent engine coverage and 83.5 percent host coverage.</p>
+</li>
 <li class="entry" data-kind="issue" id="e-20260927-join-language-selection">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-join-language-selection">The join language selector keeps the player's choice</a></h2>

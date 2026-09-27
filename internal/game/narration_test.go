@@ -36,6 +36,7 @@ func TestStateNarration_StaleDeltaIsIgnoredAndPhaseChangeClears(t *testing.T) {
 	}
 	state.beginNarration("line-1", "Mother Vell", string(vocab.RoleNPCReply))
 	state.Step(domain.Envelope{Event: domain.NarrationDelta{UtteranceID: "line-1", TextSoFar: "before transition"}})
+	readyLobby(t, state)
 	state.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostStart}})
 	if got := state.View().Scene.Narration; got != "" {
 		t.Fatalf("phase transition retained narration %q", got)

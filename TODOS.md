@@ -156,11 +156,11 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: the lobby offers a meaningful readiness action with visible server-confirmed state or accurately explains that only the host starts the game; no inert button remains.
   status: done (this commit); gate artifacts/test/QA-025/gate-20260927-062236.log; both phones, DM and host reflect readiness; phone reload retains it; reset integration gap tracked in QA-027
 
-- [ ] QA-026 · Require both lobby players to be ready before normal Start
+- [x] QA-026 · Require both lobby players to be ready before normal Start
   why: The binding lobby flow requires two ready seats, while Start currently bypasses that guard; Skip must remain the rehearsal override.
-  lane: ORCH (Codex) · paths: pending start guard and host control breakdown · depends: QA-025
+  lane: ORCH (Codex) · paths: `internal/game/game.go`, `internal/game/lobby_ready.go`, `internal/game/lobby_start_test.go`, `internal/game/state_test.go`, `internal/game/lobby_ready_test.go`, `internal/game/timers_test.go`, `internal/game/narration_test.go`, `web/host/lobby_start.go`, `web/host/lobby_start_test.go`, `web/host/mount_wasm.go`, `internal/wire/e2e_test.go`, `internal/wire/e2e_voice_test.go`, `internal/wire/e2e_hook_test.go`, `internal/wire/sim_test.go`, `internal/wire/e2e_lobby_start_test.go`, `internal/sim/walk/full/i18n_test.go`, `TODOS.md`, `docs/devlog.html` · depends: QA-025
   done when: Start rejects missing or unready seats with a useful reason, the host shows readiness, two ready seats start creation, and Skip retains the documented defaults.
-  status: open
+  status: done (this commit); gate artifacts/test/QA-026/gate-20260927-064834.log; full gate artifacts/test/ORCH/gate-20260927-064651.log; browser verified 0/2, 1/2, 2/2 readiness, Start, Reset and Skip
 
 - [x] QA-027 · Preserve joined player identities through host Reset
   why: Live Reset leaves both authenticated player streams connected but removes their engine identities, so names and Ready actions disappear despite the confirmation promising seats stay joined.

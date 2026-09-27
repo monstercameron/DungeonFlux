@@ -105,6 +105,8 @@ func settledTempDir(t *testing.T) string {
 
 func (r voiceRoom) toConversation(t *testing.T) {
 	t.Helper()
+	sendAct(t, r.debug, r.ctx, "1", "ready", "")
+	sendAct(t, r.debug, r.ctx, "2", "ready", "")
 	sendDebug(t, r.debug, r.ctx, "host_start")
 	for _, seat := range []string{"1", "2"} {
 		class := map[string]string{"1": "paladin", "2": "rogue"}[seat]

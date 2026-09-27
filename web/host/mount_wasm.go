@@ -102,7 +102,7 @@ func hostView(props hostViewProps) ui.Node {
 			}))
 			continue
 		}
-		button := ui.CreateElement(hostActionButton, hostActionButtonProps{Action: item, Locale: locale, Phase: snapshot.Phase, Paused: snapshot.Paused, TimersOn: snapshot.TimersOn, SplatOn: snapshot.SplatOn, SplatAvailable: snapshot.SplatAvailable, Connected: snapshot.Connected, Click: func() {
+		button := ui.CreateElement(hostActionButton, hostActionButtonProps{Action: item, Locale: locale, Phase: snapshot.Phase, Paused: snapshot.Paused, TimersOn: snapshot.TimersOn, SplatOn: snapshot.SplatOn, SplatAvailable: snapshot.SplatAvailable, Connected: snapshot.Connected, StartEnabled: canStart(snapshot), Click: func() {
 			on := toggleState(snapshot, item, safeMode.Get(), snapshot.TimersOn, snapshot.SplatOn)
 			setToggleState(item, on, safeMode.Set)
 			sendHostCommand(props.Client, token, locale, item, on, status.Update)
@@ -126,6 +126,7 @@ func hostView(props hostViewProps) ui.Node {
 		html.Section(html.Props{Class: "df-host-controls"},
 			html.Div(html.Props{Class: "df-host-section-head"}, html.H2(html.Props{}, html.Text(ControlsHeading(locale))), html.Small(html.Props{}, html.Text(ControlsHint(locale)))),
 			html.Div(html.Props{Class: "df-host-actions df-host-actions-primary"}, primary...),
+			html.P(html.Props{ID: "lobby-start-hint", Aria: map[string]string{"live": "polite"}}, html.Text(lobbyStartHint(snapshot))),
 			resetConfirmCard(confirmReset.Get(), locale, func() {
 				confirmReset.Set(false)
 				sendHostCommand(props.Client, token, locale, hostActions[4], true, status.Update)
@@ -340,6 +341,7 @@ type hostActionButtonProps struct {
 	SplatOn        bool
 	SplatAvailable bool
 	Connected      bool
+	StartEnabled   bool
 	Click          func()
 }
 
@@ -357,7 +359,7 @@ func hostActionButton(props hostActionButtonProps) ui.Node {
 	case v1.HostCommandKind_HOST_COMMAND_KIND_RESET:
 		class += " df-host-action-danger"
 	case v1.HostCommandKind_HOST_COMMAND_KIND_START:
-		disabled = !isLobbyPhase(props.Phase)
+		disabled = !props.StartEnabled
 		if isLobbyPhase(props.Phase) {
 			class += " df-host-action-primary"
 		}
@@ -377,6 +379,9 @@ func hostActionButton(props hostActionButtonProps) ui.Node {
 		}
 	}
 	aria := map[string]string{}
+	if props.Action.Command == v1.HostCommandKind_HOST_COMMAND_KIND_START && isLobbyPhase(props.Phase) {
+		aria["describedby"] = "lobby-start-hint"
+	}
 	if props.Action.Command == v1.HostCommandKind_HOST_COMMAND_KIND_TIMERS_OFF {
 		aria["pressed"] = "false"
 		disabled = !props.Connected

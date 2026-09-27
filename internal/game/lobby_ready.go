@@ -5,6 +5,28 @@ import (
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
 
+func (s *State) lobbyStartReason() string {
+	if s.paused {
+		return "Resume the game before starting"
+	}
+	joined, ready := 0, 0
+	for _, seat := range s.seats {
+		if seat.Connected {
+			joined++
+			if seat.LobbyReady {
+				ready++
+			}
+		}
+	}
+	if joined != 2 {
+		return "Both players must join before starting. Use Skip to rehearse."
+	}
+	if ready != 2 {
+		return "Both players must choose Ready before starting. Use Skip to rehearse."
+	}
+	return ""
+}
+
 // Lobby readiness is separate from locking a generated character in Creation.
 // It survives a repeated Join, but never carries into a new run.
 func (s *State) applyLobbyReady(act domain.Act, env domain.Envelope) domain.StepOut {

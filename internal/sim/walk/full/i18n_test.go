@@ -22,9 +22,11 @@ func TestWalkFull_SpanishPhoneEnglishDM(t *testing.T) {
 	proven := map[string]bool{}
 	checkWalkStep(t, driver, engine, seen, proven)
 	steps := []domain.Event{
-		domain.HostCmd{Cmd: vocab.HostStart},
 		domain.Join{Seat: 1, JoinKind: "phone", Locale: "es"},
 		domain.Join{Seat: 2, JoinKind: "phone", Locale: "es"},
+		domain.Act{Seat: 1, Move: vocab.MoveReady},
+		domain.Act{Seat: 2, Move: vocab.MoveReady},
+		domain.HostCmd{Cmd: vocab.HostStart},
 		domain.Act{Seat: 1, Move: vocab.MoveSpecies, Arg: "elf"},
 		domain.Act{Seat: 1, Move: vocab.MoveGender, Arg: "female"},
 		domain.Act{Seat: 1, Move: vocab.MoveClass, Arg: "paladin"},

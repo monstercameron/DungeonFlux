@@ -40,6 +40,7 @@ func TestStateStep_JoinRetainsSeatAcrossPhases(t *testing.T) {
 	if got := s.Lobby().Seats[0].Name; got != "Lyra" {
 		t.Fatalf("lobby player name = %q, want Lyra", got)
 	}
+	readyLobby(t, s)
 	s.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostStart}})
 	if got := s.View().Seats[0]; !got.Connected || got.Locale != "es" || got.PlayerName != "Lyra" {
 		t.Fatalf("seat metadata was lost after phase transition: %#v", got)
@@ -78,6 +79,7 @@ func TestStateStep_RejoinRenamesPlayer(t *testing.T) {
 
 func startCreation(t *testing.T, state *State, seat domain.SeatID) {
 	t.Helper()
+	readyLobby(t, state)
 	state.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostStart}})
 	for _, event := range []domain.Event{
 		domain.Act{Seat: seat, Move: vocab.MoveSpecies, Arg: "human"},
@@ -131,6 +133,10 @@ func TestStateStep_RootCommands(t *testing.T) {
 			if test.name == "resume" {
 				s.paused = true
 			}
+			if test.name == "start" {
+				readyLobby(t, s)
+			}
+			version := s.View().Version
 			out := s.Step(domain.Envelope{At: 4 * time.Second, Event: domain.HostCmd{Cmd: test.cmd}})
 			if s.View().Path != test.path || s.View().Paused != test.paused {
 				t.Fatalf("state = path %q paused %v", s.View().Path, s.View().Paused)
@@ -142,7 +148,7 @@ func TestStateStep_RootCommands(t *testing.T) {
 			if len(out.Effects) != wantEffects || out.Effects[0].Kind() != test.effectKind {
 				t.Fatalf("effects = %#v", out.Effects)
 			}
-			if s.View().At != 4*time.Second || s.View().Version != 1 {
+			if s.View().At != 4*time.Second || s.View().Version != version+1 {
 				t.Fatalf("logical clock/version not applied: %#v", s.View())
 			}
 		})
@@ -151,6 +157,7 @@ func TestStateStep_RootCommands(t *testing.T) {
 
 func TestStateStep_PhaseTransitionEmitsCueOnce(t *testing.T) {
 	state := New(domain.OneShot{}, []byte{7})
+	readyLobby(t, state)
 	commands := []vocab.HostCmd{vocab.HostStart}
 	for range 9 {
 		commands = append(commands, vocab.HostSkip)
@@ -174,6 +181,7 @@ func TestStateStep_PhaseTransitionEmitsCueOnce(t *testing.T) {
 
 func TestStateStep_ResetTransitionEmitsLobbyCue(t *testing.T) {
 	state := New(domain.OneShot{}, []byte{7})
+	readyLobby(t, state)
 	state.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostStart}})
 	out := state.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostReset}})
 	if state.View().Path != vocab.StateLobby || countPlaySound(out.Effects) != 2 {
@@ -288,6 +296,7 @@ func TestStateLegalMoves_SeatAndPause(t *testing.T) {
 
 func TestStateStep_DelegatesCreationAndStoryToEnd(t *testing.T) {
 	s := New(domain.OneShot{}, []byte("step-seed"))
+	readyLobby(t, s)
 	steps := []domain.Event{
 		domain.HostCmd{Cmd: vocab.HostStart},
 		domain.Act{Seat: 1, Move: vocab.MoveSpecies, Arg: "human"},

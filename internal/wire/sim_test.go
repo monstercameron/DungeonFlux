@@ -47,6 +47,9 @@ func TestSimulatedGame_PhoneSessionReachesEndInFakeMode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("watch seat 1: %v", err)
 	}
+	for _, token := range seats {
+		phoneAct(t, session, token, "ready", "")
+	}
 	hostCommand(t, host, cfg.Server.HostToken, df.HostCommandKind_HOST_COMMAND_KIND_START)
 	waitSimPhase(t, watch, "creation")
 	for seat, token := range seats {

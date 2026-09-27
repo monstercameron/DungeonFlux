@@ -9,6 +9,7 @@ import (
 
 func TestState_TurnTimersOffSuppressesCreationTimeout(t *testing.T) {
 	state := New(domain.OneShot{}, []byte("timers-off"), WithTurnTimers(false))
+	readyLobby(t, state)
 	out := state.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostStart}})
 	if state.TurnTimersEnabled() {
 		t.Fatal("turn timers enabled after disabled configuration")
@@ -25,6 +26,7 @@ func TestState_TurnTimersOffSuppressesCreationTimeout(t *testing.T) {
 
 func TestState_TimersOffCancelsAndOnAllowsFutureTimers(t *testing.T) {
 	state := New(domain.OneShot{}, []byte("toggle"))
+	readyLobby(t, state)
 	state.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostStart}})
 	off := state.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostTimersOff}})
 	if state.TurnTimersEnabled() || countCancelTimers(off.Effects) != 5 {
