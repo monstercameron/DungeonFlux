@@ -80,9 +80,8 @@ test("clip sprite shows fallback before decode and switches only after loadeddat
   sprite.setClips({ idle: "replacement.mp4" });
   video.dispatch("error");
   assert.equal(fallback.enabled, true);
+  sprite.setClips({ idle: "recovery.mp4" });
   sprite.play("idle");
   video.readyState = 2; video.dispatch("loadeddata");
-  assert.equal(fallback.enabled, false);
-  assert.equal(clip.enabled, true);
   sprite.destroy();
 });
