@@ -247,7 +247,7 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 	app := &App{handler: mux, room: room, roomDone: roomDone, roomStop: cancel,
 		store: store, logFile: logFile, logger: logger, watch: watch, runID: run.ID}
 	if cfg.Server.Debug {
-		if err := startDebug(ctx, app, roomEngine, inbox, cfg.Server.Port+1000); err != nil {
+		if err := startDebug(ctx, app, roomEngine, inbox, cfg.Server.Port+1000, cfg.Server.DataDir); err != nil {
 			_ = app.Close()
 			return nil, err
 		}
@@ -273,10 +273,13 @@ func (e *lobbyEngine) View() domain.View {
 	return api.AttachLobbyMetadata(e.Engine.View(), e.lobby)
 }
 
-func startDebug(ctx context.Context, app *App, eng ports.Engine, inbox ports.Inbox, port int) error {
-	token := os.Getenv("DF_DEBUG_TOKEN")
-	if token == "" {
-		return errors.New("wire: DF_DEBUG_TOKEN is required when server.debug=true")
+func startDebug(ctx context.Context, app *App, eng ports.Engine, inbox ports.Inbox, port int, dataDir string) error {
+	token, generatedPath, err := resolveDebugToken(dataDir, os.Getenv)
+	if err != nil {
+		return err
+	}
+	if generatedPath != "" {
+		app.logger.Info("debug token generated", "path", generatedPath)
 	}
 	service, err := debug.NewServer(eng, inbox)
 	if err != nil {
