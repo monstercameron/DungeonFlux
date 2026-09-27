@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-creation-fallback-sheets">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-creation-fallback-sheets">Creation deadlines now publish complete heroes</a></h2>
+  <p>The live rehearsal reached combat with empty phone sheets. Bulk creation timeout built both heroes but returned no individual seat, while the phase dispatcher copied only that empty result into its public view. The timeout also skipped already-rolled heroes without locking them, and manual Skip bypassed creation entirely. Both deadline paths now share finalization, keep choices already submitted to the engine, preserve rolled stats and flavor, and request each reference only once. The dispatcher projects both heroes before entering Opening and cancels their remaining seat deadlines. Host Skip follows the same path even with automatic timers disabled. Regression tests reproduced the defects before the change; phase coverage is 81.4% and creation coverage is 83.5%. The game and simulator suites pass. A live phone confirmed a complete sheet after Skip. Cached sprite selection and unsubmitted phone choices remain separate audit items.</p>
+</li>
 <li class="entry" data-kind="issue" id="e-20260927-authoritative-splat-toggle">
   <div class="entry-head"><time datetime="2026-09-27T05:04-04:00">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-authoritative-splat-toggle">The host renderer switch now reaches the battlefield</a></h2>

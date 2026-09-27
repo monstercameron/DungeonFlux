@@ -197,6 +197,9 @@ func (m *Machine) stepHost(cmd domain.HostCmd) (Result, error) {
 		return m.step(eventReset)
 	case vocab.HostSkip:
 		m.paused = false
+		if m.State() == vocab.StateCreation {
+			return m.finishCreation()
+		}
 		if m.State() == vocab.StateCombat && m.combat.Phase != combat.Done {
 			if _, err := m.combat.ResolveEnd(combat.ReasonSkip, 0); err != nil {
 				return Result{}, err
@@ -285,7 +288,6 @@ func (m *Machine) stepCreation(event domain.Event) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	m.updateCreationSeat(result.Seat)
 	if act, ok := event.(domain.Act); ok && act.Move == vocab.MoveRollHero && result.Accepted && m.timersEnabled {
 		result.Effects = append(result.Effects, domain.StartTimer{
 			Name: fmt.Sprintf("seat_deadline:%d", act.Seat), After: 22 * 1000000000, Pausable: true,
@@ -296,10 +298,7 @@ func (m *Machine) stepCreation(event domain.Event) (Result, error) {
 		seat := result.Seat.Seat
 		result.Effects = append(result.Effects, domain.CancelTimer{Name: fmt.Sprintf("seat_deadline:%d", seat)})
 	}
-	if !result.Complete {
-		return Result{Effects: result.Effects}, nil
-	}
-	return m.transition(eventCreationEnd, result.Effects)
+	return m.applyCreationResult(result)
 }
 
 func (m *Machine) stepOpening(event domain.Event) (Result, error) {

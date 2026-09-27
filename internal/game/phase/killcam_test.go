@@ -15,6 +15,14 @@ func killcamMachine(t *testing.T) Machine {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err := m.Goto(vocab.StateCreation); err != nil {
+		t.Fatal(err)
+	}
+	// These clips belong to a paladin; choose that hero before Skip finalizes
+	// the party instead of relying on the old empty-creation combat defaults.
+	if _, err := m.Step(domain.Act{Seat: 1, Move: vocab.MoveClass, Arg: "paladin"}); err != nil {
+		t.Fatal(err)
+	}
 	if err := m.Goto(vocab.StateCombat); err != nil {
 		t.Fatal(err)
 	}

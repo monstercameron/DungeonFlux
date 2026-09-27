@@ -92,7 +92,7 @@ func TestLegalMoveViews_CombatHasReachableMoveTargetsAndSeatTwoTurn(t *testing.T
 		t.Fatalf("combat spotlight = %d, want 2", got)
 	}
 	turn := machine.LegalMoveViews(2)
-	if !turn[0].Enabled || turn[1].Reason != "Building your hero…" {
+	if !turn[0].Enabled || !turn[1].Enabled || turn[1].Reason != "" {
 		t.Fatalf("seat 2 turn moves = %#v", turn)
 	}
 	if machine.LegalMoveViews(1)[0].Reason != "Waiting for seat 2" {

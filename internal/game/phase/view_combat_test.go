@@ -21,7 +21,12 @@ func TestView_CombatCarriesEnginePresentationToBattlefield(t *testing.T) {
 	if len(view.Battlefield.Tokens) != 3 || view.Battlefield.Camera.Preset != "TURN_FOCUS" || view.Battlefield.Camera.FocusTokenID != "pc-1" {
 		t.Fatalf("battlefield scene = %#v", view.Battlefield)
 	}
-	if view.Battlefield.Tokens[0].Kind != "pc-paladin" || view.Battlefield.Tokens[0].Anim != "idle" || view.Battlefield.Tokens[0].AnimSeq == 0 {
+	hero := view.Seats[0].Character
+	if hero == nil {
+		t.Fatal("combat has no finalized hero")
+	}
+	token := view.Battlefield.Tokens[0]
+	if token.Kind != "pc-"+hero.Class+"-"+hero.Species || token.HP != hero.HP || token.Name != hero.Name || token.Anim != "idle" || token.AnimSeq == 0 {
 		t.Fatalf("token presentation = %#v", view.Battlefield.Tokens[0])
 	}
 	if len(view.Battlefield.Highlights) != 1 || view.Battlefield.Highlights[0].Kind != "reach" {

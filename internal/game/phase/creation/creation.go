@@ -248,31 +248,15 @@ func (m *Machine) stepLocked(event domain.PCLocked) (Result, error) {
 }
 
 func (m *Machine) stepTimeout() (Result, error) {
-	classes, err := m.fallbackClasses()
-	if err != nil {
-		return Result{}, err
-	}
+	var effects []domain.Effect
 	for i := range m.seats {
-		if m.seats[i].Built {
-			continue
-		}
-		if m.seats[i].Class == "" {
-			m.seats[i].Class = classes[i]
-		}
-		m.seats[i].Species = "human"
-		m.seats[i].Gender = "nonbinary"
-		build, err := rules.BuildHero(dice.New(append(append([]byte(nil), m.seed...), byte(i+1))), m.seats[i].Class, "human", "nonbinary")
+		result, err := m.stepSeatTimeout(m.seats[i].Seat)
 		if err != nil {
-			return Result{}, fmt.Errorf("default seat %d: %w", i+1, err)
+			return Result{}, err
 		}
-		m.seats[i].Build = build
-		m.seats[i].Built = true
-		m.seats[i].Locked = true
-		if strings.TrimSpace(m.seats[i].Flavor.Name) == "" {
-			m.seats[i].Flavor = fallbackFlavor(m.seats[i], m.seed, i)
-		}
+		effects = append(effects, result.Effects...)
 	}
-	return Result{Accepted: true, Complete: m.Complete()}, nil
+	return Result{Accepted: true, Complete: m.Complete(), Effects: effects}, nil
 }
 
 func (m *Machine) stepSeatTimeout(seat domain.SeatID) (Result, error) {
@@ -291,9 +275,13 @@ func (m *Machine) stepSeatTimeout(seat domain.SeatID) (Result, error) {
 		if m.seats[index].Class == "" {
 			m.seats[index].Class = classes[index]
 		}
-		m.seats[index].Species = "human"
-		m.seats[index].Gender = "nonbinary"
-		build, err := rules.BuildHero(dice.New(append(append([]byte(nil), m.seed...), byte(index+1))), m.seats[index].Class, "human", "nonbinary")
+		if m.seats[index].Species == "" {
+			m.seats[index].Species = "human"
+		}
+		if m.seats[index].Gender == "" {
+			m.seats[index].Gender = "nonbinary"
+		}
+		build, err := rules.BuildHero(dice.New(append(append([]byte(nil), m.seed...), byte(index+1))), m.seats[index].Class, m.seats[index].Species, m.seats[index].Gender)
 		if err != nil {
 			return Result{}, fmt.Errorf("default seat %d: %w", index+1, err)
 		}
@@ -303,8 +291,7 @@ func (m *Machine) stepSeatTimeout(seat domain.SeatID) (Result, error) {
 	if strings.TrimSpace(m.seats[index].Flavor.Name) == "" {
 		m.seats[index].Flavor = fallbackFlavor(m.seats[index], m.seed, index)
 	}
-	m.seats[index].Locked = true
-	return Result{Accepted: true, Complete: m.Complete(), Seat: copySeat(m.seats[index])}, nil
+	return m.stepLocked(domain.PCLocked{Seat: seat})
 }
 
 func (m Machine) fallbackClasses() ([seatCount]rules.Class, error) {
