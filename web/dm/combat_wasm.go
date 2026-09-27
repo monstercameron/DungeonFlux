@@ -75,12 +75,12 @@ func combatStageStyle(model CombatModel) map[string]string {
 }
 
 func combatTopTitle(locale string, model CombatModel) ui.Node {
-	return html.Div(html.Props{Style: map[string]string{"position": "absolute", "left": "460px", "right": "460px", "top": "34px", "text-align": "center", "color": "#efe6d2", "text-shadow": "0 3px 12px #000"}},
-		html.Div(html.Props{Style: map[string]string{"color": "#e7c27a", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "34px", "letter-spacing": ".16em", "text-transform": "uppercase"}}, ui.Text(T(locale, "dm.combat.title", nil))),
-		html.Div(html.Props{Style: map[string]string{"margin-top": "4px", "color": "#b8d6d0", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "16px", "letter-spacing": ".08em", "text-transform": "uppercase"}}, ui.Text(T(locale, "combat.location", nil))),
-		html.Div(html.Props{Style: map[string]string{"width": "440px", "max-width": "80%", "height": "1px", "margin": "10px auto", "background": "linear-gradient(90deg,transparent,#d9a441,transparent)"}}),
-		html.Div(html.Props{Style: map[string]string{"margin": "0 auto 8px", "max-width": "90%", "color": "#d9c9ad", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "17px", "font-style": "italic"}}, ui.Text(T(locale, "combat.entry", nil))),
-		html.Div(html.Props{Style: map[string]string{"color": "#efe6d2", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "27px"}}, ui.Text(combatBanner(model))),
+	return html.Div(html.Props{Style: map[string]string{"position": "absolute", "left": "460px", "right": "460px", "top": "24px", "text-align": "center", "color": "#efe6d2", "text-shadow": "0 3px 12px #000"}},
+		html.Div(html.Props{Style: map[string]string{"color": "#e7c27a", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "32px", "letter-spacing": ".16em", "text-transform": "uppercase"}}, ui.Text(T(locale, "dm.combat.title", nil))),
+		html.Div(html.Props{Style: map[string]string{"margin-top": "2px", "color": "#b8d6d0", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "14px", "letter-spacing": ".08em", "text-transform": "uppercase"}}, ui.Text(T(locale, "combat.location", nil))),
+		html.Div(html.Props{Style: map[string]string{"width": "440px", "max-width": "80%", "height": "1px", "margin": "6px auto", "background": "linear-gradient(90deg,transparent,#d9a441,transparent)"}}),
+		html.Div(html.Props{Style: map[string]string{"margin": "0 auto 5px", "max-width": "90%", "color": "#d9c9ad", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "15px", "font-style": "italic"}}, ui.Text(T(locale, "combat.entry", nil))),
+		html.Div(html.Props{Style: map[string]string{"color": "#efe6d2", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "24px"}}, ui.Text(combatBanner(model))),
 		html.Span(html.Props{Hidden: locale == "", Style: map[string]string{"display": "none"}}, ui.Text(locale)),
 	)
 }
@@ -106,9 +106,9 @@ func combatInitiativeStrip(locale string, model CombatModel) ui.Node {
 			html.Img(html.Props{Src: portrait, Alt: turn.Name, Style: map[string]string{"width": "46px", "height": "46px", "border-radius": "50%", "object-fit": "cover", "border": ring, "box-shadow": "0 4px 10px rgba(0,0,0,.5)"}}),
 		))
 	}
-	top := "152px"
+	top := "214px"
 	if model.Timer.TotalMS > 0 {
-		top = "255px"
+		top = "315px"
 	}
 	return html.Div(html.Props{Class: "df-dm-combat-initiative", Role: "list", Style: map[string]string{"position": "absolute", "left": "700px", "right": "700px", "top": top, "display": "flex", "align-items": "center", "justify-content": "center", "gap": "12px", "padding": "8px 18px", "border": "1px solid rgba(184,137,58,.5)", "border-radius": "10px", "background": "rgba(12,18,28,.72)"}}, items...)
 }
@@ -194,7 +194,7 @@ func combatTimer(view TimerView) ui.Node {
 	if view.TotalMS <= 0 {
 		return nil
 	}
-	return html.Div(html.Props{Class: "df-dm-combat-timer", Style: map[string]string{"position": "absolute", "left": "730px", "top": "152px", "width": "460px", "padding": "10px 18px", "border": "1px solid #b8893a", "border-radius": "8px", "background": "rgba(12,18,28,.84)"}}, TimerComponent(view)(router.Attrs{}))
+	return html.Div(html.Props{Class: "df-dm-combat-timer", Style: map[string]string{"position": "absolute", "left": "730px", "top": "214px", "width": "460px", "padding": "10px 18px", "border": "1px solid #b8893a", "border-radius": "8px", "background": "rgba(12,18,28,.84)"}}, TimerComponent(view)(router.Attrs{}))
 }
 
 func combatActionBar() ui.Node {

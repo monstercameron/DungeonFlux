@@ -137,7 +137,7 @@ func combatPreview() *dungeonfluxv1.ScreenState {
 		Battlefield: &dungeonfluxv1.Battlefield{
 			Mode: "FLAT", Visible: true,
 			Grid: &dungeonfluxv1.Grid{Cols: 4, Rows: 3, Walkable: []*dungeonfluxv1.Cell{{C: 0, R: 1}, {C: 1, R: 1}, {C: 2, R: 1}, {C: 3, R: 1}, {C: 1, R: 2}, {C: 2, R: 2}}},
-			Flat: &dungeonfluxv1.FlatBattlefield{ImageUrl: "battlefield_tavern_flat", FloorQuadPx: []float32{120, 180, 1800, 120, 1740, 940, 160, 900}},
+			Flat: &dungeonfluxv1.FlatBattlefield{ImageUrl: "level_still_64bb46d5_tactical", FloorQuadPx: []float32{525.44, 209.36, 1923.94, 418.01, 2708.17, 1838.64, -352.41, 702.35}},
 		},
 		Tokens: []*dungeonfluxv1.Token{
 			{TokenId: "mira", Name: "Mira", PortraitUrl: "ui/class_rogue", Cell: &dungeonfluxv1.Cell{C: 1, R: 1}, Hp: 9, HpMax: 10, Active: true},

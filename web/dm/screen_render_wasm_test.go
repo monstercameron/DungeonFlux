@@ -75,6 +75,19 @@ func TestCombatTokens_RenderAsResponsivePercentages(t *testing.T) {
 	}
 }
 
+func TestCombatHeader_LeavesRoomForTimer(t *testing.T) {
+	model := CombatModel{Banner: "pc_turn", Timer: TimerView{TotalMS: 15000, RemainingMS: 12000}}
+	markup, err := ui.RenderToString(html.Div(html.Props{}, combatTopTitle("en", model), combatTimer(model.Timer), combatInitiativeStrip("en", model)))
+	if err != nil {
+		t.Fatalf("combat header render = %v", err)
+	}
+	for _, want := range []string{"top:24px", "top:214px", "top:315px", "The wooded river path", "You drive the thrall through the tavern doors"} {
+		if !strings.Contains(markup, want) {
+			t.Fatalf("combat header missing %q: %s", want, markup)
+		}
+	}
+}
+
 func TestLayerStyle_ClipIsAboveSceneAndOverlaysAreSeparated(t *testing.T) {
 	if layerZIndex(LayerClip) <= layerZIndex(LayerScene) {
 		t.Fatalf("clip z-index = %s, scene z-index = %s", layerZIndex(LayerClip), layerZIndex(LayerScene))
