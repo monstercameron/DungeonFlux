@@ -252,6 +252,36 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: the countdown reflects remaining active combat time, freezes on pause, and restores correctly after checkpoints.
   status: open
 
+- [x] QA-042 · Preserve dialogue intent in the demo chat adapter
+  why: The fake interpret adapter rewrites every message as a Persuasion action, including an ordinary question about the missing lamplighter.
+  lane: ORCH (Codex) · paths: `internal/wire/fake.go`, `internal/wire/fake_interpret.go`, `internal/wire/fake_interpret_test.go`, `TODOS.md`, `docs/devlog.html` · depends: none
+  done when: ordinary questions preserve their text and receive NPC dialogue, only explicit legal action commands become moves, the exact reported message has regression coverage, and the live reload demo verifies the distinction.
+  status: done (this commit); gate artifacts/test/QA-042/gate-20260927-082616.log; exact message verified in the live browser as NPC dialogue without a roll
+
+- [ ] QA-043 · Audit conversation routing and failed interpretation recovery
+  why: Conversation currently sends every line through interpretation; its failure fallback drops non-keyword dialogue and treats isolated leave/step/away words as movement despite the binding chat spec.
+  lane: ORCH (Codex) · paths: pending conversation routing breakdown · depends: QA-042
+  done when: neutral questions cannot become actions on model failure, ordinary dialogue reaches NPC reply, legal explicit commands remain available, and stale results cannot change a newer conversation.
+  status: open
+
+- [ ] QA-044 · Trace chat input, NPC response, audio and recovery end to end
+  why: The developer requests a focused chat audit after the unwanted Persuasion roll exposed a misleading demo path.
+  lane: ORCH (Codex) · paths: pending findings from phone, API, voice and conversation trace · depends: QA-042
+  done when: typed and microphone input, provider mode, NPC context, subtitles/audio, turn ownership, pause/retry and failure recovery have recorded evidence and defects have atomic follow-up todos.
+  status: claimed Codex 2026-09-27; trace in progress
+
+- [ ] QA-045 · Make offline chat and microphone behavior truthful
+  why: Fake STT always invents the word persuade, fake NPC replies ignore the question, and the displayed fake response differs from the prerecorded audio selected by role.
+  lane: ORCH (Codex) · paths: pending provider-mode and test-fixture breakdown · depends: QA-042
+  done when: unavailable transcription opens typed recovery instead of inventing a player action, offline replies and spoken recordings agree, and live versus rehearsal behavior is clear to the tester.
+  status: open
+
+- [ ] QA-046 · Show typed-chat errors and prevent duplicate submissions
+  why: The compact conversation input does not render TypedInputSnapshot.Error, and Submit does not reject an already sending request, leaving failed messages unexplained and rapid taps unguarded.
+  lane: ORCH (Codex) · paths: pending typed-input and conversation UI breakdown · depends: QA-042
+  done when: rejection/network errors are visible, drafts remain available for retry, duplicate sends are rejected while pending, and keyboard submission and turn gating are checked.
+  status: open
+
 ### Kill cam (developer-directed single writer, 2026-09-27)
 
 - [x] KC-004 · Remove unused domain scaffolding exposed by the feature gate

@@ -68,7 +68,7 @@ func (fakeLLM) JSON(ctx context.Context, req ports.TextRequest, _ ports.Schema) 
 		name := content.FallbackHeroName(species, gender, seed)
 		values = map[string]any{"name": name, "look": "A rain-dark cloak and bright eyes", "hook": "Find the vanished lamplighter"}
 	case vocab.RoleInterpret:
-		values = map[string]any{"clean_text": "I persuade her", "kind": "MOVE", "move_id": string(vocab.MovePersuade)}
+		values = fakeInterpret(req.Messages)
 	case vocab.RoleStrangerLines:
 		values = map[string]any{"found": "The letter followed me from the river.", "not_found": "It followed me from the river."}
 	case vocab.RoleCliffhanger:

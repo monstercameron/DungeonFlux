@@ -87,6 +87,12 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-question-forced-persuasion">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">ORCH (Codex)</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-question-forced-persuasion">An ordinary question incorrectly rolled Persuasion</a></h2>
+  <p>The developer noticed that asking Mother Vell about the missing lamplighter immediately triggered a Persuasion check. The running demo used the fake interpret adapter, which ignored every input and returned the same Persuasion move. QA-042 replaces that response with a conservative command classifier: ordinary questions preserve their text as dialogue, while explicit supported action commands become moves only when listed as legal. Negated requests, quoted commands and questions containing action words remain dialogue. Regression tests run the real interpretation prompt through the fake adapter and verify the exact reported question produces an NPC reply rather than an Act event. The lane gate passed, and the same message was sent through the live-reload player UI: Mother Vell replied while the phase remained Conversation. This is a rehearsal-adapter correction, not a claim that the fake NPC generates contextual answers. The wider chat trace continues under QA-043 through QA-046. See <a href="https://github.com/monstercameron/DungeonFlux/blob/main/internal/wire/fake_interpret.go">the adapter correction</a>.</p>
+</li>
+
 <li class="entry" data-kind="issue" id="e-20260927-rehearsal-speech-replay">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">ORCH (Codex)</span></div>
   <h2 class="entry-title"><a href="#e-20260927-rehearsal-speech-replay">Text replay still depended on live speech</a></h2>
