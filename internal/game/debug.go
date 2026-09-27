@@ -49,6 +49,11 @@ func (s *State) applyDebugGoto(event domain.DebugGoto, env domain.Envelope) doma
 	if err != nil {
 		return s.rejected(err.Error())
 	}
+	if event.Turn != "" {
+		if err := dispatcher.DebugTurn(event.Turn); err != nil {
+			return s.rejected(err.Error())
+		}
+	}
 	previous := s.path
 	s.phase = dispatcher
 	s.path = dispatcher.State()

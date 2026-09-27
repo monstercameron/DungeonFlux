@@ -32,6 +32,28 @@ func TestProjectCreation_StatsAndReadinessAgreeAcrossClients(t *testing.T) {
 	}
 }
 
+func TestProjectDM_CreationChoicesIncludeBothPartialAndRolledSeats(t *testing.T) {
+	view := domain.View{Path: vocab.StateCreation, Seats: []domain.SeatView{
+		{Seat: 1, PlayerNumber: 1, PlayerName: "Lyra", Creation: &domain.CreationChoiceView{
+			PlayerNumber: 1, PlayerName: "Lyra", Species: "elf", Gender: "female", Class: "rogue",
+		}},
+		{Seat: 2, PlayerNumber: 2, PlayerName: "Brom", Creation: &domain.CreationChoiceView{
+			PlayerNumber: 2, PlayerName: "Brom", Name: "Brom Stone", Species: "dwarf", Gender: "male", Class: "paladin", Rolled: true, Ready: true,
+		}},
+	}}
+	out := ProjectDM(view)
+	if len(out.GetCreationChoices()) != 2 {
+		t.Fatalf("choices = %#v", out.GetCreationChoices())
+	}
+	first, second := out.GetCreationChoices()[0], out.GetCreationChoices()[1]
+	if first.GetPlayerNumber() != 1 || first.GetSpecies() != "elf" || first.GetClassName() != "rogue" || first.GetRolled() {
+		t.Fatalf("seat one choice = %#v", first)
+	}
+	if second.GetPlayerNumber() != 2 || second.GetName() != "Brom Stone" || !second.GetRolled() || !second.GetReady() {
+		t.Fatalf("seat two choice = %#v", second)
+	}
+}
+
 func TestHeroPortrait_GenericSelectorRespectsChosenGender(t *testing.T) {
 	for _, tc := range []struct{ name, portrait, gender, want string }{
 		{"empty", "", "female", "ui/species_elf_female"},

@@ -211,11 +211,20 @@ func cloneBattlefieldCameras(source map[string]domain.CameraDef) map[string]doma
 }
 
 func creationSeatView(state creation.SeatState) domain.SeatView {
-	seat := domain.SeatView{Seat: state.Seat, PlayerNumber: int(state.Seat)}
+	name := state.Flavor.Name
+	choice := &domain.CreationChoiceView{
+		PlayerNumber: int(state.Seat),
+		Name:         name,
+		Species:      state.Species,
+		Gender:       state.Gender,
+		Class:        string(state.Class),
+		Rolled:       state.Built,
+		Ready:        state.Locked,
+	}
+	seat := domain.SeatView{Seat: state.Seat, PlayerNumber: int(state.Seat), Creation: choice}
 	if !state.Built {
 		return seat
 	}
-	name := state.Flavor.Name
 	if name == "" {
 		name = "Hero " + strconv.Itoa(int(state.Seat))
 	}
@@ -223,6 +232,7 @@ func creationSeatView(state creation.SeatState) domain.SeatView {
 	if state.Species != "" {
 		portrait = domain.AssetID("ui/species_" + strings.ToLower(state.Species))
 	}
+	choice.Name, choice.Portrait = name, portrait
 	seat.Build = &domain.BuildCard{Name: name, Class: string(state.Class), Portrait: portrait, PlayerNumber: int(state.Seat), Stats: buildStats(state.Build)}
 	seat.Character = &domain.Character{ID: domain.EntityID("pc-" + strconv.Itoa(int(state.Seat))), Name: name, Class: string(state.Class), Species: state.Species, Gender: state.Gender, Portrait: portrait, Hook: state.Flavor.Hook, PersuasionModifier: state.Build.PersuasionBonus, HP: state.Build.HP, MaxHP: state.Build.MaxHP, AC: state.Build.AC}
 	return seat

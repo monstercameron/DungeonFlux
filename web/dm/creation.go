@@ -119,6 +119,20 @@ func CreationModelFromView(view *dungeonfluxv1.DMView) CreationModel {
 		return model
 	}
 	model.Timer = TimerViewFromDMView(view)
+	for _, choice := range view.GetCreationChoices() {
+		if choice == nil || choice.GetPlayerNumber() < 1 || choice.GetPlayerNumber() > 2 {
+			continue
+		}
+		seat := &model.Seats[choice.GetPlayerNumber()-1]
+		seat.Name = choice.GetName()
+		if seat.Name == "" {
+			seat.Name = choice.GetPlayerName()
+		}
+		seat.Species, seat.Gender, seat.Class = titleCaseWord(choice.GetSpecies()), titleCaseWord(choice.GetGender()), titleCaseWord(choice.GetClassName())
+		seat.PortraitURL = artSrc(choice.GetPortraitUrl())
+		seat.Ready = choice.GetReady()
+		seat.Status = creationChoiceStatus(choice.GetRolled(), choice.GetReady(), *seat)
+	}
 	for _, card := range view.GetBuildCards() {
 		if card == nil || card.GetPlayerNumber() < 1 || card.GetPlayerNumber() > 2 {
 			continue
@@ -161,6 +175,16 @@ func CreationModelFromView(view *dungeonfluxv1.DMView) CreationModel {
 		}
 	}
 	return model
+}
+
+func creationChoiceStatus(rolled, ready bool, seat CreationSeat) string {
+	if ready {
+		return "Ready for adventure"
+	}
+	if rolled || seat.HasStats {
+		return "Reviewing hero"
+	}
+	return creationPickStatus(seat)
 }
 
 // creationHeroStandIn resolves the best available portrait for a seat: its

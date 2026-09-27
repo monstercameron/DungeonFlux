@@ -220,7 +220,7 @@ export function createTokenSprite({ pc, app, token, layer } = {}) {
     destroyed = true;
     entity.destroy(); mesh.destroy(); texture.destroy(); material.destroy(); base.destroy();
   };
-  return { entity, height, width, role, material, mesh, texture, canvas, faceCamera, destroy, video: false };
+  return { entity, height, width, role, material, mesh, texture, canvas, base, faceCamera, destroy, video: false };
 }
 
 // Billboard loops are 9:16 (496 x 864) with the character's feet about 8%
@@ -283,8 +283,6 @@ function createClipSprite({ pc, app, token, layer }) {
   // Reported height excludes the margin under the feet, so the controller's
   // "centre = ground + height / 2" placement puts the feet on the ground.
   const height = quadHeight * (1 - 2 * CLIP_FEET);
-  const base = createTokenBase(pc, app, { role: roleForToken(token), layer, diameter: width * BASE_DIAMETER_RATIO });
-  base.placeUnder(0, 0, 0);
   let destroyed = false, current = { url: "" }, clips = { ...(token?.clips ?? {}) }, paused = false, enabled = true;
   const gate = createVideoGate({
     onClip: () => { if (!destroyed) { fallback.entity.enabled = false; entity.enabled = enabled; } },
@@ -292,16 +290,17 @@ function createClipSprite({ pc, app, token, layer }) {
   });
   const bridge = {
     get enabled() { return enabled; },
-    set enabled(value) { enabled = Boolean(value); fallback.entity.enabled = enabled && !gate.visible(); entity.enabled = enabled && gate.visible(); },
-    setPosition(...args) { fallback.entity.setPosition(...args); entity.setPosition(...args); },
+    set enabled(value) { enabled = Boolean(value); fallback.entity.enabled = enabled && !gate.visible(); entity.enabled = enabled && gate.visible(); fallback.base.entity.enabled = enabled; },
+    setPosition(x, y, z) { fallback.entity.setPosition(x, y + (fallback.height - height) / 2, z); entity.setPosition(x, y, z); },
     getPosition() { return entity.getPosition?.() ?? fallback.entity.getPosition?.(); },
   };
-  const showReadyClip = () => { if (!destroyed && video.readyState >= 2) gate.decoded(); };
+  const showReadyClip = () => { if (!destroyed && video.readyState >= 2) { texture.upload(); gate.decoded(); } };
   video.addEventListener("loadeddata", showReadyClip);
   video.addEventListener("canplay", showReadyClip);
   video.addEventListener("error", () => gate.failed());
   const play = () => { if (!paused && !destroyed) video.play()?.catch?.(() => {}); };
   const show = (anim) => {
+    if (destroyed) return;
     const next = clipFor({ clips }, anim);
     if (!next.url) return;
     if (video.getAttribute("src") !== next.url) {
@@ -316,8 +315,8 @@ function createClipSprite({ pc, app, token, layer }) {
   show(token?.anim);
   const faceCamera = (camera) => {
     if (destroyed) return;
+    fallback.faceCamera(camera);
     const at = entity.getPosition?.() ?? fallback.entity.getPosition?.();
-    if (at) base.placeUnder(at.x, at.y - height / 2, at.z);
     if (!camera || !at) return;
     const eye = camera.getPosition();
     const dx = eye.x - at.x, dz = eye.z - at.z;
@@ -337,12 +336,12 @@ function createClipSprite({ pc, app, token, layer }) {
       if (wanted.url && wanted.url !== current.url) show(current.anim ?? next?.anim);
     },
     setPaused(on) { paused = Boolean(on); if (paused) video.pause(); else play(); },
-    tick() { if (!destroyed && video.readyState >= 2) { texture.upload(); showReadyClip(); } },
+    tick() { showReadyClip(); },
     destroy() {
       if (destroyed) return;
       destroyed = true;
       video.pause(); video.removeAttribute("src"); video.load();
-      entity.destroy(); mesh.destroy(); texture.destroy(); material.destroy(); base.destroy(); fallback.destroy();
+      entity.destroy(); mesh.destroy(); texture.destroy(); material.destroy(); fallback.destroy();
     },
   };
 }

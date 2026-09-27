@@ -69,8 +69,18 @@ func TestPreview_CombatFixtureContainsFLATGridTokensAndTimer(t *testing.T) {
 		t.Fatalf("combat fixture = %#v", view)
 	}
 	model := CombatModelFromView(view)
-	if !model.Visible || model.ImageURL == "" || len(model.Segments) == 0 || len(model.Tokens) != 3 {
+	if !model.Visible || model.ImageURL != "level_still_64bb46d5_tactical" || len(model.Segments) == 0 || len(model.Tokens) != 3 {
 		t.Fatalf("combat model = %#v", model)
+	}
+}
+
+func TestPreview_CombatFixtureUsesWoodedBattlefieldAsset(t *testing.T) {
+	fixture, ok := Preview("combat-flat")
+	if !ok {
+		t.Fatal("combat fixture missing")
+	}
+	if got := fixture.State.GetDm().GetBattlefield().GetFlat().GetImageUrl(); got != "level_still_64bb46d5_tactical" {
+		t.Fatalf("combat preview battlefield = %q", got)
 	}
 }
 

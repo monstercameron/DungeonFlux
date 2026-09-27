@@ -28,12 +28,11 @@ func CreationComponent(model CreationModel) router.Component {
 			clock := time.AfterFunc(250*time.Millisecond, func() { timerTick.Set(timerTick.Get() + 1) })
 			return func() { clock.Stop() }
 		}, timer.RemainingMS, timer.TotalMS, timer.Frozen, timerTick.Get())
-		featured := featuredCreationSeat(model)
 		style := creationStyle()
 		style["position"], style["left"], style["top"] = "absolute", "0", "0"
 		style["width"], style["height"] = "1920px", "1080px"
 		return html.Section(html.Props{Class: "df-dm-creation", Role: "region", Aria: map[string]string{"label": "Character creation"}, Style: style},
-			creationHeader(), creationTimerNode(timer), creationPortraitPanel(featured), creationBuildPanel(featured), creationPhonePanel(featured), creationSeatStrip(model.Seats, featured.Number), creationLockup(featured),
+			creationHeader(), creationTimerNode(timer), creationDualSeatPanels(model.Seats),
 		)
 	}
 }

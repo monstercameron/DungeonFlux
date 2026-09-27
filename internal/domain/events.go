@@ -130,6 +130,7 @@ type PCLocked struct {
 }
 type DebugGoto struct {
 	Phase vocab.StateID `json:"phase"`
+	Turn  string        `json:"turn,omitempty"`
 }
 type DebugPatch struct {
 	Target EntityID          `json:"target"`
