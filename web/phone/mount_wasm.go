@@ -85,6 +85,7 @@ func phoneView(props phoneViewProps) ui.Node {
 				props.creation.ApplyScreenState(result.State)
 				props.sheet.ApplyScreenState(result.State)
 				props.moves.ApplyScreenState(result.State)
+				props.typed.ApplyScreenState(result.State)
 				props.dice.ApplyScreenState(result.State)
 				props.combat.ApplyScreenState(result.State)
 				props.end.ApplyScreenState(result.State)

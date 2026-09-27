@@ -182,9 +182,13 @@ func EnglishEntries() map[string]Entry {
 		"dice.label":   {Text: "Persuasion {modifier} vs DC {dc}"},
 		"dice.button":  {Text: "Roll d20"},
 
-		"typed.label": {Text: "Type your message"},
-		"typed.send":  {Text: "Send"},
-		"typed.sent":  {Text: "Message sent"},
+		"typed.label":       {Text: "Type your message"},
+		"typed.send":        {Text: "Send"},
+		"typed.sent":        {Text: "Message sent"},
+		"typed.sending":     {Text: "Sending…"},
+		"typed.waiting":     {Text: "Wait for your turn to speak."},
+		"typed.paused":      {Text: "The game is paused. Your message will stay here."},
+		"typed.unavailable": {Text: "Chat opens when you talk to Mother Vell."},
 
 		"sheet.yours":         {Text: "Your character"},
 		"sheet.hp_short":      {Text: "HP {hp}/{max}"},

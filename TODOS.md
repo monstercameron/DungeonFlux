@@ -276,11 +276,11 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: unavailable transcription opens typed recovery instead of inventing a player action, offline replies and spoken recordings agree, and live versus rehearsal behavior is clear to the tester.
   status: open
 
-- [ ] QA-046 · Show typed-chat errors and prevent duplicate submissions
+- [x] QA-046 · Show typed-chat errors and prevent duplicate submissions
   why: The compact conversation input does not render TypedInputSnapshot.Error, and Submit does not reject an already sending request, leaving failed messages unexplained and rapid taps unguarded.
-  lane: ORCH (Codex) · paths: pending typed-input and conversation UI breakdown · depends: QA-042
+  lane: ORCH (Codex) · paths: `web/phone/typed.go`, `web/phone/typed_availability.go`, `web/phone/typed_pending_test.go`, `web/phone/talk_view_wasm.go`, `web/phone/talk_typed_wasm.go`, `web/phone/typed_view_wasm.go`, `web/phone/mount_wasm.go`, `web/phone/typed_render_wasm_test.go`, `internal/i18n/english.go`, `internal/i18n/spanish.go`, `internal/i18n/keys.go`, `TODOS.md`, `docs/devlog.html` · depends: QA-047
   done when: rejection/network errors are visible, drafts remain available for retry, duplicate sends are rejected while pending, and keyboard submission and turn gating are checked.
-  status: open
+  status: done (this commit); isolated lane gate 085619 and full candidate gate 091015 green under artifacts/test/QA-046/source/artifacts/test/; phone 86.7%, i18n 98.1%; WASM render tests and browser Enter/pause/draft/resume/waiting-seat checks pass. Candidate predates unrelated website commit 781ada9.
 
 - [x] QA-047 · Reject unavailable typed chat and own pending NPC replies
   why: Say can report success for an ignored wrong-turn message, and the reply is unprotected until the first audio chunk arrives.
@@ -299,6 +299,24 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   lane: ORCH (Codex) · paths: pending API, phase and phone projection breakdown · depends: QA-047
   done when: wrong-turn/busy/paused voice and actions reject, one utterance owns capture and reply, STT failures and pause reach the phone, and stale transcription/classifier results cannot replace or stall a newer turn.
   status: open
+
+- [ ] QA-050 · Align the full RPC rehearsal with chat eligibility
+  why: The old end-to-end fixture sent dialogue during Opening and expected a success acknowledgement for a discarded message; QA-047 correctly rejects it.
+  lane: ORCH (Codex) · paths: `internal/wire/e2e_test.go`, `TODOS.md`, `docs/devlog.html` · depends: QA-047
+  done when: the fixture asserts Opening rejection and accepted Conversation dialogue through the debug RPC, and the full gate passes.
+  status: claimed Codex 2026-09-27
+
+- [x] EMK-004 · Remove the duplicated attack label from the combat target card
+  why: PR #9 reports two apparent attack controls; the target card should identify the enemy while the action row owns Attack.
+  lane: PR9 review · paths: `web/phone/combat_view_wasm.go` · depends: QA-036
+  done when: the target card is informational, exactly one Attack control remains, and isolated gate plus browser playtest pass.
+  status: done 6ac99fe; isolated gate artifacts/test/EMK004/source-run-01/artifacts/test/EMK004/gate-20260927-090412.log green, phone 86.4%; reviewer browser preview shows informational target and one Strike thrall control. Todo recorded late after worker committed before hand-in.
+
+- [ ] EMK-005 · Show the authoritative creation countdown
+  why: PR #9 reports the character picker disappearing without a visible deadline; QA-015 already builds missing heroes on timeout, but players still need to see the remaining choice time.
+  lane: PR9 review · paths: `internal/game/phase/phase.go`, `internal/game/phase/support.go`, `internal/game/phase/view.go`, `internal/game/phase/creation_timer.go`, `internal/game/phase/creation_timer_test.go`, `internal/api/project_creation_test.go`, `web/phone/create.go`, `web/phone/create_view_wasm.go`, `web/phone/creation_timer.go`, `web/phone/creation_timer_test.go`, `web/phone/creation_timer_wasm.go` · depends: QA-015
+  done when: the existing domain/proto timer projects the real 30-second creation deadline, phones display it counting down, Pause freezes it, Resume continues it, timers-off hides the deadline, and timeout still builds missing heroes; lane gate and browser verification pass.
+  status: claimed pr9_review 2026-09-27
 
 ### Kill cam (developer-directed single writer, 2026-09-27)
 

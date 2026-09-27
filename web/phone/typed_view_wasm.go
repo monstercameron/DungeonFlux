@@ -19,22 +19,28 @@ func TypedInputScreen(model *TypedInputModel) router.Component {
 				refresh.Set(refresh.Get() + 1)
 			}
 		})
-		send := ui.UseEvent(func() {
-			go func() { model.ApplySay(<-model.Submit(context.Background())); refresh.Set(refresh.Get() + 1) }()
+		send := ui.UseEvent(func(event ui.FormEvent) {
+			event.PreventDefault()
+			if !model.Snapshot().CanSubmit {
+				return
+			}
+			pending := model.Submit(context.Background())
+			refresh.Set(refresh.Get() + 1)
+			go func() { model.ApplySay(<-pending); refresh.Set(refresh.Get() + 1) }()
 		})
 		snapshot := model.Snapshot()
 		locale := snapshot.Locale
 		if locale == "" {
 			locale = "en"
 		}
-		return html.Main(html.Props{Class: "df-phone df-phone-typed"},
+		return html.Form(html.Props{Class: "df-phone df-phone-typed", OnSubmit: send},
 			html.Label(html.Props{For: "typed-message"}, html.Text(TypedLabel(locale))),
 			html.Input(html.Props{ID: "typed-message", Class: "df-phone-typed-input", Value: snapshot.Text, Placeholder: TypedHint(locale), OnInput: change, AutoFocus: snapshot.Open, Disabled: snapshot.Sending, MaxLength: typedInputLimit, Aria: map[string]string{"describedby": "typed-message-status", "label": TypedLabel(locale)}}),
 			html.Div(html.Props{Class: "df-phone-typed-actions"},
 				html.Span(html.Props{Class: "df-phone-typed-count", Aria: map[string]string{"live": "polite"}}, html.Textf("%d/%d", snapshot.Characters, typedInputLimit)),
-				html.Button(html.Props{Type: "button", Class: "df-phone-typed-send", OnClick: send, Disabled: !snapshot.CanSubmit}, html.Text(TypedSend(locale))),
+				html.Button(html.Props{Type: "submit", Class: "df-phone-typed-send", Disabled: !snapshot.CanSubmit}, html.Text(TypedSend(locale))),
 			),
-			html.P(html.Props{ID: "typed-message-status", Role: "status", Class: "df-phone-typed-status"}, html.Text(errorOrStatus(snapshot))),
+			html.P(html.Props{ID: "typed-message-status", Role: typedFeedbackRole(snapshot), Class: "df-phone-typed-status"}, html.Text(errorOrStatus(snapshot))),
 		)
 	}
 }
@@ -43,5 +49,15 @@ func errorOrStatus(s TypedInputSnapshot) string {
 	if s.Error != "" {
 		return s.Error
 	}
+	if s.BlockedReason != "" {
+		return s.BlockedReason
+	}
 	return s.StatusText
+}
+
+func typedFeedbackRole(s TypedInputSnapshot) string {
+	if s.Error != "" {
+		return "alert"
+	}
+	return "status"
 }

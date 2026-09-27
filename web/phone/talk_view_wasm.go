@@ -69,35 +69,8 @@ func talkErrorStyle() map[string]string {
 }
 
 func talkInputBar(props phoneViewProps, locale string) ui.Node {
-	theme := DefaultPhoneTheme()
-	return html.Div(html.Props{Class: "df-phone-talk-input", Style: map[string]string{"display": "flex", "align-items": "flex-end", "gap": "8px", "padding": "8px 0 2px", "border-top": "1px solid rgba(217,164,65,.25)"}},
+	return html.Div(html.Props{Class: "df-phone-talk-input", Style: map[string]string{"display": "flex", "align-items": "flex-start", "gap": "8px", "padding": "8px 0 2px", "border-top": "1px solid rgba(217,164,65,.25)"}},
 		ui.CreateElement(talkPTTScreen, talkPTTProps{model: props.ptt, locale: locale}),
-		html.Div(html.Props{Style: map[string]string{"min-width": "0", "flex": "1 1 auto", "display": "flex", "align-items": "center", "gap": "6px", "min-height": theme.TouchTarget, "padding": "0 6px 0 12px", "border": "1px solid rgba(168,159,140,.55)", "border-radius": "24px", "background": "rgba(23,26,35,.94)"}}, ui.CreateElement(talkTypedInput, props.typed)),
-	)
-}
-
-// talkTypedInput keeps the text fallback compact enough to share a row with
-// the round microphone control.
-func talkTypedInput(model *TypedInputModel) ui.Node {
-	refresh := ui.UseState(0)
-	snapshot := model.Snapshot()
-	change := ui.UseEvent(func(event ui.InputEvent) {
-		if model.SetText(event.GetValue()) == nil {
-			refresh.Set(refresh.Get() + 1)
-		}
-	})
-	send := ui.UseEvent(func() {
-		go func() {
-			model.ApplySay(<-model.Submit(context.Background()))
-			refresh.Set(refresh.Get() + 1)
-		}()
-	})
-	placeholder := TypedHint(snapshot.Locale)
-	if placeholder == "" {
-		placeholder = "Or speak your response…"
-	}
-	return html.Div(html.Props{Style: map[string]string{"min-width": "0", "flex": "1 1 auto", "display": "flex", "align-items": "center", "gap": "4px"}},
-		html.Input(html.Props{ID: "talk-message", Class: "df-phone-talk-input-field", Value: snapshot.Text, Placeholder: placeholder, OnInput: change, Disabled: snapshot.Sending, MaxLength: typedInputLimit, Aria: map[string]string{"label": "Type your response"}, Style: map[string]string{"min-width": "0", "flex": "1 1 auto", "height": "46px", "border": "0", "outline": "0", "background": "transparent", "color": DefaultPhoneTheme().Parchment, "font-family": DefaultPhoneTheme().Serif, "font-size": "16px"}}),
-		html.Button(html.Props{Type: "button", OnClick: send, Disabled: !snapshot.CanSubmit, Aria: map[string]string{"label": T(snapshot.Locale, "phone.talk.send", nil)}, Style: map[string]string{"width": "42px", "height": "42px", "flex": "0 0 42px", "border": "0", "border-radius": "50%", "background": "transparent", "color": DefaultPhoneTheme().GoldBright, "font-size": "19px", "touch-action": "manipulation"}}, html.Text(T(snapshot.Locale, "phone.talk.send_glyph", nil))),
+		ui.CreateElement(talkTypedInput, talkTypedProps{model: props.typed, snapshot: props.typed.Snapshot()}),
 	)
 }

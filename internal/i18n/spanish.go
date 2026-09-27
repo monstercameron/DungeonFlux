@@ -181,9 +181,13 @@ func SpanishEntries() map[string]Entry {
 		"dice.label":   {Text: "Persuasión {modifier} contra CD {dc}"},
 		"dice.button":  {Text: "Tirar d20"},
 
-		"typed.label": {Text: "Escribe tu mensaje"},
-		"typed.send":  {Text: "Enviar"},
-		"typed.sent":  {Text: "Mensaje enviado"},
+		"typed.label":       {Text: "Escribe tu mensaje"},
+		"typed.send":        {Text: "Enviar"},
+		"typed.sent":        {Text: "Mensaje enviado"},
+		"typed.sending":     {Text: "Enviando…"},
+		"typed.waiting":     {Text: "Espera tu turno para hablar."},
+		"typed.paused":      {Text: "La partida está en pausa. Tu mensaje se conservará aquí."},
+		"typed.unavailable": {Text: "El chat se abre al hablar con Madre Vell."},
 
 		"sheet.yours":         {Text: "Tu personaje"},
 		"sheet.hp_short":      {Text: "PV {hp}/{max}"},

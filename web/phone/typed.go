@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 	"unicode/utf8"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
@@ -13,8 +14,9 @@ const typedInputLimit = 280
 
 // SayResult is the result of an asynchronous typed-input Say call.
 type SayResult struct {
-	Value *df.SayResponse
-	Err   error
+	Value   *df.SayResponse
+	Err     error
+	ignored bool
 }
 
 // SayClient is the smallest client surface required by typed input.
@@ -24,20 +26,22 @@ type SayClient interface {
 
 // TypedInputSnapshot is the render-safe state of the typed-input fallback.
 type TypedInputSnapshot struct {
-	SeatToken   string
-	Text        string
-	StatusText  string
-	Error       string
-	UtteranceID string
-	Open        bool
-	Sending     bool
-	Locale      string
-	Characters  int
-	CanSubmit   bool
+	SeatToken     string
+	Text          string
+	StatusText    string
+	Error         string
+	UtteranceID   string
+	Open          bool
+	Sending       bool
+	Locale        string
+	Characters    int
+	CanSubmit     bool
+	BlockedReason string
 }
 
 // TypedInputModel owns the fallback text box and Say request construction.
 type TypedInputModel struct {
+	mu     sync.Mutex
 	client SayClient
 	state  TypedInputSnapshot
 	locale string
@@ -48,6 +52,8 @@ func (m *TypedInputModel) SetLocale(locale string) {
 	if m == nil {
 		return
 	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if locale == "" {
 		locale = "en"
 	}
@@ -74,9 +80,18 @@ func (m *TypedInputModel) Snapshot() TypedInputSnapshot {
 	if m == nil {
 		return TypedInputSnapshot{Error: "typed input is unavailable"}
 	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.snapshotLocked()
+}
+
+func (m *TypedInputModel) snapshotLocked() TypedInputSnapshot {
 	snapshot := m.state
 	snapshot.Characters = utf8.RuneCountInString(snapshot.Text)
-	snapshot.CanSubmit = snapshot.Open && !snapshot.Sending && strings.TrimSpace(snapshot.Text) != "" && snapshot.Characters <= typedInputLimit
+	snapshot.CanSubmit = snapshot.Open && !snapshot.Sending && snapshot.BlockedReason == "" && strings.TrimSpace(snapshot.Text) != "" && snapshot.Characters <= typedInputLimit
+	if snapshot.Sending {
+		snapshot.StatusText = T(m.renderLocale(), "typed.sending", nil)
+	}
 	return snapshot
 }
 
@@ -85,11 +100,16 @@ func (m *TypedInputModel) SetText(text string) error {
 	if m == nil {
 		return errors.New("typed input is unavailable")
 	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.state.Sending {
+		return errors.New("a message is already sending")
+	}
 	if utf8.RuneCountInString(text) > typedInputLimit {
 		return errors.New("message must be 280 characters or fewer")
 	}
 	m.state.Text = text
-	m.state.Error = ""
+	m.state.Error, m.state.StatusText = "", ""
 	m.state.Open = true
 	return nil
 }
@@ -99,10 +119,12 @@ func (m *TypedInputModel) OpenFallback() TypedInputSnapshot {
 	if m == nil {
 		return TypedInputSnapshot{Error: "typed input is unavailable"}
 	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.state.Open = true
 	m.state.StatusText = T(m.renderLocale(), "ui.ptt.failed", nil)
 	m.state.Error = ""
-	return m.Snapshot()
+	return m.snapshotLocked()
 }
 
 // CloseFallback hides the typed input after speech becomes available again.
@@ -110,9 +132,11 @@ func (m *TypedInputModel) CloseFallback() TypedInputSnapshot {
 	if m == nil {
 		return TypedInputSnapshot{Error: "typed input is unavailable"}
 	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.state.Open = false
 	m.state.Error = ""
-	return m.Snapshot()
+	return m.snapshotLocked()
 }
 
 // Submit sends the current text through SessionService.Say.
@@ -120,6 +144,16 @@ func (m *TypedInputModel) Submit(ctx context.Context) <-chan SayResult {
 	result := make(chan SayResult, 1)
 	if m == nil || m.client == nil {
 		result <- SayResult{Err: errors.New("typed input client is unavailable")}
+		return result
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.state.Sending {
+		result <- SayResult{Err: errors.New("a message is already sending"), ignored: true}
+		return result
+	}
+	if m.state.BlockedReason != "" {
+		result <- SayResult{Err: errors.New(m.state.BlockedReason)}
 		return result
 	}
 	text := strings.TrimSpace(m.state.Text)
@@ -140,24 +174,29 @@ func (m *TypedInputModel) ApplySay(result SayResult) TypedInputSnapshot {
 	if m == nil {
 		return TypedInputSnapshot{Error: "typed input is unavailable"}
 	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if result.ignored {
+		return m.snapshotLocked()
+	}
 	m.state.Sending = false
 	if result.Err != nil {
 		m.state.Error = result.Err.Error()
-		return m.Snapshot()
+		return m.snapshotLocked()
 	}
 	if result.Value == nil {
 		m.state.Error = "typed message returned no response"
-		return m.Snapshot()
+		return m.snapshotLocked()
 	}
 	if !result.Value.GetAccepted() {
 		m.state.Error = result.Value.GetReason()
 		if m.state.Error == "" {
 			m.state.Error = "server rejected typed message"
 		}
-		return m.Snapshot()
+		return m.snapshotLocked()
 	}
 	m.state.Error, m.state.StatusText = "", TypedSent(m.renderLocale())
 	m.state.UtteranceID = result.Value.GetUtteranceId()
 	m.state.Text, m.state.Open = "", false
-	return m.Snapshot()
+	return m.snapshotLocked()
 }

@@ -51,7 +51,7 @@ func ScreenKeys() map[string][]string {
 			"moves.title",
 			"dice.title", "dice.roll", "dice.rolling", "dice.result", "dice.label",
 			"dice.button",
-			"typed.label", "typed.send", "typed.sent",
+			"typed.label", "typed.send", "typed.sent", "typed.sending", "typed.waiting", "typed.paused", "typed.unavailable",
 			"sheet.yours", "sheet.hp_short", "sheet.hp_none", "sheet.no_conditions",
 			"sheet.conditions",
 			"ptt.start", "ptt.stop", "ptt.ready", "ptt.norecord", "ptt.mic_canceled",

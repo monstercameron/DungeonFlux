@@ -87,6 +87,12 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-chat-draft-recovery">
+  <div class="entry-head"><time datetime="2026-09-27T09:13:00-04:00">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">ORCH (Codex)</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-chat-draft-recovery">Typed chat now keeps failed drafts and shows why sending is blocked</a></h2>
+  <p>The compact phone input hid server errors and launched Submit inside a goroutine, allowing repeat taps before its sending state was visible. The model now serializes a pending request, preserves rejected drafts, and ignores duplicate attempts without releasing the original request. Both text inputs use a form for Enter submission and refresh immediately. English and Spanish guidance explains waiting turns and pause. Browser testing exposed an additional cached-component problem: changing the model alone left the button looking enabled after Pause. Passing the snapshot as component props fixes that update. An isolated browser verified draft retention during pause, sending after resume, and ordinary dialogue without an unintended roll. Native tests, WASM rendering tests and the isolated full candidate gate pass; phone coverage is 86.7%. The candidate predates a separate website commit that currently conflicts with the JavaScript architecture rule.</p>
+</li>
+
 <li class="entry" data-kind="issue" id="e-20260927-chat-acceptance">
   <div class="entry-head"><time datetime="2026-09-27T08:52:00-04:00">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">ORCH (Codex)</span></div>
   <h2 class="entry-title"><a href="#e-20260927-chat-acceptance">A sent message must have an eligible conversation</a></h2>
