@@ -763,6 +763,18 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   done when: in fake mode every line/canned/prerender/media effect completes with plausible fake durations (line_first_audio then line_done after about 1-2 s; missing assets fall back to fake PCM or silence instead of stalling) and each effect execution logs one Info record; a new wire test starts the real server with config/fake.json, joins two phones through SessionService, drives creation with phone Acts, then plays to End using only phone Acts/Says and host commands (no debug shortcuts except dice force), asserting each phase; the same run works live on port 18170 with dfctl watching.
   status: committed 23ff374
 
+- [ ] INT-009 · a check's roll and outcome reach the TV and both phones before the story moves on
+  why: Live run 2026-09-26 19:30 on a server built from 616e9ab with the LFS build-time media pulled: Lyra's Persuade (+4 vs DC 10) was rolled from the phone, the host went back to exploration, and neither the TV (title card the whole time) nor the phone showed the d20, total, success or failure, or Mother Vell's reveal; the concept (ui-phone-tavern-persuasion-sheet-screens.jpg) shows d20, total, a Success banner and the NPC's reply before Continue.
+  lane: ORCH (integration) · paths: `internal/api/project*.go` (check/resolution projection only), `internal/game/phase/check/**`, `internal/game/phase/resolution/**` · depends: ENG-027
+  done when: during check rolling and resolved the DM and phone views carry the d20 face, modifier, total, DC and outcome, and resolution waits for the result beat (at least 2 s, or the resolution line) before exploration; dfctl view --dm and --seat 1 pasted at rolling and resolved; unblocks DM-037 and PHONE-033.
+  status: open
+
+- [ ] INT-010 · Leave runs the stranger hook instead of cutting straight to combat
+  why: Live run 2026-09-26 19:30 on a server built from 616e9ab with the LFS build-time media pulled: tapping Leave in exploration went through a mist transition directly to combat; the stranger, the letter and the steering beat (README demo step 5) never appeared on the TV or phones in two live runs.
+  lane: ORCH (integration) · paths: `internal/game/phase/hook/**`, `internal/wire/execs*.go` (hook dispatch only) · depends: ENG-029
+  done when: after Leave the TV shows the stranger arrival and his line and the phones show the hook beat, then combat starts; verified live with screenshots of each screen.
+  status: open
+
 ## 8. Engine phases (one package each)
 
 Each phase is a separate subpackage with its own table, registered into the top table.
@@ -1593,6 +1605,12 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   done when: (1) stingers (Kind "stinger" / non-loop tracks) play once, then the phase's loop bed takes over; combat entry plays STING_COMBAT_START then COMBAT_SKIRMISH_LOOP per §0.21.3; (2) CLIFF_TENSION_BED and END_CARD_THEME generated, registered in the manifest and cued for cliffhanger/end so combat music crossfades out; (3) the TV reconnects Listen with capped backoff (3 s) after a drop and resumes; (4) verified on your own lane server by instrumenting AudioBufferSourceNode.start per phase (reuse artifacts/tmp/AUD/ scripts); tests; coverage >= 70%.
   status: open
 
+- [ ] WEB-023 · the shell tells the DM screen when lazily loaded art arrives
+  why: Live run 2026-09-26 19:30 on a server built from 616e9ab with the LFS build-time media pulled: TV screens drawn before their art finished loading stay on their fallback for the whole phase (opening tavern dimmed to black, Mother Vell dialogue, exploration, and the end card as a plain blue gradient). scheduleAssetRouteRefresh calls phone.ArtChanged() but nothing for web/dm, and router.Navigate to the same path does not redraw the DM layers. Reloading /dm on the end card showed ui/end_bg at once, so the art itself is present.
+  lane: L-WEB-SHELL · paths: `web/shell/assets*.go` · depends: DM-033, WEB-022
+  done when: scheduleAssetRouteRefresh also calls dm.ArtChanged(); verified live with a fresh /dm load straight into opening, dialogue and end, each showing its background without a reload.
+  status: open
+
 ## 19. Phone
 
 The player's controller: character creation, sheet, legal moves, push-to-talk, combat taps.
@@ -1781,6 +1799,30 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   why: Live browser run 13:25 (headless Edge, DM + two phones + host): join, ready and host Start work, and species/gender/class + Roll my hero succeed on the server (seat view shows the rolled elf ranger and a "ready" move with status "Your hero is ready to lock in"), but the phone keeps the pickers with every button disabled and shows no build card or Lock button, so the game cannot continue from a phone. The goal is a full simulated game played through real browser clients.
   lane: L-WEB-PHONE · block: 11–14 · paths: `web/phone/create.go`, `web/phone/create_model*.go`, `web/phone/screen.go`, `web/phone/moves*.go`, `web/phone/dice.go`, `web/phone/combat.go`, `web/phone/end.go`, `web/phone/*_test.go`, `web/shell/join*.go` · depends: PHONE-020, E2E-005
   done when: (1) after the roll the creation screen switches to the build card with a Lock control that sends "ready", and pickers reflect the server choices; (2) using python artifacts/tmp/ORCH/drive.py against a server on your lane port, two phones + DM + host play from join through creation (with class), opening, conversation, check, combat and End in real headless Edge with no dfctl moves except host controls, and every phone screen always offers the current legal moves; each non-visual blocker found on the way is fixed in its own commit with a test; (3) the hand-in lists the play-through steps and screenshots per phase. Do NOT change CSS, colors, spacing or visual styling (ORCH owns design); if a screen is missing entirely, render it with existing components and report it.
+  status: open
+
+- [ ] PHONE-032 · the combat profile portrait resolves through the art source
+  why: Live run 2026-09-26 19:30 on a server built from 616e9ab with the LFS build-time media pulled: Lethiel's combat card shows a broken image; combatPortrait in web/phone/combat_view_wasm.go puts the raw PortraitUrl in the img src instead of portraitSrc(), unlike the combat map tokens and the end card, which render.
+  lane: L-WEB-PHONE · paths: `web/phone/combat_view*.go` · depends: WEB-022
+  done when: combatPortrait uses portraitSrc and shows the initials fallback while loading; no img with naturalWidth 0 on the combat screen; verified live.
+  status: open
+
+- [ ] PHONE-033 · the check screen shows the right modifier, then the roll result
+  why: Live run 2026-09-26 19:30 on a server built from 616e9ab with the LFS build-time media pulled: the move reads "Persuade +4 vs DC 10" (Lethiel is proficient, CHA 14) but the check screen reads "Roll d20 +0" and "+0"; after Roll the phone jumps back to exploration with no d20, total, Success or Failure, or the NPC's reply as in ui-phone-tavern-persuasion-sheet-screens.jpg.
+  lane: L-WEB-PHONE · paths: `web/phone/check*.go` · depends: INT-009
+  done when: the modifier comes from the View's check and matches the offered move; after Roll the phone shows the d20 face, total vs DC, a Success/Failure banner and the resolution line with Continue; contract request if the View lacks a field; tests on CheckPresentation.
+  status: open
+
+- [ ] PHONE-034 · exploration and NPC screens use the real location, art and NPC line
+  why: Live run 2026-09-26 19:30 on a server built from 616e9ab with the LFS build-time media pulled: the exploration header reads "THE FORGOTTEN DEPTHS" (hardcoded in web/phone/explore.go:24) over an empty dark panel although the party is in the Drowned Lantern tavern; the NPC screen shows Mother Vell's portrait but never her words and only Persuade / Step away, where the concept shows her quote above several spoken options.
+  lane: L-WEB-PHONE · paths: `web/phone/explore*.go`, `web/phone/talk*.go` · depends: WEB-022
+  done when: the location label and header image come from the View (tavern_interior in the tavern), the NPC screen shows her latest line, options come from legal moves; screenshots next to the concept.
+  status: open
+
+- [ ] PHONE-035 · stand-in portraits respect the chosen gender, and the generated portrait replaces them
+  why: Live run 2026-09-26 19:30 on a server built from 616e9ab with the LFS build-time media pulled: Lyra chose Elf / Female / Bard and every screen (creation card, combat map, end card) showed the male ui/species_elf stand-in; heroProxyArt in web/phone/art.go picks by species and class only. The two OpenAI portraits generated in the run never appeared.
+  lane: L-WEB-PHONE · paths: `web/phone/art.go`, `web/phone/create_view*.go` · depends: OPS-028
+  done when: the stand-in uses ui/species_<species>_<gender> when present (falling back to the current art); once the seat's generated portrait crop exists it replaces the stand-in everywhere on the phone; tests on the selection.
   status: open
 
 ## 20. DM screen
@@ -1977,6 +2019,54 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   why: The developer reviewed the live lobby and said it "doesnt look as sexy as the concept images, refine it to be more rich". The layout matches, but the finish does not: the wordmark is small on a black plate, panels are flat opaque boxes, menu rows are wide and plain, feature icons are tiny glyphs, portraits have plain frames, and there is no glow, depth or ornament.
   lane: L-WEB-DM · block: 11–14 · paths: `web/dm/theme*.go`, `web/dm/components*.go`, `web/dm/lobby*.go`, `web/dm/title*.go`, `web/dm/scene*.go`, `web/dm/dialogue*.go`, `web/dm/creation*.go`, `web/dm/hud*.go` · depends: DM-027, DM-030
   done when: side-by-side headless-Edge screenshots at 1920x1080 of the live lobby and the preview fixtures for opening, dialogue, creation and exploration hold up next to assets/concept/ui-tv-*.jpg in finish, not just layout (large blended wordmark, translucent glass panels with ornate gold corners and inner glow, bevelled menu rows with icons, large line-art feature icons, framed portraits, vignette and light bloom, no overlapping text); an adversarial critic scores each screen at least 8/10 for richness; gate green.
+  status: open
+
+- [ ] DM-033 · DM layers redraw when art arrives (art revision)
+  why: Live run 2026-09-26 19:30 on a server built from 616e9ab with the LFS build-time media pulled: web/dm has no counterpart of the phone's artRevision, so a layer whose ArtURL was still "" at first render keeps its fallback for the phase: endCardStyle() left the end card on its gradient although ui/end_bg loaded moments later, and the opening, dialogue and exploration backdrops stayed dark. See WEB-023 for the shell side.
+  lane: L-WEB-DM · paths: `web/dm/art*.go`, `web/dm/mount_wasm.go`, `web/dm/screen*.go` · depends: DM-008
+  done when: dm.ArtChanged() bumps a revision that the DM mount observes and re-renders the current layer; unit test for the revision; no CSS or layout change.
+  status: open
+
+- [ ] DM-034 · the opening scene matches its concept: visible art, DM narration panel, framed party cards
+  why: Live run 2026-09-26 19:30 on a server built from 616e9ab with the LFS build-time media pulled, compared with ui-tv-opening-scene-drowned-lantern-tavern.jpg: tavern_interior sits under a heavy dark overlay so the scene reads as black; party cards are small thumbnails with name and class only; there is no DM narration panel (hooded DM avatar, waveform, quoted narration), no "The story begins..." footer, no bottom bar (soundscapes, track, session, clock); the Current Scene thumbnail is empty.
+  lane: L-WEB-DM · paths: `web/dm/scene*.go`, `web/dm/text*.go` · depends: DM-030, DM-032, DM-033
+  done when: at 1920x1080 next to the concept: art clearly visible (overlay no darker than the concept), party cards with a large framed portrait, name, species and class and the hero's hook line, a DM caption panel with ui/dm_speaker and the live narration text while a DM line plays, the scene thumbnail from the scene art; critic at least 8/10.
+  status: open
+
+- [ ] DM-035 · the dialogue screen shows the NPC's words and puts the party in the scene
+  why: Live run 2026-09-26 19:30 on a server built from 616e9ab with the LFS build-time media pulled: Mother Vell stands at the right of a dimmed backdrop with the caption "Mother Vell is listening." and no line of hers; ui-tv-tavern-barkeep-dialogue-choices.jpg shows the party at the bar facing the barkeep at full brightness, her actual line as the caption, and icon choice buttons.
+  lane: L-WEB-DM · paths: `web/dm/dialogue*.go` · depends: DM-028, DM-033
+  done when: the caption shows the NPC's current or last line from the View once she has spoken; both heroes are composited left of the NPC; backdrop brightness per the concept; screenshot next to the concept.
+  status: open
+
+- [ ] DM-036 · the creation screen shows the seat's real roll and picks
+  why: Live run 2026-09-26 19:30 on a server built from 616e9ab with the LFS build-time media pulled: the TV stats panel read STR 16 / DEX 14 / CON 14 / INT 10 / WIS 12 / CHA 10 before and after rolling while Lethiel's phone sheet read 10 / 15 / 14 / 8 / 12 / 14; the guide kept Human and Fighter highlighted although the player picked Elf, Female, Bard; the class showed as lowercase "bard"; the second hero appeared only as a small "Seat 2" chip; the stand-in portrait ignores gender (heroProxyArt in web/dm/art.go).
+  lane: L-WEB-DM · paths: `web/dm/creation*.go` · depends: DM-030, RULES-008, OPS-028
+  done when: placeholders until a roll, then the seat's rolled scores and modifiers from the View (equal to the phone sheet); the guide highlights the active seat's picks; class title-cased; the name plate carries the hook line; gendered stand-in via ui/species_<species>_<gender> and the generated portrait once ready; tests on the view model; screenshot.
+  status: open
+
+- [ ] DM-037 · the check roll is visible on the TV
+  why: Live run 2026-09-26 19:30 on a server built from 616e9ab with the LFS build-time media pulled: the Persuade roll showed no d20, total or outcome on the TV; the title card stayed up throughout.
+  lane: L-WEB-DM · paths: `web/dm/dice*.go`, `web/dm/callout*.go` · depends: DM-031, INT-009
+  done when: during rolling and resolved the TV shows the d20 landing on the engine's number, total vs DC, and a Success/Failure callout for at least 2 s; verified live.
+  status: open
+
+- [ ] DM-038 · combat screen: enemy art, hit feedback, readable controls
+  why: Live run 2026-09-26 19:30 on a server built from 616e9ab with the LFS build-time media pulled: the thrall's image in the enemy panel and turn list is a broken img (no thrall art exists); attacks show no dice, hit or miss, damage number or animation on the TV (only the HP bar shrinks); the Attack / Move / End turn bar is too small to read across a room.
+  lane: L-WEB-DM · paths: `web/dm/combat*.go` · depends: DM-031, OPS-027
+  done when: the enemy uses the OPS-027 thrall art and an existing emblem instead of a broken img when art is missing; each attack shows the d20, hit or miss and damage for at least 1.5 s; controls sized for a TV; screenshot.
+  status: open
+
+- [ ] DM-039 · the battle stage shows the flat tavern battlemap when the splat is missing
+  why: Live run 2026-09-26 19:30 on a server built from 616e9ab with the LFS build-time media pulled: combat renders a flat grey canvas: battlefield_tavern_splat and battlefield_tavern_lite are missing from the manifest, yet the PlayCanvas canvas still covers df-combat-flat-fallback, although battlefield_tavern_flat is present. Target look: battlemap-tavern-flooded-common-room.jpg.
+  lane: L-WEB-DM · paths: `web/dm/battle_stage*.go` · depends: ENG-031
+  done when: with the splat absent or failing, the flat battlemap stays visible with grid and tokens over it, and the canvas is hidden until a splat frame renders; verified live with the splat assets absent.
+  status: open
+
+- [ ] DM-040 · the end screen shows the town or bell and the night's heroes
+  why: developer, reviewing the live run 2026-09-26 19:30 on a server built from 616e9ab with the lfs build-time media pulled: the end card "should have something other than just a blank blue background, maybe a scene of the town or bell". The blank is DM-033 (ui/end_bg, a harbor town, never redrew in); bell_tower.png is also in the build-time set.
+  lane: L-WEB-DM · paths: `web/dm/end*.go` · depends: DM-031, DM-033
+  done when: the end card sits over ui/end_bg or bell_tower from the first render, with both heroes' framed portraits and names; verified live with a fresh /dm load at End.
   status: open
 
 ## 21. Host
@@ -2363,6 +2453,18 @@ Media generated before the show: stills, portraits, clips, splats, sounds, music
   lane: L-OPS · paths: `scripts/generate-supersplat-colliders.ps1` · depends: OPS-SPLAT-002
   done when: larger bounded collider regions retain distant supported ground in both scenes, defaults reproduce generation, binary/provenance checks and generator regression pass, and the scoped gate is green.
   status: claimed Codex 2026-09-26
+
+- [ ] OPS-027 · thrall art and the other missing build-time assets
+  why: Live run 2026-09-26 19:30 on a server built from 616e9ab with the LFS build-time media pulled: server start logs "build-time asset missing" for battlefield_tavern_splat, battlefield_tavern_lite, /splat/scenes/64bb46d5.json, thrall_loop_idle, thrall_loop_attack, thrall_loop_hit, thrall_loop_fall, canned_fled, canned_nudge_exploration, canned_nudge_conversation and cb2fddd6; there is no thrall still at all, so every thrall image on the TV is broken.
+  lane: L-OPS · paths: `scripts/buildtime/**`, `artifacts/runtime/buildtime/**` · depends: OPS-026
+  done when: a drowned-thrall portrait and cutout registered in the manifest; the splat, thrall loops and canned lines generated and registered, or removed from content if cut; server start logs no "build-time asset missing"; media committed through LFS.
+  status: open
+
+- [ ] OPS-028 · gendered species stand-in portraits
+  why: Live run 2026-09-26 19:30 on a server built from 616e9ab with the LFS build-time media pulled: the stand-in portrait for a female elf is the single male ui/species_elf image; there is one image per species and none per gender.
+  lane: L-OPS · paths: `scripts/buildtime/ui*.go`, `artifacts/runtime/buildtime/ui/**` · depends: OPS-026
+  done when: ui/species_<species>_<gender> for the nine species and three genders, in the house style, registered in the manifest and committed through LFS.
+  status: open
 
 ## 25. Test server, gates, and checkpoints
 
