@@ -90,7 +90,7 @@ func JoinScreen(client *Client) router.Component {
 				html.P(html.Props{Class: "df-join-foot", Style: map[string]string{"margin": "12px 0 0", "color": "#777467", "font-size": "10px", "line-height": "1.35", "text-align": "center"}}, html.Text("Your seat is saved on this device so you can reconnect.")),
 			),
 		)
-		return ui.CreateElement(phone.PhoneFrame(frame, content, nil, nil))
+		return phone.PhoneFrame(frame, content, nil, nil)(router.Attrs{})
 	}
 }
 
