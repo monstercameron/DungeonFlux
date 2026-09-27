@@ -205,11 +205,11 @@ The skeleton everything else builds in: module, pinned tools, gate script, CI, a
   done when: every record carries the current run; Reset starts a new run row with the new engine's seed; a failed enqueued write logs "sqlite write failed"; a Build, Reset, Close run leaves 2 runs, events for the first, and no orphan events; runtime, store/sqlite and wire tests green.
   status: done 8f34588
 
-- [ ] REPO-021 · graceful shutdown with open WebSocket tunnels
-  why: systemctl restart on the Droplet logged "context deadline exceeded" and the server exited 1: open grpctunnel WebSocket connections kept the 5 s HTTP shutdown from finishing.
+- [x] REPO-021 · graceful shutdown with busy connections
+  why: systemctl restart on the Droplet logged "context deadline exceeded" and the server exited 1. Reproduced with a slow download of the WASM bundle (open WebSocket tabs alone exit cleanly): Shutdown timed out and os.Exit(1) skipped app.Close, so queued events were not flushed.
   lane: ORCH · paths: `cmd/server/**` · depends: REPO-020
-  done when: SIGTERM with connected DM and phone tabs closes the tunnels, flushes the store, and exits 0 within the shutdown budget; covered by a test.
-  status: open
+  done when: SIGTERM during a slow download force-closes it after the grace period, closes the app once, and exits 0; covered by a test and the Droplet repro.
+  status: done a50400c
 
 - [ ] REPO-022 · print only reachable tester URLs when server.public_url is set
   why: On the Droplet the start-up list also prints http://<public-ip>:8444 and private-network URLs that the firewall blocks, which testers copy by mistake.
