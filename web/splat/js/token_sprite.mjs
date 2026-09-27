@@ -285,17 +285,17 @@ function createClipSprite({ pc, app, token, layer }) {
   const height = quadHeight * (1 - 2 * CLIP_FEET);
   const base = createTokenBase(pc, app, { role: roleForToken(token), layer, diameter: width * BASE_DIAMETER_RATIO });
   base.placeUnder(0, 0, 0);
-  let destroyed = false, current = { url: "" }, clips = { ...(token?.clips ?? {}) }, paused = false;
+  let destroyed = false, current = { url: "" }, clips = { ...(token?.clips ?? {}) }, paused = false, enabled = true;
+  const gate = createVideoGate({
+    onClip: () => { if (!destroyed) { fallback.entity.enabled = false; entity.enabled = enabled; } },
+    onFallback: () => { if (!destroyed) { entity.enabled = false; fallback.entity.enabled = enabled; } },
+  });
   const bridge = {
-    get enabled() { return fallback.entity.enabled; },
-    set enabled(value) { fallback.entity.enabled = Boolean(value); entity.enabled = Boolean(value) && ready && !failed; },
+    get enabled() { return enabled; },
+    set enabled(value) { enabled = Boolean(value); fallback.entity.enabled = enabled && !gate.visible(); entity.enabled = enabled && gate.visible(); },
     setPosition(...args) { fallback.entity.setPosition(...args); entity.setPosition(...args); },
     getPosition() { return entity.getPosition?.() ?? fallback.entity.getPosition?.(); },
   };
-  const gate = createVideoGate({
-    onClip: () => { if (!destroyed) { fallback.entity.enabled = false; entity.enabled = true; } },
-    onFallback: () => { if (!destroyed) { entity.enabled = false; fallback.entity.enabled = true; } },
-  });
   const showReadyClip = () => { if (!destroyed && video.readyState >= 2) gate.decoded(); };
   video.addEventListener("loadeddata", showReadyClip);
   video.addEventListener("canplay", showReadyClip);
