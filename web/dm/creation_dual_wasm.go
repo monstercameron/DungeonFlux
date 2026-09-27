@@ -72,7 +72,7 @@ func creationDualChoiceLine(label, value, fallback string) ui.Node {
 
 func creationDualStats(seat CreationSeat) ui.Node {
 	return html.Div(html.Props{Style: map[string]string{"margin-top": "4px", "padding": "12px", "border": "1px solid rgba(184,137,58,.55)", "border-radius": "7px", "background": "rgba(7,13,21,.58)"}},
-		html.Small(html.Props{Style: map[string]string{"display": "block", "margin-bottom": "8px", "color": "#e7c27a", "font-size": "13px", "letter-spacing": ".14em", "font-weight": "700"}}, html.Text("ROLLED HERO")),
+		html.Small(html.Props{Style: map[string]string{"display": "block", "margin-bottom": "8px", "color": "#e7c27a", "font-size": "13px", "letter-spacing": ".14em", "font-weight": "700"}}, html.Text("ENGINE GENERATED STATS")),
 		creationStatGrid(seat), creationSecondaryRow(seat),
 	)
 }
