@@ -2,6 +2,26 @@ package phone
 
 import "testing"
 
+type missingGenderArt struct{}
+
+func (missingGenderArt) ArtURL(name string) string {
+	if name == "ui/class_rogue" {
+		return "blob:crest"
+	}
+	if name == "ui/species_elf" {
+		return "blob:generic"
+	}
+	return ""
+}
+
+func TestMissingGenderPortrait_UsesClassEmblem(t *testing.T) {
+	SetArtSource(missingGenderArt{})
+	t.Cleanup(func() { SetArtSource(nil) })
+	if got := heroProxyArtGendered("elf", "female", "rogue", "hero"); got != "blob:crest" {
+		t.Fatal(got)
+	}
+}
+
 func TestHeroProxyArtGendered_UsesSelectedIdentity(t *testing.T) {
 	SetArtSource(phoneArtFake{})
 	t.Cleanup(func() { SetArtSource(nil) })

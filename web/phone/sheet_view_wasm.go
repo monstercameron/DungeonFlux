@@ -146,7 +146,7 @@ func sheetStats(locale string, state SheetSnapshot) ui.Node {
 		return sheetEmptyPanel(locale, "Ability scores", "Your rolled abilities will appear here.")
 	}
 	return html.Section(html.Props{Class: "df-phone-sheet-section", Aria: map[string]string{"label": "Ability scores"}, Style: map[string]string{"display": "grid", "gap": "7px"}},
-		sheetSectionHeading("Ability scores", "", false), StatRow(state.Abilities), sheetBuildDetails(locale, state),
+		sheetSectionHeading("Ability scores", "", false), StatRow(state.Abilities),
 	)
 }
 
@@ -280,12 +280,12 @@ func sheetEmptyPanel(locale, title, message string) ui.Node {
 func sheetPortrait(state SheetSnapshot) ui.Node {
 	style := map[string]string{"width": "112px", "height": "112px", "overflow": "hidden", "display": "grid", "place-items": "center", "border": "1px solid #d9a441", "border-radius": "8px", "background": "linear-gradient(135deg, #2b2525, #121923)", "color": "#e7c27a", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "35px"}
 	if src := portraitSrc(state.PortraitURL); src != "" {
-		return html.Div(html.Props{Class: "df-phone-portrait", Style: style}, html.Img(html.Props{Src: src, Alt: state.Name, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))
+		return html.WithKey(html.Div(html.Props{Class: "df-phone-portrait", Style: style}, html.Img(html.Props{Src: src, Alt: state.Name, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}})), "portrait:"+src)
 	}
-	if url := ArtURL(speciesArtAsset(state.Species)); url != "" {
-		return html.Div(html.Props{Class: "df-phone-portrait", Style: style}, html.Img(html.Props{Src: url, Alt: state.Species, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))
+	if url := heroProxyArtGendered(state.Species, state.Gender, state.Class, state.Name); url != "" {
+		return html.WithKey(html.Div(html.Props{Class: "df-phone-portrait", Style: style}, html.Img(html.Props{Src: url, Alt: state.Species, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}})), "portrait:"+url)
 	}
-	return html.Div(html.Props{Class: "df-phone-portrait df-phone-portrait-fallback", Role: "img", Aria: map[string]string{"label": state.Name}, Style: style}, html.Text(sheetInitials(state.Name)))
+	return html.WithKey(html.Div(html.Props{Class: "df-phone-portrait df-phone-portrait-fallback", Role: "img", Aria: map[string]string{"label": state.Name}, Style: style}, html.Text(sheetInitials(state.Name))), "portrait:initials")
 }
 
 func sheetRole(species, className string) string {

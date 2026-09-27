@@ -36,8 +36,8 @@ html,body,#app{margin:0;min-width:0;min-height:100%;background:#0f1117}
 .df-dm-scene:after,.df-dm-combat:after,.df-dm-clip:after{position:absolute;inset:0;z-index:2;pointer-events:none;content:"";box-shadow:inset 0 0 10vw rgba(0,0,0,.5),inset 0 -12vw 10vw rgba(0,0,0,.48)}
 .df-dm-scene-card{z-index:3!important;margin:10px;padding:10px 14px;border:1px solid rgba(217,164,65,.45);border-radius:10px;background:var(--df-panel);box-shadow:0 8px 24px rgba(0,0,0,.35);color:var(--df-parchment)}
 .df-dm-scene-card-copy{font-size:clamp(15px,1.15vw,24px);text-shadow:0 1px 2px #000}.df-dm-scene-card-copy small{display:block;color:var(--df-muted)}
-.df-dm-callout,.df-dm-dice,.df-dm-timer{border:1px solid rgba(217,164,65,.62);border-radius:12px;background:var(--df-panel);box-shadow:0 12px 36px rgba(0,0,0,.4);color:var(--df-parchment)}
-.df-dm-callout{margin:0 auto;max-width:70%;padding:18px 28px;text-align:center;font-size:clamp(22px,2.2vw,42px)}.df-dm-callout p{margin:0}
+.df-dm-dice,.df-dm-timer{border:1px solid rgba(217,164,65,.62);border-radius:12px;background:var(--df-panel);box-shadow:0 12px 36px rgba(0,0,0,.4);color:var(--df-parchment)}
+.df-dm-callout{text-align:center}.df-dm-callout p{margin:0}
 .df-dm-dice{padding:24px 38px;text-align:center}.df-dm-dice-face{color:var(--df-gold);font-family:Georgia,serif;font-size:clamp(64px,9vw,150px);line-height:1}.df-dm-dice-modifier,.df-dm-dice-outcome{margin:.3em 0;font-size:clamp(22px,2vw,38px)}
 .df-dm-timer{min-width:260px;padding:12px 18px}.df-dm-timer-label{font-size:clamp(18px,1.5vw,28px);font-weight:700}.df-dm-timer-bar{display:block;width:100%;height:12px;accent-color:var(--df-gold)}
 .df-dm-audio-unlock{border:1px solid var(--df-gold)!important;border-radius:999px!important;background:var(--df-panel)!important;color:var(--df-parchment)!important;min-height:48px;padding:10px 18px;font-size:16px;cursor:pointer}
@@ -55,9 +55,9 @@ html,body,#app{margin:0;min-width:0;min-height:100%;background:#0f1117}
 .df-dm-screen.df-aspect-portrait .df-dm-layer-dice{inset:7% 5% auto!important;display:flex;justify-content:center}.df-dm-screen.df-aspect-portrait .df-dm-dice{width:90%;padding:14px 16px}.df-dm-screen.df-aspect-portrait .df-dm-dice-main{flex-direction:column!important;gap:10px!important}.df-dm-screen.df-aspect-portrait .df-dm-dice-face{flex-basis:90px;height:90px;font-size:64px}.df-dm-screen.df-aspect-portrait .df-dm-timer{right:5%!important;bottom:3%!important;min-width:0;width:90%}.df-dm-screen.df-aspect-portrait .df-dm-combat-hud div:first-child{left:5%!important;right:5%;max-width:90%!important}.df-dm-screen.df-aspect-portrait .df-dm-combat-turn-order{left:5%!important;right:5%!important;top:auto!important;bottom:22%!important;display:flex;flex-direction:row!important;min-width:0!important;overflow:hidden}
 @media (min-aspect-ratio:2/1){.df-dm-screen .df-dm-scene-stage,.df-dm-screen .df-dm-combat-stage{background-position:50% 40%!important}.df-dm-screen .df-dm-scene-caption{max-width:64%;margin-left:auto;margin-right:auto}}
 @media (max-aspect-ratio:1/1){.df-dm-screen .df-dm-audio-unlock{top:auto!important;right:.75rem!important;bottom:.75rem!important}.df-dm-screen .df-dm-scene-caption-text{max-width:100%}}
-@container (max-width:900px){.df-dm-scene-card-copy{font-size:clamp(13px,2.2cqw,20px)}.df-dm-callout{max-width:86%;padding:14px 20px}}
+@container (max-width:900px){.df-dm-scene-card-copy{font-size:clamp(13px,2.2cqw,20px)}}
 @container (min-width:1800px){.df-dm-scene-caption-text{font-size:clamp(2rem,2.25cqw,2.8rem)}.df-dm-timer{min-width:300px}}
-@media (max-width:600px){.df-dm-screen{min-height:100svh}.df-dm-stage{min-height:100svh;border:0}.df-dm-end-card{padding:28px 18px}.df-dm-end-card h1{font-size:clamp(36px,11vw,54px)}.df-dm-end-card p{font-size:18px}.df-dm-callout{max-width:92%;padding:14px 18px;font-size:22px}.df-dm-dice{padding:16px 22px}.df-dm-timer{right:12px!important;bottom:12px!important;min-width:180px}.df-dm-scene-card{padding:7px 9px}.df-dm-scene-card-copy{font-size:14px}}
+@media (max-width:600px){.df-dm-screen{min-height:100svh}.df-dm-stage{min-height:100svh;border:0}.df-dm-end-card{padding:28px 18px}.df-dm-end-card h1{font-size:clamp(36px,11vw,54px)}.df-dm-end-card p{font-size:18px}.df-dm-dice{padding:16px 22px}.df-dm-timer{right:12px!important;bottom:12px!important;min-width:180px}.df-dm-scene-card{padding:7px 9px}.df-dm-scene-card-copy{font-size:14px}}
 @media (prefers-reduced-motion:reduce){.df-dm-layer,.df-dm-layer-transition{transition:none!important}}
 /* Canvas overrides: last in the sheet and more specific so the full-bleed art shows and lobby panels fill their boxes. */
 html body .df-dm-screen .df-dm-canvas .df-dm-stage{background:transparent!important;background-image:none!important;border:0!important;box-shadow:none!important}
@@ -134,7 +134,7 @@ const dmRichnessCSS = `
 // value out of the component's style props stops re-renders resetting it.
 const dmCombatStageCSS = `
 .df-dm-combat-splat{opacity:0}
-html body .df-dm-screen .df-dm-canvas .df-dm-audio-unlock{left:auto!important;right:28px!important;top:24px!important;bottom:auto!important;transform:none!important;padding:8px 16px!important;font-size:13px!important;opacity:.82}
+html body .df-dm-screen .df-dm-canvas .df-dm-audio-unlock{left:auto!important;right:28px!important;top:auto!important;bottom:24px!important;transform:none!important;padding:8px 16px!important;font-size:13px!important;opacity:.82}
 html body .df-dm-screen:not(.df-cover-art) .df-dm-cover{filter:blur(28px) brightness(.5) saturate(.85)!important;transform:scale(1.12)}
 html body .df-dm-screen.df-cover-art .df-dm-layer-creation>:first-child,html body .df-dm-screen.df-cover-art .df-dm-layer-end>:first-child{background-image:none!important;background-color:transparent!important}
 `

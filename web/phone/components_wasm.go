@@ -120,7 +120,7 @@ func PortraitHero(imageURL, name, role, quote string) ui.Node {
 	theme := DefaultPhoneTheme()
 	style := map[string]string{"position": "relative", "min-height": "280px", "overflow": "hidden", "border-radius": theme.BorderRadius, "border": "1px solid rgba(217,164,65,.5)", "background": theme.PanelRaised}
 	if strings.TrimSpace(imageURL) != "" {
-		style["background"] = "linear-gradient(180deg, transparent 34%, rgba(7,10,15,.96) 100%), url(\"" + imageURL + "\") center / cover"
+		style["background"] = "linear-gradient(180deg, transparent 34%, rgba(7,10,15,.96) 100%), url(\"" + imageURL + "\") center top / cover"
 	}
 	return html.Section(html.Props{Class: "df-phone-portrait-hero", Style: style}, html.Div(html.Props{Style: map[string]string{"position": "absolute", "left": "16px", "right": "16px", "bottom": "14px"}}, html.H1(html.Props{Style: map[string]string{"margin": "0", "color": theme.Parchment, "font-family": theme.Serif, "font-size": "26px"}}, html.Text(name)), html.P(html.Props{Style: map[string]string{"margin": "1px 0 5px", "color": theme.GoldBright, "font-family": theme.Sans, "font-size": "15px"}}, html.Text(role)), html.P(html.Props{Style: map[string]string{"margin": "0", "color": theme.Parchment, "font-family": theme.Serif, "font-size": "16px", "font-style": "italic", "line-height": "1.3"}}, html.Text(quote))))
 }

@@ -16,7 +16,7 @@ type PreviewFixture struct {
 func Previews() map[string]PreviewFixture {
 	return map[string]PreviewFixture{
 		"lobby":         preview("lobby", lobbyPreview()),
-		"creation":      preview("creation", scenePreview("creation")),
+		"creation":      preview("creation", creationPreview()),
 		"opening":       preview("opening", openingPreview()),
 		"exploration":   preview("exploration", scenePreview("exploration")),
 		"conversation":  preview("conversation", conversationPreview()),
@@ -61,11 +61,21 @@ func baseView() *dungeonfluxv1.DMView {
 func lobbyPreview() *dungeonfluxv1.ScreenState {
 	view := baseView()
 	view.Callout = "ROOM: FLUX"
+	view.Lobby = &dungeonfluxv1.Lobby{RoomCode: "FLUX", JoinUrl: "/p?room=FLUX"}
 	return state("lobby", view)
 }
 
 func scenePreview(phase string) *dungeonfluxv1.ScreenState {
 	return state(phase, baseView())
+}
+
+func creationPreview() *dungeonfluxv1.ScreenState {
+	view := baseView()
+	for _, card := range view.BuildCards {
+		card.Character = &dungeonfluxv1.Character{Name: card.Name, ClassName: card.ClassName, Species: "elf", Gender: "female", Build: &dungeonfluxv1.CharacterBuild{Abilities: []int32{10, 16, 14, 12, 13, 8}, Hp: 10, HpMax: 10, Ac: 14}}
+		card.Ready = card.PlayerNumber == 2
+	}
+	return state("creation", view)
 }
 
 func openingPreview() *dungeonfluxv1.ScreenState {
@@ -130,7 +140,6 @@ func combatPreview() *dungeonfluxv1.ScreenState {
 			{TokenId: "rook", Name: "Rook", PortraitUrl: "ui/class_paladin", Cell: &dungeonfluxv1.Cell{C: 2, R: 2}, Hp: 12, HpMax: 12},
 			{TokenId: "thrall", Name: "Drowned Thrall", PortraitUrl: "stranger", Cell: &dungeonfluxv1.Cell{C: 3, R: 1}, Hp: 18, HpMax: 24, Statuses: []string{"bloodied"}},
 		},
-		Dice:         &dungeonfluxv1.Dice{State: dungeonfluxv1.DiceState_DICE_STATE_OFFERED, Kind: dungeonfluxv1.DiceKind_DICE_KIND_ATTACK},
 		TurnTimer:    &dungeonfluxv1.Timer{Seat: "1", RemainingMs: 12000, TotalMs: 15000},
 		CombatBanner: "Mira's turn",
 	}

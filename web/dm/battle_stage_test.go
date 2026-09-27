@@ -9,6 +9,7 @@ import (
 
 func TestBattleStageFromViewMapsWoodedPathTokensAndCamera(t *testing.T) {
 	view := &dungeonfluxv1.DMView{
+		Battlefield: &dungeonfluxv1.Battlefield{Mode: "SPLAT", Visible: true, SceneUrl: splat.WoodedPathSceneURL},
 		Tokens: []*dungeonfluxv1.Token{
 			{TokenId: "seat-a", Name: "Astra", Kind: "rogue", Cell: &dungeonfluxv1.Cell{C: 2, R: 0}, Path: []*dungeonfluxv1.Cell{{C: 1, R: 0}, {C: 2, R: 0}}, Anim: "walk", AnimSeq: 9, StepMs: 150, Clips: map[string]string{"walk": "walk-clip"}, Hp: 9, HpMax: 10, Active: true},
 			{TokenId: "seat-b", Name: "Bram", Cell: &dungeonfluxv1.Cell{C: 3, R: 0}, Hp: 8, HpMax: 10},
@@ -40,7 +41,7 @@ func TestBattleStageFromViewMapsWoodedPathTokensAndCamera(t *testing.T) {
 
 func TestBattleStageFromViewMapsCameraTimingAndShake(t *testing.T) {
 	view := &dungeonfluxv1.DMView{Battlefield: &dungeonfluxv1.Battlefield{
-		Mode: "SPLAT", Visible: true, Camera: &dungeonfluxv1.Camera{Preset: "IMPACT", FocusTokenId: "thrall", Follow: true, DurationMs: 250},
+		Mode: "SPLAT", Visible: true, SceneUrl: splat.WoodedPathSceneURL, Camera: &dungeonfluxv1.Camera{Preset: "IMPACT", FocusTokenId: "thrall", Follow: true, DurationMs: 250},
 		Shake: &dungeonfluxv1.Shake{AmplitudePx: 12, DurationMs: 250, Seq: 4},
 	}}
 	got := BattleStageFromView(view, 3)
@@ -49,6 +50,14 @@ func TestBattleStageFromViewMapsCameraTimingAndShake(t *testing.T) {
 	}
 	if got.Effects.Shake == nil || got.Effects.Shake.AmplitudePX != 12 || got.Effects.Shake.DurationMS != 250 {
 		t.Fatalf("effects = %#v", got.Effects)
+	}
+}
+
+func TestBattleStageFromView_MissingWorldUsesIllustratedFallback(t *testing.T) {
+	for _, view := range []*dungeonfluxv1.DMView{{}, {Battlefield: &dungeonfluxv1.Battlefield{Mode: "SPLAT"}}} {
+		if got := BattleStageFromView(view, 1); got.Enabled {
+			t.Fatal("invented a world")
+		}
 	}
 }
 

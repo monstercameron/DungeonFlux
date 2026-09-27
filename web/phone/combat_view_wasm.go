@@ -112,6 +112,9 @@ func combatInitials(value string) string {
 }
 
 func combatTurnStrip(snapshot CombatSnapshot, theme PhoneTheme) ui.Node {
+	if snapshot.TimerTotal <= 0 {
+		return nil
+	}
 	percent := combatPercent(snapshot.TimerRemaining, snapshot.TimerTotal)
 	caption := "TURN TIMER"
 	if snapshot.TimerFrozen {

@@ -12,16 +12,37 @@ import (
 )
 
 // SceneComponent renders the painterly scene on the fixed DM canvas.
-func SceneComponent(view *dungeonfluxv1.DMView) router.Component {
+func SceneComponent(view *dungeonfluxv1.DMView, phase ...string) router.Component {
 	model := SceneModelFromView(view)
+	composition := sceneComposition("opening")
+	if len(phase) > 0 {
+		composition = sceneComposition(phase[0])
+	}
+	isHook := len(phase) > 0 && transitionPhase(phase[0]) == "hook_event"
+	if isHook && ArtURL("stranger") != "" {
+		model.Layers = nil
+	}
 	locale := localeOrDefault(view.GetLocale())
 	return func(_ router.Attrs) *router.Element {
-		return html.Section(html.Props{Class: "df-dm-scene", Role: "img", Aria: map[string]string{"label": T(locale, "dm.scene_label", nil)}, Style: map[string]string{"position": "absolute", "left": "0", "top": "0", "width": "1920px", "height": "1080px", "overflow": "hidden"}},
+		children := []ui.Node{
 			html.Div(html.Props{Class: "df-dm-scene-stage", Style: sceneStageStyle(model.BackgroundURL)}, sceneLayers(model.Layers)...),
-			sceneVignette(), sceneBrand(model), sceneLocation(model), sceneTitle(model),
-			scenePartyRail(model.Characters, locale), sceneProgressRail(model, locale),
-			sceneCaption(model.Caption, model.SpeakerPortraitURL, model.FrameURL, model.DividerURL, locale),
-		)
+			sceneVignette(),
+		}
+		if composition.chrome {
+			children = append(children, sceneBrand(model), sceneLocation(model), scenePartyRail(model.Characters, locale))
+		}
+		if composition.opening {
+			children = append(children, sceneTitle(model), sceneProgressRail(model, locale))
+		}
+		if isHook {
+			if portrait := ArtURL("stranger"); portrait != "" {
+				children = append(children, html.Img(html.Props{Src: portrait, Alt: T(locale, "dm.stranger_alt", nil), Style: map[string]string{"position": "absolute", "right": "340px", "top": "145px", "height": "650px", "max-width": "650px", "object-fit": "contain", "mask-image": "radial-gradient(ellipse at 50% 45%,#000 35%,transparent 74%)", "z-index": "3"}}))
+			}
+		}
+		if composition.caption {
+			children = append(children, sceneCaption(model.Caption, model.SpeakerPortraitURL, model.FrameURL, model.DividerURL, locale))
+		}
+		return html.Section(html.Props{Class: "df-dm-scene", Aria: map[string]string{"label": T(locale, "dm.scene_label", nil)}, Style: map[string]string{"position": "absolute", "inset": "0", "width": "1920px", "height": "1080px", "overflow": "hidden"}}, children...)
 	}
 }
 
@@ -53,6 +74,7 @@ func sceneLayers(layers []SceneLayer) []ui.Node {
 		style := SceneLayerStyle(layer)
 		style["position"], style["z-index"] = "absolute", "1"
 		style["max-width"], style["max-height"] = "52%", "72%"
+		style["mask-image"] = "radial-gradient(ellipse at 50% 40%,#000 35%,transparent 72%)"
 		nodes = append(nodes, html.Img(html.Props{ID: layer.ID, Class: class, Src: artSrc(layer.URL), Alt: "", Style: style, Raw: map[string]any{"aria-hidden": "true"}}))
 	}
 	return nodes
@@ -116,7 +138,7 @@ func sceneCaption(caption SceneCaption, portraitURL, frameURL, dividerURL, local
 	}
 	name := SceneSpeaker(locale, caption.Speaker)
 	portraitURL = artSrc(portraitURL)
-	portrait := html.Div(html.Props{Class: "df-dm-scene-speaker", Style: map[string]string{"position": "absolute", "left": "-104px", "top": "30px", "width": "150px", "height": "150px", "overflow": "hidden", "border": "2px solid #d9a441", "border-radius": "50%", "background": "radial-gradient(circle at 50% 38%,#2b3542,#07090d 70%)", "box-shadow": "0 0 0 5px rgba(15,17,23,.92), 0 8px 24px rgba(0,0,0,.65)"}}, html.Img(html.Props{Src: portraitURL, Alt: name, Hidden: portraitURL == "", Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}), html.Span(html.Props{Hidden: portraitURL != "", Style: map[string]string{"display": "grid", "place-items": "center", "width": "100%", "height": "100%", "color": "#d9a441", "font-size": "42px"}}, ui.Text(T("en", "dm.glyph.star", nil))))
+	portrait := html.Div(html.Props{Class: "df-dm-scene-speaker", Style: map[string]string{"position": "absolute", "left": "-104px", "top": "30px", "width": "150px", "height": "150px", "overflow": "hidden", "border": "2px solid #d9a441", "border-radius": "50%", "background": "radial-gradient(circle at 50% 38%,#2b3542,#07090d 70%)", "box-shadow": "0 0 0 5px rgba(15,17,23,.92), 0 8px 24px rgba(0,0,0,.65)"}}, html.Img(html.Props{Src: portraitURL, Alt: name, Hidden: portraitURL == "", Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover", "object-position": "center top"}}), html.Span(html.Props{Hidden: portraitURL != "", Style: map[string]string{"display": "grid", "place-items": "center", "width": "100%", "height": "100%", "color": "#d9a441", "font-size": "42px"}}, ui.Text(T("en", "dm.glyph.star", nil))))
 	_ = frameURL
 	_ = dividerURL
 	panel := OrnatePanel("", SpeakerCaption(CaptionModel{Speaker: name, Text: strings.TrimSpace(caption.Text)}))
@@ -148,5 +170,5 @@ func heroPortrait(portraitURL, className, name string) ui.Node {
 	if src == "" {
 		return html.Span(html.Props{Aria: map[string]string{"label": name}, Style: map[string]string{"display": "grid", "place-items": "center", "height": "100%", "color": "#d9a441", "font-size": "40px"}}, ui.Text(T("en", "dm.glyph.star", nil)))
 	}
-	return html.Img(html.Props{Src: src, Alt: name, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}})
+	return html.Img(html.Props{Src: src, Alt: name, Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover", "object-position": "center top"}})
 }

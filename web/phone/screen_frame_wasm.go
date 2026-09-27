@@ -26,7 +26,7 @@ func PhoneFrame(model FrameModel, content ui.Node, action ui.Node, tabBar ui.Nod
 		}
 		header := phoneFrameHeader(model, statusClass, status)
 		body := html.Section(html.Props{Class: "df-phone-frame-content", Role: "region", Aria: map[string]string{"label": model.Title}, Style: map[string]string{"flex": "1 1 auto", "min-height": "0", "overflow": "auto", "padding": "12px 14px 18px"}}, content)
-		footer := html.Footer(html.Props{Class: "df-phone-action", Style: map[string]string{"min-height": theme.TouchTarget}}, action, tabBar)
+		footer := html.Footer(html.Props{Class: "df-phone-action", Style: map[string]string{"min-height": theme.TouchTarget, "flex": "0 0 auto"}}, action, tabBar)
 		class := "df-phone df-phone-frame"
 		if model.Enter {
 			class += " df-phone-enter df-phone-enter-" + string(model.Screen)
@@ -111,7 +111,7 @@ func phoneTabBar(model FrameModel, taps map[PhoneTabID]ui.Handler) ui.Node {
 		}
 		items = append(items, html.Button(html.Props{Type: "button", Class: "df-phone-tab df-phone-tab-" + string(tab.ID), OnClick: taps[tab.ID], Aria: map[string]string{"current": currentTabValue(tab.Active), "label": tab.Label}, Style: style}, html.Span(html.Props{Style: map[string]string{"font-family": theme.Serif, "font-size": "24px", "line-height": "1"}}, html.Text(tab.Icon)), html.Span(html.Props{}, html.Text(tab.Label))))
 	}
-	return html.Nav(html.Props{Class: "df-phone-tabs", Aria: map[string]string{"label": "Phone navigation"}, Style: map[string]string{"height": theme.TabBarHeight, "box-sizing": "border-box", "flex": "0 0 " + theme.TabBarHeight, "display": "grid", "grid-template-columns": "repeat(5, minmax(0, 1fr))", "align-items": "end", "gap": "4px", "padding": "8px 10px calc(6px + env(safe-area-inset-bottom))", "border-top": "1px solid rgba(168,159,140,.26)", "background": "rgba(11,15,22,.98)"}}, items...)
+	return html.Nav(html.Props{Class: "df-phone-tabs", Aria: map[string]string{"label": "Phone navigation"}, Style: map[string]string{"min-height": theme.TabBarHeight, "box-sizing": "border-box", "flex": "0 0 " + theme.TabBarHeight, "display": "grid", "grid-template-columns": "repeat(5, minmax(0, 1fr))", "align-items": "end", "gap": "4px", "padding": "8px 10px 6px", "border-top": "1px solid rgba(168,159,140,.26)", "background": "rgba(11,15,22,.98)"}}, items...)
 }
 
 func currentTabValue(active bool) string {

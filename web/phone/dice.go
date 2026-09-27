@@ -132,7 +132,7 @@ func (m *DiceModel) ApplyScreenState(state *df.ScreenState) DiceSnapshot {
 		}
 		return m.Snapshot()
 	}
-	if strings.Contains(phase, "check") && m.state.Phase != DiceRolling {
+	if strings.Contains(phase, "check") && m.state.Phase != DiceRolling && m.state.Phase != DiceResolved {
 		m.state.Phase = DiceOffered
 	}
 	return m.Snapshot()

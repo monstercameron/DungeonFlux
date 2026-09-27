@@ -25,7 +25,7 @@ func TestSelectLayers_AllPhases(t *testing.T) {
 		// layer belongs to check, not to the reveal that follows it.
 		{"resolution", []Layer{LayerScene, LayerMusic}},
 		{"hook_event", []Layer{LayerScene, LayerClip, LayerCallout, LayerMusic}},
-		{"combat", []Layer{LayerCombat, LayerDice, LayerTimer, LayerMusic}},
+		{"combat", []Layer{LayerCombat, LayerDice, LayerMusic}},
 		{"cliffhanger", []Layer{LayerScene, LayerClip, LayerMusic}},
 		{"end", []Layer{LayerEnd, LayerMusic}},
 	}
@@ -85,7 +85,7 @@ func TestPhaseName_NormalizesEmptyAndUnderscore(t *testing.T) {
 
 func TestFrameFromState_PreservesLayerOrder(t *testing.T) {
 	frame := FrameFromState(&dungeonfluxv1.ScreenState{Phase: "combat"})
-	if frame.Phase != "combat" || !HasLayer(frame.Layers, LayerTimer) {
+	if frame.Phase != "combat" || !HasLayer(frame.Layers, LayerCombat) || HasLayer(frame.Layers, LayerTimer) {
 		t.Fatalf("frame = %#v", frame)
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 )
 
@@ -45,20 +46,32 @@ func TestClient_Do_recordsResponseAndTimings(t *testing.T) {
 }
 
 func TestClient_Do_recordsTransportError(t *testing.T) {
-	client := NewVendorClient("test", time.Second, nil)
-	var record CallStats
-	client.SetRecorder(func(stats CallStats) { record = stats })
-	request, err := ContextRequest(context.Background(), http.MethodGet, "http://127.0.0.1:1", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, _, err = client.Do(request)
-	if err == nil {
-		t.Fatal("Do succeeded")
-	}
-	if record.Vendor != "test" || record.DurMS <= 0 {
-		t.Fatalf("record=%+v", record)
-	}
+	synctest.Test(t, func(t *testing.T) {
+		client := NewVendorClient("test", time.Second, nil)
+		wantErr := errors.New("transport unavailable")
+		client.HTTPClient().Transport = failingTransport{err: wantErr}
+		var record CallStats
+		var calls int
+		client.SetRecorder(func(stats CallStats) { record = stats; calls++ })
+		request, err := ContextRequest(context.Background(), http.MethodGet, "http://example.test", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, _, err = client.Do(request)
+		if !errors.Is(err, wantErr) {
+			t.Fatalf("Do error = %v, want %v", err, wantErr)
+		}
+		if calls != 1 || record.Vendor != "test" || record.DurMS != 5 || record.Status != 0 {
+			t.Fatalf("record=%+v", record)
+		}
+	})
+}
+
+type failingTransport struct{ err error }
+
+func (f failingTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	<-time.After(5 * time.Millisecond) // synctest advances virtual time only.
+	return nil, f.err
 }
 
 func TestContextRequest_andClientDefaults(t *testing.T) {

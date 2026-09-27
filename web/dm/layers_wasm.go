@@ -30,7 +30,7 @@ func phaseLayers(state *dungeonfluxv1.ScreenState, roomCode, extra string) []ui.
 			lobby.SetLocale(locale)
 			content = LobbyComponent(lobby)(router.Attrs{})
 		case LayerScene:
-			content = SceneComponent(view)(router.Attrs{})
+			content = SceneComponent(view, phase)(router.Attrs{})
 			if strings.EqualFold(strings.TrimSpace(phase), "conversation") {
 				content = html.Div(html.Props{Style: map[string]string{"position": "relative", "width": "100%", "height": "100%"}}, content, DialogueComponent(DialogueModelFromState(state))(router.Attrs{}))
 			}
@@ -44,6 +44,9 @@ func phaseLayers(state *dungeonfluxv1.ScreenState, roomCode, extra string) []ui.
 		case LayerCallout:
 			content = CalloutComponent(CalloutViewFromDMView(view))(router.Attrs{})
 		case LayerClip:
+			if transitionPhase(phase) != "cliffhanger" && (!hasClip(view) || ClipModelFromView(view).UseFallback) {
+				continue // The existing scene already supplies the fallback still.
+			}
 			// Cliffhanger composes the clip into a graded, captioned moment
 			// (CliffhangerComponent, end_wasm.go) instead of showing the raw
 			// plate; every other clip phase (opening, hook) keeps the plain
@@ -59,7 +62,7 @@ func phaseLayers(state *dungeonfluxv1.ScreenState, roomCode, extra string) []ui.
 		case LayerTimer:
 			content = TimerComponent(TimerViewFromDMView(view))(router.Attrs{})
 		case LayerCombat:
-			content = ui.CreateElement(combatLayer, combatLayerProps{view: view})
+			content = ui.CreateElement(combatLayer, combatLayerProps{view: view, revision: routeRenders.Load()})
 		case LayerEnd:
 			content = EndCardComponent(EndCardModelFromView(view))(router.Attrs{})
 		default:
@@ -72,7 +75,8 @@ func phaseLayers(state *dungeonfluxv1.ScreenState, roomCode, extra string) []ui.
 
 // combatLayerProps carries the snapshot into combatLayer.
 type combatLayerProps struct {
-	view *dungeonfluxv1.DMView
+	view     *dungeonfluxv1.DMView
+	revision uint64
 }
 
 // combatLayer gives the combat layer its own component fiber. Called inline,

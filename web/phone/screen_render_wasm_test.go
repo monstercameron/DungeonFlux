@@ -111,3 +111,35 @@ func TestPhoneRender_AllPhaseFactories(t *testing.T) {
 		})
 	}
 }
+
+func TestPhoneRender_LatePortraitPreservesSheetTab(t *testing.T) {
+	SetArtSource(nil)
+	t.Cleanup(func() { SetArtSource(nil) })
+	fixture := render.New(t)
+	models := renderTestModels()
+	preview, _ := Preview("sheet")
+	models.sheet.ApplyScreenState(&df.ScreenState{Phase: preview.View.Phase, View: &df.ScreenState_Phone{Phone: preview.View.Phone}})
+	var repaint func(int)
+	root := func() ui.Node {
+		version := ui.UseState(0)
+		repaint = version.Set
+		return renderPhoneScreen(ScreenSheet, models, "en", preview.View, PhoneTabPlay, nil, ui.Handler{})
+	}
+	fixture.Render(ui.CreateElement(root))
+	if len(fixture.AllByTag("img")) != 0 || !strings.Contains(fixture.ByRole("img", "Astra Vale").Attr("class"), "portrait-fallback") {
+		t.Fatal("missing art should show character initials")
+	}
+	fixture.ByRole("button", "Spells").Click()
+	SetArtSource(missingGenderArt{})
+	ArtChanged()
+	repaint(1)
+	if len(fixture.AllByTag("img")) != 1 {
+		t.Fatal("loaded portrait did not replace initials")
+	}
+	if got := fixture.AllByTag("img")[0].Attr("src"); got != "blob:crest" {
+		t.Fatalf("loaded portrait source = %q", got)
+	}
+	if !strings.Contains(fixture.Text(), "No spells in this demo") {
+		t.Fatal("art arrival reset the character sheet tab")
+	}
+}

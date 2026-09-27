@@ -173,6 +173,7 @@ func heroProxyArtGendered(species, gender, class, seed string) string {
 		if url := ArtURL("ui/species_" + species + "_" + gender); url != "" {
 			return url
 		}
+		return ArtURL("ui/class_" + strings.ToLower(strings.TrimSpace(class)))
 	}
 	return heroProxyArt(species, class, seed)
 }

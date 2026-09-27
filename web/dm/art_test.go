@@ -2,6 +2,17 @@ package dm
 
 import "testing"
 
+func TestMissingGenderPortrait_UsesClassEmblem(t *testing.T) {
+	SetArtSource(mapArt{"ui/species_elf": "blob:generic", "ui/class_rogue": "blob:crest"})
+	t.Cleanup(func() { SetArtSource(nil) })
+	if got := heroProxyArtGendered("elf", "female", "rogue", "hero"); got != "blob:crest" {
+		t.Fatal(got)
+	}
+	if got := creationHeroStandIn(CreationSeat{Species: "elf", Gender: "female", Class: "rogue"}); got != "blob:crest" {
+		t.Fatal(got)
+	}
+}
+
 type mapArt map[string]string
 
 func (m mapArt) ArtURL(name string) string { return m[name] }

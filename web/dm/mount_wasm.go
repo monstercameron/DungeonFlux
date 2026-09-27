@@ -275,7 +275,7 @@ func dmToken() string {
 // the end card, for the whole show.
 var tableAudioUnlocked bool
 
-func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handler) ui.Node {
+func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handler, preview ...bool) ui.Node {
 	now := transitionNowMS()
 	tvTransitions.Observe(state, now)
 	tx, active := tvTransitions.Active(now)
@@ -289,8 +289,10 @@ func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handle
 	}
 	children = append(children, phaseLayers(state, roomCode, "")...)
 	children = append(children, transitionVeil(tx, active, state, tvTransitions.Seq())...)
-	if !tableAudioUnlocked {
-		children = append(children, html.Button(html.Props{Type: "button", Class: "df-dm-audio-unlock", OnClick: unlock, Style: map[string]string{"position": "absolute", "right": "1rem", "top": "1rem", "z-index": "100"}}, html.Text(AudioUnlock(locale))))
+	if len(preview) > 0 && preview[0] {
+		children = append(children, html.Div(html.Props{Role: "status", Style: map[string]string{"position": "absolute", "left": "28px", "bottom": "24px", "padding": "8px 14px", "font-size": "16px", "color": "#efe6d2", "background": "rgba(8,12,18,.9)", "border": "1px solid #8d7548", "border-radius": "6px", "z-index": "100"}}, html.Text(T(locale, "dm.preview.silent", nil))))
+	} else if !tableAudioUnlocked {
+		children = append(children, html.Button(html.Props{Type: "button", Class: "df-dm-audio-unlock", OnClick: unlock, Style: map[string]string{"position": "absolute", "right": "1rem", "bottom": "1rem", "z-index": "100"}}, html.Text(AudioUnlock(locale))))
 	}
 	stage := html.Div(html.Props{Class: "df-dm-stage"}, children...)
 	canvas := html.Div(html.Props{Class: "df-dm-canvas"}, stage)

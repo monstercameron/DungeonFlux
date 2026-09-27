@@ -53,7 +53,7 @@ func CombatComponent(view *dungeonfluxv1.DMView, sequence ...uint64) router.Comp
 		fallback = append(fallback, combatTokens(model.Tokens)...)
 		if stage.Enabled {
 			children = append(children, html.Div(html.Props{ID: "df-combat-flat-fallback", Style: map[string]string{"position": "absolute", "inset": "0", "z-index": "1", "transition": "opacity 180ms ease", "pointer-events": "none"}}, fallback...))
-		} else if !model.UseSplat {
+		} else {
 			children = append(children, fallback...)
 		}
 		hud := []ui.Node{combatVignette(), combatPartyRail(model), combatEnemyCard(model), combatTimer(model.Timer), combatTopTitle(locale, model), combatInitiativeStrip(locale, model), combatActionBar()}
@@ -105,7 +105,7 @@ func combatInitiativeStrip(locale string, model CombatModel) ui.Node {
 			html.Img(html.Props{Src: portrait, Alt: turn.Name, Style: map[string]string{"width": "46px", "height": "46px", "border-radius": "50%", "object-fit": "cover", "border": ring, "box-shadow": "0 4px 10px rgba(0,0,0,.5)"}}),
 		))
 	}
-	return html.Div(html.Props{Class: "df-dm-combat-initiative", Role: "list", Style: map[string]string{"position": "absolute", "left": "460px", "right": "460px", "top": "192px", "display": "flex", "align-items": "center", "justify-content": "center", "gap": "12px", "padding": "8px 18px", "border": "1px solid rgba(184,137,58,.5)", "border-radius": "10px", "background": "rgba(12,18,28,.72)"}}, items...)
+	return html.Div(html.Props{Class: "df-dm-combat-initiative", Role: "list", Style: map[string]string{"position": "absolute", "left": "460px", "right": "460px", "top": "255px", "display": "flex", "align-items": "center", "justify-content": "center", "gap": "12px", "padding": "8px 18px", "border": "1px solid rgba(184,137,58,.5)", "border-radius": "10px", "background": "rgba(12,18,28,.72)"}}, items...)
 }
 
 func combatGrid(segments []CombatSegment) ui.Node {
@@ -177,24 +177,26 @@ func enemyCard(token CombatToken) ui.Node {
 	if portrait == "" {
 		portrait = "thrall_still"
 	}
+	var face ui.Node = html.Div(html.Props{Role: "img", Aria: map[string]string{"label": token.Name}, Style: map[string]string{"width": "92px", "height": "92px", "display": "grid", "place-items": "center", "font-size": "48px", "color": "#e7c27a"}}, ui.Text(T("en", "phone.combat.enemy_glyph", nil)))
+	if src := artSrc(portrait); src != "" {
+		face = html.Img(html.Props{Src: src, Alt: token.Name, Style: map[string]string{"width": "92px", "height": "92px", "object-fit": "cover", "object-position": "center 18%", "border": "2px solid #b3372f"}})
+	}
 	return html.Div(html.Props{Class: "df-dm-combat-enemy", Style: map[string]string{"position": "absolute", "right": "36px", "top": "135px", "width": "310px", "padding": "14px", "border": "1px solid #b3372f", "border-radius": "10px", "background": "rgba(12,18,28,.9)", "box-shadow": "0 12px 28px rgba(0,0,0,.52)"}},
 		html.Div(html.Props{Style: map[string]string{"color": "#e7c27a", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "22px", "letter-spacing": ".1em", "text-transform": "uppercase"}}, ui.Text(T("en", "dm.combat.enemy", nil))),
-		html.Div(html.Props{Style: map[string]string{"display": "flex", "gap": "14px", "align-items": "center", "margin-top": "10px"}}, html.Img(html.Props{Src: artSrc(portrait), Alt: token.Name, Style: map[string]string{"width": "92px", "height": "92px", "object-fit": "cover", "object-position": "center 18%", "border": "2px solid #b3372f"}}), html.Div(html.Props{Style: map[string]string{"font-family": "Cormorant Garamond,Georgia,serif", "font-size": "28px"}}, ui.Text(token.Name))),
+		html.Div(html.Props{Style: map[string]string{"display": "flex", "gap": "14px", "align-items": "center", "margin-top": "10px"}}, face, html.Div(html.Props{Style: map[string]string{"font-family": "Cormorant Garamond,Georgia,serif", "font-size": "28px"}}, ui.Text(token.Name))),
 		html.Div(html.Props{Style: map[string]string{"margin-top": "12px", "height": "8px", "background": "#291b1b", "border-radius": "5px", "overflow": "hidden"}}, html.Div(html.Props{Style: map[string]string{"width": combatHPPercent(token.HP, token.HPMax), "height": "100%", "background": "#b3372f"}})),
 	)
 }
 
 func combatTimer(view TimerView) ui.Node {
-	return html.Div(html.Props{Class: "df-dm-combat-timer", Style: map[string]string{"position": "absolute", "left": "730px", "top": "112px", "width": "460px", "padding": "10px 18px", "border": "1px solid #b8893a", "border-radius": "8px", "background": "rgba(12,18,28,.84)"}}, TimerComponent(view)(router.Attrs{}))
+	if view.TotalMS <= 0 {
+		return nil
+	}
+	return html.Div(html.Props{Class: "df-dm-combat-timer", Style: map[string]string{"position": "absolute", "left": "730px", "top": "152px", "width": "460px", "padding": "10px 18px", "border": "1px solid #b8893a", "border-radius": "8px", "background": "rgba(12,18,28,.84)"}}, TimerComponent(view)(router.Attrs{}))
 }
 
 func combatActionBar() ui.Node {
-	actions := []ActionButtonModel{{Icon: "⚔", Label: "Attack", Hotkey: "1", Primary: true, Enabled: true}, {Icon: "◇", Label: "Move", Hotkey: "2", Enabled: true}, {Icon: "◈", Label: "End turn", Hotkey: "3", Enabled: true}}
-	items := make([]ui.Node, 0, len(actions))
-	for _, action := range actions {
-		items = append(items, ActionButton(action))
-	}
-	return html.Div(html.Props{Class: "df-dm-combat-actions", Role: "list", Style: map[string]string{"position": "absolute", "left": "710px", "bottom": "42px", "display": "flex", "gap": "16px", "padding": "14px", "border": "1px solid #b8893a", "border-radius": "12px", "background": "rgba(12,18,28,.88)", "box-shadow": "0 16px 36px rgba(0,0,0,.5)"}}, items...)
+	return html.Div(html.Props{Class: "df-dm-combat-actions", Style: map[string]string{"position": "absolute", "left": "560px", "right": "560px", "bottom": "24px", "padding": "14px", "text-align": "center", "font-size": "19px", "letter-spacing": ".08em", "color": "#e7c27a", "border": "1px solid #b8893a", "border-radius": "12px", "background": "rgba(12,18,28,.88)"}}, ui.Text(T("en", "dm.create.phone_controls", nil)))
 }
 
 func combatVignette() ui.Node {

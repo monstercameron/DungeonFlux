@@ -121,11 +121,7 @@ func phoneView(props phoneViewProps) ui.Node {
 		PhoneTabCharacter: selectCharacter, PhoneTabJournal: selectJournal, PhoneTabPlay: selectPlay,
 		PhoneTabMap: selectMap, PhoneTabMenu: selectMenu,
 	}
-	screen := renderPhoneScreen(kind, props, locale, state, activeTab.Get(), taps, selectPlay)
-	if bubble := narrationBubble(state.Narration); bubble != nil {
-		return html.Div(html.Props{Class: "df-phone-read-along-host"}, screen, bubble)
-	}
-	return screen
+	return renderPhoneScreen(kind, props, locale, state, activeTab.Get(), taps, selectPlay)
 }
 
 type pttProps struct {

@@ -12,6 +12,8 @@ import (
 )
 
 func TestCompose_RendersSelectedComponentFactories(t *testing.T) {
+	// These SSR checks exercise composition without a browser resize listener.
+	canvasScaleOnce.Do(func() {})
 	state := &dungeonfluxv1.ScreenState{Phase: "combat", View: &dungeonfluxv1.ScreenState_Dm{Dm: &dungeonfluxv1.DMView{
 		Dice:        &dungeonfluxv1.Dice{State: dungeonfluxv1.DiceState_DICE_STATE_RESOLVED, D20: 17},
 		TurnTimer:   &dungeonfluxv1.Timer{RemainingMs: 9000, TotalMs: 10000},
@@ -21,7 +23,10 @@ func TestCompose_RendersSelectedComponentFactories(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderToString() error = %v", err)
 	}
-	for _, class := range []string{"df-dm-screen", "df-dm-stage", "df-dm-layer-combat", "df-dm-combat", "df-dm-combat-stage", "df-dm-dice", "df-dm-timer", "aspect-ratio", "background-size:cover"} {
+	if strings.Count(markup, `role="timer"`) != 1 {
+		t.Fatal("combat must render exactly one turn timer")
+	}
+	for _, class := range []string{"df-dm-screen", "df-dm-canvas", "df-dm-stage", "df-dm-layer-combat", "df-dm-combat", "df-dm-combat-stage", "df-dm-dice", "df-dm-timer", "background-size:cover"} {
 		if !strings.Contains(markup, class) {
 			t.Fatalf("markup missing %q: %s", class, markup)
 		}
@@ -29,13 +34,14 @@ func TestCompose_RendersSelectedComponentFactories(t *testing.T) {
 }
 
 func TestCompose_RendersPhaseLayerStack(t *testing.T) {
+	canvasScaleOnce.Do(func() {})
 	tests := []struct {
 		phase   string
 		classes []string
 	}{
-		{"opening", []string{"df-dm-layer-scene", "df-dm-scene-stage", "df-dm-layer-clip"}},
-		{"creation", []string{"df-dm-layer-creation", "df-dm-creation", "choose a species"}},
-		{"hook_event", []string{"df-dm-layer-scene", "df-dm-layer-clip", "df-dm-layer-callout"}},
+		{"opening", []string{"df-dm-layer-scene", "df-dm-scene-stage"}},
+		{"creation", []string{"df-dm-layer-creation", "df-dm-creation", "Choose on your phone"}},
+		{"hook_event", []string{"df-dm-layer-scene", "df-dm-layer-callout"}},
 		{"cliffhanger", []string{"df-dm-layer-scene", "df-dm-layer-clip"}},
 		{"end", []string{"df-dm-layer-end"}},
 	}
@@ -50,7 +56,7 @@ func TestCompose_RendersPhaseLayerStack(t *testing.T) {
 					t.Fatalf("phase %q markup missing %q: %s", test.phase, class, markup)
 				}
 			}
-			if test.phase != "end" && strings.Index(markup, "df-dm-layer-scene") > strings.Index(markup, "df-dm-layer-clip") {
+			if strings.Contains(markup, "df-dm-layer-clip") && strings.Index(markup, "df-dm-layer-scene") > strings.Index(markup, "df-dm-layer-clip") {
 				t.Fatalf("scene should be emitted before clip: %s", markup)
 			}
 		})

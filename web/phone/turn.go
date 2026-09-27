@@ -30,7 +30,7 @@ type TurnStatus struct {
 // and never show a turn label.
 func turnRelevant(phase string) bool {
 	switch strings.ToLower(strings.TrimSpace(phase)) {
-	case "exploration", "conversation", "check", "combat", "opening", "resolution", "hook_event", "cliffhanger":
+	case "exploration", "conversation", "combat":
 		return true
 	default:
 		return false

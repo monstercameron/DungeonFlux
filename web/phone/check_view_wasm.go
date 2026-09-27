@@ -24,6 +24,10 @@ func CheckScreen(model *DiceModel) router.Component {
 			}()
 		})
 		content := checkOffer(snapshot, presentation, roll)
+		if snapshot.Phase == DiceRolling {
+			content = html.Div(html.Props{Role: "status", Style: map[string]string{"display": "grid", "gap": "24px", "padding": "30px 0", "text-align": "center"}},
+				IconHeader("◇", presentation.Name, "Rolling your d20…"), checkDie(presentation), checkModifierPanel(presentation))
+		}
 		if snapshot.Phase == DiceResolved {
 			content = checkResult(presentation)
 		}
@@ -74,7 +78,7 @@ func checkResult(presentation CheckPresentation) ui.Node {
 	}
 	children = append(children,
 		html.Div(html.Props{Class: "df-phone-check-result-text", Style: map[string]string{"padding": "13px 14px", "border": "1px solid rgba(168,159,140,.4)", "border-radius": "10px", "background": "rgba(18,22,29,.92)", "color": theme.Parchment, "font-family": theme.Serif, "font-size": "16px", "line-height": "1.35"}}, html.Text(presentation.ResultText)),
-		html.Div(html.Props{Style: map[string]string{"margin-top": "auto"}}, SecondaryButton("Continue", ui.Handler{}, false)),
+		html.P(html.Props{Role: "status", Style: map[string]string{"text-align": "center", "color": theme.Muted}}, html.Text(T("en", "phone.check.listen", nil))),
 	)
 	return html.Div(html.Props{Class: "df-phone-check-result", Style: map[string]string{"display": "flex", "flex-direction": "column", "gap": "12px", "min-height": "100%"}}, children...)
 }

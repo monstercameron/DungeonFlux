@@ -1656,6 +1656,8 @@ type BuildCard struct {
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	ClassName     string                 `protobuf:"bytes,3,opt,name=class_name,json=className,proto3" json:"class_name,omitempty"`
 	PortraitUrl   string                 `protobuf:"bytes,4,opt,name=portrait_url,json=portraitUrl,proto3" json:"portrait_url,omitempty"`
+	Character     *Character             `protobuf:"bytes,5,opt,name=character,proto3" json:"character,omitempty"`
+	Ready         bool                   `protobuf:"varint,6,opt,name=ready,proto3" json:"ready,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1716,6 +1718,20 @@ func (x *BuildCard) GetPortraitUrl() string {
 		return x.PortraitUrl
 	}
 	return ""
+}
+
+func (x *BuildCard) GetCharacter() *Character {
+	if x != nil {
+		return x.Character
+	}
+	return nil
+}
+
+func (x *BuildCard) GetReady() bool {
+	if x != nil {
+		return x.Ready
+	}
+	return false
 }
 
 type Shot struct {
@@ -6116,13 +6132,15 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\x03cue\x18\b \x01(\tR\x03cue\"/\n" +
 	"\vSoundEffect\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
-	"\x03url\x18\x02 \x01(\tR\x03url\"\x86\x01\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url\"\xd5\x01\n" +
 	"\tBuildCard\x12#\n" +
 	"\rplayer_number\x18\x01 \x01(\x05R\fplayerNumber\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1d\n" +
 	"\n" +
 	"class_name\x18\x03 \x01(\tR\tclassName\x12!\n" +
-	"\fportrait_url\x18\x04 \x01(\tR\vportraitUrl\"2\n" +
+	"\fportrait_url\x18\x04 \x01(\tR\vportraitUrl\x127\n" +
+	"\tcharacter\x18\x05 \x01(\v2\x19.dungeonflux.v1.CharacterR\tcharacter\x12\x14\n" +
+	"\x05ready\x18\x06 \x01(\bR\x05ready\"2\n" +
 	"\x04Shot\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\bfallback\x18\x02 \x01(\bR\bfallback\"\xa3\x01\n" +
@@ -6691,93 +6709,94 @@ var file_dungeonflux_v1_common_proto_depIdxs = []int32{
 	2,  // 6: dungeonflux.v1.Dice.state:type_name -> dungeonflux.v1.DiceState
 	3,  // 7: dungeonflux.v1.Dice.kind:type_name -> dungeonflux.v1.DiceKind
 	20, // 8: dungeonflux.v1.Dice.damage:type_name -> dungeonflux.v1.Damage
-	30, // 9: dungeonflux.v1.Battlefield.grid:type_name -> dungeonflux.v1.Grid
-	31, // 10: dungeonflux.v1.Battlefield.flat:type_name -> dungeonflux.v1.FlatBattlefield
-	32, // 11: dungeonflux.v1.Battlefield.cameras:type_name -> dungeonflux.v1.Camera
-	32, // 12: dungeonflux.v1.Battlefield.camera:type_name -> dungeonflux.v1.Camera
-	35, // 13: dungeonflux.v1.Battlefield.highlights:type_name -> dungeonflux.v1.Highlight
-	33, // 14: dungeonflux.v1.Battlefield.shake:type_name -> dungeonflux.v1.Shake
-	10, // 15: dungeonflux.v1.Grid.origin:type_name -> dungeonflux.v1.Cell
-	10, // 16: dungeonflux.v1.Grid.walkable:type_name -> dungeonflux.v1.Cell
-	10, // 17: dungeonflux.v1.Token.cell:type_name -> dungeonflux.v1.Cell
-	10, // 18: dungeonflux.v1.Token.path:type_name -> dungeonflux.v1.Cell
-	80, // 19: dungeonflux.v1.Token.clips:type_name -> dungeonflux.v1.Token.ClipsEntry
-	10, // 20: dungeonflux.v1.Highlight.cell:type_name -> dungeonflux.v1.Cell
-	10, // 21: dungeonflux.v1.Highlight.cells:type_name -> dungeonflux.v1.Cell
-	38, // 22: dungeonflux.v1.CombatView.mini_grid:type_name -> dungeonflux.v1.MiniGrid
-	10, // 23: dungeonflux.v1.MiniGrid.walkable:type_name -> dungeonflux.v1.Cell
-	10, // 24: dungeonflux.v1.MiniGrid.reachable:type_name -> dungeonflux.v1.Cell
-	10, // 25: dungeonflux.v1.MiniGrid.me:type_name -> dungeonflux.v1.Cell
-	10, // 26: dungeonflux.v1.MiniGrid.thrall:type_name -> dungeonflux.v1.Cell
-	39, // 27: dungeonflux.v1.MiniGrid.tokens:type_name -> dungeonflux.v1.MapToken
-	10, // 28: dungeonflux.v1.MiniGrid.dash_reachable:type_name -> dungeonflux.v1.Cell
-	40, // 29: dungeonflux.v1.MiniGrid.paths:type_name -> dungeonflux.v1.ReachPath
-	10, // 30: dungeonflux.v1.MapToken.cell:type_name -> dungeonflux.v1.Cell
-	10, // 31: dungeonflux.v1.MapToken.path:type_name -> dungeonflux.v1.Cell
-	10, // 32: dungeonflux.v1.ReachPath.cell:type_name -> dungeonflux.v1.Cell
-	10, // 33: dungeonflux.v1.ReachPath.path:type_name -> dungeonflux.v1.Cell
-	22, // 34: dungeonflux.v1.DMView.layers:type_name -> dungeonflux.v1.Layer
-	21, // 35: dungeonflux.v1.DMView.clip:type_name -> dungeonflux.v1.Clip
-	17, // 36: dungeonflux.v1.DMView.narration:type_name -> dungeonflux.v1.Narration
-	18, // 37: dungeonflux.v1.DMView.subtitle:type_name -> dungeonflux.v1.Subtitle
-	19, // 38: dungeonflux.v1.DMView.dice:type_name -> dungeonflux.v1.Dice
-	16, // 39: dungeonflux.v1.DMView.turn_timer:type_name -> dungeonflux.v1.Timer
-	25, // 40: dungeonflux.v1.DMView.build_cards:type_name -> dungeonflux.v1.BuildCard
-	26, // 41: dungeonflux.v1.DMView.shot:type_name -> dungeonflux.v1.Shot
-	23, // 42: dungeonflux.v1.DMView.music:type_name -> dungeonflux.v1.Music
-	24, // 43: dungeonflux.v1.DMView.sfx:type_name -> dungeonflux.v1.SoundEffect
-	29, // 44: dungeonflux.v1.DMView.battlefield:type_name -> dungeonflux.v1.Battlefield
-	34, // 45: dungeonflux.v1.DMView.tokens:type_name -> dungeonflux.v1.Token
-	35, // 46: dungeonflux.v1.DMView.highlights:type_name -> dungeonflux.v1.Highlight
-	36, // 47: dungeonflux.v1.DMView.turn_order:type_name -> dungeonflux.v1.TurnOrderEntry
-	12, // 48: dungeonflux.v1.DMView.notice:type_name -> dungeonflux.v1.Text
-	27, // 49: dungeonflux.v1.DMView.seats:type_name -> dungeonflux.v1.LobbySeat
-	28, // 50: dungeonflux.v1.DMView.lobby:type_name -> dungeonflux.v1.Lobby
-	33, // 51: dungeonflux.v1.DMView.shake:type_name -> dungeonflux.v1.Shake
-	81, // 52: dungeonflux.v1.CharacterBuild.skill_profs:type_name -> dungeonflux.v1.CharacterBuild.SkillProfsEntry
-	43, // 53: dungeonflux.v1.CharacterBuild.equipment:type_name -> dungeonflux.v1.EquipmentItem
-	42, // 54: dungeonflux.v1.Character.flavor:type_name -> dungeonflux.v1.CharacterFlavor
-	44, // 55: dungeonflux.v1.Character.build:type_name -> dungeonflux.v1.CharacterBuild
-	4,  // 56: dungeonflux.v1.PTT.state:type_name -> dungeonflux.v1.PTTState
-	45, // 57: dungeonflux.v1.PhoneView.character:type_name -> dungeonflux.v1.Character
-	13, // 58: dungeonflux.v1.PhoneView.moves:type_name -> dungeonflux.v1.Move
-	46, // 59: dungeonflux.v1.PhoneView.ptt:type_name -> dungeonflux.v1.PTT
-	16, // 60: dungeonflux.v1.PhoneView.turn_timer:type_name -> dungeonflux.v1.Timer
-	37, // 61: dungeonflux.v1.PhoneView.combat:type_name -> dungeonflux.v1.CombatView
-	12, // 62: dungeonflux.v1.PhoneView.status_msg:type_name -> dungeonflux.v1.Text
-	17, // 63: dungeonflux.v1.PhoneView.narration:type_name -> dungeonflux.v1.Narration
-	27, // 64: dungeonflux.v1.PhoneView.seats:type_name -> dungeonflux.v1.LobbySeat
-	36, // 65: dungeonflux.v1.PhoneView.turn_order:type_name -> dungeonflux.v1.TurnOrderEntry
-	19, // 66: dungeonflux.v1.PhoneView.dice:type_name -> dungeonflux.v1.Dice
-	41, // 67: dungeonflux.v1.HostView.dm:type_name -> dungeonflux.v1.DMView
-	48, // 68: dungeonflux.v1.HostView.asset_slots:type_name -> dungeonflux.v1.AssetSlot
-	41, // 69: dungeonflux.v1.ScreenState.dm:type_name -> dungeonflux.v1.DMView
-	47, // 70: dungeonflux.v1.ScreenState.phone:type_name -> dungeonflux.v1.PhoneView
-	49, // 71: dungeonflux.v1.ScreenState.host:type_name -> dungeonflux.v1.HostView
-	0,  // 72: dungeonflux.v1.JoinRequest.kind:type_name -> dungeonflux.v1.ClientKind
-	10, // 73: dungeonflux.v1.ActRequest.cell:type_name -> dungeonflux.v1.Cell
-	1,  // 74: dungeonflux.v1.ReportRequest.kind:type_name -> dungeonflux.v1.ReportKind
-	61, // 75: dungeonflux.v1.TalkRequest.start:type_name -> dungeonflux.v1.TalkStart
-	62, // 76: dungeonflux.v1.TalkRequest.chunk:type_name -> dungeonflux.v1.AudioChunk
-	63, // 77: dungeonflux.v1.TalkRequest.end:type_name -> dungeonflux.v1.TalkEnd
-	65, // 78: dungeonflux.v1.TalkResponse.ack:type_name -> dungeonflux.v1.ChunkAck
-	66, // 79: dungeonflux.v1.TalkResponse.transcript:type_name -> dungeonflux.v1.Transcript
-	67, // 80: dungeonflux.v1.TalkResponse.stop:type_name -> dungeonflux.v1.TalkStop
-	68, // 81: dungeonflux.v1.TalkResponse.error:type_name -> dungeonflux.v1.TalkError
-	7,  // 82: dungeonflux.v1.AudioTarget.kind:type_name -> dungeonflux.v1.AudioTargetKind
-	8,  // 83: dungeonflux.v1.AudioMixCommand.kind:type_name -> dungeonflux.v1.AudioMixCommandKind
-	71, // 84: dungeonflux.v1.AudioMessage.frame:type_name -> dungeonflux.v1.AudioFrame
-	72, // 85: dungeonflux.v1.AudioMessage.cancel:type_name -> dungeonflux.v1.AudioCancel
-	74, // 86: dungeonflux.v1.AudioMessage.chunk:type_name -> dungeonflux.v1.EncodedAudioChunk
-	75, // 87: dungeonflux.v1.AudioMessage.mix:type_name -> dungeonflux.v1.AudioMixCommand
-	6,  // 88: dungeonflux.v1.AudioMessage.channel:type_name -> dungeonflux.v1.AudioChannel
-	73, // 89: dungeonflux.v1.AudioMessage.target:type_name -> dungeonflux.v1.AudioTarget
-	5,  // 90: dungeonflux.v1.HostCommand.command:type_name -> dungeonflux.v1.HostCommandKind
-	91, // [91:91] is the sub-list for method output_type
-	91, // [91:91] is the sub-list for method input_type
-	91, // [91:91] is the sub-list for extension type_name
-	91, // [91:91] is the sub-list for extension extendee
-	0,  // [0:91] is the sub-list for field type_name
+	45, // 9: dungeonflux.v1.BuildCard.character:type_name -> dungeonflux.v1.Character
+	30, // 10: dungeonflux.v1.Battlefield.grid:type_name -> dungeonflux.v1.Grid
+	31, // 11: dungeonflux.v1.Battlefield.flat:type_name -> dungeonflux.v1.FlatBattlefield
+	32, // 12: dungeonflux.v1.Battlefield.cameras:type_name -> dungeonflux.v1.Camera
+	32, // 13: dungeonflux.v1.Battlefield.camera:type_name -> dungeonflux.v1.Camera
+	35, // 14: dungeonflux.v1.Battlefield.highlights:type_name -> dungeonflux.v1.Highlight
+	33, // 15: dungeonflux.v1.Battlefield.shake:type_name -> dungeonflux.v1.Shake
+	10, // 16: dungeonflux.v1.Grid.origin:type_name -> dungeonflux.v1.Cell
+	10, // 17: dungeonflux.v1.Grid.walkable:type_name -> dungeonflux.v1.Cell
+	10, // 18: dungeonflux.v1.Token.cell:type_name -> dungeonflux.v1.Cell
+	10, // 19: dungeonflux.v1.Token.path:type_name -> dungeonflux.v1.Cell
+	80, // 20: dungeonflux.v1.Token.clips:type_name -> dungeonflux.v1.Token.ClipsEntry
+	10, // 21: dungeonflux.v1.Highlight.cell:type_name -> dungeonflux.v1.Cell
+	10, // 22: dungeonflux.v1.Highlight.cells:type_name -> dungeonflux.v1.Cell
+	38, // 23: dungeonflux.v1.CombatView.mini_grid:type_name -> dungeonflux.v1.MiniGrid
+	10, // 24: dungeonflux.v1.MiniGrid.walkable:type_name -> dungeonflux.v1.Cell
+	10, // 25: dungeonflux.v1.MiniGrid.reachable:type_name -> dungeonflux.v1.Cell
+	10, // 26: dungeonflux.v1.MiniGrid.me:type_name -> dungeonflux.v1.Cell
+	10, // 27: dungeonflux.v1.MiniGrid.thrall:type_name -> dungeonflux.v1.Cell
+	39, // 28: dungeonflux.v1.MiniGrid.tokens:type_name -> dungeonflux.v1.MapToken
+	10, // 29: dungeonflux.v1.MiniGrid.dash_reachable:type_name -> dungeonflux.v1.Cell
+	40, // 30: dungeonflux.v1.MiniGrid.paths:type_name -> dungeonflux.v1.ReachPath
+	10, // 31: dungeonflux.v1.MapToken.cell:type_name -> dungeonflux.v1.Cell
+	10, // 32: dungeonflux.v1.MapToken.path:type_name -> dungeonflux.v1.Cell
+	10, // 33: dungeonflux.v1.ReachPath.cell:type_name -> dungeonflux.v1.Cell
+	10, // 34: dungeonflux.v1.ReachPath.path:type_name -> dungeonflux.v1.Cell
+	22, // 35: dungeonflux.v1.DMView.layers:type_name -> dungeonflux.v1.Layer
+	21, // 36: dungeonflux.v1.DMView.clip:type_name -> dungeonflux.v1.Clip
+	17, // 37: dungeonflux.v1.DMView.narration:type_name -> dungeonflux.v1.Narration
+	18, // 38: dungeonflux.v1.DMView.subtitle:type_name -> dungeonflux.v1.Subtitle
+	19, // 39: dungeonflux.v1.DMView.dice:type_name -> dungeonflux.v1.Dice
+	16, // 40: dungeonflux.v1.DMView.turn_timer:type_name -> dungeonflux.v1.Timer
+	25, // 41: dungeonflux.v1.DMView.build_cards:type_name -> dungeonflux.v1.BuildCard
+	26, // 42: dungeonflux.v1.DMView.shot:type_name -> dungeonflux.v1.Shot
+	23, // 43: dungeonflux.v1.DMView.music:type_name -> dungeonflux.v1.Music
+	24, // 44: dungeonflux.v1.DMView.sfx:type_name -> dungeonflux.v1.SoundEffect
+	29, // 45: dungeonflux.v1.DMView.battlefield:type_name -> dungeonflux.v1.Battlefield
+	34, // 46: dungeonflux.v1.DMView.tokens:type_name -> dungeonflux.v1.Token
+	35, // 47: dungeonflux.v1.DMView.highlights:type_name -> dungeonflux.v1.Highlight
+	36, // 48: dungeonflux.v1.DMView.turn_order:type_name -> dungeonflux.v1.TurnOrderEntry
+	12, // 49: dungeonflux.v1.DMView.notice:type_name -> dungeonflux.v1.Text
+	27, // 50: dungeonflux.v1.DMView.seats:type_name -> dungeonflux.v1.LobbySeat
+	28, // 51: dungeonflux.v1.DMView.lobby:type_name -> dungeonflux.v1.Lobby
+	33, // 52: dungeonflux.v1.DMView.shake:type_name -> dungeonflux.v1.Shake
+	81, // 53: dungeonflux.v1.CharacterBuild.skill_profs:type_name -> dungeonflux.v1.CharacterBuild.SkillProfsEntry
+	43, // 54: dungeonflux.v1.CharacterBuild.equipment:type_name -> dungeonflux.v1.EquipmentItem
+	42, // 55: dungeonflux.v1.Character.flavor:type_name -> dungeonflux.v1.CharacterFlavor
+	44, // 56: dungeonflux.v1.Character.build:type_name -> dungeonflux.v1.CharacterBuild
+	4,  // 57: dungeonflux.v1.PTT.state:type_name -> dungeonflux.v1.PTTState
+	45, // 58: dungeonflux.v1.PhoneView.character:type_name -> dungeonflux.v1.Character
+	13, // 59: dungeonflux.v1.PhoneView.moves:type_name -> dungeonflux.v1.Move
+	46, // 60: dungeonflux.v1.PhoneView.ptt:type_name -> dungeonflux.v1.PTT
+	16, // 61: dungeonflux.v1.PhoneView.turn_timer:type_name -> dungeonflux.v1.Timer
+	37, // 62: dungeonflux.v1.PhoneView.combat:type_name -> dungeonflux.v1.CombatView
+	12, // 63: dungeonflux.v1.PhoneView.status_msg:type_name -> dungeonflux.v1.Text
+	17, // 64: dungeonflux.v1.PhoneView.narration:type_name -> dungeonflux.v1.Narration
+	27, // 65: dungeonflux.v1.PhoneView.seats:type_name -> dungeonflux.v1.LobbySeat
+	36, // 66: dungeonflux.v1.PhoneView.turn_order:type_name -> dungeonflux.v1.TurnOrderEntry
+	19, // 67: dungeonflux.v1.PhoneView.dice:type_name -> dungeonflux.v1.Dice
+	41, // 68: dungeonflux.v1.HostView.dm:type_name -> dungeonflux.v1.DMView
+	48, // 69: dungeonflux.v1.HostView.asset_slots:type_name -> dungeonflux.v1.AssetSlot
+	41, // 70: dungeonflux.v1.ScreenState.dm:type_name -> dungeonflux.v1.DMView
+	47, // 71: dungeonflux.v1.ScreenState.phone:type_name -> dungeonflux.v1.PhoneView
+	49, // 72: dungeonflux.v1.ScreenState.host:type_name -> dungeonflux.v1.HostView
+	0,  // 73: dungeonflux.v1.JoinRequest.kind:type_name -> dungeonflux.v1.ClientKind
+	10, // 74: dungeonflux.v1.ActRequest.cell:type_name -> dungeonflux.v1.Cell
+	1,  // 75: dungeonflux.v1.ReportRequest.kind:type_name -> dungeonflux.v1.ReportKind
+	61, // 76: dungeonflux.v1.TalkRequest.start:type_name -> dungeonflux.v1.TalkStart
+	62, // 77: dungeonflux.v1.TalkRequest.chunk:type_name -> dungeonflux.v1.AudioChunk
+	63, // 78: dungeonflux.v1.TalkRequest.end:type_name -> dungeonflux.v1.TalkEnd
+	65, // 79: dungeonflux.v1.TalkResponse.ack:type_name -> dungeonflux.v1.ChunkAck
+	66, // 80: dungeonflux.v1.TalkResponse.transcript:type_name -> dungeonflux.v1.Transcript
+	67, // 81: dungeonflux.v1.TalkResponse.stop:type_name -> dungeonflux.v1.TalkStop
+	68, // 82: dungeonflux.v1.TalkResponse.error:type_name -> dungeonflux.v1.TalkError
+	7,  // 83: dungeonflux.v1.AudioTarget.kind:type_name -> dungeonflux.v1.AudioTargetKind
+	8,  // 84: dungeonflux.v1.AudioMixCommand.kind:type_name -> dungeonflux.v1.AudioMixCommandKind
+	71, // 85: dungeonflux.v1.AudioMessage.frame:type_name -> dungeonflux.v1.AudioFrame
+	72, // 86: dungeonflux.v1.AudioMessage.cancel:type_name -> dungeonflux.v1.AudioCancel
+	74, // 87: dungeonflux.v1.AudioMessage.chunk:type_name -> dungeonflux.v1.EncodedAudioChunk
+	75, // 88: dungeonflux.v1.AudioMessage.mix:type_name -> dungeonflux.v1.AudioMixCommand
+	6,  // 89: dungeonflux.v1.AudioMessage.channel:type_name -> dungeonflux.v1.AudioChannel
+	73, // 90: dungeonflux.v1.AudioMessage.target:type_name -> dungeonflux.v1.AudioTarget
+	5,  // 91: dungeonflux.v1.HostCommand.command:type_name -> dungeonflux.v1.HostCommandKind
+	92, // [92:92] is the sub-list for method output_type
+	92, // [92:92] is the sub-list for method input_type
+	92, // [92:92] is the sub-list for extension type_name
+	92, // [92:92] is the sub-list for extension extendee
+	0,  // [0:92] is the sub-list for field type_name
 }
 
 func init() { file_dungeonflux_v1_common_proto_init() }

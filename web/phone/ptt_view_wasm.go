@@ -38,6 +38,9 @@ func talkPTTScreen(props talkPTTProps) ui.Node {
 		}
 	}, props.model)
 	start := ui.UseEvent(func() {
+		if props.model == nil || props.model.opener == nil {
+			return
+		}
 		if busy.Get() {
 			current := recorder.Get()
 			if current != nil {
@@ -51,13 +54,24 @@ func talkPTTScreen(props talkPTTProps) ui.Node {
 		cancelRecording.Set(cancel)
 		go startPTT(ctx, cancel, props.model, locale, status.Set, busy.Set, recorder.Set, stream.Set)
 	})
-	label := "●"
-	if busy.Get() {
+	snapshot := props.model.ControlSnapshot(locale)
+	label, caption := "●", status.Get()
+	recording := snapshot.State == PTTRecording || busy.Get()
+	if recording {
 		label = "■"
 	}
-	return html.Div(html.Props{Class: "df-phone-talk-ptt", Style: map[string]string{"display": "flex", "align-items": "center", "gap": "7px", "flex": "0 0 auto"}},
-		html.Button(html.Props{Type: "button", OnClick: start, Aria: map[string]string{"label": PTTStart(locale)}, Style: talkMicStyle(busy.Get())}, html.Text(label)),
-		html.Span(html.Props{Role: "status", Style: map[string]string{"position": "absolute", "width": "1px", "height": "1px", "overflow": "hidden", "clip": "rect(0 0 0 0)"}}, html.Text(status.Get())),
+	if snapshot.State == PTTTranscribing || snapshot.State == PTTStopping {
+		label = "…"
+	}
+	if snapshot.State == PTTFailed {
+		label = "!"
+	}
+	if snapshot.State != PTTIdle {
+		caption = snapshot.StatusText
+	}
+	return html.Div(html.Props{Class: "df-phone-talk-ptt", Style: map[string]string{"display": "flex", "flex-direction": "column", "align-items": "center", "gap": "7px", "flex": "0 0 76px"}},
+		html.Button(html.Props{Type: "button", OnClick: start, Aria: map[string]string{"label": caption}, Style: talkMicStyle(recording)}, html.Text(label)),
+		html.Span(html.Props{Role: "status", Style: map[string]string{"font-size": "11px", "line-height": "1.3", "text-align": "center", "color": "#d7cdbb"}}, html.Text(caption)),
 	)
 }
 

@@ -91,12 +91,7 @@ func CombatModelFromViewAt(view *dungeonfluxv1.DMView, sequence uint64) CombatMo
 	model.Visible = battlefield.GetVisible()
 	if flat := flatBattlefield(battlefield); flat != nil {
 		model.ImageURL = flat.GetImageUrl()
-		quad := flat.GetFloorQuadPx()
-		if len(quad) < 8 {
-			// Live content ships the flat battlefield image without its floor
-			// quad; without one no token or grid cell could be placed on the TV.
-			quad = defaultFloorQuad
-		}
+		quad := usableFloorQuad(flat.GetFloorQuadPx())
 		model.Segments = projectedGrid(battlefield.GetGrid(), quad)
 		model.Tokens = projectedTokens(view.GetTokens(), battlefield.GetGrid(), quad, view.GetBuildCards())
 		model.Highlights = projectedHighlights(view.GetHighlights(), battlefield.GetGrid(), quad)
@@ -113,21 +108,19 @@ func applyFlatFallback(model *CombatModel, view *dungeonfluxv1.DMView, stageGrid
 	if grid == nil {
 		grid = protoGrid(stageGrid)
 	}
-	quad := defaultFloorQuad
-	if battlefield := view.GetBattlefield(); battlefield != nil && battlefield.GetFlat() != nil && len(battlefield.GetFlat().GetFloorQuadPx()) >= 8 {
-		quad = battlefield.GetFlat().GetFloorQuadPx()
-	}
+	quad := usableFloorQuad(view.GetBattlefield().GetFlat().GetFloorQuadPx())
 	model.Segments = projectedGrid(grid, quad)
 	model.Highlights = projectedHighlights(view.GetHighlights(), grid, quad)
-	if view.GetBattlefield() == nil {
-		if tokens := projectedTokens(view.GetTokens(), grid, quad, view.GetBuildCards()); len(tokens) > 0 {
-			model.Tokens = tokens
-		}
-	} else if !strings.EqualFold(view.GetBattlefield().GetMode(), "SPLAT") {
-		if tokens := projectedTokens(view.GetTokens(), grid, quad, view.GetBuildCards()); len(tokens) > 0 {
-			model.Tokens = tokens
-		}
+	if tokens := projectedTokens(view.GetTokens(), grid, quad, view.GetBuildCards()); len(tokens) > 0 {
+		model.Tokens = tokens
 	}
+}
+
+func usableFloorQuad(quad []float32) []float32 {
+	if _, valid := newHomography(quad); valid {
+		return quad
+	}
+	return defaultFloorQuad
 }
 
 func protoGrid(grid splat.Grid) *dungeonfluxv1.Grid {
@@ -254,6 +247,9 @@ func projectedTokens(tokens []*dungeonfluxv1.Token, grid *dungeonfluxv1.Grid, qu
 			continue
 		}
 		cell := token.GetCell()
+		if cell.GetC() < 0 || cell.GetR() < 0 || cell.GetC() >= grid.GetCols() || cell.GetR() >= grid.GetRows() {
+			continue
+		}
 		point, valid := h.project(float32(cell.GetC())+0.5, float32(cell.GetR())+0.5, grid.GetCols(), grid.GetRows())
 		if !valid {
 			continue
