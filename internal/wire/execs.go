@@ -66,7 +66,10 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 	runner := runtime.NewRunner(inbox, cfg.logger)
 	assets := newAssetStore(cfg.config.Server.DataDir)
 	fakeMode := isFakeMode(cfg.config)
-	assembler := voicein.NewAssembler()
+	assembler := cfg.assembler
+	if assembler == nil {
+		assembler = voicein.NewAssembler()
+	}
 	transcriber, err := voicein.NewTranscriber(set.stt, assembler)
 	if err != nil {
 		return nil, nil, err
@@ -204,6 +207,9 @@ type configForWire struct {
 	recordings ports.Recordings
 	cache      ports.Cache
 	billboards *billboardHub
+	// assembler collects push-to-talk audio: the Talk server writes to it and
+	// the transcriber reads from it. Nil builds a private one (tests).
+	assembler *voicein.Assembler
 }
 
 type assetStore struct{ root, buildtime string }
