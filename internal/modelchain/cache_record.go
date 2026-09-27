@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"sync"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/ports"
@@ -23,6 +24,9 @@ type recordedLLM struct {
 }
 
 func (r recordedLLM) JSON(ctx context.Context, req ports.TextRequest, schema ports.Schema) (json.RawMessage, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	key, err := recordingKey(r.adapter, req, "json", schema)
 	if err != nil {
 		return nil, err
@@ -31,6 +35,9 @@ func (r recordedLLM) JSON(ctx context.Context, req ports.TextRequest, schema por
 		return r.readJSON(ctx, key)
 	}
 	value, err := r.next.JSON(ctx, req, schema)
+	if canceled := cancellationError(ctx, err); canceled != nil {
+		return nil, canceled
+	}
 	if err == nil {
 		if putErr := r.store.Put(ctx, key, domain.Recording{Text: string(value)}); putErr != nil {
 			return nil, putErr
@@ -44,6 +51,9 @@ func (r recordedLLM) JSON(ctx context.Context, req ports.TextRequest, schema por
 }
 
 func (r recordedLLM) StreamText(ctx context.Context, req ports.TextRequest) (ports.TextStream, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	key, err := recordingKey(r.adapter, req, "text", ports.Schema{})
 	if err != nil {
 		return nil, err
@@ -53,16 +63,24 @@ func (r recordedLLM) StreamText(ctx context.Context, req ports.TextRequest) (por
 		if err != nil {
 			return nil, err
 		}
-		return newReplayStream(value), nil
+		return newReplayStream(ctx, value), nil
 	}
 	stream, err := r.next.StreamText(ctx, req)
+	if canceled := cancellationError(ctx, err); canceled != nil {
+		if stream != nil {
+			_ = stream.Close()
+		}
+		return nil, canceled
+	}
 	if err != nil {
 		if value, replayErr := r.readText(ctx, key); replayErr == nil {
-			return newReplayStream(value), nil
+			return newReplayStream(ctx, value), nil
 		}
 		return nil, err
 	}
-	return &recordStream{source: stream, store: r.store, key: key}, nil
+	return newStoredStream(ctx, stream, func(ctx context.Context, value []byte) error {
+		return r.store.Put(ctx, key, domain.Recording{Text: string(value)})
+	}), nil
 }
 
 func (r recordedLLM) readJSON(ctx context.Context, key ports.RecKey) (json.RawMessage, error) {
@@ -87,44 +105,23 @@ func (r recordedLLM) readText(ctx context.Context, key ports.RecKey) (string, er
 	return recording.Text, nil
 }
 
-type recordStream struct {
-	source ports.TextStream
-	store  ports.Recordings
-	key    ports.RecKey
-	text   []byte
-	done   bool
-}
-
-func (s *recordStream) Recv() (string, error) {
-	text, err := s.source.Recv()
-	if err == nil {
-		s.text = append(s.text, text...)
-		return text, nil
-	}
-	if errors.Is(err, io.EOF) && !s.done {
-		s.done = true
-		if putErr := s.store.Put(context.Background(), s.key, domain.Recording{Text: string(s.text)}); putErr != nil {
-			return "", putErr
-		}
-	}
-	return "", err
-}
-
-func (s *recordStream) Close() error {
-	s.done = true
-	return s.source.Close()
-}
-
-func newReplayStream(text string) ports.TextStream {
-	return &replayStream{chunks: []string{text}}
+func newReplayStream(ctx context.Context, text string) ports.TextStream {
+	return &replayStream{ctx: ctx, chunks: []string{text}}
 }
 
 type replayStream struct {
+	mu     sync.Mutex
+	ctx    context.Context
 	chunks []string
 	closed bool
 }
 
 func (s *replayStream) Recv() (string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.ctx.Err(); err != nil {
+		return "", err
+	}
 	if s.closed || len(s.chunks) == 0 {
 		return "", io.EOF
 	}
@@ -134,9 +131,10 @@ func (s *replayStream) Recv() (string, error) {
 }
 
 func (s *replayStream) Close() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.closed = true
 	return nil
 }
 
 var _ ports.LLM = recordedLLM{}
-var _ ports.TextStream = (*recordStream)(nil)

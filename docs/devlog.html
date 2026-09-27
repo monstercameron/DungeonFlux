@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-complete-cancelable-recordings">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-complete-cancelable-recordings">Only complete, uncanceled responses become recordings</a></h2>
+  <p>The cache and rehearsal wrappers dropped text returned alongside EOF. They also persisted responses using a background context and could turn a canceled model call into a successful recorded fallback. Both wrappers now share a stream lifecycle that retains terminal text, delivers it before EOF to narration consumers, and writes with the caller's context. Early closure, source errors, and cancellation prevent partial publication. Closure can interrupt an in-flight read or storage write without racing the completion flag. Tests exercise both decorators, canceled replay, storage failure, and concurrent closure using deterministic scheduling. Modelchain coverage is 83.3 percent, and its package is now included in the Linux race workflow. The wire and narration executor suites pass without live provider calls.</p>
+</li>
 <li class="entry" data-kind="issue" id="e-20260927-rehearsal-recording-isolation">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-rehearsal-recording-isolation">Rehearsal recordings cannot overwrite another response contract</a></h2>

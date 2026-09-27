@@ -186,11 +186,11 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: recording and forced replay keep roles, languages, JSON schemas and streamed prose separate while preserving phase, seat and sequence semantics; malformed schemas fail before calling a provider; the modelchain gate is green.
   status: done (this commit); gate artifacts/test/QA-030/gate-20260927-065548.log; modelchain 80.7%; wire integration suite passed; legacy ambiguous recordings require a new rehearsal
 
-- [ ] QA-031 · Preserve complete stream results and respect cancellation when caching
+- [x] QA-031 · Preserve complete stream results and respect cancellation when caching
   why: Recording and cache streams drop text returned alongside EOF and persist with a background context, allowing canceled or truncated calls to replace valid results.
-  lane: ORCH (Codex) · paths: pending bounded stream lifecycle breakdown · depends: QA-030
+  lane: ORCH (Codex) · paths: `internal/modelchain/cache.go`, `internal/modelchain/cache_record.go`, `internal/modelchain/stored_stream.go`, `internal/modelchain/stored_stream_test.go`, `.github/workflows/race.yml`, `TODOS.md`, `docs/devlog.html` · depends: QA-030
   done when: terminal text is retained, canceled or failed streams never become successful cache entries, cache storage observes caller cancellation, and regressions pass.
-  status: open
+  status: done (this commit); gate artifacts/test/QA-031/gate-20260927-070142.log; modelchain 83.3%; wire and llmexec suites passed; Linux race workflow now includes modelchain
 
 - [ ] QA-032 · Assign deterministic rehearsal call positions across retries
   why: Most executors leave call phase and index at zero, so repeated calls within a role still overwrite one recording and cannot follow a rehearsed sequence.

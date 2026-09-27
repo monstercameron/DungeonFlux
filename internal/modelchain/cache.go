@@ -5,8 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
-	"io"
 
 	"github.com/monstercameron/DungeonFlux/internal/ports"
 )
@@ -24,6 +22,9 @@ type cachedLLM struct {
 }
 
 func (c cachedLLM) JSON(ctx context.Context, req ports.TextRequest, schema ports.Schema) (json.RawMessage, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	key, err := inputHash(c.adapter, req, schema)
 	if err != nil {
 		return nil, err
@@ -37,6 +38,9 @@ func (c cachedLLM) JSON(ctx context.Context, req ports.TextRequest, schema ports
 	if err != nil {
 		return nil, err
 	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if err := c.store.Put(ctx, c.adapter, key, append([]byte(nil), value...)); err != nil {
 		return nil, err
 	}
@@ -44,6 +48,9 @@ func (c cachedLLM) JSON(ctx context.Context, req ports.TextRequest, schema ports
 }
 
 func (c cachedLLM) StreamText(ctx context.Context, req ports.TextRequest) (ports.TextStream, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	key, err := inputHash(c.adapter, req, ports.Schema{})
 	if err != nil {
 		return nil, err
@@ -51,42 +58,15 @@ func (c cachedLLM) StreamText(ctx context.Context, req ports.TextRequest) (ports
 	if value, ok, getErr := c.store.Get(ctx, c.adapter, key); getErr != nil {
 		return nil, getErr
 	} else if ok {
-		return newReplayStream(string(value)), nil
+		return newReplayStream(ctx, string(value)), nil
 	}
 	stream, err := c.next.StreamText(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	return &cacheStream{source: stream, store: c.store, adapter: c.adapter, key: key}, nil
-}
-
-type cacheStream struct {
-	source  ports.TextStream
-	store   ports.Cache
-	adapter string
-	key     string
-	text    []byte
-	closed  bool
-}
-
-func (s *cacheStream) Recv() (string, error) {
-	text, err := s.source.Recv()
-	if err == nil {
-		s.text = append(s.text, text...)
-		return text, nil
-	}
-	if errors.Is(err, io.EOF) && !s.closed {
-		s.closed = true
-		if putErr := s.store.Put(context.Background(), s.adapter, s.key, append([]byte(nil), s.text...)); putErr != nil {
-			return "", putErr
-		}
-	}
-	return "", err
-}
-
-func (s *cacheStream) Close() error {
-	s.closed = true
-	return s.source.Close()
+	return newStoredStream(ctx, stream, func(ctx context.Context, value []byte) error {
+		return c.store.Put(ctx, c.adapter, key, value)
+	}), nil
 }
 
 func inputHash(adapter string, req ports.TextRequest, schema ports.Schema) (string, error) {
@@ -104,4 +84,3 @@ func inputHash(adapter string, req ports.TextRequest, schema ports.Schema) (stri
 }
 
 var _ ports.LLM = cachedLLM{}
-var _ ports.TextStream = (*cacheStream)(nil)
