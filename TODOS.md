@@ -8,19 +8,19 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
 
 ## Planning (ORCH)
 ### Visual-review repair batch (developer-directed, 2026-09-27)
-The developer assigned Codex to create and implement this batch directly, without Luna or other subagents. These sequential claims take precedence over older overlapping web/integration claims for the repair scope only; existing unrelated work remains untouched. The baseline is ebcb4dc and artifacts/test/L-E2E/visual-20260927/report.html. Every implementation item gets its own green gate, named-path commit and hand-in; completion is recorded by PLAN-022 after a fresh-build browser review. No live/paid calls or changes to the human server.
+The developer assigned Codex to create and implement this batch directly, without Luna or other subagents. These sequential claims take precedence over older overlapping web/integration claims for the repair scope only; existing unrelated work remains untouched. The baseline is ebcb4dc and artifacts/test/L-E2E/visual-20260927/report.html. Every implementation item gets its own green gate, named-path commit and hand-in; completion is recorded by PLAN-022 after a fresh-build browser review. No changes to the human server. The later BB-002 request explicitly authorizes live fal generation; all automated tests remain fake.
 
-- [ ] PLAN-021 · Register the visual-review repair batch
+- [x] PLAN-021 · Register the visual-review repair batch
   why: The evaluated defects need explicit ownership and acceptance checks before code changes.
   lane: ORCH (Codex, developer-directed) · paths: `TODOS.md` · depends: none
   done when: all report findings map to the atomic todos below; planning gate green.
-  status: claimed Codex 2026-09-27
+  status: done 3c54d3c
 
 - [ ] PLAN-022 · Record repair hand-ins and completion evidence
   why: Status must reflect independently checked commits and the final fresh-build playthrough.
   lane: ORCH (Codex, developer-directed) · paths: `TODOS.md` · depends: PHONE-036, PHONE-037, PHONE-038, DM-041, DM-042, ENG-035, API-023, WEB-025, INT-011
   done when: each completed item records its actual commit and gate evidence; unresolved findings remain explicit.
-  status: open
+  status: claimed Codex 2026-09-27; hand-ins: artifacts/lanes/UI-REPAIR/; visual report: artifacts/test/L-E2E/final-review/report.html
 
 - [x] PLAN-001 · Project site on GitHub Pages, AGENTS.md, repo hygiene files
   lane: ORCH · paths: docs/, AGENTS.md, .gitignore, .gitattributes, artifacts/.gitkeep
@@ -831,11 +831,11 @@ The pure deterministic engine `Step(state, envelope) → effects`. The top table
   done when: after Leave the TV shows the stranger arrival and his line and the phones show the hook beat, then combat starts; verified live with screenshots of each screen.
   status: open
 
-- [ ] ENG-035 · Complete check and resolution with real scheduled events
+- [x] ENG-035 · Complete check and resolution with real scheduled events
   why: The browser run stalled in Check and Resolution and required two host skips.
-  lane: L-ENG · paths: `internal/game/phase/*.go`, `internal/game/check*.go` · depends: none
+  lane: L-ENG · paths: `internal/game/phase/*.go`, `internal/game/check*.go`, `internal/game/legal*.go` · depends: none
   done when: success and failure roll timers resolve and release narration with timers on or off; regression tests; gate green; normal flow reaches Exploration without Skip.
-  status: open
+  status: done 5520bad
 
 ## 8. Engine phases (one package each)
 
@@ -1269,11 +1269,11 @@ The gRPC services over GoGRPCBridge, the Watch and Listen hubs, and the debug se
   done when: (1) Get by SHA-256 finds build-time assets and runtime assets in the data dir (content type from the stored extension, streamed in chunks, path traversal impossible: SHA-256 hex only); (2) Manifest keeps listing build-time names; runtime assets are addressed by SHA; (3) tests cover a runtime asset hit, a miss, and a bad selector; an e2e fetches the lobby QR from the DM view qr_url over gRPC; (4) verified against a live server on your lane port with a tiny grpctunnel client (see artifacts/tmp/ORCH/probe/main.go). No web/ changes.
   status: open
 
-- [ ] API-023 · Project complete hero, readiness and check state
+- [x] API-023 · Project complete hero, readiness and check state
   why: TV creation stats and result totals were empty despite valid phone character data; ready and timer states were misleading.
-  lane: L-API · paths: `internal/api/project*.go`, `internal/api/*projection*_test.go` · depends: ENG-035
-  done when: existing wire fields carry actual rolled values, lifecycle and readiness; projection tests include both seats and absent timers; gate green.
-  status: open
+  lane: L-API · paths: `internal/api/project*.go`, `internal/api/*projection*_test.go`, `proto/dungeonflux/v1/common.proto`, `gen/dungeonflux/v1/common.pb.go` · depends: ENG-035
+  done when: typed wire fields carry actual rolled values, lifecycle and readiness; projection tests include both seats and absent timers; gate green. Developer-directed contract repair: BuildCard reuses Character for complete hero data.
+  status: done 63c3875
 
 ## 14. LLM layer
 
@@ -1685,11 +1685,11 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   done when: the router is created with view transitions off; a headless load of /dm, /p, and /host logs no "Transition was skipped" error.
   status: done c6cd079
 
-- [ ] WEB-025 · Make documented preview and art refresh paths reliable
+- [x] WEB-025 · Make documented preview and art refresh paths reliable
   why: The preview catalog failed to load and fixture/art updates were inconsistent.
-  lane: L-WEB-SHELL · paths: `web/shell/preview*.go`, `web/shell/assets*.go`, `internal/wire/http*.go` · depends: none
+  lane: L-WEB-SHELL · paths: `web/shell/preview*.go`, `web/shell/assets*.go`, `internal/wire/web*.go`, `web/phone/preview_wasm.go`, `web/phone/render_phone_wasm.go`, `web/dm/preview_wasm.go` · depends: none
   done when: /preview and direct fixtures load through the normal server, fresh art updates without reload, no live game connection in static fixtures; tests and gate green.
-  status: open
+  status: done ae597d1
 
 - [x] EMK-001 · phones resubscribe after sleep, app switch, or a dead connection
   why: Dennis's 2026-09-27 review #32/#27: phones went stale and stayed on an old screen until reloaded. Reproduced: a phone offline while the host advanced kept an open WebSocket that had lost the updates, and showed the creation screen for 30+ s after reconnecting.
@@ -1713,6 +1713,96 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   status: done 1533aa1
 
 ## 19. Phone
+
+- [x] WEB-027 · Clearly distinguish silent visual previews from the live table
+  why: The developer expected sound from a static fixture; its audio button could not start a stream.
+  lane: L-WEB-DM · paths: `web/dm/mount_wasm.go`, `web/dm/preview_wasm.go`, `internal/i18n/english.go`, `internal/i18n/spanish.go`, `internal/i18n/keys.go` · depends: WEB-025
+  done when: static TV fixtures visibly say audio is off and have no false unlock control; the live table retains its working unlock; gate green and audible playback confirmed.
+  status: done 9c74b21
+
+- [x] DM-047 · Give the stranger beat a single character silhouette
+  why: Removing the obstructing callout exposed two portraits occupying the same place during the hook.
+  lane: L-WEB-DM · paths: `web/dm/scene_wasm.go` · depends: DM-046
+  done when: the hook uses one readable stranger portrait with feathered edges; gate and visual check pass.
+  status: done 5e3ec50
+
+- [x] DM-046 · Remove fallback surfaces that obscure the story
+  why: Final browser review found inherited callout panel CSS and the opening fallback still covering the intended tableau.
+  lane: L-WEB-DM · paths: `web/dm/theme_wasm.go`, `web/dm/layers_wasm.go` · depends: DM-044
+  done when: hook steering occupies only its compact card, opening fallback preserves the scene, lane gate and visual review pass.
+  status: done 65a72f8
+
+- [x] PHONE-042 · Put the rolled hero and Ready action in immediate reach
+  why: The final rolled-hero preview buried its confirmation below the full disabled class list on a phone.
+  lane: L-WEB-PHONE · paths: `web/phone/create_view_wasm.go`, `web/phone/screen_render_wasm_test.go` · depends: PHONE-041
+  done when: the rolled hero and Ready action are visible without scrolling past disabled choices; changing state retains hook order; gate and browser check pass.
+  status: done fc73152
+
+- [x] PHONE-041 · Replace the portrait fallback safely when art arrives
+  why: Browser reconciliation removed the initials but failed to insert an image when the sheet portrait loaded.
+  lane: L-WEB-PHONE · paths: `web/phone/sheet_view_wasm.go`, `web/phone/screen_render_wasm_test.go` · depends: PHONE-036
+  done when: late artwork displays a portrait without disturbing phone input or navigation; regression and gate pass.
+  status: done 11e8f0b
+
+- [x] DM-045 · Resolve lobby portrait selectors before rendering images
+  why: The populated lobby fixture exposed broken image icons from logical art selectors used as URLs.
+  lane: L-WEB-DM · paths: `web/dm/components_wasm.go`, `web/dm/preview.go` · depends: DM-042
+  done when: logical portraits load through the art resolver, missing art keeps a silhouette and the lobby fixture shows a room code; gate green and visual review passes.
+  status: done 4fb0dd6
+
+- [x] PHONE-040 · Preserve resolved dice and make review fixtures complete
+  why: The dice-result fixture still showed a disabled Roll button, and the rolled-hero fixture lacked build data.
+  lane: L-WEB-PHONE · paths: `web/phone/dice.go`, `web/phone/dice_test.go`, `web/phone/preview.go` · depends: PHONE-038
+  done when: a resolved check snapshot stays resolved, result and rolled-character fixtures carry authoritative data, regressions and gate green.
+  status: done 77587c6
+
+- [x] QA-001 · Make transport-error timing verification deterministic
+  why: The full gate exposed a pre-existing test that assumes a refused socket always takes measurable wall-clock time on Windows.
+  lane: ORCH · paths: `internal/httpx/client_test.go` · depends: none
+  done when: a fake failing transport and virtual clock verify the exact error, one recorded call and exact duration without real network or timing flakiness; gate green.
+  status: done ee59bd6
+
+- [x] DM-044 · Keep steering callouts from obscuring the hook scene
+  why: The banner asset's opaque background covered the stranger even after the video fallback correction.
+  lane: L-WEB-DM · paths: `web/dm/callout_wasm.go` · depends: UI-001
+  done when: a compact top callout preserves the stranger and narration; fresh visual review and gate green.
+  status: done 8865834
+
+- [x] UI-002 · Localize review copy and finish portrait and combat spacing
+  why: Full validation identified four missing catalog references, while the fresh preview pass showed a cropped NPC face and duplicate combat timers.
+  lane: L-WEB-DM · paths: `internal/i18n/english.go`, `internal/i18n/spanish.go`, `internal/i18n/keys.go`, `web/dm/scene.go`, `web/dm/scene_test.go`, `web/dm/scene_wasm.go`, `web/dm/combat_wasm.go`, `web/dm/screen.go`, `web/dm/screen_test.go`, `web/dm/screen_render_wasm_test.go`, `web/dm/preview.go`, `web/phone/components_wasm.go`, `web/phone/check_view_wasm.go`, `web/phone/combat_map_view_wasm.go` · depends: UI-001, DM-043
+  done when: all copy passes locale guards, the NPC face remains visible, combat owns one timer with clear spacing, creation previews carry complete build data; web and full gates green.
+  status: done 1d25a1f
+
+- [x] DM-043 · Keep combat visible while the 3D scene is unavailable
+  why: The fresh live review exposed a zero-valued floor quad, unprojected fallback tokens and art updates skipped by the combat component.
+  lane: L-WEB-DM · paths: `web/dm/combat.go`, `web/dm/combat_wasm.go`, `web/dm/combat_test.go`, `web/dm/layers_wasm.go` · depends: DM-042, UI-001
+  done when: invalid floor geometry uses a valid fallback, tokens and artwork paint on the fallback, absent enemy art and timers degrade cleanly; regressions and gate green.
+  status: done b0234f4
+
+- [x] API-024 · Replace generic species stand-ins with identity-aware selectors
+  why: Engine-generated generic portrait selectors bypassed the API's species-and-gender fallback during the live review.
+  lane: L-API · paths: `internal/api/project.go`, `internal/api/project_creation_test.go` · depends: API-023
+  done when: generic species selectors resolve through the chosen gender while actual generated assets remain untouched; regression and gate green.
+  status: done 9df7a79
+
+- [x] INT-012 · Make fake narration respect the current story role
+  why: Visual playthrough found Mother Vell repeating the opening line for a successful check.
+  lane: ORCH · paths: `internal/wire/fake.go`, `internal/wire/fake_narration_test.go` · depends: ENG-035
+  done when: deterministic reveal, refusal, hook and cliffhanger text match their roles; regression and gate green.
+  status: done 789afb0
+
+- [x] UI-001 · Finish visual verification corrections
+  why: Fresh screens exposed inaccurate ready copy, gender fallbacks and an audio control overridden by older CSS.
+  lane: L-WEB-DM · paths: `web/dm/creation*.go`, `web/dm/art*.go`, `web/dm/scene_wasm.go`, `web/dm/layers_wasm.go`, `web/dm/theme_wasm.go`, `web/phone/art*.go`, `web/phone/finish_wasm.go`, `web/phone/sheet_view_wasm.go`, `web/phone/combat_map_view_wasm.go` · depends: DM-042, PHONE-038
+  done when: truthful ready feedback and identity-safe fallbacks, audio control clear of location, meaningful fallback tests and both web gates green.
+  status: done e6193dd
+
+- [x] WEB-026 · Preserve reactive room-code entry in the join frame
+  why: Fresh browser verification found that the prop-less frame closure retained the first input render and prevented joining by room code.
+  lane: L-WEB-SHELL · paths: `web/shell/join_wasm.go`, `web/shell/join_render_wasm_test.go` · depends: WEB-025
+  done when: entering name then room code enables Join and the production frame updates; WASM regression and lane gate green.
+  status: done bbc2618
 
 The player's controller: character creation, sheet, legal moves, push-to-talk, combat taps.
 
@@ -1926,23 +2016,29 @@ The player's controller: character creation, sheet, legal moves, push-to-talk, c
   done when: the stand-in uses ui/species_<species>_<gender> when present (falling back to the current art); once the seat's generated portrait crop exists it replaces the stand-in everywhere on the phone; tests on the selection.
   status: open
 
-- [ ] PHONE-036 · Render every phone navigation and snapshot update
+- [x] PHONE-036 · Render every phone navigation and snapshot update
   why: Navigation, pending movement and End remained stale until a browser reload.
   lane: L-WEB-PHONE · paths: `web/phone/mount_wasm.go`, `web/phone/screen_frame_wasm.go`, `web/phone/*render*_test.go`, `web/phone/render*.go` · depends: none
   done when: local tabs and server snapshots repaint without remounting active inputs; movement settles; End appears automatically; regression tests and gate green; browser verification.
-  status: claimed Codex 2026-09-27
+  status: done 81afe05
 
-- [ ] PHONE-037 · Keep phone narration, typography and status readable
+- [x] PHONE-037 · Keep phone narration, typography and status readable
   why: Narration obscured controls, long content clipped navigation, and passive phases showed Your turn.
-  lane: L-WEB-PHONE · paths: `web/phone/*frame*.go`, `web/phone/*finish*.go`, `web/phone/talk*.go`, `web/phone/sheet*.go`, `web/phone/turn*.go`, `web/phone/combat*.go`, `web/phone/art*.go`, `web/phone/waiting*.go`, `web/phone/end*.go`, `web/phone/mount_wasm.go` · depends: PHONE-036
+  lane: L-WEB-PHONE · paths: `web/phone/*frame*.go`, `web/phone/*finish*.go`, `web/phone/talk*.go`, `web/phone/sheet*.go`, `web/phone/turn*.go`, `web/phone/combat*.go`, `web/phone/art*.go`, `web/phone/waiting*.go`, `web/phone/end*.go`, `web/phone/mount_wasm.go`, `web/phone/render*.go`, `web/phone/check*.go` · depends: PHONE-036
   done when: 390x844 layout keeps tabs/actions visible, narration does not cover content, clear contrast and truthful statuses, distinct portrait fallbacks; tests and gate green.
-  status: open
+  status: done 1669c0b
 
-- [ ] PHONE-038 · Render distinct recording, sending and error fixtures
+- [x] PHONE-038 · Render distinct recording, sending and error fixtures
   why: All voice fixtures looked idle, preventing meaningful visual testing.
   lane: L-WEB-PHONE · paths: `web/phone/preview*.go`, `web/phone/talk*.go`, `web/phone/ptt*.go` · depends: PHONE-037
   done when: fixture state controls visible mic/status behavior without microphone calls; down/result/error cases remain representative; regression tests and gate green.
-  status: open
+  status: done 0450ee4
+
+- [x] PHONE-039 · Separate browser-only audio declarations from native policy
+  why: Native staticcheck rejects audio transport fields used exclusively by WASM and the untested gender portrait resolver, blocking the phone lane gate.
+  lane: L-WEB-PHONE · paths: `web/phone/audio.go`, `web/phone/audio_platform*.go`, `web/phone/art_test.go` · depends: none
+  done when: native policy has no browser-only dead declarations; gender fallback has behavior tests; native gate and WASM compilation green.
+  status: done a18e9f8
 
 ## 20. DM screen
 
@@ -2188,17 +2284,17 @@ The laptop/TV screen: scenes, narration, dice, combat battlefield frame.
   done when: the end card sits over ui/end_bg or bell_tower from the first render, with both heroes' framed portraits and names; verified live with a fresh /dm load at End.
   status: open
 
-- [ ] DM-041 · Compose one coherent TV scene per phase
+- [x] DM-041 · Compose one coherent TV scene per phase
   why: Exploration duplicated party and location layers and kept the opening title; hook staging was absent.
-  lane: L-WEB-DM · paths: `web/dm/screen*.go`, `web/dm/scene*.go`, `web/dm/hud*.go`, `web/dm/clip*.go`, `web/dm/dialogue*.go`, `web/dm/mount_wasm.go` · depends: none
+  lane: L-WEB-DM · paths: `web/dm/screen*.go`, `web/dm/scene*.go`, `web/dm/hud*.go`, `web/dm/clip*.go`, `web/dm/dialogue*.go`, `web/dm/mount_wasm.go`, `web/dm/layers_wasm.go` · depends: none
   done when: exploration has one party rail/location/objective and no title collision; hook and resolution show current speaker; layouts verified at TV dimensions; regression tests and gate green.
-  status: open
+  status: done c16b2aa
 
-- [ ] DM-042 · Truthful hero, dice and battle presentation with coherent fallback art
+- [x] DM-042 · Truthful hero, dice and battle presentation with coherent fallback art
   why: Creation values were missing; dice labels and combat fallback art obscured identity and story continuity; combat-flat fixture showed dice instead of a battlefield.
   lane: L-WEB-DM · paths: `web/dm/creation*.go`, `web/dm/dice*.go`, `web/dm/combat*.go`, `web/dm/battle_stage*.go`, `web/dm/battle_bridge*.go`, `web/dm/preview*.go`, `web/dm/art*.go`, `web/dm/lobby*.go`, `web/dm/callout*.go`, `web/dm/components*.go` · depends: DM-041, API-023
   done when: actual stats and results, readable roll/attack feedback, no broken images, distinct hero tokens, coherent tavern fallback, correct preview states; tests and gate green; browser screenshots.
-  status: open
+  status: done 8f7be08
 
 ## 21. Host
 
@@ -2228,7 +2324,65 @@ The operator page: Start, Pause, Skip, Reset, Force d20, and debug panel.
   done when: links come from the server (tester URLs via HostView or a host RPC), phone link carries the room code and LAN host; run status shows phase, seats, and timers from the host Watch; verified live in Edge.
   status: committed 2f0d1e4
 
+- [x] QA-002 · Remove an obsolete lint suppression in the build-time gate
+  why: Staticcheck rejects a nil-context suppression that no longer matches a diagnostic; the test still needs to exercise nil rejection.
+  lane: L-OPS · paths: `scripts/buildtime/lock_test.go` · depends: none
+  done when: the unchanged nil-context assertion and L-OPS gate pass without suppressions.
+  status: done 33387e3
+
+## PR integration review — developer request, 2026-09-27
+
+The developer explicitly authorized reviewing, fixing, and safely merging the open PRs. Integration uses an isolated worktree; no force-push or unrelated working-tree changes.
+
+- [ ] REVIEW-001 · Integrate PR 7 phone resubscription and complete display reconnection
+  why: Sleeping phones and silent Watch streams need recovery without duplicate join events; the PR also identifies TV and host recovery as unfinished.
+  lane: ORCH (Codex) · paths: PR 7 paths plus `web/dm/mount_wasm.go`, `web/host/mount_wasm.go`, `web/shell/**`, `internal/api/session_watch*.go`, `internal/wire/watch_rejoin_test.go` · depends: PLAN-022
+  done when: PR 7 diff and regression fix are reviewed; reconnect tests and relevant gates pass on the integrated tree; TV/host follow-up is resolved or explicitly tracked.
+  status: claimed Codex 2026-09-27
+
+- [ ] REVIEW-002 · Integrate PR 6 microphone lifetime and resolve UI conflicts
+  why: Recordings must survive snapshot rerenders and flush TalkEnd before releasing the stream while preserving current UI states.
+  lane: ORCH (Codex) · paths: PR 6 paths plus `web/phone/preview.go`, `web/phone/preview_wasm.go`, `web/phone/screen_render_wasm_test.go` · depends: REVIEW-001
+  done when: conflicts are resolved without losing repaired preview behavior; microphone lifetime, native tests, WASM build and component tests pass.
+  status: claimed Codex 2026-09-27
+
+- [ ] REVIEW-003 · Integrate PR 8 and prevent rejected text from escaping through streamed deltas
+  why: The proposed final-text guard runs after raw deltas have already been published; dialogue must be checked before any subtitle or speech consumer receives it.
+  lane: ORCH (Codex) · paths: PR 8 paths plus `internal/llmexec/*test.go` · depends: REVIEW-001
+  done when: no rejected NPC clue or stage direction is emitted before validation, reveal stays functional, and fake-stream regression tests and gates pass.
+  status: claimed Codex 2026-09-27
+
+- [ ] REVIEW-004 · Evaluate PR 1 against the implemented demo and record merge readiness
+  why: The spec-only faster-opening proposal introduces unimplemented runtime rules and an unresolved six-turn combat rebalance.
+  lane: ORCH (Codex) · paths: `TODOS.md`, `artifacts/test/PR-REVIEW/**` · depends: none
+  done when: spec/runtime gaps and contradictory combat timing are documented; only a coherent, validated proposal is merged.
+  status: claimed Codex 2026-09-27
+
 ## 22. Splat battlefield
+
+- [x] API-025 · Replay prepared billboard assets through authenticated dfctl events
+  why: Generated hero animations need a reproducible, logged loading path without direct runtime state or database edits.
+  lane: L-API (Codex, developer-directed) · paths: `internal/api/debug/write.go`, `internal/api/debug/asset_ready.go`, `internal/api/debug/asset_ready_test.go` · depends: API-024
+  done when: dfctl accepts validated local billboard asset_ready events, rejects malformed assets, and the API lane gate passes.
+  status: done 62fc699
+
+- [x] PHONE-043 · Show the rolled build and replace late creation portraits
+  why: The final mobile review exposed an empty rolled-hero card after the old choice controls were hidden; real stats and late art must remain visible before Ready.
+  lane: L-WEB-PHONE (Codex) · paths: `web/phone/create.go`, `web/phone/create_test.go`, `web/phone/create_view_wasm.go`, `web/phone/screen_render_wasm_test.go` · depends: PHONE-042
+  done when: rolled ability scores and HP/AC render, late art replaces the placeholder, Ready stays visible, and the phone gate and WASM regression pass.
+  status: done c50a90a
+
+- [x] BB-002 · Generate player battle loops from the existing hero reference sheets
+  why: The developer explicitly requested fal.ai generation to replace both player stand-ins using the actual heroes and battlefield camera reference.
+  lane: L-MEDIA (Codex, developer-directed) · paths: `artifacts/media/UI-REPAIR/**`, `artifacts/runtime/UI-REPAIR-20260927/**` · depends: INT-011
+  done when: the two reference identities are verified, idle/attack loops are generated with fal using the battlefield still, copied into the isolated asset store, and reviewed in the 3D scene; provenance and spend recorded.
+  status: done 0ccccce
+
+- [x] DM-048 · Apply battle cinematics and bind the generated hero loops
+  why: Player billboards must occupy battlefield cells with the existing color-grade and tilt-shift shaders, with no generic player stand-ins in the verified scene.
+  lane: L-WEB-DM (Codex, developer-directed) · paths: `web/dm/battle_stage*.go`, `web/dm/combat_wasm.go`, `web/splat/js/df-splat.mjs`, `web/splat/js/battle_runtime.mjs`, `web/splat/js/billboard.mjs`, `web/splat/js/token_cells.mjs`, `web/splat/js/token_sprite.mjs` · depends: BB-002
+  done when: generated clips survive turn changes, battlefield placement is authoritative, color grading and tilt shift are active, lane gates and fresh visual review pass.
+  status: done 0ce4f87
 
 PlayCanvas Gaussian-splat battlefield with grid, billboards, and camera presets; the only JavaScript.
 
@@ -2721,11 +2875,11 @@ Keeping the build honest: per-commit checks, the 30-minute full gate, checkpoint
   done when: Spoken phrase from each phone returns the right transcript; PCM plays on the DM tab.; gate green (≥ 70% coverage where applicable)
   status: done bc506b5
 
-- [ ] INT-011 · Verify the repaired two-player flow and every screen on fresh builds
+- [x] INT-011 · Verify the repaired two-player flow and every screen on fresh builds
   why: The previous evaluation reused a WASM bundle and found runtime issues fixtures alone could not expose.
   lane: ORCH (Codex, developer-directed) · paths: `internal/wire/*e2e*_test.go` · depends: PHONE-038, DM-042, WEB-025
   done when: fake-adapter integration covers check success/failure through End; full gate and fresh WASM/native builds pass; Codex browser playthrough needs no Skip/reload; all reviewed screen groups have after evidence; report under artifacts; temporary server stopped.
-  status: open
+  status: done 0b9b80d
 
 ## 26. Stage, rehearsal, and runbook
 

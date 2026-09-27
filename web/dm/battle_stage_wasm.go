@@ -154,6 +154,14 @@ func (h *battleStageHandle) watchEvents(events <-chan splat.Event) {
 			}
 			switch event.Type {
 			case "ready":
+				// Init loads the profile asynchronously. Its effects controller
+				// does not exist when the first Effects message is sent.
+				// Reapply persistent grading and focus after loading, without
+				// replaying an impact that happened while the world was loading.
+				h.nextSeq++
+				effects := h.current.Effects
+				effects.Seq, effects.Shake = h.nextSeq, nil
+				_ = h.bridge.Effects(effects)
 				h.ready = true
 				if h.timer != nil {
 					h.timer.Stop()
@@ -183,14 +191,13 @@ func (h *battleStageHandle) apply(stage BattleStageModel) {
 	} else {
 		h.nextSeq = stage.Scene.Seq
 	}
+	stage.Effects.Seq = h.nextSeq
 	h.current = stage
 	if h.bridge == nil || !h.alive {
 		return
 	}
 	_ = h.bridge.Scene(stage.Scene)
-	if stage.Effects.Shake != nil {
-		_ = h.bridge.Effects(stage.Effects)
-	}
+	_ = h.bridge.Effects(stage.Effects)
 }
 
 func (h *battleStageHandle) dispose() {

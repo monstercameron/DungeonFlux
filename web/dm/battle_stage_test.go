@@ -41,11 +41,11 @@ func TestBattleStageFromViewMapsWoodedPathTokensAndCamera(t *testing.T) {
 
 func TestBattleStageFromViewMapsCameraTimingAndShake(t *testing.T) {
 	view := &dungeonfluxv1.DMView{Battlefield: &dungeonfluxv1.Battlefield{
-		Mode: "SPLAT", Visible: true, SceneUrl: splat.WoodedPathSceneURL, Camera: &dungeonfluxv1.Camera{Preset: "IMPACT", FocusTokenId: "thrall", Follow: true, DurationMs: 250},
+		Mode: "SPLAT", Visible: true, SceneUrl: splat.WoodedPathSceneURL, Camera: &dungeonfluxv1.Camera{Preset: "IMPACT", FocusTokenId: "thrall", Follow: true, DurationMs: 250, Seq: 19},
 		Shake: &dungeonfluxv1.Shake{AmplitudePx: 12, DurationMs: 250, Seq: 4},
 	}}
 	got := BattleStageFromView(view, 3)
-	if got.Scene.Camera.Preset != "IMPACT" || got.Scene.Camera.FocusTokenID != "thrall" || got.Scene.Camera.DurationMS != 250 || got.Scene.Camera.Follow == nil || !*got.Scene.Camera.Follow {
+	if got.Scene.Camera.Seq != 19 || got.Scene.Camera.Preset != "IMPACT" || got.Scene.Camera.FocusTokenID != "thrall" || got.Scene.Camera.DurationMS != 250 || got.Scene.Camera.Follow == nil || !*got.Scene.Camera.Follow {
 		t.Fatalf("camera command = %#v", got.Scene.Camera)
 	}
 	if got.Effects.Shake == nil || got.Effects.Shake.AmplitudePX != 12 || got.Effects.Shake.DurationMS != 250 {
@@ -70,5 +70,26 @@ func TestBattleStageFromViewHonoursSplatProfileAndRejectsFlat(t *testing.T) {
 	flat := &dungeonfluxv1.DMView{Battlefield: &dungeonfluxv1.Battlefield{Mode: "FLAT"}}
 	if got := BattleStageFromView(flat, 1); got.Enabled {
 		t.Fatal("flat battlefield should disable the splat stage")
+	}
+}
+
+func TestBattleStageFromView_CinematicFocusPreservesBattlefieldPlacement(t *testing.T) {
+	view := &dungeonfluxv1.DMView{
+		Battlefield: &dungeonfluxv1.Battlefield{Mode: "SPLAT", Visible: true, SceneUrl: splat.WoodedPathSceneURL},
+		Tokens:      []*dungeonfluxv1.Token{{TokenId: "pc-1", Name: "Paladin", Cell: &dungeonfluxv1.Cell{C: 3, R: 0}, Clips: map[string]string{"idle": "/assets/hero-idle.mp4", "attack": "/assets/hero-attack.mp4"}}},
+	}
+	got := BattleStageFromView(view, 42)
+	if got.Effects.Seq != 42 || got.Effects.TiltShift == nil || !got.Effects.TiltShift.Enabled || got.Effects.TiltShift.Band < 0.4 {
+		t.Fatalf("battle must keep its central action sharp: %#v", got.Effects)
+	}
+	if got.Effects.ColorGrade == nil || got.Effects.ColorGrade.Theme != "harbor" || got.Effects.ColorGrade.Strength != 1 {
+		t.Fatalf("missing authored grade: %#v", got.Effects.ColorGrade)
+	}
+	if len(got.Scene.Tokens) != 1 || got.Scene.Tokens[0].Cell != (splat.Cell{3, 0}) || got.Scene.Tokens[0].Clips["idle"] != "/assets/hero-idle.mp4" {
+		t.Fatalf("hero must use authoritative cell and generated animation: %#v", got.Scene.Tokens)
+	}
+	view.Battlefield.SceneUrl = "/custom.json"
+	if BattleStageFromView(view, 43).Effects.ColorGrade != nil {
+		t.Fatal("custom worlds must retain their own authored color grade")
 	}
 }

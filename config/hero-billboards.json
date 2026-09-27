@@ -1,0 +1,60 @@
+{
+  "model": "bytedance/seedance-2.0/fast/reference-to-video",
+  "battlefield_scene": "/splat/scenes/64bb46d5.json",
+  "battlefield_reference": "level_still_64bb46d5_tactical",
+  "estimated_cost_usd": 2.3,
+  "heroes": [
+    {
+      "seat": 1,
+      "class": "paladin",
+      "reference_sheet_sha256": "fdc8b409acfbc38a3dd694d4240c55ec3f584206bd221b494066119f412e70ea",
+      "reference_crops_sha256": [
+        "18b0742edde6592444ba89cf13be2148b635439fe7e0eca6c4b106a33c21ccb4",
+        "fa1997b152eb99c4b7fca4430abef667c180c25f70b3f3124842314cd38534ba"
+      ],
+      "clips": [
+        {
+          "action": "idle",
+          "sha256": "961fb0422d98ed3174783e0120d82af722ddbbb434edfb65d16e447b10230244",
+          "duration_ms": 4000,
+          "cache_key": "b8d8d380be105182bf6ec191b1b7c01ee765383df39f9e5bc49007e8b19d9487"
+        },
+        {
+          "action": "attack",
+          "sha256": "fa128eea7c980070307aa0f6dc72fdbe63622694812dd71b6c467a5915f923e8",
+          "duration_ms": 4000,
+          "cache_key": "fad10aa128fa699ee1f02b095fc255d9e109872d6d821ff52b83290e5fe66fda"
+        },
+        {
+          "action": "hit",
+          "sha256": "e2f6568e7efd25acdde1aab7f7eea36f47b57d973ab6261e07dd4d78fec1b478",
+          "duration_ms": 4000,
+          "cache_key": "1ade56cbdcccccb91d6a4d03187184def0c5aaf6412abac97b496e6def51a1e4"
+        }
+      ]
+    },
+    {
+      "seat": 2,
+      "class": "rogue",
+      "reference_sheet_sha256": "bb9c3f53393282e7fdf7bebe9c63513af7314ad40e1d588b32c1ba3ba31b24e2",
+      "reference_crops_sha256": [
+        "8268eb129b35a2565077195a0174cf75fe372cd10b66c2358135a96d11e7e98a",
+        "f144b271f0f599f7f3f4571a987d89919c85191dcf12e0472b3a88fe970a1484"
+      ],
+      "clips": [
+        {
+          "action": "idle",
+          "sha256": "84c8c92e9eb2b41a4790ca9e0c0c0ffe0b73dad0860d5cc459bdb2a5224bc4d4",
+          "duration_ms": 4000,
+          "cache_key": "5a206e58c39dc043c14ed59a8d6771f2b64cf7c301a8be8719697caee991ba95"
+        },
+        {
+          "action": "attack",
+          "sha256": "2c1167f7244b6e355c22fe80909c516eaa0ea915d99571863ab57b1a308c2b72",
+          "duration_ms": 4000,
+          "cache_key": "120a7a8b1c17f619b6431b62d0863e169e63e13eb0caace8c717faed4fd15490"
+        }
+      ]
+    }
+  ]
+}

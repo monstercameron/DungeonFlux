@@ -143,3 +143,35 @@ func TestPhoneRender_LatePortraitPreservesSheetTab(t *testing.T) {
 		t.Fatal("art arrival reset the character sheet tab")
 	}
 }
+
+func TestPhoneRender_CreationStatsAndLatePortrait(t *testing.T) {
+	SetArtSource(nil)
+	t.Cleanup(func() { SetArtSource(nil) })
+	fixture := render.New(t)
+	models := renderTestModels()
+	preview, _ := Preview("creation-rolled")
+	models.creation.ApplyScreenState(&df.ScreenState{Phase: preview.View.Phase, View: &df.ScreenState_Phone{Phone: preview.View.Phone}})
+	var repaint func(int)
+	root := func() ui.Node {
+		version := ui.UseState(0)
+		repaint = version.Set
+		return renderPhoneScreen(ScreenCreate, models, "en", preview.View, PhoneTabPlay, nil, ui.Handler{})
+	}
+	fixture.Render(ui.CreateElement(root))
+	if !strings.Contains(fixture.Text(), "HP 10") || !strings.Contains(fixture.Text(), "AC 14") || !strings.Contains(fixture.Text(), "DEX") {
+		t.Fatal("missing rolled stats")
+	}
+	SetArtSource(missingGenderArt{})
+	ArtChanged()
+	repaint(1)
+	found := false
+	for _, img := range fixture.AllByTag("img") {
+		if img.Attr("alt") == "Astra Vale" && img.Attr("src") == "blob:crest" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("late hero portrait did not load")
+	}
+	fixture.ByRole("button", "Ready")
+}

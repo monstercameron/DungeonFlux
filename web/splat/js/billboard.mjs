@@ -20,8 +20,9 @@ uniform sampler2D uVideo;
 varying vec2 vUv0;
 void main(void) {
   vec4 color = texture2D(uVideo, vUv0);
-  float green = color.g - max(color.r, color.b);
-  float keep = 1.0 - smoothstep(0.10, 0.20, green);
+  // Normalize dominance so dark green floor shadows key out as well.
+  float green = (color.g - max(color.r, color.b)) / max(color.g, 0.05);
+  float keep = 1.0 - smoothstep(0.18, 0.32, green);
   if (keep < 0.5) discard;
   color.g = min(color.g, max(color.r, color.b) + 0.03);
   gl_FragColor = vec4(color.rgb, 1.0);

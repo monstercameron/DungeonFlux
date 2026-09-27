@@ -33,7 +33,7 @@ void main(void) {
   float fill = (1.0 - smoothstep(0.0, 0.6, dist)) * 0.22;
   float alpha = clamp(max(fill, ringEdge * 0.85), 0.0, 0.85) * ring + ringEdge * 0.85;
   if (dist > 0.92) discard;
-  gl_FragColor = vec4(uColor, clamp(alpha, 0.0, 0.85));
+  gl_FragColor = vec4(uColor, clamp(alpha, 0.0, 0.85) * 0.5);
 }`;
 
 function makeBaseMesh(pc, app) {
@@ -46,7 +46,7 @@ function makeBaseMesh(pc, app) {
   return mesh;
 }
 
-const BASE_DIAMETER_RATIO = 1.5;
+const BASE_DIAMETER_RATIO = 1.15;
 const BASE_LIFT_M = 0.015;
 
 /**

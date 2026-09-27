@@ -39,7 +39,7 @@ func CombatComponent(view *dungeonfluxv1.DMView, sequence ...uint64) router.Comp
 				handle.apply(stage)
 			}
 			return nil
-		}, stage.Scene.Seq, stage.Scene.Visible, stage.Scene.Camera.FocusTokenID, stageSnapshotKey(stage))
+		}, stage.Scene.Seq, stage.Scene.Visible, stage.Scene.Camera.FocusTokenID, stage.Scene.Camera.Seq, stageSnapshotKey(stage))
 		children := make([]ui.Node, 0, 4)
 		if stage.Enabled {
 			// No width/height attributes and no opacity here: PlayCanvas sizes the
@@ -105,7 +105,11 @@ func combatInitiativeStrip(locale string, model CombatModel) ui.Node {
 			html.Img(html.Props{Src: portrait, Alt: turn.Name, Style: map[string]string{"width": "46px", "height": "46px", "border-radius": "50%", "object-fit": "cover", "border": ring, "box-shadow": "0 4px 10px rgba(0,0,0,.5)"}}),
 		))
 	}
-	return html.Div(html.Props{Class: "df-dm-combat-initiative", Role: "list", Style: map[string]string{"position": "absolute", "left": "460px", "right": "460px", "top": "255px", "display": "flex", "align-items": "center", "justify-content": "center", "gap": "12px", "padding": "8px 18px", "border": "1px solid rgba(184,137,58,.5)", "border-radius": "10px", "background": "rgba(12,18,28,.72)"}}, items...)
+	top := "152px"
+	if model.Timer.TotalMS > 0 {
+		top = "255px"
+	}
+	return html.Div(html.Props{Class: "df-dm-combat-initiative", Role: "list", Style: map[string]string{"position": "absolute", "left": "700px", "right": "700px", "top": top, "display": "flex", "align-items": "center", "justify-content": "center", "gap": "12px", "padding": "8px 18px", "border": "1px solid rgba(184,137,58,.5)", "border-radius": "10px", "background": "rgba(12,18,28,.72)"}}, items...)
 }
 
 func combatGrid(segments []CombatSegment) ui.Node {
