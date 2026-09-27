@@ -63,6 +63,57 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: live HTML requests bypass downstream conditional caching, normal assets retain caching, regression tests pass, and the running supervisor injects the script on an existing client URL.
   status: done 44d5f7d; pushed; tooling coverage 71.5%; original host URL now contains reload module
 
+- [x] QA-010 · Make host Splat selection authoritative and reversible
+  why: The host changes local state for an unsupported command, so it cannot switch the actual battlefield renderer or restore it.
+  lane: ORCH (Codex) · paths: `internal/domain/view.go`, `internal/game/state.go`, `internal/game/game.go`, `internal/game/splat_policy.go`, `internal/game/splat_policy_test.go`, `internal/wire/wire.go`, `proto/dungeonflux/v1/common.proto`, `gen/dungeonflux/v1/common.pb.go`, `internal/api/host.go`, `internal/api/project.go`, `internal/api/host_splat_test.go`, `web/host/model.go`, `web/host/model_test.go`, `web/host/mount_wasm.go`, `web/dm/combat_wasm.go`, `docs/devlog.html` · depends: QA-007
+  done when: explicit on/off commands change battlefield mode, configured default and missing-scene cases are handled, host snapshots and pressed state remain authoritative across reload, and native/WASM gates plus live combat switching pass.
+  status: done 6133adb; pushed; game 94.2%, API 86.4%, host 82.1%, DM 90.9%; paused live off/reload/on verified
+
+- [ ] QA-011 · Connect renderer readiness and failure reports to battlefield fallback
+  why: The tested BattlefieldReports helper is not used by the root engine, and the DM renderer does not report its readiness or failure to that policy.
+  lane: ORCH (Codex) · paths: pending runtime and client breakdown · depends: QA-010
+  done when: renderer initialization and failure reach engine policy, fallback selection is replayable, retries are deliberate, and reset/reconnect tests plus visual playtests pass.
+  status: open; separate from the host's requested renderer preference
+
+- [x] QA-012 · Keep development refreshes from landing on a starting-server page
+  why: A player tab automatically reloaded during a successful rebuild and remained on the plain server starting response, which has no reload loop.
+  lane: ORCH (Codex) · paths: `scripts/devserver/live.go`, `scripts/devserver/live_test.go`, `scripts/devserver/live_ready.go`, `scripts/devserver/live_ready_test.go`, `scripts/devserver/supervisor.go`, `web/splat/js/dev_reload.mjs`, `web/splat/js/dev_reload_test.mjs`, `docs/devlog.html` · depends: QA-009
+  done when: reload versions publish only after the child accepts requests, startup errors recover without manual refresh, and repeated rebuild browser tests pass.
+  status: done d690cf4; pushed; supervisor 72.5%; five JS tests pass; both player tabs recovered automatically over two source rebuilds
+
+- [ ] QA-013 · Preserve complete hero builds and cached art after creation timeout
+  why: A timed-out creation displayed an empty character sheet and combat used generic pixel figures instead of the cached reference-driven heroes.
+  lane: ORCH (Codex) · paths: pending creation, projection and sprite-selection investigation · depends: none
+  done when: timeout produces complete playable heroes, phone sheets show their stats, and the 3D fight uses appropriate cached hero assets.
+  status: open; reproduced during QA-010 rehearsal
+
+- [ ] QA-014 · Match the flat fallback to the active battlefield
+  why: Switching the outdoor 3D battle to flat mode shows indoor tavern art, a distorted grid, duplicate generic hero portraits and an emblem as the enemy token.
+  lane: ORCH (Codex) · paths: pending fallback-art and projection breakdown · depends: QA-010
+  done when: flat mode preserves location, positioning and character identity with a readable grid, and visual checks pass.
+  status: open; screenshot evidence from live paused combat
+
+- [x] QA-015 · Finalize and project both heroes on creation timeout or Skip
+  why: Bulk timeout leaves the player projections empty, misses already-rolled unlocked seats, and overwrites partial choices; Skip bypasses builds entirely.
+  lane: ORCH (Codex) · paths: `internal/game/phase/creation/creation.go`, `internal/game/phase/creation/timeout_test.go`, `internal/game/phase/phase.go`, `internal/game/phase/creation_finish.go`, `internal/game/phase/creation_finish_test.go`, `internal/game/phase/killcam_test.go`, `internal/game/phase/legal_test.go`, `internal/game/phase/view_combat_test.go`, `docs/devlog.html` · depends: none
+  done when: timeout and manual Skip finalize both heroes, retain player choices and rolled stats, publish full sheets before opening and combat, and regression tests plus the phase gates pass.
+  status: done aaf3ae7; pushed; phase 81.4%, creation 83.5%; game and simulator suites pass; live Skip with timers off publishes full sheet
+- [x] QA-016 · Persist prepared hero battle loops across resets and rebuilds
+  why: The generated loops were injected as per-run debug events, so every new room forgets them and falls back to pixel stand-ins despite files remaining on disk.
+  lane: ORCH (Codex) · paths: `internal/wire/billboards.go`, `internal/wire/billboards_cached.go`, `internal/wire/billboards_cached_test.go`, `internal/wire/manifest.go`, `artifacts/runtime/buildtime/manifest.json`, `artifacts/runtime/buildtime/assets/961fb0422d98ed3174783e0120d82af722ddbbb434edfb65d16e447b10230244.mp4`, `artifacts/runtime/buildtime/assets/fa128eea7c980070307aa0f6dc72fdbe63622694812dd71b6c467a5915f923e8.mp4`, `artifacts/runtime/buildtime/assets/e2f6568e7efd25acdde1aab7f7eea36f47b57d973ab6261e07dd4d78fec1b478.mp4`, `artifacts/runtime/buildtime/assets/84c8c92e9eb2b41a4790ca9e0c0c0ffe0b73dad0860d5cc459bdb2a5224bc4d4.mp4`, `artifacts/runtime/buildtime/assets/2c1167f7244b6e355c22fe80909c516eaa0ea915d99571863ab57b1a308c2b72.mp4`, `docs/devlog.html` · depends: BB-002, QA-015
+  done when: verified local clips load from the permanent manifest, matching hero class and battlefield select the prepared loops, live results override cached defaults, resets retain the cache, and unit gates plus visual combat checks pass with no generation calls.
+  status: done 7cce0f5; pushed with all five LFS assets; wire gate green; fresh-room and DM-reload visual checks show prepared heroes
+
+- [ ] QA-017 · Review phone sheet actions and unsubmitted creation choices
+  why: The sheet presents actions outside combat, and selecting Elf before host Skip still yields Human because the phone has not submitted the choice yet.
+  lane: ORCH (Codex) · paths: pending phone event-flow and control review · depends: QA-015
+  done when: every sheet action has a clear working behavior or an explicit unavailable state, and selected creation choices survive the deadline or visibly explain their submission boundary.
+  status: open; observed during live QA-015 validation
+- [x] QA-018 · Record the third audit checkpoint and verified visual repairs
+  why: Splat controls, complete hero sheets, persistent sprites and reload recovery need a durable ledger with honest remaining scope.
+  lane: ORCH (Codex) · paths: `TODOS.md` · depends: QA-010, QA-015, QA-016, QA-012
+  done when: all four repairs have pushed commit and gate references, fresh browser findings and remaining gaps are recorded, and the server stays available for review.
+  status: done (this commit); evidence artifacts/test/QA-AUDIT/checkpoint-03.json; full gate artifacts/test/ORCH/gate-20260927-052841.log green
 ### Kill cam (developer-directed single writer, 2026-09-27)
 
 - [x] KC-004 · Remove unused domain scaffolding exposed by the feature gate
