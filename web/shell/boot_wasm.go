@@ -13,6 +13,10 @@ import (
 func main() {
 	rememberBootQuery()
 	parseRouter := router.NewHistoryRouter(router.RouterOptions{DefaultRoute: string(RouteDM)})
+	// The router wraps every re-render in a view transition, and Watch updates
+	// arrive faster than one completes, so each skipped transition logs an
+	// unhandled "Transition was skipped" rejection. Screens animate themselves.
+	parseRouter.SetViewTransitions(false)
 	client, err := newBootClient()
 	if err != nil {
 		reportBootError(err)

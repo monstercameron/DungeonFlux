@@ -109,7 +109,7 @@ This builds `web\shell` for `GOOS=js GOARCH=wasm`, writes `artifacts\wasm\dungeo
 go build -o artifacts\build\dungeonflux.exe .\cmd\server
 .\artifacts\build\dungeonflux.exe -config config\fake.json -port 8446 -data-dir artifacts\runtime\local
 ```
-`config\fake.json` runs every model, image, video, STT, TTS, and sound adapter against local fakes, so it needs no keys. `cmd\server` also takes `-data-dir` (runtime data directory) and `-seed <hex>` (a fixed rehearsal seed). On start-up the server prints the dungeon master, host, and phone URLs, each with its own access token, and writes them under the run's data directory.
+`config\fake.json` runs every model, image, video, STT, TTS, and sound adapter against local fakes, so it needs no keys. It also turns on the `dfctl` debug listener; if `DF_DEBUG_TOKEN` is unset, the server generates a random token and writes it to `debug.token` in the data directory. `cmd\server` also takes `-data-dir` (runtime data directory) and `-seed <hex>` (a fixed rehearsal seed). On start-up the server prints the dungeon master, host, and phone URLs, each with its own access token, and writes them under the run's data directory.
 
 **4. Live vendors.** `config\demo.json` points every adapter at its live vendor (OpenAI, Gemini, Anthropic, Segmind, ElevenLabs) instead of a fake, and needs the matching `DF_*` keys loaded. Run it the same way, with `-config config\demo.json`.
 
@@ -123,13 +123,13 @@ go build -o artifacts\build\dungeonflux.exe .\cmd\server
 
 **7. `dfctl`, the debug CLI.** `dfctl` (`cmd\dfctl`) reads and drives a running server over gRPC, but only a server started with `server.debug=true` (`config\fake.json` has it on) on localhost. Its debug listener is the server's port plus 1000 (18101 to 19101 for a lane server; 8443 to 9443 for the human test server).
 ```powershell
-$env:DF_DEBUG_TOKEN = "<the token the server printed>"
-go run .\cmd\dfctl --addr localhost:19446 state
-go run .\cmd\dfctl --addr localhost:19446 view --seat 1
-go run .\cmd\dfctl --addr localhost:19446 legal --seat 1
-go run .\cmd\dfctl --addr localhost:19446 act --seat 1 persuade
-go run .\cmd\dfctl --addr localhost:19446 say --seat 1 "I ask about the lamplighter"
-go run .\cmd\dfctl --addr localhost:19446 dice force d20=17
+$env:DF_DEBUG_TOKEN = (Get-Content artifacts\runtime\local\debug.token)   # or the token you set before starting the server
+go run .\cmd\dfctl --addr localhost:9446 state
+go run .\cmd\dfctl --addr localhost:9446 view --seat 1
+go run .\cmd\dfctl --addr localhost:9446 legal --seat 1
+go run .\cmd\dfctl --addr localhost:9446 act --seat 1 persuade
+go run .\cmd\dfctl --addr localhost:9446 say --seat 1 "I ask about the lamplighter"
+go run .\cmd\dfctl --addr localhost:9446 dice force d20=17
 ```
 Write verbs never touch state directly; they send events through the engine, so every action lands in the event log and replays deterministically.
 
