@@ -45,6 +45,9 @@ func (m *Machine) stepHook(event domain.Event) (Result, error) {
 }
 
 func (m *Machine) stepCombat(event domain.Event) (Result, error) {
+	if result, handled, err := m.stepKillcam(event); handled {
+		return result, err
+	}
 	if result, handled, err := m.stepCombatDash(event); handled {
 		return result, err
 	}
@@ -53,7 +56,7 @@ func (m *Machine) stepCombat(event domain.Event) (Result, error) {
 		if err != nil {
 			return Result{}, err
 		}
-		if m.combat.Phase == combat.Done {
+		if m.combat.Phase == combat.Done && m.killcam.URL == "" {
 			m.syncCombatSeats()
 			return m.transition(eventCliffhanger, effects)
 		}
@@ -94,6 +97,7 @@ func (m *Machine) applyCombatAction(action domain.Act) ([]domain.Effect, error) 
 			}
 			if end.Outcome == combat.Slain {
 				effects = append(effects, combat.VictoryAudio(end.SlainBySeat, resolved)...)
+				effects = append(effects, m.beginKillcam(result.Seat, "victory")...)
 			}
 			return effects, nil
 		}
@@ -125,6 +129,9 @@ func (m *Machine) finishCombatTurn(startMS int) ([]domain.Effect, error) {
 		return nil, err
 	}
 	effects := combat.EnemyAudio(result, startMS)
+	if result.Outcome.Hit && result.Outcome.HPBefore > 0 && result.Outcome.HPAfter <= 0 {
+		effects = append(effects, m.beginKillcam(result.TargetSeat, "defeat")...)
+	}
 	if err := m.combat.EndEnemyTurn(); err != nil {
 		return nil, err
 	}
@@ -223,6 +230,7 @@ func (m *Machine) startHook() ([]domain.Effect, error) {
 }
 
 func (m *Machine) startCombat() error {
+	m.killcam = domain.KillCamView{}
 	var err error
 	config := partyCombatConfig(contentCombatConfig(m.oneShot.Encounter.Battlefield), m.creation.Seats())
 	m.combat, err = combat.New(config)

@@ -26,6 +26,7 @@ func NewWithDebug(oneShot domain.OneShot, seed []byte, debug bool, debugStart st
 // Step applies one envelope and returns data effects. It performs no I/O and
 // does not use the wall clock; the envelope supplies the logical time.
 func (s *State) Step(env domain.Envelope) domain.StepOut {
+	s.phase.SetTime(env.At)
 	s.at = int64(env.At)
 	if env.Event == nil {
 		return s.rejected("missing_event")

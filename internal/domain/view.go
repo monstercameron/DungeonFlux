@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"maps"
+
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 	"time"
 )
@@ -180,6 +182,7 @@ type View struct {
 	Dice        *DiceView
 	Battlefield *BattlefieldView
 	Combat      *CombatView
+	KillCam     KillCamView
 	Preload     []string
 	Callout     string
 	Music       MusicView
@@ -224,9 +227,7 @@ func cloneTokenViews(tokens []TokenView) {
 		tokens[index].Path = append([]Cell(nil), tokens[index].Path...)
 		if tokens[index].Clips != nil {
 			clips := make(map[string]AssetID, len(tokens[index].Clips))
-			for name, asset := range tokens[index].Clips {
-				clips[name] = asset
-			}
+			maps.Copy(clips, tokens[index].Clips)
 			tokens[index].Clips = clips
 		}
 	}

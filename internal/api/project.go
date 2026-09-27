@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"maps"
 	"math"
 	"sort"
 	"strconv"
@@ -55,9 +56,7 @@ const (
 // The reserved notice arguments are not rendered as user-facing text.
 func AttachLobbyMetadata(view domain.View, lobby LobbyProjection) domain.View {
 	args := make(map[string]string, len(view.Notice.Args)+3)
-	for key, value := range view.Notice.Args {
-		args[key] = value
-	}
+	maps.Copy(args, view.Notice.Args)
 	args[lobbyRoomCodeArg] = lobby.RoomCode
 	args[lobbyJoinURLArg] = lobby.JoinURL
 	args[lobbyQRURLArg] = lobby.QRURL
@@ -94,6 +93,7 @@ func projectDM(view domain.View, lobby ...LobbyProjection) *df.DMView {
 		Preload:       append([]string(nil), view.Preload...),
 		Music:         projectMusic(view.Music),
 		Seats:         projectLobbySeats(view.Seats),
+		KillCam:       projectKillcam(view.KillCam),
 	}
 	if len(lobby) > 0 {
 		out.Lobby = projectLobby(lobby[0])
@@ -274,9 +274,7 @@ func projectCharacterBuild(character *domain.Character, card *domain.BuildCard) 
 	}
 	build.SaveProfs = append([]string(nil), stats.SaveProficiencies...)
 	build.SkillProfs = make(map[string]string, len(stats.SkillProficiencies))
-	for skill, level := range stats.SkillProficiencies {
-		build.SkillProfs[skill] = level
-	}
+	maps.Copy(build.SkillProfs, stats.SkillProficiencies)
 	build.Hp, build.HpMax, build.Ac = int32(stats.HP), int32(stats.MaxHP), int32(stats.AC)
 	build.AttackName, build.AttackDice, build.AttackDamageType, build.AttackBonus = stats.AttackName, stats.AttackDice, stats.AttackDamageType, int32(stats.AttackBonus)
 	build.Equipment = projectEquipment(stats.Equipment)

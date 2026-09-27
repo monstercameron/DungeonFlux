@@ -2,6 +2,7 @@ package phase
 
 import (
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
 
@@ -20,6 +21,7 @@ func (m Machine) View() domain.View {
 		spotlight = domain.SeatID(m.combat.TurnSeat)
 	}
 	view := domain.View{Path: m.State(), Paused: m.paused, Spotlight: spotlight, Seats: m.viewSeats()}
+	m.decorateKillcam(&view)
 	if m.State() == vocab.StateOpening {
 		openingView := m.opening.View()
 		openingView.Path, openingView.Paused = m.State(), m.paused
@@ -106,6 +108,9 @@ func (m Machine) LegalMoveViews(seat domain.SeatID) []domain.MoveView {
 }
 
 func (m Machine) combatMoves(seat domain.SeatID, card domain.SeatView) []domain.MoveView {
+	if m.killcam.URL != "" {
+		return nil
+	}
 	active := m.combat.TurnSeat == int(seat) && m.combat.Phase == "pc_turn"
 	alive := m.combat.Thrall.HP > 0
 	waiting := waitingReason(domain.SeatID(m.combat.TurnSeat))
@@ -201,9 +206,7 @@ func cloneBattlefieldCameras(source map[string]domain.CameraDef) map[string]doma
 		return nil
 	}
 	out := make(map[string]domain.CameraDef, len(source))
-	for name, camera := range source {
-		out[name] = camera
-	}
+	maps.Copy(out, source)
 	return out
 }
 
@@ -250,9 +253,7 @@ func cloneStringMap(values map[string]string) map[string]string {
 		return nil
 	}
 	clone := make(map[string]string, len(values))
-	for key, value := range values {
-		clone[key] = value
-	}
+	maps.Copy(clone, values)
 	return clone
 }
 

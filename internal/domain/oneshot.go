@@ -6,10 +6,11 @@ type Beat struct {
 	Leads []string `json:"leads,omitempty"`
 }
 type OneShot struct {
-	ID        string         `json:"id"`
-	Title     string         `json:"title"`
-	NPCs      []NPC          `json:"npcs"`
-	Beats     []Beat         `json:"beats"`
-	Encounter Encounter      `json:"encounter"`
-	Music     MusicCatalogue `json:"music"`
+	ID        string           `json:"id"`
+	Title     string           `json:"title"`
+	NPCs      []NPC            `json:"npcs"`
+	Beats     []Beat           `json:"beats"`
+	Encounter Encounter        `json:"encounter"`
+	Music     MusicCatalogue   `json:"music"`
+	KillCams  map[string]Asset `json:"killcams,omitempty"`
 }

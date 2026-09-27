@@ -73,6 +73,9 @@ type Machine struct {
 	hook                                     hook.Machine
 	combat                                   combat.State
 	combatDice                               *dice.Roller
+	killcam                                  domain.KillCamView
+	killcamTime, now                         time.Duration
+	killcamSequence                          uint64
 	cliffhanger                              cliffhanger.Machine
 }
 

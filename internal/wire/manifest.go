@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -65,6 +66,7 @@ func LoadManifest(path string, logger *slog.Logger) (ManifestResult, error) {
 		return ManifestResult{}, fmt.Errorf("build-time manifest: unsupported version %d", manifest.Version)
 	}
 	applyManifest(&story, manifest, filepath.Dir(path), logger)
+	applyKillcams(&story, manifest, filepath.Dir(path))
 	return ManifestResult{OneShot: story, Hash: hex.EncodeToString(digest[:])}, nil
 }
 
@@ -127,9 +129,7 @@ func cloneStrings(input map[string]string) map[string]string {
 		return nil
 	}
 	output := make(map[string]string, len(input))
-	for key, value := range input {
-		output[key] = value
-	}
+	maps.Copy(output, input)
 	return output
 }
 
