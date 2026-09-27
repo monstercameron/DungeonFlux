@@ -320,7 +320,32 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: website scripts pass, game scripts outside web/splat still fail, prefix lookalikes fail, and the architecture gate passes.
   status: done (this commit); architecture gate artifacts/test/QA-052/gate-20260927-092408.log green, 75.0% coverage; game and directory-prefix boundary regression tests pass.
 
+- [x] QA-053 · Preserve creation time remaining on reconnect
+  why: Watch replays its cached creation snapshot to reconnecting clients, resetting their visible countdown even though the authoritative timeout continues.
+  lane: ORCH (Codex) · paths: `internal/api/watch_killcam.go`, `internal/api/watch_creation_timer_test.go`, `TODOS.md`, `docs/devlog.html` · depends: EMK-010
+  done when: reconnecting phones and TV receive elapsed-adjusted creation time, frozen/off timers remain unchanged, values clamp at zero, cached snapshots are not mutated, and API gate passes.
+  status: done (this commit); API gate artifacts/test/QA-053/gate-20260927-093332.log green, coverage 86.9%; independent pr9_review source review accepted.
+
 ### Kill cam (developer-directed single writer, 2026-09-27)
+
+- [ ] KC-010 · Generate opponent-facing idle, walk and attack loops from hero references
+  why: The developer requested both demo heroes facing the villain with coherent animation poses and first/last frame control where the vendor supports it.
+  lane: battle_animation · paths: `internal/media/billboard_prompt.go`, `internal/media/billboard_prompt_test.go`, `internal/media/billboard_generator_test.go`, `scripts/buildtime/pcloops.go`, `scripts/buildtime/pcloops_test.go`, `scripts/buildtime/billboards.go`, `scripts/buildtime/billboards_test.go` · depends: QA-014
+  done when: hero and villain facing are distinct, walk stays in place, requested endpoint support is verified, manifest metadata preserves runtime selection, and relevant gates pass.
+  status: claimed battle_animation 2026-09-27; parent records observed worker paths while awaiting worker proposal
+
+- [ ] KC-011 · Play walk loops during authoritative battlefield movement
+  why: The renderer previously switched only attack/hit/fall clips and could not display the newly requested walk animation.
+  lane: battle_animation · paths: `web/splat/js/token.mjs`, `web/splat/js/token_sprite.mjs`, `web/splat/js/token.test.mjs`, `web/splat/js/token_sprite.test.mjs` · depends: KC-010
+  done when: walk loops while queued movement is active, idle returns on arrival, paused/reduced-motion paths stay coherent, existing grading and tilt-shift stay intact, and tests plus browser playtest pass.
+  status: claimed battle_animation 2026-09-27
+
+- [ ] KC-012 · Cache regenerated hero loops and prove both kill-cam outcomes
+  why: The three-minute demo must play prepared hero animations and cinematics without waiting for paid generation during combat.
+  lane: battle_animation · paths: `artifacts/runtime/buildtime/manifest.json`, `artifacts/runtime/buildtime/assets/*.mp4` (only new hero-loop hashes listed in hand-in) · depends: KC-010, KC-011
+  done when: both hero reference identities have idle/walk/attack cached, visual review records endpoint continuity limits, runtime resolves each clip, and hero/villain kills reach the cached four-second cinematic without lengthening the combat cap.
+  status: claimed battle_animation 2026-09-27
+
 
 - [x] KC-004 · Remove unused domain scaffolding exposed by the feature gate
   why: Staticcheck rejects two unused placeholder types, preventing the shared combat contract gate from passing.
@@ -3476,11 +3501,11 @@ Issues from the tester's playtests on the Droplet (`notes/emmaka/2026-09-27-play
   done when: the target card is informational, exactly one Attack control remains, and isolated gate plus browser playtest pass.
   status: done 6ac99fe; isolated gate artifacts/test/EMK004/source-run-01/artifacts/test/EMK004/gate-20260927-090412.log green, phone 86.4%; reviewer browser preview shows informational target and one Strike thrall control. Todo recorded late after worker committed before hand-in.
 
-- [ ] EMK-005 · Show the authoritative creation countdown
+- [x] EMK-005 · Show the authoritative creation countdown
   why: PR #9 reports the character picker disappearing without a visible deadline; QA-015 already builds missing heroes on timeout, but players still need to see the remaining choice time.
   lane: PR9 review · paths: `internal/game/phase/phase.go`, `internal/game/phase/support.go`, `internal/game/phase/view.go`, `internal/game/phase/creation_timer.go`, `internal/game/phase/creation_timer_test.go`, `internal/game/phase/creation_countdown_test.go`, `internal/game/phase/killcam.go`, `internal/api/project_creation_test.go`, `web/phone/create.go`, `web/phone/create_test.go`, `web/phone/create_view_wasm.go`, `web/phone/creation_timer.go`, `web/phone/creation_timer_test.go`, `web/phone/creation_timer_wasm.go` · depends: QA-015
   done when: the existing domain/proto timer projects the real 30-second creation deadline, phones display it counting down, Pause freezes it, Resume continues it, timers-off hides the deadline, and timeout still builds missing heroes; lane gate and browser verification pass.
-  status: claimed pr9_review 2026-09-27
+  status: done 40996a0 plus fix-forward 20be79c; parent review gate green artifacts/test/EMK010-REVIEW/gate-20260927-093342.log.
 
 - [ ] EMK-006 · combat long enough to play, with a victory beat
   why: The thrall (12 HP, AC 8) dies to two hits, so every fight is one round and cuts straight to the cliffhanger (game B); a 30 s combat cap will also cut slower fights short (playtest items 5 and 6).
@@ -3506,8 +3531,8 @@ Issues from the tester's playtests on the Droplet (`notes/emmaka/2026-09-27-play
   done when: each line tries ElevenLabs → OpenAI TTS → the matching canned line → TV browser speechSynthesis (distinct pitch/rate per NPC); with the ElevenLabs key removed a full run is audible and the log names the fallback used.
   status: open
 
-- [ ] EMK-010 · Make the creation countdown tick on idle phones and TV
+- [x] EMK-010 · Make the creation countdown tick on idle phones and TV
   why: Review of EMK-005 found that a static server snapshot stayed at 30 seconds while idle and the TV creation view did not render it.
-  lane: PR9 review · paths: `web/phone/create_view_wasm.go`, `web/phone/creation_timer_wasm.go`, `web/phone/creation_timer.go`, `web/phone/creation_timer_test.go`, `web/dm/creation.go`, `web/dm/creation_wasm.go`, `web/dm/creation_test.go`, `web/dm/creation_timer_wasm.go`, `web/dm/creation_timer_wasm_test.go` · depends: EMK-005
+  lane: PR9 review · paths: `internal/game/phase/support.go`, `internal/game/phase/creation_countdown_test.go`, `web/phone/create_view_wasm.go`, `web/phone/creation_timer_wasm.go`, `web/phone/creation_timer.go`, `web/phone/creation_timer_test.go`, `web/dm/creation.go`, `web/dm/creation_wasm.go`, `web/dm/creation_test.go`, `web/dm/creation_timer_wasm.go`, `web/dm/creation_timer_wasm_test.go`, `web/dm/layers_wasm.go` · depends: EMK-005
   done when: the real creation screen counts down without input on phone and TV, pause freezes, resume continues, timers-off hides it, and lane gates plus browser playtests pass.
-  status: claimed pr9_review 2026-09-27; fixes forward 40996a0, whose review remains incomplete until this todo passes
+  status: done 20be79c; parent gate artifacts/test/EMK010-REVIEW/gate-20260927-093342.log green (phase 81.0%, DM 91.4%, phone 86.4%); focused WASM tests pass; real isolated browser AX evidence showed idle tick, pause and resume on both clients. Timers-off covered by unit tests; reconnect corrected separately by QA-053.

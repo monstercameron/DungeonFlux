@@ -87,6 +87,12 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-creation-countdown-reconnect">
+  <div class="entry-head"><time datetime="2026-09-27T09:36-04:00">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">ORCH</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-creation-countdown-reconnect">A reconnect must not restart the visible deadline</a></h2>
+  <p>PR #9's creation countdown first exposed a static client display, then a separate reconnect problem. EMK-010 adds local monotonic display clocks on phone and TV and starts the creation deadline on rehearsal skips. The reviewer observed both clients ticking without input, holding at 12 seconds while paused, and continuing after resume. A newly connected client still received the last cached server snapshot, which could say 30 seconds after seven seconds had passed. QA-053 now subtracts time since publication from active creation timers on a deep copy, preserving frozen and disabled timers and clamping at zero. Tests cover both client projections and repeated reconnects. API coverage is 86.9%; the independent creation gate also passes.</p>
+</li>
+
 <li class="entry" data-kind="issue" id="e-20260927-offline-reply-caption">
   <div class="entry-head"><time datetime="2026-09-27T09:27-04:00">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">ORCH</span></div>
   <h2 class="entry-title"><a href="#e-20260927-offline-reply-caption">Match the offline reply to its recording</a></h2>
