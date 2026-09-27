@@ -44,3 +44,24 @@ func TestListenClient_WithDebugNilIsSafe(t *testing.T) {
 	}
 	NewListenClient(nil).WithDebug(nil).report("ignored")
 }
+
+func TestReceiveLog_cancellationReleasesPendingCounters(t *testing.T) {
+	for _, all := range []bool{false, true} {
+		t.Run(map[bool]string{false: "one", true: "all"}[all], func(t *testing.T) {
+			var log ReceiveLog
+			log.Observe(frameMessage("one", 480, false))
+			log.Observe(frameMessage("two", 240, false))
+			log.Observe(&dungeonfluxv1.AudioMessage{Message: &dungeonfluxv1.AudioMessage_Cancel{Cancel: &dungeonfluxv1.AudioCancel{UtteranceId: "one", All: all}}})
+			if got := log.Pending(); (all && len(got) != 0) || (!all && (len(got) != 1 || got[0] != "two")) {
+				t.Fatalf("pending after cancellation=%v", got)
+			}
+			if len(log.frames) != len(log.bytes) {
+				t.Fatal("byte counters outlived frame counters")
+			}
+			line := log.Observe(frameMessage("one", 120, true))
+			if !strings.Contains(line, "1 frames, 120 bytes") {
+				t.Fatalf("canceled counters contaminated next line: %s", line)
+			}
+		})
+	}
+}

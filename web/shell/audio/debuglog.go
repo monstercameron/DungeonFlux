@@ -34,6 +34,13 @@ func (r *ReceiveLog) Observe(message *dungeonfluxv1.AudioMessage) string {
 		return line
 	}
 	if cancel := message.GetCancel(); cancel != nil {
+		if cancel.GetAll() {
+			clear(r.frames)
+			clear(r.bytes)
+		} else {
+			delete(r.frames, cancel.GetUtteranceId())
+			delete(r.bytes, cancel.GetUtteranceId())
+		}
 		return fmt.Sprintf("[audio] cancel received for %s (all=%v)", cancel.GetUtteranceId(), cancel.GetAll())
 	}
 	return ""
