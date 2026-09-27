@@ -84,16 +84,17 @@ func projectDM(view domain.View, lobby ...LobbyProjection) *df.DMView {
 		}
 	}
 	out := &df.DMView{
-		BackgroundUrl: view.Scene.BackgroundURL,
-		Layers:        projectLayers(view.Scene.Layers),
-		Narration:     projectNarration(view.Scene),
-		Subtitle:      &df.Subtitle{Text: view.Scene.Subtitle},
-		Callout:       view.Callout,
-		BuildCards:    projectBuildCards(view.Seats),
-		Preload:       append([]string(nil), view.Preload...),
-		Music:         projectMusic(view.Music),
-		Seats:         projectLobbySeats(view.Seats),
-		KillCam:       projectKillcam(view.KillCam),
+		BackgroundUrl:   view.Scene.BackgroundURL,
+		Layers:          projectLayers(view.Scene.Layers),
+		Narration:       projectNarration(view.Scene),
+		Subtitle:        &df.Subtitle{Text: view.Scene.Subtitle},
+		Callout:         view.Callout,
+		BuildCards:      projectBuildCards(view.Seats),
+		CreationChoices: projectCreationChoices(view.Seats),
+		Preload:         append([]string(nil), view.Preload...),
+		Music:           projectMusic(view.Music),
+		Seats:           projectLobbySeats(view.Seats),
+		KillCam:         projectKillcam(view.KillCam),
 	}
 	if len(lobby) > 0 {
 		out.Lobby = projectLobby(lobby[0])
@@ -357,6 +358,25 @@ func projectBuildCards(seats []domain.SeatView) []*df.BuildCard {
 		}
 		out = append(out, &df.BuildCard{PlayerNumber: int32(seat.Build.PlayerNumber), Name: seat.Build.Name,
 			ClassName: seat.Build.Class, PortraitUrl: heroPortrait(string(seat.Build.Portrait), species, gender), Character: character, Ready: seatReady(seat)})
+	}
+	return out
+}
+
+// projectCreationChoices preserves both players' live picks, including a
+// partially selected seat that has no BuildCard yet.
+func projectCreationChoices(seats []domain.SeatView) []*df.CreationChoice {
+	out := make([]*df.CreationChoice, 0, len(seats))
+	for _, seat := range seats {
+		choice := seat.Creation
+		if choice == nil {
+			choice = &domain.CreationChoiceView{PlayerNumber: seat.PlayerNumber}
+		}
+		out = append(out, &df.CreationChoice{
+			PlayerNumber: int32(choice.PlayerNumber), PlayerName: choice.PlayerName,
+			Name: choice.Name, Species: choice.Species, Gender: choice.Gender,
+			ClassName: choice.Class, PortraitUrl: heroPortrait(string(choice.Portrait), choice.Species, choice.Gender),
+			Rolled: choice.Rolled, Ready: choice.Ready,
+		})
 	}
 	return out
 }
