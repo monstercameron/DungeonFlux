@@ -138,11 +138,20 @@ func (m *DiceModel) ApplyScreenState(state *df.ScreenState) DiceSnapshot {
 	return m.Snapshot()
 }
 
+// screenDice reads the dice snapshot a phone should render. A live phone
+// screen carries its own PhoneView.Dice (INT-009); a DM-shaped preview or
+// debug fixture that has no phone view falls back to the DM's dice.
 func screenDice(state *df.ScreenState) *df.Dice {
-	if state == nil || state.GetDm() == nil {
+	if state == nil {
 		return nil
 	}
-	return state.GetDm().GetDice()
+	if phone := state.GetPhone(); phone != nil {
+		return phone.GetDice()
+	}
+	if dm := state.GetDm(); dm != nil {
+		return dm.GetDice()
+	}
+	return nil
 }
 
 func (m *DiceModel) applyDice(dice *df.Dice) {
