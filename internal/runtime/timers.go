@@ -12,15 +12,16 @@ import (
 )
 
 type timerEntry struct {
-	name       string
-	after      time.Duration
-	remaining  time.Duration
-	deadline   time.Time
-	pausable   bool
-	paused     bool
-	scope      domain.Scope
-	timer      clock.Timer
-	generation uint64
+	name              string
+	after             time.Duration
+	remaining         time.Duration
+	deadline          time.Time
+	pausable          bool
+	paused            bool
+	scope             domain.Scope
+	timer             clock.Timer
+	generation        uint64
+	runtimeGeneration uint64
 }
 
 // Timers manages room timers using an injected clock. Pausable timers retain
@@ -32,6 +33,7 @@ type Timers struct {
 	byName                   map[string]*timerEntry
 	turnTimersEnabled        bool
 	defaultTurnTimersEnabled bool
+	runtimeGeneration        uint64
 }
 
 // NewTimers constructs a timer set.
@@ -91,7 +93,7 @@ func (t *Timers) Start(effect domain.StartTimer) {
 	entry := &timerEntry{
 		name: effect.Name, after: nonNegative(effect.After), remaining: nonNegative(effect.After),
 		deadline: t.clk.Now().Add(nonNegative(effect.After)), pausable: effect.Pausable, scope: effect.Scope,
-		generation: 1,
+		generation: 1, runtimeGeneration: t.runtimeGeneration,
 	}
 	t.byName[entry.name] = entry
 	t.armLocked(entry)
@@ -193,7 +195,7 @@ func (t *Timers) fire(armed *timerEntry, generation uint64) {
 	scope := entry.scope
 	t.mu.Unlock()
 	if t.inbox != nil {
-		t.inbox.Post(context.Background(), domain.Envelope{Scope: scope, Event: domain.TimerFired{Name: name}})
+		t.inbox.Post(context.Background(), domain.Envelope{Scope: scope, Event: domain.TimerFired{Name: name}, RuntimeGeneration: entry.runtimeGeneration})
 	}
 }
 

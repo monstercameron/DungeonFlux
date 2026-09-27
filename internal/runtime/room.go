@@ -19,21 +19,22 @@ const rollResolvedAfter = 3 * time.Second
 
 // Room serializes events for one game engine.
 type Room struct {
-	eng      ports.Engine
-	inbox    chan domain.Envelope
-	clk      clock.Clock
-	start    time.Time
-	log      ports.EventLog
-	pub      func(domain.View)
-	logger   *slog.Logger
-	runner   roomRunner
-	timers   *Timers
-	scopes   *ScopeTree
-	state    *RoomState
-	newGame  func([]byte) ports.Engine
-	seq      uint64
-	run      domain.RunID
-	startRun StartRunFunc
+	eng        ports.Engine
+	inbox      chan domain.Envelope
+	clk        clock.Clock
+	start      time.Time
+	log        ports.EventLog
+	pub        func(domain.View)
+	logger     *slog.Logger
+	runner     roomRunner
+	timers     *Timers
+	scopes     *ScopeTree
+	state      *RoomState
+	newGame    func([]byte) ports.Engine
+	seq        uint64
+	run        domain.RunID
+	startRun   StartRunFunc
+	generation uint64
 }
 
 // RoomOption configures the runtime services owned by a Room.
@@ -128,24 +129,26 @@ func NewRoom(eng ports.Engine, clk clock.Clock, eventLog ports.EventLog, logger 
 	if options.runner == nil {
 		options.runner = NewRunner(inbox, logger)
 	}
+	options.timers.setRuntimeGeneration(1)
 	if options.state == nil {
 		options.state, _ = NewRoomState(nil)
 	}
 	return &Room{
-		eng:      eng,
-		inbox:    inbox.queue,
-		clk:      clk,
-		start:    clk.Now(),
-		log:      eventLog,
-		pub:      pub,
-		logger:   logger,
-		runner:   options.runner,
-		timers:   options.timers,
-		scopes:   options.scopes,
-		state:    options.state,
-		newGame:  options.newGame,
-		run:      options.run,
-		startRun: options.startRun,
+		eng:        eng,
+		inbox:      inbox.queue,
+		clk:        clk,
+		start:      clk.Now(),
+		log:        eventLog,
+		pub:        pub,
+		logger:     logger,
+		runner:     options.runner,
+		timers:     options.timers,
+		scopes:     options.scopes,
+		state:      options.state,
+		newGame:    options.newGame,
+		run:        options.run,
+		startRun:   options.startRun,
+		generation: 1,
 	}
 }
 
@@ -195,6 +198,9 @@ func (r *Room) Run(ctx context.Context) error {
 }
 
 func (r *Room) process(ctx context.Context, env domain.Envelope) {
+	if r.rejectStale(env) {
+		return
+	}
 	r.seq++
 	env.Seq = r.seq
 	env.At = r.clk.Since(r.start)
@@ -243,7 +249,9 @@ func (r *Room) applyEffects(ctx context.Context, effects []domain.Effect, scope 
 		work = append(work, effect)
 	}
 	if runner, ok := r.runner.(*Runner); ok {
-		runScopedEffects(runner, work, scope, r.scopes)
+		bound := *runner
+		bound.in = generationInbox{target: runner.in, generation: r.generation}
+		runScopedEffects(&bound, work, scope, r.scopes)
 		return
 	}
 	r.runner.Run(work)
@@ -270,8 +278,8 @@ func (r *Room) applyControl(ctx context.Context, effect domain.Effect) bool {
 		keyScope.Key = value.Key
 		r.scopes.CancelKey(keyScope)
 	case domain.NewRun:
+		r.invalidateWork(ctx)
 		r.timers.Reset()
-		r.scopes.Cancel(domain.Scope{Machine: vocab.MachineRun})
 		r.replaceEngine(ctx)
 	default:
 		return false

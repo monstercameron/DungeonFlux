@@ -114,6 +114,19 @@ func (t *ScopeTree) CancelKey(scope domain.Scope) { t.Cancel(scope) }
 // Close cancels every scope and releases the root context.
 func (t *ScopeTree) Close() { t.Cancel(domain.Scope{}) }
 
+// Reset cancels all existing work and installs a fresh root for a new attempt.
+// The tree handle remains stable for the room's shutdown and debug consumers.
+func (t *ScopeTree) Reset(parent context.Context) {
+	if parent == nil {
+		parent = context.Background()
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.root.cancel()
+	ctx, cancel := context.WithCancel(parent)
+	t.root = &scopeNode{ctx: ctx, cancel: cancel, children: make(map[scopeKey]*scopeNode)}
+}
+
 // Scopes returns a stable, sorted snapshot of active non-root scopes.
 func (t *ScopeTree) Scopes() []domain.ScopeState {
 	t.mu.Lock()

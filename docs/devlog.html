@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-abandoned-results">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-abandoned-results">Reset rejects callbacks from the previous attempt</a></h2>
+  <p>Room reset cancelled a named run scope, but effects could also run under the tree root or other scopes. Those jobs could continue after reset. Even successful cancellation could not remove results already waiting in the room inbox. Work dispatch and timer creation now capture a process-local attempt number; the room drops callbacks from older attempts before stepping the engine, logging an event or publishing a view. Reset also cancels the entire scope tree and creates a fresh root while preserving its shared handle. A restored timer receives the current attempt number, rather than its saved number. Tests exercise queued timer and asset results, root-scoped cancellation, late posts after cancellation, new work after reset and parent-context shutdown. Runtime coverage is 80.0% and domain coverage is 91.8%; the package gate and whole-module build pass.</p>
+</li>
 <li class="entry" data-kind="decision" id="e-20260927-timer-checkpoints">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Decision</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-timer-checkpoints">Room retries must restore countdowns as well as game state</a></h2>

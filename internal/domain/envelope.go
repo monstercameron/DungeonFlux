@@ -16,6 +16,9 @@ type Envelope struct {
 	Scope Scope         `json:"scope"`
 	Event Event         `json:"event"`
 	Reply chan<- Ack    `json:"-"`
+	// RuntimeGeneration identifies internally produced callbacks. Zero denotes
+	// external input; this process-local fence is never persisted or replayed.
+	RuntimeGeneration uint64 `json:"-"`
 }
 type Event interface {
 	Kind() vocab.EventKind

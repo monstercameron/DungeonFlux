@@ -53,7 +53,7 @@ func (t *Timers) restore(point timerCheckpoint) {
 		entry := &timerEntry{
 			name: saved.name, after: saved.after, remaining: saved.remaining,
 			deadline: now.Add(saved.remaining), pausable: saved.pausable,
-			paused: saved.paused, scope: saved.scope, generation: 1,
+			paused: saved.paused, scope: saved.scope, generation: 1, runtimeGeneration: t.runtimeGeneration,
 		}
 		t.byName[entry.name] = entry
 		t.armLocked(entry)

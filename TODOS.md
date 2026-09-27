@@ -120,6 +120,12 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: timer checkpoints preserve remaining durations, paused state, scope and active policy; repeated restores replace old callbacks; fake-clock regressions and runtime gate pass.
   status: done (this commit); runtime 78.6%; artifacts/test/QA-019/gate-20260927-053904.log green; foundation for QA-005, not the complete CLI feature
 
+- [x] QA-020 · Reject abandoned work and timer results after room reset
+  why: Cancellation cannot remove callbacks already queued, and resetting only the named run scope leaves root-scoped work alive.
+  lane: ORCH (Codex) · paths: `TODOS.md`, `internal/domain/envelope.go`, `internal/runtime/room.go`, `internal/runtime/generation.go`, `internal/runtime/generation_test.go`, `internal/runtime/timers.go`, `internal/runtime/timers_checkpoint.go`, `internal/runtime/scope.go`, `docs/devlog.html` · depends: QA-019
+  done when: callbacks carry their originating runtime generation, the room rejects stale results before Step, resets cancel all scopes, new work still runs, and runtime/domain gates pass.
+  status: done (this commit); runtime 80.0%, domain 91.8%; artifacts/test/QA-020/gate-20260927-054314.log green; required for safe QA-005 checkpoint loads
+
 ### Kill cam (developer-directed single writer, 2026-09-27)
 
 - [x] KC-004 · Remove unused domain scaffolding exposed by the feature gate
