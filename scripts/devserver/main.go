@@ -22,6 +22,8 @@ type configuration struct {
 	repoRoot, buildDir, dataDir, configPath string
 	interval                                time.Duration
 	skipGate                                bool
+	liveReload                              bool
+	runtimeDir                              string
 }
 
 type status struct {
@@ -51,6 +53,8 @@ func main() {
 	flag.StringVar(&cfg.configPath, "config", "", "server config")
 	flag.DurationVar(&cfg.interval, "interval", 30*time.Minute, "rebuild interval")
 	flag.BoolVar(&cfg.skipGate, "skip-gate", false, "skip full gate for local development")
+	flag.BoolVar(&cfg.liveReload, "live-reload", false, "watch source files and reload clients after successful builds")
+	flag.StringVar(&cfg.runtimeDir, "runtime-dir", "", "isolated server working directory (defaults to repo)")
 	flag.Parse()
 	if err := runSupervisor(cfg); err != nil {
 		fmt.Fprintf(os.Stderr, "supervisor: %v\n", err)

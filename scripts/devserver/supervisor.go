@@ -20,12 +20,14 @@ import (
 )
 
 type supervisor struct {
-	cfg        configuration
-	writer     *statusWriter
-	mu         sync.RWMutex
-	child      *exec.Cmd
-	childExit  chan error
-	lastStderr string
+	cfg             configuration
+	writer          *statusWriter
+	mu              sync.RWMutex
+	child           *exec.Cmd
+	childExit       chan error
+	lastStderr      string
+	liveFingerprint string
+	liveVersion     string
 }
 
 func runSupervisor(cfg configuration) error {
@@ -34,6 +36,11 @@ func runSupervisor(cfg configuration) error {
 		return fmt.Errorf("resolve repo: %w", err)
 	}
 	cfg.repoRoot = root
+	if cfg.runtimeDir == "" {
+		cfg.runtimeDir = root
+	} else {
+		cfg.runtimeDir = absolute(root, cfg.runtimeDir)
+	}
 	if err := loadDotEnv(root); err != nil {
 		return fmt.Errorf("load dotenv: %w", err)
 	}
@@ -69,6 +76,9 @@ func defaultConfig(root string) string {
 
 func (s *supervisor) loop() {
 	interval := s.cfg.interval
+	if s.cfg.liveReload {
+		interval = 2 * time.Second
+	}
 	if interval <= 0 {
 		interval = 30 * time.Minute
 	}
@@ -95,6 +105,17 @@ func (s *supervisor) childDone() <-chan error {
 }
 
 func (s *supervisor) reconcile() {
+	if s.cfg.liveReload {
+		fingerprint, err := sourceFingerprint(s.cfg.repoRoot)
+		if err != nil {
+			s.fail(err)
+			return
+		}
+		if fingerprint == s.liveFingerprint {
+			return
+		}
+		s.liveFingerprint = fingerprint
+	}
 	candidate := filepath.Join(s.cfg.buildDir, "dungeonflux.candidate.exe")
 	current := filepath.Join(s.cfg.buildDir, "dungeonflux.exe")
 	_ = os.Remove(candidate)
@@ -104,13 +125,19 @@ func (s *supervisor) reconcile() {
 	}
 	if err := s.build(candidate); err != nil {
 		s.fail(err)
-		s.startCurrent(current)
+		s.startIfIdle(current)
 		return
 	}
 	if !s.cfg.skipGate {
 		if err := s.gate(); err != nil {
 			s.fail(err)
-			s.startCurrent(current)
+			s.startIfIdle(current)
+			return
+		}
+	}
+	if s.cfg.liveReload {
+		if err := s.buildLiveWASM(); err != nil {
+			s.fail(err)
 			return
 		}
 	}
@@ -125,6 +152,11 @@ func (s *supervisor) reconcile() {
 	s.writer.current.LastErr = ""
 	s.writer.mu.Unlock()
 	s.startCurrent(current)
+	if s.cfg.liveReload {
+		s.mu.Lock()
+		s.liveVersion = s.liveFingerprint
+		s.mu.Unlock()
+	}
 }
 
 func (s *supervisor) build(candidate string) error {
@@ -217,7 +249,7 @@ func (s *supervisor) startCurrent(current string) {
 	childPort := s.cfg.port + 1
 	args := []string{"-config", s.cfg.configPath, "-port", fmt.Sprint(childPort), "-data-dir", s.cfg.dataDir}
 	cmd := exec.Command(current, args...)
-	cmd.Dir = s.cfg.repoRoot
+	cmd.Dir = s.cfg.runtimeDir
 	cmd.Env = env
 	cmd.Stdout = logFile
 	stderr := &stderrTail{}
@@ -292,6 +324,9 @@ func (s *supervisor) commit() string {
 func (s *supervisor) serve() error {
 	public := fmt.Sprintf(":%d", s.cfg.port)
 	mux := http.NewServeMux()
+	if s.cfg.liveReload {
+		s.liveRoutes(mux)
+	}
 	mux.HandleFunc("/healthz", healthHandler)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if s.proxy(w, r) {
@@ -328,6 +363,9 @@ func (s *supervisor) proxy(w http.ResponseWriter, r *http.Request) bool {
 	}
 	target, _ := url.Parse(fmt.Sprintf("http://127.0.0.1:%d", s.cfg.port+1))
 	proxy := httputil.NewSingleHostReverseProxy(target)
+	if s.cfg.liveReload {
+		proxy.ModifyResponse = injectLiveReload
+	}
 	proxy.ErrorHandler = func(rw http.ResponseWriter, _ *http.Request, _ error) {
 		http.Error(rw, "server starting", http.StatusServiceUnavailable)
 	}
