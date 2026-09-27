@@ -22,7 +22,7 @@ func Previews() map[string]PreviewFixture {
 		"conversation":  preview("conversation", conversationPreview()),
 		"check-rolling": preview("check-rolling", checkPreview(dungeonfluxv1.DiceState_DICE_STATE_ROLLING, "rolling")),
 		"check-result":  preview("check-result", checkPreview(dungeonfluxv1.DiceState_DICE_STATE_RESOLVED, "success")),
-		"resolution":    preview("resolution", checkPreview(dungeonfluxv1.DiceState_DICE_STATE_RESOLVED, "success")),
+		"resolution":    preview("resolution", resolutionPreview(true)),
 		"hook":          preview("hook", hookPreview()),
 		"combat-flat":   preview("combat-flat", combatPreview()),
 		"cliffhanger":   preview("cliffhanger", cliffhangerPreview()),
@@ -88,6 +88,28 @@ func checkPreview(diceState dungeonfluxv1.DiceState, outcome string) *dungeonflu
 	return state("check", view)
 }
 
+// resolutionPreview mirrors the outcome the engine narrates once a check
+// resolves: Mother Vell either reveals the clue or refuses it. The fixture
+// previously reused checkPreview, whose phase is hard-coded to "check", so
+// /dm?preview=resolution rendered the check screen instead of the resolution
+// one; TestScreens_HaveNoHardCodedText and the resolution layout never saw
+// coverage from preview mode.
+func resolutionPreview(success bool) *dungeonfluxv1.ScreenState {
+	view := baseView()
+	text := "Mother Vell's eyes narrow, then she relents: \"The lantern-keeper's ledger. Third pew from the back, beneath the floorboard.\""
+	if !success {
+		text = "Mother Vell's face closes like a shutter. \"I've said all I'll say to strangers.\""
+	}
+	view.Narration = &dungeonfluxv1.Narration{Speaker: "Mother Vell", TextSoFar: text, Done: true}
+	view.Subtitle = &dungeonfluxv1.Subtitle{Text: text}
+	if success {
+		view.Callout = "Clue found"
+	} else {
+		view.Callout = "Clue refused"
+	}
+	return state("resolution", view)
+}
+
 func hookPreview() *dungeonfluxv1.ScreenState {
 	view := baseView()
 	view.Clip = &dungeonfluxv1.Clip{Url: "stranger", Playing: true, Then: "STILL"}
@@ -122,5 +144,5 @@ func cliffhangerPreview() *dungeonfluxv1.ScreenState {
 }
 
 func endPreview() *dungeonfluxv1.ScreenState {
-	return state("end", &dungeonfluxv1.DMView{Locale: "en"})
+	return state("end", &dungeonfluxv1.DMView{Locale: "en", BuildCards: baseView().GetBuildCards()})
 }

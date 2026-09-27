@@ -1652,6 +1652,69 @@
         }
       ]
     },
+    "ui/logo_crest_loop": {
+      "kind": "VIDEO_LOOP",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "67efa45005ecb9136f645e096bbd7be861fbcc698b1c08fbbab8bb7d7ed76d4c",
+          "path": "assets/67efa45005ecb9136f645e096bbd7be861fbcc698b1c08fbbab8bb7d7ed76d4c.mp4"
+        }
+      ],
+      "duration_ms": 4042,
+      "metadata": {
+        "aspect": "904:960",
+        "cache_key": "logo_crest_loop_v1",
+        "codec": "H264",
+        "crop_of": "ui/logo_wordmark",
+        "generate_audio": "false",
+        "loop_method": "xfade-0.4s",
+        "model": "bytedance/seedance-2.0/fast/image-to-video",
+        "no_audio": "true",
+        "resolution": "720p",
+        "seed": "1535683304"
+      }
+    },
+    "ui/logo_crest_loop_webm": {
+      "kind": "VIDEO_LOOP",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "499d001a06cb414572bb85ed20ca09f2d1d5f29d5bfa6d0e7adb02e4107e1143",
+          "path": "assets/499d001a06cb414572bb85ed20ca09f2d1d5f29d5bfa6d0e7adb02e4107e1143.webm"
+        }
+      ],
+      "duration_ms": 4042,
+      "metadata": {
+        "aspect": "904:960",
+        "cache_key": "logo_crest_loop_v1",
+        "codec": "VP9",
+        "crop_of": "ui/logo_wordmark",
+        "generate_audio": "false",
+        "loop_method": "xfade-0.4s",
+        "model": "bytedance/seedance-2.0/fast/image-to-video",
+        "no_audio": "true",
+        "resolution": "720p",
+        "seed": "1535683304"
+      }
+    },
+    "ui/logo_crest_poster": {
+      "kind": "IMAGE_STILL",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "f27f6b9f5423cddc66e6badbe55f0e77dc4a299de883b2e34b887a4be41b1241",
+          "path": "assets/f27f6b9f5423cddc66e6badbe55f0e77dc4a299de883b2e34b887a4be41b1241.png"
+        }
+      ],
+      "metadata": {
+        "crop_of": "ui/logo_wordmark",
+        "poster_of": "ui/logo_crest_loop"
+      }
+    },
     "ui/logo_emblem": {
       "kind": "IMAGE",
       "selected": 1,

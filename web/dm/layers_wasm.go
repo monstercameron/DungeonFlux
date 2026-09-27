@@ -46,7 +46,7 @@ func phaseLayers(state *dungeonfluxv1.ScreenState, roomCode, extra string) []ui.
 		case LayerCombat:
 			content = CombatComponent(view)(router.Attrs{})
 		case LayerEnd:
-			content = EndCardComponent(NewEndCardModel().Localized(locale))(router.Attrs{})
+			content = EndCardComponent(EndCardModelFromView(view))(router.Attrs{})
 		default:
 			continue
 		}

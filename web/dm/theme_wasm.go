@@ -134,6 +134,9 @@ const dmRichnessCSS = `
 // value out of the component's style props stops re-renders resetting it.
 const dmCombatStageCSS = `
 .df-dm-combat-splat{opacity:0}
+html body .df-dm-screen .df-dm-canvas .df-dm-audio-unlock{left:auto!important;right:28px!important;top:24px!important;bottom:auto!important;transform:none!important;padding:8px 16px!important;font-size:13px!important;opacity:.82}
+html body .df-dm-screen:not(.df-cover-art) .df-dm-cover{filter:blur(28px) brightness(.5) saturate(.85)!important;transform:scale(1.12)}
+html body .df-dm-screen.df-cover-art .df-dm-layer-creation>:first-child,html body .df-dm-screen.df-cover-art .df-dm-layer-end>:first-child{background-image:none!important;background-color:transparent!important}
 `
 
 const dmLobbyFinishCSS = `

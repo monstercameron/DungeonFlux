@@ -221,6 +221,10 @@ func SpanishEntries() map[string]Entry {
 		"dm.clip_label":    {Text: "Clip de escena de DungeonFlux"},
 		"dm.end_title":     {Text: "La campana recuerda."},
 		"dm.end_subtitle":  {Text: "Gracias por jugar a DungeonFlux."},
+		"dm.end_header":    {Text: "La historia continúa"},
+		"dm.end_hook":      {Text: "Ha sonado la medianoche, y quien tocó la campana ya conoce vuestros nombres."},
+		"dm.end_party":     {Text: "Los héroes de esta historia"},
+		"dm.end_next":      {Text: "El anfitrión puede comenzar una nueva historia."},
 
 		"host.title":       {Text: "DungeonFlux (anfitrión)"},
 		"host.run":         {Text: "Estado de la partida"},
