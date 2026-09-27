@@ -20,21 +20,15 @@ func TestNPCReply_StartLineStreamsNarrationAndCompletes(t *testing.T) {
 	if len(llm.TextCalls) != 1 || llm.TextCalls[0].Request.Meta.Role != vocab.RoleNPCReply {
 		t.Fatalf("llm call = %#v", llm.TextCalls)
 	}
-	if len(in.Calls) != 4 {
-		t.Fatalf("events = %d, want 4", len(in.Calls))
+	if len(in.Calls) != 2 {
+		t.Fatalf("events = %d, want validated narration and completion", len(in.Calls))
 	}
-	if got := in.Calls[0].Envelope.Event.(domain.NarrationDelta).Text; got != "Well, " {
-		t.Fatalf("first delta = %q", got)
+	final := in.Calls[0].Envelope.Event.(domain.NarrationDelta)
+	if !final.Final || final.Text != "Well, speak or drink." || final.TextSoFar != final.Text || final.Speaker != "Mother Vell" {
+		t.Fatalf("validated line = %#v", final)
 	}
-	if got := in.Calls[1].Envelope.Event.(domain.NarrationDelta).Text; got != "speak or drink." {
-		t.Fatalf("second delta = %q", got)
-	}
-	final := in.Calls[2].Envelope.Event.(domain.NarrationDelta)
-	if !final.Final || final.TextSoFar != "Well, speak or drink." || final.Speaker != "Mother Vell" {
-		t.Fatalf("final delta = %#v", final)
-	}
-	if _, ok := in.Calls[3].Envelope.Event.(domain.LineDone); !ok {
-		t.Fatalf("last event = %#v", in.Calls[3].Envelope.Event)
+	if _, ok := in.Calls[1].Envelope.Event.(domain.LineDone); !ok {
+		t.Fatalf("last event = %#v", in.Calls[1].Envelope.Event)
 	}
 }
 

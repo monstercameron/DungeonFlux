@@ -96,11 +96,12 @@ func (e *OutcomeExecutor) consume(ctx context.Context, stream ports.TextStream, 
 	for {
 		chunk, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
-			if validateErr := prompts.ValidateText(effect.Role, text.String()); validateErr != nil {
+			spoken := spokenText(text.String())
+			if validateErr := prompts.ValidateText(effect.Role, spoken); validateErr != nil || (effect.Role == vocab.RoleNPCRefuse && leaksClue(spoken)) {
 				postFailure(ctx, scope, in, effect.UtteranceID, vocab.ErrBadOutput)
 				return
 			}
-			postNarration(ctx, scope, in, effect, "", text.String(), true)
+			postNarration(ctx, scope, in, effect, spoken, spoken, true)
 			postEvent(ctx, scope, in, domain.LineDone{UtteranceID: effect.UtteranceID})
 			return
 		}
@@ -113,7 +114,12 @@ func (e *OutcomeExecutor) consume(ctx context.Context, stream ports.TextStream, 
 		if chunk == "" {
 			continue
 		}
+		// Hold the short utterance until the complete line passes validation.
+		// Raw chunks must never reach subtitles or the speech pipeline.
+		if text.Len()+len(chunk) > maxSpokenBytes {
+			postFailure(ctx, scope, in, effect.UtteranceID, vocab.ErrBadOutput)
+			return
+		}
 		text.WriteString(chunk)
-		postNarration(ctx, scope, in, effect, chunk, text.String(), false)
 	}
 }

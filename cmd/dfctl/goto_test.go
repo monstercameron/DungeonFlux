@@ -12,6 +12,7 @@ import (
 
 func TestRestartCombat_DerivesConfigAndStarts(t *testing.T) {
 	dir := t.TempDir()
+	t.Chdir(dir)
 	configPath := filepath.Join(dir, "fake.json")
 	if err := os.WriteFile(configPath, []byte(`{"server":{"debug":true},"debug_start":""}`), 0o644); err != nil {
 		t.Fatal(err)

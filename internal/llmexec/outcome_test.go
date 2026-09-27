@@ -55,15 +55,15 @@ func TestOutcome_Execute_streamsNarrationAndCompletes(t *testing.T) {
 	llm := &fakes.FakeLLM{Text: []fakes.LLMTextResult{{Chunks: []string{"Fine. ", "The bell tower."}}}}
 	in := &fakes.FakeInbox{}
 	NewOutcomeExecutor(llm, testClue).Execute(context.Background(), domain.StartLine{UtteranceID: "reveal", Role: vocab.RoleNPCReveal, Input: "Please."}, domain.Scope{}, in)
-	if len(in.Calls) != 4 {
-		t.Fatalf("events = %d, want 4 (two deltas, final, line_done)", len(in.Calls))
+	if len(in.Calls) != 2 {
+		t.Fatalf("events = %d, want 2 (validated narration, line_done)", len(in.Calls))
 	}
-	final, ok := in.Calls[2].Envelope.Event.(domain.NarrationDelta)
+	final, ok := in.Calls[0].Envelope.Event.(domain.NarrationDelta)
 	if !ok || !final.Final || final.TextSoFar != "Fine. The bell tower." || final.Speaker != "Mother Vell" {
-		t.Fatalf("final delta = %#v", in.Calls[2].Envelope.Event)
+		t.Fatalf("final delta = %#v", in.Calls[0].Envelope.Event)
 	}
-	if done, ok := in.Calls[3].Envelope.Event.(domain.LineDone); !ok || done.UtteranceID != "reveal" {
-		t.Fatalf("last event = %#v, want line_done", in.Calls[3].Envelope.Event)
+	if done, ok := in.Calls[1].Envelope.Event.(domain.LineDone); !ok || done.UtteranceID != "reveal" {
+		t.Fatalf("last event = %#v, want line_done", in.Calls[1].Envelope.Event)
 	}
 }
 

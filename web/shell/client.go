@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/monstercameron/DungeonFlux/web/shell/watch"
 	"net/url"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -36,9 +36,7 @@ type Client struct {
 	conn         *grpc.ClientConn
 	session      sessionClient
 	playerNumber atomic.Int32
-	resyncMu     sync.Mutex
-	resyncC      chan struct{}
-	idleResync   time.Duration
+	resync       watch.Controller
 }
 
 type sessionClient interface {

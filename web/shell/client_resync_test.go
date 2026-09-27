@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/monstercameron/DungeonFlux/web/shell/watch"
 	"io"
 	"testing"
 	"time"
@@ -63,7 +64,7 @@ func TestWatchLoop_ResubscribesWithoutSurfacingAnError(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			session := &hangingSession{phases: []string{"opening", "exploration"}, opened: make(chan string, 2)}
-			client := &Client{session: session, idleResync: tc.idle}
+			client := &Client{session: session, resync: watch.Controller{Idle: tc.idle}}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			results := client.Watch(ctx, &dungeonfluxv1.WatchRequest{})

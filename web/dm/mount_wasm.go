@@ -15,6 +15,7 @@ import (
 
 	dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"github.com/monstercameron/DungeonFlux/web/shell/audio"
+	"github.com/monstercameron/DungeonFlux/web/shell/watch"
 	"github.com/monstercameron/GoGRPCBridge/pkg/wasm/dialer"
 	"github.com/monstercameron/GoWebComponents/v6/html"
 	"github.com/monstercameron/GoWebComponents/v6/router"
@@ -28,9 +29,10 @@ type watchClient interface {
 }
 
 type screenClient struct {
-	conn  *grpc.ClientConn
-	api   watchClient
-	audio interface {
+	recovery watch.Controller
+	conn     *grpc.ClientConn
+	api      watchClient
+	audio    interface {
 		Listen(context.Context, *dungeonfluxv1.ListenRequest, ...grpc.CallOption) (grpc.ServerStreamingClient[dungeonfluxv1.AudioMessage], error)
 	}
 }
@@ -73,36 +75,14 @@ func (c *screenClient) watch(ctx context.Context, token string) <-chan *dungeonf
 		if c == nil || c.api == nil {
 			return
 		}
-		backoff := time.Second
-		for ctx.Err() == nil {
-			stream, err := c.api.Watch(ctx, &dungeonfluxv1.WatchRequest{SeatToken: token})
-			if err == nil {
-				backoff = time.Second
-				for {
-					message, recvErr := stream.Recv()
-					if recvErr != nil {
-						err = recvErr
-						break
-					}
-					if state := message.GetState(); state != nil {
-						select {
-						case states <- state:
-						case <-ctx.Done():
-							return
-						}
-					}
+		for message := range c.recovery.Messages(ctx, c.api, token) {
+			if state := message.GetState(); state != nil {
+				select {
+				case states <- state:
+				case <-ctx.Done():
+					return
 				}
 			}
-			if ctx.Err() != nil {
-				return
-			}
-			js.Global().Get("console").Call("warn", "dm watch reconnecting: "+err.Error())
-			select {
-			case <-time.After(backoff):
-			case <-ctx.Done():
-				return
-			}
-			backoff = min(backoff*2, 5*time.Second)
 		}
 	}()
 	return states
@@ -127,6 +107,7 @@ func sharedScreenClient(endpoint string) (*screenClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	watch.InstallTriggers(&client.recovery)
 	sharedScreenClients.byEndpoint[endpoint] = client
 	return client, nil
 }
@@ -162,7 +143,7 @@ func reconnectingListen(ctx context.Context, service audio.Service, token string
 		defer close(results)
 		delay := 250 * time.Millisecond
 		for ctx.Err() == nil {
-			stream := audio.NewListenClient(service).Listen(ctx, token)
+			stream := audio.NewListenClient(service).WithDebug(audio.DebugConsole()).Listen(ctx, token)
 			received := false
 			for result := range stream {
 				if result.Err != nil {

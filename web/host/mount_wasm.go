@@ -4,6 +4,7 @@ package host
 
 import (
 	"context"
+	"github.com/monstercameron/DungeonFlux/web/shell/watch"
 	"sync"
 	"syscall/js"
 
@@ -31,6 +32,7 @@ func sharedHostClient(endpoint string) (*hostClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	watch.InstallTriggers(&client.recovery)
 	sharedHostClients.byEndpoint[endpoint] = client
 	return client, nil
 }

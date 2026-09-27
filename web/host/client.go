@@ -3,6 +3,7 @@ package host
 import (
 	"context"
 	"errors"
+	"github.com/monstercameron/DungeonFlux/web/shell/watch"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"google.golang.org/grpc"
@@ -17,9 +18,10 @@ type hostSessionClient interface {
 }
 
 type hostClient struct {
-	conn    *grpc.ClientConn
-	service hostCommandClient
-	session hostSessionClient
+	recovery watch.Controller
+	conn     *grpc.ClientConn
+	service  hostCommandClient
+	session  hostSessionClient
 }
 
 func newHostClient(endpoint string) (*hostClient, error) {
@@ -45,27 +47,10 @@ func (c *hostClient) command(ctx context.Context, request *df.HostCommand) (*df.
 }
 
 func (c *hostClient) watch(ctx context.Context, token string) <-chan *df.WatchMessage {
-	results := make(chan *df.WatchMessage, 1)
-	go func() {
-		defer close(results)
-		if c == nil || c.session == nil {
-			return
-		}
-		stream, err := c.session.Watch(ctx, &df.WatchRequest{SeatToken: token})
-		if err != nil {
-			return
-		}
-		for {
-			message, recvErr := stream.Recv()
-			if recvErr != nil {
-				return
-			}
-			select {
-			case results <- message:
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-	return results
+	if c == nil || c.session == nil {
+		out := make(chan *df.WatchMessage)
+		close(out)
+		return out
+	}
+	return c.recovery.Messages(ctx, c.session, token)
 }
