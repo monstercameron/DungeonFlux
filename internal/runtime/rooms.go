@@ -19,6 +19,7 @@ type RoomState struct {
 	seeded     bool
 	runIndex   uint64
 	seats      map[domain.SeatID]domain.Seat
+	names      map[domain.SeatID]string
 	splat      *domain.Report
 	roomLocale string
 	locales    map[domain.SeatID]string
@@ -162,7 +163,7 @@ func (r *RoomState) Reset() (ResetPlan, error) {
 	}
 	sort.Ints(ids)
 	for _, id := range ids {
-		plan.Joins = append(plan.Joins, domain.Join{Seat: domain.SeatID(id), JoinKind: "phone", Locale: r.locales[domain.SeatID(id)]})
+		plan.Joins = append(plan.Joins, domain.Join{Seat: domain.SeatID(id), JoinKind: "phone", Locale: r.locales[domain.SeatID(id)], Name: r.names[domain.SeatID(id)]})
 	}
 	if r.splat != nil {
 		plan.Splat = &domain.Report{ReportKind: r.splat.ReportKind, ID: r.splat.ID}

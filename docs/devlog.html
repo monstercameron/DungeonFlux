@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-reset-keeps-players">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-reset-keeps-players">Reset keeps the players who already joined</a></h2>
+  <p>The host's Reset confirmation promised to retain joined seats, but both phones lost their names and legal moves after confirmation. Authentication still recognized the tokens; the new game engine had no player records. Normal join events never populated the room's reset registry, and that registry's replay omitted names. The room loop now retains each accepted join and replays its name and language into the replacement engine. Rejected joins are excluded. A real RPC integration test keeps both original player streams and tokens through two resets, checking names, mixed languages, cleared readiness, and subsequent Ready actions. Browser testing confirmed the same seat continuity without a server restart. Runtime coverage is 81.9 percent.</p>
+</li>
 <li class="entry" data-kind="issue" id="e-20260927-watch-player-language">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-watch-player-language">Live updates honor the player's joined language</a></h2>

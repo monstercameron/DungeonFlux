@@ -216,6 +216,7 @@ func (r *Room) process(ctx context.Context, env domain.Envelope) {
 	env.At = r.clk.Since(r.start)
 	from := r.eng.View().Path
 	out := r.eng.Step(env)
+	r.retainIdentity(env.Event, out.Ack)
 	r.applyTimerCommand(env.Event)
 	to := r.eng.View().Path
 	out.Effects = append(out.Effects, rollTimerWiring(env.Event, from, to, out)...)
