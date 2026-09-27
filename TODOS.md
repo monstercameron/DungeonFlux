@@ -199,6 +199,24 @@ The skeleton everything else builds in: module, pinned tools, gate script, CI, a
   done when: a valid public_url leads the tester URLs and is the join URL and QR target; invalid values fail config validation; a headless run against the Droplet joins two phones and starts from the host page.
   status: done 55a9758
 
+- [x] REPO-020 · persist the event log per run
+  why: The 2026-09-27 Droplet playtest saved 0 events: the room wrote records without a run ID (runs foreign key rejected every insert), the SQLite writer discarded errors from enqueued writes, and queued writes were cancelled with the room's context.
+  lane: ORCH · paths: `internal/runtime/room.go`, `internal/runtime/newrun.go`, `internal/runtime/room_runlog*.go`, `internal/store/sqlite/eventlog*.go`, `internal/store/sqlite/writer.go`, `internal/wire/wire.go`, `internal/wire/runlog_test.go` · depends: REPO-019
+  done when: every record carries the current run; Reset starts a new run row with the new engine's seed; a failed enqueued write logs "sqlite write failed"; a Build, Reset, Close run leaves 2 runs, events for the first, and no orphan events; runtime, store/sqlite and wire tests green.
+  status: done 8f34588
+
+- [ ] REPO-021 · graceful shutdown with open WebSocket tunnels
+  why: systemctl restart on the Droplet logged "context deadline exceeded" and the server exited 1: open grpctunnel WebSocket connections kept the 5 s HTTP shutdown from finishing.
+  lane: ORCH · paths: `cmd/server/**` · depends: REPO-020
+  done when: SIGTERM with connected DM and phone tabs closes the tunnels, flushes the store, and exits 0 within the shutdown budget; covered by a test.
+  status: open
+
+- [ ] REPO-022 · print only reachable tester URLs when server.public_url is set
+  why: On the Droplet the start-up list also prints http://<public-ip>:8444 and private-network URLs that the firewall blocks, which testers copy by mistake.
+  lane: ORCH · paths: `internal/wire/urls*.go`, `internal/wire/lobby*.go` · depends: REPO-019
+  done when: with public_url set, the printed and urls.txt lists hold the public URLs plus localhost only; without it the LAN list is unchanged; tests cover both.
+  status: open
+
 ## 2. Contracts
 
 The shared vocabulary, domain types, ports, and protobuf API every lane codes against. ORCH writes these first; lanes that need only vocab/domain start at 0:45.
