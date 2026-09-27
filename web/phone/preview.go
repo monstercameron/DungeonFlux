@@ -36,7 +36,7 @@ func Previews() []PhonePreview {
 		preview("ptt-sending", "conversation", conversationPhone("Transcribing your words…", df.PTTState_PTT_STATE_TRANSCRIBING)),
 		preview("typed-input", "conversation", conversationPhone("Speech unavailable — type your reply", df.PTTState_PTT_STATE_FAILED)),
 		preview("dice-offered", "check", dicePhone("The door listens.", true, "persuade")),
-		preview("dice-rolled", "check", dicePhone("Rolling d20…", false, "persuade")),
+		preview("dice-rolled", "check", resolvedDicePhone()),
 		preview("combat-my-turn", "combat", combatPhone(true, "Your turn — strike the thrall.")),
 		preview("combat-waiting", "combat", combatPhone(false, "The thrall is moving.")),
 		preview("combat-move", "combat", combatMapPhone(true)),
@@ -105,8 +105,15 @@ func classOptions() []*df.Option {
 func characterPhone(name, className, status string) *df.PhoneView {
 	return &df.PhoneView{Locale: "en", StatusText: status, Character: &df.Character{
 		Name: name, ClassName: className, PersuasionModifier: 4,
-		PortraitUrl: "/assets/preview-hero.png", HookText: "A promise made in the rain.",
-	}}
+		PortraitUrl: "ui/class_rogue", HookText: "A promise made in the rain.", Species: "elf", Gender: "female",
+		Build: &df.CharacterBuild{Abilities: []int32{10, 16, 14, 12, 13, 8}, Hp: 10, HpMax: 10, Ac: 14},
+	}, Moves: []*df.Move{{MoveId: "ready", Label: "Ready for adventure", Enabled: true}}}
+}
+
+func resolvedDicePhone() *df.PhoneView {
+	phone := dicePhone("The river gives up its secret.", false, "persuade")
+	phone.Dice = &df.Dice{State: df.DiceState_DICE_STATE_RESOLVED, D20: 17, Modifier: 4, Dc: 10, Outcome: "success", Kind: df.DiceKind_DICE_KIND_CHECK}
+	return phone
 }
 
 func conversationPhone(status string, state df.PTTState) *df.PhoneView {

@@ -28,6 +28,18 @@ func TestDiceModel_OffersRollAndResolves(t *testing.T) {
 	}
 }
 
+func TestDiceModel_ResolvedCheckSnapshotDoesNotReofferRoll(t *testing.T) {
+	fixture, _ := Preview("dice-rolled")
+	state := &df.ScreenState{Phase: fixture.View.Phase, View: &df.ScreenState_Phone{Phone: fixture.View.Phone}}
+	model := NewDiceModel(nil, "seat")
+	for i := 0; i < 2; i++ {
+		got := model.ApplyScreenState(state)
+		if got.Phase != DiceResolved || got.CanRoll || got.D20 != 17 || got.Total != 21 || got.Outcome != "success" {
+			t.Fatalf("resolved snapshot regressed: %+v", got)
+		}
+	}
+}
+
 func TestDiceModel_RejectsUnavailableAndRejectedRoll(t *testing.T) {
 	model := NewDiceModel(nil, "token")
 	if got := (<-model.Roll(context.Background())).Err; got == nil || got.Error() != "dice client is unavailable" {
