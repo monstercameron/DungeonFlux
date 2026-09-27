@@ -76,15 +76,39 @@ func TestCombatTokens_RenderAsResponsivePercentages(t *testing.T) {
 }
 
 func TestCombatHeader_LeavesRoomForTimer(t *testing.T) {
-	model := CombatModel{Banner: "pc_turn", Timer: TimerView{TotalMS: 15000, RemainingMS: 12000}}
-	markup, err := ui.RenderToString(html.Div(html.Props{}, combatTopTitle("en", model), combatTimer(model.Timer), combatInitiativeStrip("en", model)))
-	if err != nil {
-		t.Fatalf("combat header render = %v", err)
+	base := CombatModel{
+		Banner: "pc_turn",
+		TurnOrder: []CombatTurn{
+			{ID: "pc-1", Name: "Mira", Active: true},
+			{ID: "pc-2", Name: "Rhea"},
+			{ID: "thrall", Name: "Drowned Thrall"},
+		},
 	}
-	for _, want := range []string{"top:24px", "top:214px", "top:315px", "The wooded river path", "You drive the thrall through the tavern doors"} {
-		if !strings.Contains(markup, want) {
-			t.Fatalf("combat header missing %q: %s", want, markup)
-		}
+	for _, test := range []struct {
+		name       string
+		timer      TimerView
+		initiative string
+		hasTimer   bool
+	}{
+		{name: "timer enabled", timer: TimerView{TotalMS: 15000, RemainingMS: 12000}, initiative: "top:315px", hasTimer: true},
+		{name: "timer disabled", initiative: "top:214px"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := base
+			model.Timer = test.timer
+			markup, err := ui.RenderToString(html.Div(html.Props{}, combatTopTitle("en", model), combatTimer(model.Timer), combatInitiativeStrip("en", model)))
+			if err != nil {
+				t.Fatalf("combat header render = %v", err)
+			}
+			for _, want := range []string{"top:24px", "top:214px", test.initiative, "The wooded river path", "You drive the thrall through the tavern doors"} {
+				if !strings.Contains(markup, want) {
+					t.Fatalf("combat header missing %q: %s", want, markup)
+				}
+			}
+			if strings.Contains(markup, "df-dm-combat-timer") != test.hasTimer {
+				t.Fatalf("timer presence = %t, want %t: %s", strings.Contains(markup, "df-dm-combat-timer"), test.hasTimer, markup)
+			}
+		})
 	}
 }
 
