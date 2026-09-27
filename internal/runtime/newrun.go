@@ -21,6 +21,7 @@ func (r *Room) replaceEngine(ctx context.Context) {
 		return
 	}
 	r.eng = next
+	r.beginRun(ctx, plan.Seed)
 	for _, join := range plan.Joins {
 		r.process(ctx, domain.Envelope{Event: join})
 	}

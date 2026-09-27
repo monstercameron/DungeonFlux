@@ -24,7 +24,9 @@ func (s *Store) Append(ctx context.Context, records []domain.LogRecord) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if !s.writer.enqueue(ctx, func(ctx context.Context, conn *sql.Conn) error {
+	// Once accepted, a record is written even if the caller's context ends
+	// (for example the room shutting down), so queued events are not dropped.
+	if !s.writer.enqueue(context.WithoutCancel(ctx), func(ctx context.Context, conn *sql.Conn) error {
 		return insertRecords(ctx, conn, copyRecords)
 	}) {
 		return fmt.Errorf("append events: writer queue full")

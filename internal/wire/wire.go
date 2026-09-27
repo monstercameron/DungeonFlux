@@ -175,6 +175,13 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 	room := runtime.NewRoom(roomEngine, clock.Real{}, store, logger, watch.Publish,
 		runtime.WithRunner(runner), runtime.WithRoomState(roomState),
 		runtime.WithTurnTimersEnabled(cfg.Features.TurnTimers),
+		runtime.WithRunLog(run.ID, func(ctx context.Context, runSeed []byte) (domain.RunID, error) {
+			next, err := domainRun(roomID, runSeed)
+			if err != nil {
+				return "", err
+			}
+			return next.ID, store.Start(ctx, next)
+		}),
 		runtime.WithNewGame(func(runSeed []byte) ports.Engine {
 			roomEngine.replace(newBillboardEngine(newLobbyEngine(game.NewWithDebug(oneShot, runSeed, cfg.Server.Debug, "", gameOptions...), lobbyProjection), billboards))
 			return roomEngine
