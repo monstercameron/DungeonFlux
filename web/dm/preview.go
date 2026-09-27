@@ -130,7 +130,6 @@ func combatPreview() *dungeonfluxv1.ScreenState {
 			{TokenId: "rook", Name: "Rook", PortraitUrl: "ui/class_paladin", Cell: &dungeonfluxv1.Cell{C: 2, R: 2}, Hp: 12, HpMax: 12},
 			{TokenId: "thrall", Name: "Drowned Thrall", PortraitUrl: "stranger", Cell: &dungeonfluxv1.Cell{C: 3, R: 1}, Hp: 18, HpMax: 24, Statuses: []string{"bloodied"}},
 		},
-		Dice:         &dungeonfluxv1.Dice{State: dungeonfluxv1.DiceState_DICE_STATE_OFFERED, Kind: dungeonfluxv1.DiceKind_DICE_KIND_ATTACK},
 		TurnTimer:    &dungeonfluxv1.Timer{Seat: "1", RemainingMs: 12000, TotalMs: 15000},
 		CombatBanner: "Mira's turn",
 	}

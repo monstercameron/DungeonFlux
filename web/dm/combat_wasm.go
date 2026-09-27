@@ -53,7 +53,7 @@ func CombatComponent(view *dungeonfluxv1.DMView, sequence ...uint64) router.Comp
 		fallback = append(fallback, combatTokens(model.Tokens)...)
 		if stage.Enabled {
 			children = append(children, html.Div(html.Props{ID: "df-combat-flat-fallback", Style: map[string]string{"position": "absolute", "inset": "0", "z-index": "1", "transition": "opacity 180ms ease", "pointer-events": "none"}}, fallback...))
-		} else if !model.UseSplat {
+		} else {
 			children = append(children, fallback...)
 		}
 		hud := []ui.Node{combatVignette(), combatPartyRail(model), combatEnemyCard(model), combatTimer(model.Timer), combatTopTitle(locale, model), combatInitiativeStrip(locale, model), combatActionBar()}

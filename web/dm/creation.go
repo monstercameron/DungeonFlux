@@ -118,6 +118,18 @@ func CreationModelFromView(view *dungeonfluxv1.DMView) CreationModel {
 		if seat.Name != "" || seat.Class != "" || seat.PortraitURL != "" {
 			seat.Status, seat.Ready = "Hero ready", true
 		}
+		if hero := card.GetCharacter(); hero != nil {
+			seat.Species, seat.Gender = titleCaseWord(hero.GetSpecies()), titleCaseWord(hero.GetGender())
+			seat.Ready, seat.Status = card.GetReady(), "Reviewing hero"
+			if seat.Ready {
+				seat.Status = "Ready for adventure"
+			}
+			if build := hero.GetBuild(); len(build.GetAbilities()) == 6 {
+				a := build.GetAbilities()
+				seat.Scores = AbilityScores{a[0], a[1], a[2], a[3], a[4], a[5]}
+				seat.HP, seat.HPMax, seat.AC, seat.HasStats = build.GetHp(), build.GetHpMax(), build.GetAc(), true
+			}
+		}
 	}
 	if update, ok := DecodeCreationCallout(view.GetCallout()); ok {
 		seat := &model.Seats[update.Number-1]

@@ -24,6 +24,11 @@ func BattleStageFromView(view *dungeonfluxv1.DMView, sequence uint64) BattleStag
 		return BattleStageModel{}
 	}
 	battlefield := view.GetBattlefield()
+	// A missing world is the illustrated tavern fallback, not a different
+	// location silently substituted by the client.
+	if battlefield == nil || strings.TrimSpace(battlefield.GetSceneUrl()) == "" {
+		return BattleStageModel{Init: splat.Init{Grid: splat.WoodedPathGrid()}}
+	}
 	if battlefield != nil && strings.EqualFold(battlefield.GetMode(), "FLAT") {
 		return BattleStageModel{}
 	}
