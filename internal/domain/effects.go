@@ -102,11 +102,6 @@ type GenerateBillboardLoops struct {
 	Clips []string
 }
 
-type effectKind struct{ kind vocab.EffectKind }
-
-func (effectKind) sealedEffect()            {}
-func (e effectKind) Kind() vocab.EffectKind { return e.kind }
-
 type AudioFrame struct {
 	UtteranceID UtteranceID
 	Speaker     string

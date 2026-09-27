@@ -213,8 +213,3 @@ func (DebugForceDice) sealedEvent()             {}
 func (DebugForceDice) Kind() vocab.EventKind    { return vocab.EventDebugForceDice }
 func (DebugReset) sealedEvent()                 {}
 func (DebugReset) Kind() vocab.EventKind        { return vocab.EventDebugReset }
-
-type kindEvent struct{ kind vocab.EventKind }
-
-func (kindEvent) sealedEvent()            {}
-func (e kindEvent) Kind() vocab.EventKind { return e.kind }
