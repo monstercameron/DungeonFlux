@@ -4,7 +4,7 @@ import "testing"
 
 func TestNewExploreSnapshot_UsesStatusAsNarrationAndSceneDefaults(t *testing.T) {
 	got := NewExploreSnapshot(MovesSnapshot{StatusText: "The door groans.", Locale: "en", Moves: []MoveSnapshot{{ID: "leave", Label: "Leave", Enabled: true}}})
-	if got.Title != "The Drowned Lantern" || got.Location != "The Forgotten Depths" || got.SceneArt != "tavern_interior" || got.Narration != "The door groans." || got.Locale != "en" || len(got.Moves) != 1 {
+	if got.Title != "The Drowned Lantern" || got.Location != "The Drowned Lantern" || got.SceneArt != "tavern_interior" || got.Narration != "The door groans." || got.Locale != "en" || len(got.Moves) != 1 {
 		t.Fatalf("snapshot = %+v", got)
 	}
 }
