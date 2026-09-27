@@ -300,11 +300,11 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: wrong-turn/busy/paused voice and actions reject, one utterance owns capture and reply, STT failures and pause reach the phone, and stale transcription/classifier results cannot replace or stall a newer turn.
   status: open
 
-- [ ] QA-050 · Align the full RPC rehearsal with chat eligibility
+- [x] QA-050 · Align the full RPC rehearsal with chat eligibility
   why: The old end-to-end fixture sent dialogue during Opening and expected a success acknowledgement for a discarded message; QA-047 correctly rejects it.
   lane: ORCH (Codex) · paths: `internal/wire/e2e_test.go`, `TODOS.md`, `docs/devlog.html` · depends: QA-047
   done when: the fixture asserts Opening rejection and accepted Conversation dialogue through the debug RPC, and the full gate passes.
-  status: claimed Codex 2026-09-27
+  status: done (this commit); TestE2E_DfctlRunThroughLobby passes; full candidate gate artifacts/test/QA-046/source/artifacts/test/ORCH/gate-20260927-091015.log green (whole module 70.5%, wire 78.0%), predating unrelated website commit 781ada9.
 
 - [x] EMK-004 · Remove the duplicated attack label from the combat target card
   why: PR #9 reports two apparent attack controls; the target card should identify the enemy while the action row owns Attack.

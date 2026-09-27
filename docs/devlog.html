@@ -87,6 +87,12 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-chat-rpc-rehearsal">
+  <div class="entry-head"><time datetime="2026-09-27T09:14:00-04:00">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">ORCH (Codex)</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-chat-rpc-rehearsal">The RPC rehearsal had expected a discarded message to succeed</a></h2>
+  <p>The full gate exposed an outdated expectation in the end-to-end rehearsal: it sent a greeting during Opening and expected acceptance even though no conversation could handle it. The test now requires an actionable rejection during Opening and sends the accepted greeting after reaching Conversation. This verifies the new chat guard through the debug RPC rather than only calling the engine directly. The updated rehearsal and isolated full candidate gate pass, with 70.5% whole-module coverage. This is a fixture correction following QA-047; it does not relax the eligibility rule or skip the failed test.</p>
+</li>
+
 <li class="entry" data-kind="issue" id="e-20260927-chat-draft-recovery">
   <div class="entry-head"><time datetime="2026-09-27T09:13:00-04:00">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">ORCH (Codex)</span></div>
   <h2 class="entry-title"><a href="#e-20260927-chat-draft-recovery">Typed chat now keeps failed drafts and shows why sending is blocked</a></h2>

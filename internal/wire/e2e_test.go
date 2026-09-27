@@ -94,8 +94,8 @@ func TestE2E_DfctlRunThroughLobby(t *testing.T) {
 	}
 	assertPhase(t, debugClient, debugCtx, "DF-E2E", "opening", phaseTrace)
 	phaseTrace = append(phaseTrace, "opening")
-	if response, err := debugClient.Say(debugCtx, &df.DebugSayRequest{Room: "DF-E2E", Seat: "1", Text: "I greet Mother Vell."}); err != nil || !response.GetAccepted() {
-		t.Fatalf("dfctl say: response=%v error=%v", response, err)
+	if response, err := debugClient.Say(debugCtx, &df.DebugSayRequest{Room: "DF-E2E", Seat: "1", Text: "I greet Mother Vell."}); err != nil || response.GetAccepted() || !strings.Contains(response.GetReason(), "Chat is available") {
+		t.Fatalf("opening chat must reject with recovery guidance: response=%v error=%v", response, err)
 	}
 	if response, err := debugClient.DiceForce(debugCtx, &df.DiceForceRequest{Room: "DF-E2E", D20: 17}); err != nil || !response.GetAccepted() {
 		t.Fatalf("dfctl dice force: response=%v error=%v", response, err)
@@ -104,6 +104,9 @@ func TestE2E_DfctlRunThroughLobby(t *testing.T) {
 		sendDebug(t, debugClient, debugCtx, "host_skip")
 		assertPhase(t, debugClient, debugCtx, "DF-E2E", phase, phaseTrace)
 		phaseTrace = append(phaseTrace, phase)
+	}
+	if response, err := debugClient.Say(debugCtx, &df.DebugSayRequest{Room: "DF-E2E", Seat: "1", Text: "I greet Mother Vell."}); err != nil || !response.GetAccepted() {
+		t.Fatalf("dfctl say: response=%v error=%v", response, err)
 	}
 	sendAct(t, debugClient, debugCtx, "1", "persuade", "")
 	assertPhase(t, debugClient, debugCtx, "DF-E2E", "check", phaseTrace)
