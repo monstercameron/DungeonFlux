@@ -146,7 +146,7 @@ func sheetStats(locale string, state SheetSnapshot) ui.Node {
 		return sheetEmptyPanel(locale, "Ability scores", "Your rolled abilities will appear here.")
 	}
 	return html.Section(html.Props{Class: "df-phone-sheet-section", Aria: map[string]string{"label": "Ability scores"}, Style: map[string]string{"display": "grid", "gap": "7px"}},
-		sheetSectionHeading("Ability scores", "", false), StatRow(state.Abilities), sheetBuildDetails(locale, state),
+		sheetSectionHeading("Ability scores", "", false), StatRow(state.Abilities),
 	)
 }
 

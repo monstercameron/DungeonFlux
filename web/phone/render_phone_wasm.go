@@ -32,6 +32,9 @@ func renderPhoneScreen(kind ScreenKind, props phoneViewProps, locale string, vie
 		locale: locale, art: artRevision.Load(), selectPlay: selectPlay,
 	})
 	content = html.WithKey(content, string(kind)+":"+string(activeTab))
+	if activeTab == PhoneTabPlay && kind != ScreenEnd && kind != ScreenCreate {
+		content = html.Div(html.Props{}, content, narrationBubble(view.Narration))
+	}
 	// The frame is pure markup. A prop-less closure here would hide tab and
 	// snapshot changes from reconciliation even though its captured nodes changed.
 	return PhoneFrame(frame, content, audioControls(props.audio, locale), phoneTabBar(frame, taps))(router.Attrs{})
