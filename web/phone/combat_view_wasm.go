@@ -313,10 +313,13 @@ func combatDownLabel(locale string) string {
 }
 
 func combatTargetLabel(attack *CombatAttack) string {
-	if attack == nil || strings.TrimSpace(attack.Label) == "" {
+	// The action row already carries the localized attack label. Repeating it
+	// in the target card made the combat screen look like it had two Attack
+	// controls. Keep this card focused on the selected target instead.
+	if attack == nil {
 		return "Drowned Thrall"
 	}
-	return attack.Label
+	return "Drowned Thrall"
 }
 
 func combatAttackLabel(move *df.Move, locale string) string {
