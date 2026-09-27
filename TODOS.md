@@ -1659,6 +1659,19 @@ One GoWebComponents WASM app serving /dm, /p, and /host: router, gRPC client, au
   done when: the router is created with view transitions off; a headless load of /dm, /p, and /host logs no "Transition was skipped" error.
   status: done c6cd079
 
+- [x] WEB-025 · phones resubscribe after sleep, app switch, or a dead connection
+  why: Dennis's 2026-09-27 review #32/#27: phones went stale and stayed on an old screen until reloaded. Reproduced: a phone offline while the host advanced kept an open WebSocket that had lost the updates, and showed the creation screen for 30+ s after reconnecting.
+  lane: ORCH · paths: `web/shell/client.go`, `web/shell/client_resync*.go`, `web/shell/resync_wasm.go`, `web/shell/boot_wasm.go` · depends: WEB-002
+  done when: Resync and a 25 s idle watchdog resubscribe the watch stream without surfacing an error; visibilitychange/online/pageshow trigger it (plus a 1.5 s retry); the offline repro shows the right screen within 2 s; unit tests cover resync and idle.
+  status: done 0fdc351
+  follow-up: the TV (web/dm/mount_wasm.go) and host (web/host/client.go) run their own watch loops without this; see WEB-026.
+
+- [ ] WEB-026 · TV and host watch loops resubscribe like the phone
+  why: web/dm and web/host have separate watch loops that also reconnect only on an error, so a sleeping laptop or a dead connection leaves the TV or host panel stale (Dennis #19 TV lag, #35 stale host phase may share this cause).
+  lane: ORCH · paths: `web/dm/mount_wasm.go`, `web/host/client.go` · depends: WEB-025
+  done when: both loops use the shell client's Resync and idle watchdog (or the same mechanism); an offline repro on /dm and /host recovers within 2 s.
+  status: open
+
 ## 19. Phone
 
 The player's controller: character creation, sheet, legal moves, push-to-talk, combat taps.
