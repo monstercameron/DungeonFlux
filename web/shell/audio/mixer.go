@@ -96,3 +96,41 @@ func (m *MixState) Apply(message *dungeonfluxv1.AudioMessage) error {
 
 // DuckGain is the approximately 8 dB reduction used under voice.
 const DuckGain float32 = 0.398
+
+// StingerDip is the bed level, relative to its authored gain, while a music
+// stinger plays over it (about -7 dB), so the sting reads without the bed
+// cutting out.
+const StingerDip = 0.45
+
+// longOneShotSeconds separates a one-shot music bed (the 12 s opening
+// swell, the 24 s cliffhanger bed, the end-card theme) from a stinger.
+const longOneShotSeconds = 10
+
+// Role is how the mixer treats a decoded track on its channel.
+type Role int
+
+const (
+	// RoleOneShot plays once and leaves the channel's bed alone.
+	RoleOneShot Role = iota
+	// RoleBed replaces the channel's current bed with a crossfade.
+	RoleBed
+	// RoleStinger plays once over the bed and dips the bed under it.
+	RoleStinger
+)
+
+// RoleFor classifies a track. Loops on the music and ambience buses are
+// beds; on the music bus a long one-shot is a bed too (so the cliffhanger
+// bed takes over from the combat loop instead of playing on top of it),
+// and a short one-shot is a stinger.
+func RoleFor(channel Channel, loop bool, durationSeconds float64) Role {
+	switch {
+	case loop && (channel == MusicChannel || channel == AmbienceChannel):
+		return RoleBed
+	case channel != MusicChannel || loop:
+		return RoleOneShot
+	case durationSeconds >= longOneShotSeconds:
+		return RoleBed
+	default:
+		return RoleStinger
+	}
+}

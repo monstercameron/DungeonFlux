@@ -238,11 +238,14 @@ func screenView(props screenProps) ui.Node {
 		}
 		return nil
 	}, voicePlayer.Get(), snapshot.GetPhase())
+	audioOn := ui.UseState(false)
 	unlock := ui.UseEvent(func() {
 		if player := voicePlayer.Get(); player != nil {
 			_ = ResumeAudio(player)
 			_ = PlayLobbyAudio(player, strings.ToLower(strings.TrimSpace(snapshot.GetPhase())))
 		}
+		tableAudioUnlocked = true
+		audioOn.Set(true)
 	})
 	useTransitionClock(snapshot.GetPhase())
 	return compose(snapshot, dmRoomCode(), unlock)
@@ -267,6 +270,11 @@ func dmToken() string {
 	return value.String()
 }
 
+// tableAudioUnlocked hides the "Enable table audio" chip once the table has
+// tapped it: the chip sat over every TV screen, including the combat title and
+// the end card, for the whole show.
+var tableAudioUnlocked bool
+
 func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handler) ui.Node {
 	now := transitionNowMS()
 	tvTransitions.Observe(state, now)
@@ -281,7 +289,9 @@ func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handle
 	}
 	children = append(children, phaseLayers(state, roomCode, "")...)
 	children = append(children, transitionVeil(tx, active, state, tvTransitions.Seq())...)
-	children = append(children, html.Button(html.Props{Type: "button", Class: "df-dm-audio-unlock", OnClick: unlock, Style: map[string]string{"position": "absolute", "right": "1rem", "top": "1rem", "z-index": "100"}}, html.Text(AudioUnlock(locale))))
+	if !tableAudioUnlocked {
+		children = append(children, html.Button(html.Props{Type: "button", Class: "df-dm-audio-unlock", OnClick: unlock, Style: map[string]string{"position": "absolute", "right": "1rem", "top": "1rem", "z-index": "100"}}, html.Text(AudioUnlock(locale))))
+	}
 	stage := html.Div(html.Props{Class: "df-dm-stage"}, children...)
 	canvas := html.Div(html.Props{Class: "df-dm-canvas"}, stage)
 	coverState := state
@@ -289,12 +299,38 @@ func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handle
 		coverState = outgoing
 	}
 	cover := html.Div(html.Props{Class: "df-dm-cover", Aria: map[string]string{"hidden": "true"}, Style: coverBackgroundStyle(coverState)})
-	return html.Main(html.Props{Class: "df-dm-screen " + currentAspectClass() + transitionScreenClass(tx, active), Role: "main"}, cover, canvas)
+	return html.Main(html.Props{Class: "df-dm-screen " + currentAspectClass() + coverArtClass(coverState) + transitionScreenClass(tx, active), Role: "main"}, cover, canvas)
 }
 
+// coverArtClass marks phases whose backdrop is plain art (lobby, creation,
+// end): the cover alone paints it, unblurred, and the stage layer drops its
+// own copy, so the whole window is one continuous background. Scene and
+// combat phases keep their stage-aligned art and a blurred cover.
+func coverArtClass(state *dungeonfluxv1.ScreenState) string {
+	switch strings.ToLower(strings.TrimSpace(state.GetPhase())) {
+	case "", "lobby", "creation", "end":
+		return " df-cover-art"
+	}
+	return ""
+}
+
+// coverBackgroundStyle paints the area outside the 16:9 stage with the same
+// art the stage shows for the phase (blurred and dimmed by .df-dm-cover), so
+// the screen reads as one background. It used the tavern scene for every
+// phase after the lobby, so the end card, creation and combat showed a
+// second, unrelated image in the letterbox bands.
 func coverBackgroundStyle(state *dungeonfluxv1.ScreenState) map[string]string {
 	background := titleArtFor(currentAspectClass(), ArtURL).Background
-	if state != nil && state.GetPhase() != "lobby" {
+	switch phase := strings.ToLower(strings.TrimSpace(state.GetPhase())); phase {
+	case "", "lobby":
+	case "creation":
+		background = ArtURL("ui/title_bg_wide")
+	case "end":
+		background = ArtURL("ui/end_bg")
+	case "combat", "cliffhanger":
+		// The splat and the clips fill the stage; a dark field extends them.
+		background = ""
+	default:
 		background = sceneBackgroundURL(state.GetDm())
 	}
 	if background == "" {
@@ -344,6 +380,8 @@ func layerZIndex(layer Layer) string {
 		return "50"
 	case LayerScene:
 		return "10"
+	case LayerHUD:
+		return "15"
 	default:
 		return "1"
 	}

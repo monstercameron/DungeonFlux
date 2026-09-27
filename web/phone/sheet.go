@@ -31,6 +31,15 @@ type SheetSnapshot struct {
 	Conditions         []string
 	StatusText         string
 	Locale             string
+	Equipment          []SheetEquipmentItem
+}
+
+// SheetEquipmentItem is one piece of starting gear shown on the inventory tab.
+type SheetEquipmentItem struct {
+	Name        string
+	Description string
+	Slot        string
+	Worn        bool
 }
 
 // SheetAction is a display-only action available from the character sheet.
@@ -182,7 +191,22 @@ func (m *SheetModel) Snapshot() SheetSnapshot {
 	state.SaveProficiencies = append([]string(nil), state.SaveProficiencies...)
 	state.SkillProficiencies = cloneProficiencies(state.SkillProficiencies)
 	state.Conditions = append([]string(nil), state.Conditions...)
+	state.Equipment = append([]SheetEquipmentItem(nil), state.Equipment...)
 	return state
+}
+
+func sheetEquipment(items []*df.EquipmentItem) []SheetEquipmentItem {
+	if len(items) == 0 {
+		return nil
+	}
+	out := make([]SheetEquipmentItem, 0, len(items))
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		out = append(out, SheetEquipmentItem{Name: item.GetName(), Description: item.GetDescription(), Slot: item.GetSlot(), Worn: item.GetWorn()})
+	}
+	return out
 }
 
 // ApplyScreenState replaces the sheet from the seat-specific server view.
@@ -204,8 +228,11 @@ func (m *SheetModel) ApplyScreenState(state *df.ScreenState) SheetSnapshot {
 		m.state.PortraitURL = character.GetPortraitUrl()
 		m.state.Hook = character.GetHookText()
 		m.state.PersuasionModifier = character.GetPersuasionModifier()
-		attack := sheetAttackForClass(m.state.Class)
-		m.state.AttackName, m.state.AttackDice, m.state.AttackDamageType, m.state.AttackBonus = attack.name, attack.dice, attack.damageType, attack.bonus
+		// The server (RULES-008, domain.BuildStats) computes the real attack
+		// line; sheetAttackForClass is only a fallback for older fixtures
+		// that carry no build data at all.
+		fallback := sheetAttackForClass(m.state.Class)
+		m.state.AttackName, m.state.AttackDice, m.state.AttackDamageType, m.state.AttackBonus = fallback.name, fallback.dice, fallback.damageType, fallback.bonus
 		if build := character.GetBuild(); build != nil {
 			m.state.HP, m.state.HPMax = build.GetHp(), build.GetHpMax()
 			m.state.AC = build.GetAc()
@@ -213,6 +240,10 @@ func (m *SheetModel) ApplyScreenState(state *df.ScreenState) SheetSnapshot {
 			m.state.Abilities = sheetAbilityValues(build.GetAbilities())
 			m.state.SaveProficiencies = append([]string(nil), build.GetSaveProfs()...)
 			m.state.SkillProficiencies = cloneProficiencies(build.GetSkillProfs())
+			if build.GetAttackName() != "" {
+				m.state.AttackName, m.state.AttackDice, m.state.AttackDamageType, m.state.AttackBonus = build.GetAttackName(), build.GetAttackDice(), build.GetAttackDamageType(), build.GetAttackBonus()
+			}
+			m.state.Equipment = sheetEquipment(build.GetEquipment())
 		}
 	}
 	if combat := phone.GetCombat(); combat != nil {

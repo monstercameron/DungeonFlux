@@ -1,6 +1,7 @@
 package dm
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -88,5 +89,70 @@ func TestSRDAttribution_ContainsRequiredLicenseDetails(t *testing.T) {
 		if !strings.Contains(SRDAttribution, want) {
 			t.Errorf("SRDAttribution does not contain %q", want)
 		}
+	}
+}
+
+func TestEndCardModelFromView_RecapsTheParty(t *testing.T) {
+	view := &dungeonfluxv1.DMView{Locale: "es", BuildCards: []*dungeonfluxv1.BuildCard{
+		{PlayerNumber: 1, Name: " Mira ", ClassName: "rogue", PortraitUrl: "ui/species_elf"},
+		{PlayerNumber: 2, Name: "", ClassName: "bard"},
+		{PlayerNumber: 3, Name: "Rook", ClassName: "PALADIN"},
+		{PlayerNumber: 4, Name: "Ash", ClassName: "war_cleric"},
+		{PlayerNumber: 5, Name: "Bram", ClassName: "fighter"},
+		{PlayerNumber: 6, Name: "Cole", ClassName: "wizard"},
+	}}
+	model := EndCardModelFromView(view)
+	want := []EndHero{
+		{Name: "Mira", Class: "Rogue", Portrait: "ui/species_elf"},
+		{Name: "Rook", Class: "Paladin"},
+		{Name: "Ash", Class: "War Cleric"},
+		{Name: "Bram", Class: "Fighter"},
+	}
+	if !reflect.DeepEqual(model.Heroes, want) {
+		t.Fatalf("Heroes = %#v, want %#v", model.Heroes, want)
+	}
+	if model.Locale != "es" || model.Title != "La campana recuerda." || model.Next != T("es", "dm.end_next", nil) {
+		t.Fatalf("spanish copy = %+v", model)
+	}
+	if !EndCardReady(model) {
+		t.Fatal("a view-built end card must be ready")
+	}
+}
+
+func TestEndCardModelFromView_NilViewKeepsEnglishCopyWithoutHeroes(t *testing.T) {
+	model := EndCardModelFromView(nil)
+	if len(model.Heroes) != 0 || model.Locale != "en" {
+		t.Fatalf("nil view model = %+v", model)
+	}
+	for name, got := range map[string]string{"header": model.Header, "hook": model.Hook, "party": model.Party, "next": model.Next, "rules": model.Rules} {
+		if got == "" || strings.HasPrefix(got, "dm.") {
+			t.Errorf("%s copy = %q, want catalog text", name, got)
+		}
+	}
+	if model.Attribution != SRDAttribution {
+		t.Fatal("end card must carry the canonical SRD attribution")
+	}
+}
+
+func TestEndHeroPortrait_PrefersWireArtThenClassCrest(t *testing.T) {
+	SetArtSource(mapArt{"ui/species_elf": "blob:elf", "ui/class_rogue": "blob:rogue"})
+	t.Cleanup(func() { SetArtSource(nil) })
+	tests := []struct {
+		name string
+		hero EndHero
+		want string
+	}{
+		{name: "wire portrait", hero: EndHero{Portrait: "ui/species_elf", Class: "Rogue"}, want: "blob:elf"},
+		{name: "blob passes through", hero: EndHero{Portrait: "blob:made"}, want: "blob:made"},
+		{name: "crest fallback", hero: EndHero{Portrait: "ui/species_orc", Class: "Rogue"}, want: "blob:rogue"},
+		{name: "nothing loaded", hero: EndHero{Class: "Wizard"}, want: ""},
+		{name: "no class", hero: EndHero{}, want: ""},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := endHeroPortrait(test.hero); got != test.want {
+				t.Fatalf("endHeroPortrait() = %q, want %q", got, test.want)
+			}
+		})
 	}
 }

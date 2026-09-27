@@ -90,9 +90,14 @@ func CritLabel(locale string) string { return T(locale, "dm.crit", nil) }
 // TimerPaused returns the localized paused-timer label.
 func TimerPaused(locale string) string { return T(locale, "dm.timer_paused", nil) }
 
-// TimerLabel returns the localized remaining-time label.
+// TimerLabel returns the localized remaining-time label, rounded up to the
+// nearest whole second so the audience never sees a raw millisecond count.
 func TimerLabel(locale string, ms int64) string {
-	return T(locale, "dm.timer_label", map[string]string{"ms": strconv.FormatInt(ms, 10)})
+	if ms < 0 {
+		ms = 0
+	}
+	seconds := (ms + 999) / 1000
+	return T(locale, "dm.timer_label", map[string]string{"s": strconv.FormatInt(seconds, 10)})
 }
 
 // EndTitle returns the localized end-card title.

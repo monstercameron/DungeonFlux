@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"log/slog"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
@@ -46,6 +47,7 @@ type TalkServer struct {
 	inbox   ports.Inbox
 	session *SessionServer
 	sink    TalkSink
+	logger  *slog.Logger
 }
 
 // NewTalkServer creates a voice service backed by the room inbox and sink.
@@ -89,24 +91,32 @@ func (s *TalkServer) Talk(stream df.VoiceService_TalkServer) error {
 		_ = s.sink.Cancel(stream.Context(), session)
 		return status.Error(codes.ResourceExhausted, "room inbox is full")
 	}
+	s.log().Info("talk started", "seat", int(session.Seat), "utterance", string(session.UtteranceID), "mime", session.MIME)
 	return s.receiveTalk(stream, session)
 }
 
 func (s *TalkServer) receiveTalk(stream df.VoiceService_TalkServer, session TalkSession) error {
+	stats := talkStats{}
 	for {
 		request, err := stream.Recv()
 		if err != nil {
 			if stream.Context().Err() != nil {
+				s.logTalk("talk cancelled", session, stats, "reason", "stream closed before TalkEnd")
 				return s.cancelTalk(stream.Context(), session)
 			}
+			s.logTalk("talk failed", session, stats, "err", err.Error())
 			return talkRecvError(stream.Context(), err)
 		}
 		switch {
 		case request.GetChunk() != nil:
 			if err := s.receiveChunk(stream, session, request.GetChunk()); err != nil {
+				s.logTalk("talk failed", session, stats, "err", err.Error())
 				return err
 			}
+			stats.add(len(request.GetChunk().GetData()))
+			s.logChunk(session, request.GetChunk().GetSeq(), len(request.GetChunk().GetData()), stats)
 		case request.GetEnd() != nil:
+			s.logTalk("talk ended", session, stats)
 			return s.endTalk(stream, session)
 		default:
 			return status.Error(codes.InvalidArgument, "talk message must contain a chunk or end")

@@ -20,7 +20,7 @@ func TestEnglish_MirrorsContent(t *testing.T) {
 		}
 	}
 	for _, id := range []vocab.MoveID{
-		vocab.MoveReady, vocab.MoveSpecies, vocab.MoveGender, vocab.MoveRollHero,
+		vocab.MoveReady, vocab.MoveSpecies, vocab.MoveGender, vocab.MoveRollHero, vocab.MoveRename,
 		vocab.MoveTalkVell, vocab.MovePersuade, vocab.MoveStepAway, vocab.MoveLeave,
 		vocab.MoveAttack, vocab.MoveMove, vocab.MoveEndTurn,
 	} {

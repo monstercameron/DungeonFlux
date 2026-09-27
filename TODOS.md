@@ -217,6 +217,12 @@ The skeleton everything else builds in: module, pinned tools, gate script, CI, a
   done when: with public_url set, the printed and urls.txt lists hold the public URLs plus localhost only; without it the LAN list is unchanged; tests cover both.
   status: done 43a2140
 
+- [x] REPO-023 · turn on live text for per-vendor llm_* adapters
+  why: Dennis's 2026-09-27 live review (#43, notes/dennis on test_dennis): config/demo.json names its text adapters llm_openai/llm_gemini/llm_anthropic, but live text only turned on for an adapter named llm, so narration silently stayed fake; the demo chains' recording:<role> links would then have failed start-up.
+  lane: ORCH · paths: `internal/wire/adapters.go`, `internal/wire/adapters_llm_test.go` · depends: REPO-019
+  done when: an llm or llm_* live adapter builds the live model chain; recording links and unkeyed vendors are skipped and logged; a chain with no callable vendor fails start-up; tests cover each case.
+  status: done a49fd2c
+
 ## 2. Contracts
 
 The shared vocabulary, domain types, ports, and protobuf API every lane codes against. ORCH writes these first; lanes that need only vocab/domain start at 0:45.

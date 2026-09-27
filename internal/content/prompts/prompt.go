@@ -62,7 +62,10 @@ func TemplateFor(role vocab.Role) (Template, error) {
 	case vocab.RoleNPCReply:
 		return Template{role, shared, "Mother Vell's persona: {{persona}}. Public facts: {{public_facts}}. Conversation so far: {{conversation}}. Reply in character, evasively, in 25 words or fewer. Never invent or reveal a gated clue.", 25, false, "gpt-6-luna/none"}, nil
 	case vocab.RoleNPCReveal, vocab.RoleNPCRefuse:
-		return Template{role, shared, "Mother Vell's persona: {{persona}}. The player's last utterance: {{last_utterance}}. {{clue}} Reply in character in 25 words or fewer.", 25, false, "gpt-6-luna/none"}, nil
+		// The prompt asks for 25 words, but the cutoff is 30: the reveal must
+		// carry the ~19-word clue, and replies of 26 words were being rejected
+		// in favour of the canned line.
+		return Template{role, shared, "Mother Vell's persona: {{persona}}. The player's last utterance: {{last_utterance}}. {{clue}} Reply in character in 25 words or fewer.", 30, false, "gpt-6-luna/none"}, nil
 	case vocab.RoleStrangerLines:
 		return Template{role, shared, "The hero's hook is {{hook}}. The stranger is {{stranger}}. The clue is {{clue}}. Return two JSON lines, found and not_found, each 30 words or fewer and ending with the pursuit from the river.", 30, true, "gemini-3.8-flash/LOW"}, nil
 	case vocab.RoleCliffhanger:

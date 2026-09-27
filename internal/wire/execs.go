@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/monstercameron/DungeonFlux/internal/config"
+	"github.com/monstercameron/DungeonFlux/internal/content"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/llmexec"
 	"github.com/monstercameron/DungeonFlux/internal/media"
@@ -65,7 +66,10 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 	runner := runtime.NewRunner(inbox, cfg.logger)
 	assets := newAssetStore(cfg.config.Server.DataDir)
 	fakeMode := isFakeMode(cfg.config)
-	assembler := voicein.NewAssembler()
+	assembler := cfg.assembler
+	if assembler == nil {
+		assembler = voicein.NewAssembler()
+	}
 	transcriber, err := voicein.NewTranscriber(set.stt, assembler)
 	if err != nil {
 		return nil, nil, err
@@ -77,6 +81,8 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 	canned := voiceout.NewCannedExecutor(assets, audio)
 	interpret := llmexec.NewInterpretExecutor(llmexec.InterpretConfig{LLM: set.llm})
 	npcReply := llmexec.NewNPCReplyExecutor(set.llm)
+	opening := llmexec.NewOpeningExecutor(set.llm)
+	outcome := llmexec.NewOutcomeExecutor(set.llm, gatedClue(content.DefaultWorldBible()))
 	composeSource := assets.Read
 	if fakeMode {
 		composeSource = func(ctx context.Context, id domain.AssetID) ([]byte, error) {
@@ -95,15 +101,24 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 		Sounds: set.sound, Assets: assets, Budget: ledger, Fake: fakeMode,
 		Fallbacks: loadVoiceFallbacks(filepath.Join("artifacts", "runtime", "buildtime", "manifest.json")),
 	})
-	runtime.Handle(runner, loggedExecutor(cfg.logger, transcriber.Execute))
+	keyterms := content.DefaultWorldBible().Keyterms
+	runtime.Handle(runner, loggedExecutor(cfg.logger, func(ctx context.Context, effect domain.Transcribe, scope domain.Scope, in ports.Inbox) {
+		transcriber.Execute(ctx, withKeyterms(effect, keyterms), scope, in)
+	}))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, interpret.Execute))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, llmexec.NewCharacterFlavorExecutor(set.llm).Execute))
+	cast := content.DefaultOneShot().NPCs
 	runtime.Handle(runner, loggedExecutor(cfg.logger, func(ctx context.Context, effect domain.StartLine, scope domain.Scope, in ports.Inbox) {
+		effect = castVoice(cast, effect)
 		switch effect.Role {
 		case vocab.RoleNPCReply:
 			speakGenerated(npcReply.Execute, pcm.StartLine)(ctx, effect, scope, in)
-		case vocab.RoleOpening, vocab.RoleCliffhanger:
-			cannedWhenEmpty(pcm.StartLine)(ctx, effect, scope, in)
+		case vocab.RoleOpening:
+			cannedWhenEmpty(speakGenerated(opening.Execute, pcm.StartLine))(ctx, effect, scope, in)
+		case vocab.RoleNPCReveal, vocab.RoleNPCRefuse:
+			speakGeneratedOr(outcome.Execute, pcm.StartLine, scriptedOutcomeText(effect.Role))(ctx, effect, scope, in)
+		case vocab.RoleCliffhanger:
+			scriptedCliffhanger(pcm.StartLine)(ctx, effect, scope, in)
 		default:
 			pcm.StartLine(ctx, effect, scope, in)
 		}
@@ -192,6 +207,9 @@ type configForWire struct {
 	recordings ports.Recordings
 	cache      ports.Cache
 	billboards *billboardHub
+	// assembler collects push-to-talk audio: the Talk server writes to it and
+	// the transcriber reads from it. Nil builds a private one (tests).
+	assembler *voicein.Assembler
 }
 
 type assetStore struct{ root, buildtime string }

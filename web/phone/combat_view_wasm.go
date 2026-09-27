@@ -72,7 +72,11 @@ func combatProfile(snapshot CombatSnapshot, theme PhoneTheme) ui.Node {
 		if value := strings.TrimSpace(snapshot.Character.GetClassName()); value != "" {
 			role = value
 		}
-		portraitURL = strings.TrimSpace(snapshot.Character.GetPortraitUrl())
+		// The server sends a logical art name (e.g. "ui/species_human") until
+		// the seat's generated portrait exists; portraitSrc resolves it
+		// through the gRPC art source instead of using it as a raw <img> src
+		// (which 404s on a literal /ui/species_human request).
+		portraitURL = portraitSrc(strings.TrimSpace(snapshot.Character.GetPortraitUrl()))
 	}
 	portrait := combatPortrait(name, portraitURL, theme)
 	status := combatHPState(snapshot)
@@ -300,14 +304,14 @@ func combatStatus(snapshot CombatSnapshot, locale string) string {
 
 func combatDownLabel(locale string) string {
 	if strings.HasPrefix(strings.ToLower(locale), "es") {
-		return "Estas derribado - los demas continuan"
+		return "Estás derribado — los demás continúan"
 	}
-	return "You're down - the others fight on"
+	return "You're down — the others fight on"
 }
 
 func combatTargetLabel(attack *CombatAttack) string {
 	if attack == nil || strings.TrimSpace(attack.Label) == "" {
-		return "Drowned thrall"
+		return "Drowned Thrall"
 	}
 	return attack.Label
 }

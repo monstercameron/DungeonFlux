@@ -54,6 +54,14 @@ func SFXAssets() []SFXAsset {
 		{ID: "sfx_thrall_groan", Prompt: "short low drowned corpse groan, no words", DurationSeconds: 2, LUFS: -16},
 		{ID: "sfx_splash_collapse", Prompt: "waterlogged corpse collapsing into a dark splash and muddy slosh", DurationSeconds: 2, LUFS: -16},
 		{ID: "sfx_wet_footsteps", Prompt: "two wet heavy footsteps on a wooden tavern floor, close and rhythmic", DurationSeconds: 2, LUFS: -16},
+		{ID: "sfx_forest_steps", Prompt: "three quick footsteps through wet fallen leaves and soft mud on a forest path, close, no music", DurationSeconds: 1.5, LUFS: -18},
+		{ID: "sfx_thrall_slam", Prompt: "a drowned corpse's heavy fist slams into an armoured adventurer, wet meaty impact with a dull clank of metal, no voice", DurationSeconds: 1.5, LUFS: -16},
+		{ID: "sfx_crit_hit", Prompt: "devastating critical weapon strike on a drowned corpse, crunching wet impact with a bright metal ring and a deep low boom", DurationSeconds: 2, LUFS: -15},
+		{ID: "sfx_down", Prompt: "a wounded adventurer collapses onto wet leaf litter, armour and gear clattering, one heavy final thud, no voice", DurationSeconds: 2, LUFS: -16},
+		{ID: "sfx_your_turn", Prompt: "short warm two-note bell chime calling a player to act, soft and clear, no music", DurationSeconds: 0.8, LUFS: -17},
+		{ID: "sfx_phone_hurt", Prompt: "short muffled heavy body blow felt through leather armour, low punchy thump, no voice", DurationSeconds: 0.8, LUFS: -17},
+		{ID: "sfx_portrait_ready", Prompt: "soft painterly reveal, a quick brush swish into a gentle harp glissando ending on a warm chime, no music", DurationSeconds: 1.2, LUFS: -18},
+		{ID: "sfx_talk_open", Prompt: "soft wooden click with a faint warm breath of air, a quiet listening cue, no music", DurationSeconds: 0.5, LUFS: -20},
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"syscall/js"
 	"time"
 
+	dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"github.com/monstercameron/DungeonFlux/web/splat"
 )
 
@@ -224,6 +225,42 @@ func (h *battleStageHandle) setFallbackOpacity(value string) {
 	if h.fallback.Truthy() {
 		h.fallback.Get("style").Set("opacity", value)
 	}
+}
+
+// battlePrewarmDelay starts the prewarm once the hook's storm veil has
+// darkened the screen, where a short main-thread task is least visible. The
+// hook can hand over to combat after little more than a second, so the
+// prewarm cannot wait for the veil to finish.
+const battlePrewarmDelay = 450 * time.Millisecond
+
+// battlePrewarm remembers the scene the TV already prewarmed or scheduled.
+var battlePrewarm struct {
+	sceneURL string
+}
+
+// scheduleBattlePrewarm prepares the combat splat while the hook plays. Loading
+// the battle scene spent about 0.8 s of main thread on the voxel collider, its
+// grid filter and the depth-occluder boxes right at combat entry, during the
+// hook-to-combat cross-fade; the splat module caches that work, so doing it
+// here makes the entry cheap. Idempotent per scene, so render may call it.
+func scheduleBattlePrewarm(view *dungeonfluxv1.DMView) {
+	stage := BattleStageFromView(view, 1)
+	if !stage.Enabled || stage.Init.SceneURL == "" || stage.Init.SceneURL == battlePrewarm.sceneURL {
+		return
+	}
+	battlePrewarm.sceneURL = stage.Init.SceneURL
+	init := stage.Init
+	time.AfterFunc(battlePrewarmDelay, func() { prewarmBattleStage(init) })
+}
+
+func prewarmBattleStage(init splat.Init) {
+	var then js.Func
+	then = js.FuncOf(func(js.Value, []js.Value) any {
+		then.Release()
+		_ = splat.Preload(init)
+		return nil
+	})
+	js.Global().Call("eval", "(globalThis.dfSplat ? Promise.resolve() : import('/splat/js/df-splat.mjs')).catch(() => {})").Call("then", then)
 }
 
 func stageSnapshotKey(stage BattleStageModel) string {

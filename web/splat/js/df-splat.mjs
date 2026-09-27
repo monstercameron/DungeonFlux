@@ -1,4 +1,6 @@
 import { createBattleViewer } from "./battle_viewer.mjs";
+import { loadVoxelCollider } from "./voxel_collider.mjs";
+import { prewarmVoxelOccluder } from "./voxel_occlusion.mjs";
 
 const listeners = new Set();
 let runtime = null;
@@ -59,6 +61,38 @@ function send(raw) {
   runtime?.send(message);
 }
 
+const prewarmed = new Map();
+const yieldToFrame = () => new Promise(resolve => setTimeout(resolve, 16));
+
+/**
+ * preload builds a battle scene's voxel collider, its filtered grid, and the
+ * depth-occluder boxes ahead of the init that will need them (the TV sends it
+ * during the hook). The work is the same the runtime does on load, split into
+ * steps with a yield between them; the modules cache every result, so the
+ * combat entry that follows reuses them instead of stalling the main thread.
+ */
+function preload(raw) {
+  let message;
+  try { message = typeof raw === "string" ? JSON.parse(raw) : raw; } catch { return; }
+  const url = typeof message?.scene_url === "string" && /\/scenes\/[^/]+\.json$/.test(message.scene_url) ? message.scene_url : "";
+  if (!url || prewarmed.has(url)) return;
+  const job = (async () => {
+    const profile = await gameProfile(url, message);
+    const voxel = profile.voxel_collider && typeof profile.voxel_collider === "object" ? profile.voxel_collider : null;
+    const voxelURL = profile.voxel_collider_url || voxel?.url;
+    if (!voxelURL) return;
+    const collider = await loadVoxelCollider(voxelURL, { ...(voxel ?? {}), ...profile.voxel_collider_options, transform: profile.transform ?? voxel?.transform });
+    await yieldToFrame();
+    const grid = profile.grid ? collider.filterGrid(profile.grid, { ...(voxel ?? {}), ...(profile.voxel_collider_options ?? {}) }) : null;
+    await yieldToFrame();
+    const boxes = collider.occupiedBoxes();
+    await yieldToFrame();
+    if (grid) prewarmVoxelOccluder(boxes, grid, { maxBoxes: 65536 });
+  })();
+  prewarmed.set(url, job);
+  job.catch(() => prewarmed.delete(url));
+}
+
 /** Registers a bridge event listener and returns its unsubscribe function. */
 function onEvent(listener) {
   if (typeof listener !== "function") throw new TypeError("listener must be a function");
@@ -68,5 +102,5 @@ function onEvent(listener) {
 }
 /** Returns the live runtime's state snapshot (tokens, camera, grid) for debugging, or null. */
 function state() { return { runtime: runtime?.getState?.() ?? null, lastScene }; }
-if (typeof window !== "undefined") window.dfSplat = Object.freeze({ send, onEvent, state });
-export { send, onEvent };
+if (typeof window !== "undefined") window.dfSplat = Object.freeze({ send, onEvent, state, preload });
+export { send, onEvent, preload };

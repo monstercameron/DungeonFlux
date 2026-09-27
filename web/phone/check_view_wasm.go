@@ -35,7 +35,7 @@ func checkScreenStyle() map[string]string {
 	return map[string]string{
 		"min-height": "100%", "box-sizing": "border-box", "display": "flex", "flex-direction": "column",
 		"gap": "14px", "padding": "4px 0 10px", "color": "#efe6d2", "font-family": "Inter, ui-sans-serif, system-ui, sans-serif",
-		"background": diceBackground(), "background-size": "cover", "background-position": "center",
+		"background-image": diceBackground(), "background-size": "cover", "background-position": "center",
 	}
 }
 

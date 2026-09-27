@@ -29,28 +29,23 @@ func lobbySurfaceStyle() map[string]string {
 }
 
 func titlePlateAt(wordmark string) ui.Node {
-	return html.Div(html.Props{Class: "df-lobby-title-plate", Style: absoluteStyle(250, 60, 750, 205)}, TitlePlate(wordmark, "DungeonFlux", titleSubtitle))
+	return html.Div(html.Props{Class: "df-lobby-title-plate", Style: absoluteStyle(250, 60, 750, 205)},
+		TitlePlate(wordmark, "DungeonFlux", titleSubtitle), lobbyCrestLoop())
 }
 
 func lobbyTagline() ui.Node {
 	return html.Div(html.Props{Class: "df-lobby-tagline", Style: absoluteStyle(50, 55, 210, 95)}, html.P(html.Props{}, ui.Text(T("en", "dm.lobby.tagline", nil))))
 }
 
+// lobbyStatus shows only the single primary action row (Begin the tale /
+// Waiting for players (n/2)). The raw join URL and the developer-only rows
+// ("Host controls on the host page", "Locale: EN") belong on the host page,
+// not in front of the table; the short join text and QR live in the join
+// panel instead.
 func lobbyStatus(model LobbyModel) ui.Node {
 	return html.Div(html.Props{Class: "df-lobby-status-stack", Style: map[string]string{"position": "absolute", "left": "390px", "top": "384px", "width": "500px", "z-index": "4", "display": "grid", "gap": "10px"}},
 		GoldPlateButton("✦", LobbyStatus(model)),
-		DarkButton("↗", "Join: "+shortJoinURL(model.JoinURL)),
-		DarkButton("⌂", "Host controls on the host page"),
-		DarkButton("文", "Locale: "+strings.ToUpper(localeOrDefault(model.Locale))),
 	)
-}
-
-func shortJoinURL(value string) string {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return "/p"
-	}
-	return value
 }
 
 func lobbyQuote() ui.Node {
@@ -67,15 +62,20 @@ func lobbyJoinPanel(model LobbyModel, art titleArt) ui.Node {
 	return panelAt("PLAYERS JOIN HERE", 40, 665, 520, 320, art.PanelFrame, content...)
 }
 
+// lobbyQR renders the QR inside a small light inset on a dark surround
+// (df-lobby-qr-wrap), instead of the QR's own white square filling the whole
+// tile as the brightest element on the screen. The modules themselves still
+// need real contrast to scan, so the inset stays light; only its margin goes
+// dark.
 func lobbyQR(value string) ui.Node {
 	value = strings.TrimSpace(value)
 	if resolved := ArtURL(value); resolved != "" {
 		value = resolved
 	}
 	if value == "" {
-		return html.Div(html.Props{Class: "df-lobby-qr-empty", Role: "img", Aria: map[string]string{"label": "Join QR code loading"}}, ui.Text(T("en", "dm.lobby.qr", nil)))
+		return html.Div(html.Props{Class: "df-lobby-qr-inset"}, html.Div(html.Props{Class: "df-lobby-qr-empty", Role: "img", Aria: map[string]string{"label": "Join QR code loading"}}, ui.Text(T("en", "dm.lobby.qr", nil))))
 	}
-	return html.Img(html.Props{Class: "df-lobby-qr-image", Src: value, Alt: T("en", "dm.lobby.qr_alt", nil)})
+	return html.Div(html.Props{Class: "df-lobby-qr-inset"}, html.Img(html.Props{Class: "df-lobby-qr-image", Src: value, Alt: T("en", "dm.lobby.qr_alt", nil)}))
 }
 
 func lobbyPartyPanel(model LobbyModel, art titleArt) ui.Node {
@@ -114,6 +114,9 @@ func absoluteStyle(left, top, width, height int) map[string]string {
 	return map[string]string{"position": "absolute", "left": strconv.Itoa(left) + "px", "top": strconv.Itoa(top) + "px", "width": strconv.Itoa(width) + "px", "height": strconv.Itoa(height) + "px"}
 }
 
+// lobbyFooter shows the session credit line only. The tagline (top-left) and
+// the scan prompt (inside the join panel) each already appear once; this
+// used to repeat both, which read as a stutter at the bottom of the screen.
 func lobbyFooter() ui.Node {
-	return html.Div(html.Props{Class: "df-lobby-footer", Style: map[string]string{"position": "absolute", "left": "40px", "right": "40px", "top": "1005px", "display": "flex", "justify-content": "space-between"}}, html.Span(html.Props{}, ui.Text(T("en", "dm.lobby.scan", nil))), html.Span(html.Props{}, ui.Text(T("en", "dm.lobby.quote", nil))))
+	return html.Div(html.Props{Class: "df-lobby-footer", Style: map[string]string{"position": "absolute", "left": "40px", "right": "40px", "top": "1005px", "display": "flex", "justify-content": "center"}}, html.Span(html.Props{}, ui.Text(T("en", "dm.brand", nil))))
 }

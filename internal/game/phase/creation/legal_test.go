@@ -18,7 +18,7 @@ func TestLegalMoveViews_CreationSeatStates(t *testing.T) {
 			name:    "before either choice",
 			state:   SeatState{},
 			enabled: []vocab.MoveID{vocab.MoveSpecies, vocab.MoveGender, vocab.MoveClass},
-			reasons: []string{"", "", "", reasonChooseIdentity, reasonReady},
+			reasons: []string{"", "", "", reasonChooseIdentity, reasonRenameFirst, reasonReady},
 		},
 		{
 			name:  "species only",
@@ -26,31 +26,31 @@ func TestLegalMoveViews_CreationSeatStates(t *testing.T) {
 			enabled: []vocab.MoveID{
 				vocab.MoveSpecies, vocab.MoveGender, vocab.MoveClass,
 			},
-			reasons: []string{"", "", "", reasonChooseIdentity, reasonReady},
+			reasons: []string{"", "", "", reasonChooseIdentity, reasonRenameFirst, reasonReady},
 		},
 		{
 			name:    "all choices",
 			state:   SeatState{Species: "elf", Gender: "female", Class: rules.Wizard},
 			enabled: []vocab.MoveID{vocab.MoveSpecies, vocab.MoveGender, vocab.MoveClass, vocab.MoveRollHero},
-			reasons: []string{"", "", "", "", reasonReady},
+			reasons: []string{"", "", "", "", reasonRenameFirst, reasonReady},
 		},
 		{
 			name:    "rolled",
 			state:   SeatState{Species: "elf", Gender: "female", Built: true},
-			enabled: []vocab.MoveID{vocab.MoveReady},
-			reasons: []string{reasonRollHero, reasonRollHero, reasonRollHero, reasonRollHero, ""},
+			enabled: []vocab.MoveID{vocab.MoveRename, vocab.MoveReady},
+			reasons: []string{reasonRollHero, reasonRollHero, reasonRollHero, reasonRollHero, "", ""},
 		},
 		{
 			name:    "locked",
 			state:   SeatState{Species: "elf", Gender: "female", Built: true, Locked: true},
 			enabled: nil,
-			reasons: []string{reasonLocked, reasonLocked, reasonLocked, reasonLocked, reasonLocked},
+			reasons: []string{reasonLocked, reasonLocked, reasonLocked, reasonLocked, reasonLocked, reasonLocked},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			moves := LegalMoveViews(test.state)
-			if len(moves) != 5 {
+			if len(moves) != 6 {
 				t.Fatalf("moves = %#v", moves)
 			}
 			wantEnabled := make(map[vocab.MoveID]bool, len(test.enabled))
@@ -68,7 +68,7 @@ func TestLegalMoveViews_CreationSeatStates(t *testing.T) {
 
 func TestLegalMoveViews_UsesStableMoveOrder(t *testing.T) {
 	moves := LegalMoveViews(SeatState{Species: "human", Gender: "male"})
-	want := []vocab.MoveID{vocab.MoveSpecies, vocab.MoveGender, vocab.MoveClass, vocab.MoveRollHero, vocab.MoveReady}
+	want := []vocab.MoveID{vocab.MoveSpecies, vocab.MoveGender, vocab.MoveClass, vocab.MoveRollHero, vocab.MoveRename, vocab.MoveReady}
 	for index, move := range moves {
 		if move.ID != want[index] {
 			t.Fatalf("move %d = %q, want %q", index, move.ID, want[index])

@@ -53,7 +53,7 @@ func TestDMText_SeatStatusAndNames(t *testing.T) {
 	if got := VsDC("es", 10); got != "contra CD 10" {
 		t.Fatalf("vs dc = %q", got)
 	}
-	if got := TimerLabel("es", 30000); got != "Temporizador: quedan 30000 milisegundos" {
+	if got := TimerLabel("es", 30000); got != "Temporizador: quedan 30 s" {
 		t.Fatalf("timer = %q", got)
 	}
 }

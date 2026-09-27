@@ -61,6 +61,26 @@ function isFloorVolume(box, grid, options) {
   return box.max[1] <= nearestFloor + options.clearance + options.floorStep;
 }
 
+// Extraction and geometry are pure in their inputs and cost ~200 ms on the TV,
+// so they are kept per collider box list (a memoized, immutable array).
+const extracted = new WeakMap();
+const geometries = new WeakMap();
+
+function cachedExtract(source, options) {
+  if (!source || typeof source !== "object") return extractColliderBoxes(source, options);
+  const key = JSON.stringify([options.clearance, options.floorStep, options.maxBoxes, options.voxelSize, options.grid ?? null]);
+  let byKey = extracted.get(source);
+  if (!byKey) extracted.set(source, byKey = new Map());
+  if (!byKey.has(key)) {
+    let limit = null;
+    const boxes = extractColliderBoxes(source, { ...options, onLimit: info => { limit = info; } });
+    byKey.set(key, { boxes, limit });
+  }
+  const entry = byKey.get(key);
+  if (entry.limit) options.onLimit?.(entry.limit);
+  return entry.boxes;
+}
+
 /** Extracts bounded world-space obstruction boxes from an exposed collider tree. */
 export function extractColliderBoxes(source, options = {}) {
   const settings = {
@@ -184,13 +204,21 @@ function depthMaterial(pc, options) {
   return material;
 }
 
+/** Computes (and caches) the depth-proxy boxes and geometry without a PlayCanvas app. */
+export function prewarmVoxelOccluder(source, grid, options = {}) {
+  const boxes = cachedExtract(source, { ...options, grid });
+  if (!geometries.has(boxes)) geometries.set(boxes, occluderGeometry(boxes));
+  return boxes.length;
+}
+
 /** Creates a color-free depth-only PlayCanvas proxy and exposes cleanup. */
 export function createVoxelDepthOccluder(pc, app, source, grid, options = {}) {
   if (!pc?.Mesh || !pc?.StandardMaterial || !app?.graphicsDevice) {
     throw new TypeError("PlayCanvas and an application are required");
   }
-  const boxes = extractColliderBoxes(source, { ...options, grid });
-  const geometry = occluderGeometry(boxes);
+  const boxes = cachedExtract(source, { ...options, grid });
+  if (!geometries.has(boxes)) geometries.set(boxes, occluderGeometry(boxes));
+  const geometry = geometries.get(boxes);
   const mesh = new pc.Mesh(app.graphicsDevice);
   mesh.setPositions(geometry.positions);
   mesh.setIndices(geometry.indices);

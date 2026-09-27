@@ -29,7 +29,7 @@ func diceScreenStyle() map[string]string {
 	style := map[string]string{
 		"position": "absolute", "left": "0", "top": "-194px", "width": "1920px", "height": "1080px",
 		"overflow": "hidden", "color": "#efe6d2", "font-family": "Inter,ui-sans-serif,system-ui,sans-serif",
-		"background": "radial-gradient(circle at 50% 45%, rgba(28,36,47,.24), rgba(8,10,15,.92) 75%), #0f1117",
+		"background-color": "#0f1117", "background-image": "radial-gradient(circle at 50% 45%, rgba(28,36,47,.24), rgba(8,10,15,.92) 75%)",
 	}
 	if artURL := ArtURL("ui/check_backdrop"); artURL != "" {
 		style["background-image"] = "linear-gradient(180deg, rgba(7,10,15,.26), rgba(7,10,15,.82)), url('" + artURL + "')"

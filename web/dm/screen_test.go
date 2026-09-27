@@ -14,11 +14,16 @@ func TestSelectLayers_AllPhases(t *testing.T) {
 	}{
 		{"lobby", []Layer{LayerLobby, LayerMusic}},
 		{"creation", []Layer{LayerCreation, LayerMusic}},
-		{"opening", []Layer{LayerScene, LayerClip, LayerMusic}},
+		// No Clip data on this bare state: the establishing clip layer only
+		// mounts once there is a clip to show (see hasClip), otherwise its
+		// opaque fallback still hid the scene's title, party and DM box.
+		{"opening", []Layer{LayerScene, LayerMusic}},
 		{"exploration", []Layer{LayerScene, LayerMusic}},
 		{"conversation", []Layer{LayerScene, LayerMusic}},
 		{"check", []Layer{LayerScene, LayerMusic, LayerDice}},
-		{"resolution", []Layer{LayerScene, LayerMusic, LayerDice}},
+		// Resolution narrates the outcome through the scene caption; the dice
+		// layer belongs to check, not to the reveal that follows it.
+		{"resolution", []Layer{LayerScene, LayerMusic}},
 		{"hook_event", []Layer{LayerScene, LayerClip, LayerCallout, LayerMusic}},
 		{"combat", []Layer{LayerCombat, LayerDice, LayerTimer, LayerMusic}},
 		{"cliffhanger", []Layer{LayerScene, LayerClip, LayerMusic}},
@@ -31,6 +36,16 @@ func TestSelectLayers_AllPhases(t *testing.T) {
 				t.Fatalf("SelectLayers(%q) = %#v, want %#v", test.phase, got, test.want)
 			}
 		})
+	}
+}
+
+func TestSelectLayers_OpeningWithClipDataMountsClipLayer(t *testing.T) {
+	state := &dungeonfluxv1.ScreenState{Phase: "opening", View: &dungeonfluxv1.ScreenState_Dm{Dm: &dungeonfluxv1.DMView{
+		Clip: &dungeonfluxv1.Clip{Url: "establishing_tavern"},
+	}}}
+	want := []Layer{LayerScene, LayerClip, LayerMusic}
+	if got := SelectLayers(state); !reflect.DeepEqual(got, want) {
+		t.Fatalf("SelectLayers(opening with clip) = %#v, want %#v", got, want)
 	}
 }
 

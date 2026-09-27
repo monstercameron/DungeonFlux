@@ -109,6 +109,32 @@ func TestDialogueModelFromState_HidesOutsideConversation(t *testing.T) {
 	}
 }
 
+func TestDialogueModelFromState_ProjectsPartyFromBuildCardsCappedAtTwo(t *testing.T) {
+	state := &dungeonfluxv1.ScreenState{
+		Phase: "conversation",
+		View: &dungeonfluxv1.ScreenState_Dm{Dm: &dungeonfluxv1.DMView{
+			BuildCards: []*dungeonfluxv1.BuildCard{
+				nil,
+				{PlayerNumber: 1, Name: "  ", ClassName: "paladin"},
+				{PlayerNumber: 1, Name: "Rook", ClassName: "paladin", PortraitUrl: "sha:rook"},
+				{PlayerNumber: 2, Name: "Lethiel", ClassName: "bard"},
+				{PlayerNumber: 3, Name: "Extra Seat", ClassName: "rogue"},
+			},
+		}},
+	}
+
+	model := DialogueModelFromState(state)
+	if len(model.Party) != 2 {
+		t.Fatalf("party = %#v", model.Party)
+	}
+	if model.Party[0] != (DialoguePartyMember{Name: "Rook", Class: "paladin", PortraitURL: "sha:rook"}) {
+		t.Fatalf("party[0] = %#v", model.Party[0])
+	}
+	if model.Party[1].Name != "Lethiel" || model.Party[1].Class != "bard" {
+		t.Fatalf("party[1] = %#v", model.Party[1])
+	}
+}
+
 func TestDialogueModelFromState_EmptyNarrationIsSafe(t *testing.T) {
 	state := &dungeonfluxv1.ScreenState{
 		Phase: "conversation",

@@ -269,7 +269,10 @@ func (m *Machine) stepCreation(event domain.Event) (Result, error) {
 	if _, ok := event.(domain.PCLocked); ok {
 		locked = true
 	}
-	if isPassive(event) {
+	// FlavorFailed is passive in every other phase, but Creation needs it to
+	// apply the deterministic fallback hero name (creation.stepFlavorFailed),
+	// so it is the one passive event let through here.
+	if _, ok := event.(domain.FlavorFailed); !ok && isPassive(event) {
 		return Result{}, nil
 	}
 	if _, ok := event.(domain.PCLocked); ok && !m.strictCreation {
@@ -384,7 +387,14 @@ func (m *Machine) stepCheck(event domain.Event) (Result, error) {
 	if !ok {
 		return Result{}, errors.New("check has no outcome")
 	}
-	created, err := resolution.New(outcome.Success, resolution.Config{SuccessUtterance: "reveal", FailureUtterance: "refuse", SuccessText: "The clue is yours.", FailureText: "She refuses.", SuccessCanned: "canned-reveal", FailureCanned: "canned-refuse"})
+	// The outcome line's input is the player's line that led to the check
+	// (plan §0.5): the reveal or refusal prompt answers it. The canned IDs are
+	// the build-time recordings.
+	lastLine := strings.TrimSpace(m.conversation.LastText)
+	if lastLine == "" {
+		lastLine = "(presses her)"
+	}
+	created, err := resolution.New(outcome.Success, resolution.Config{SuccessUtterance: "reveal", FailureUtterance: "refuse", SuccessText: lastLine, FailureText: lastLine, SuccessCanned: "canned_npc_reveal", FailureCanned: "canned_npc_refuse"})
 	if err != nil {
 		return Result{}, err
 	}

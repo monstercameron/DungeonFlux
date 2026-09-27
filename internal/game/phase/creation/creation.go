@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/monstercameron/DungeonFlux/internal/content"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/game/rules"
 	"github.com/monstercameron/DungeonFlux/internal/game/rules/dice"
@@ -98,6 +99,8 @@ func (m *Machine) Step(event domain.Event) (Result, error) {
 		return m.stepAct(value)
 	case domain.FlavorDone:
 		return m.stepFlavor(value)
+	case domain.FlavorFailed:
+		return m.stepFlavorFailed(value)
 	case domain.PCLocked:
 		return m.stepLocked(value)
 	case domain.TimerFired:
@@ -117,6 +120,9 @@ func (m *Machine) stepAct(event domain.Act) (Result, error) {
 		return Result{}, errors.New("seat must be 1 or 2")
 	}
 	seat := &m.seats[index]
+	if event.Move == vocab.MoveRename {
+		return m.rename(index, event.Arg)
+	}
 	if seat.Locked || seat.Built {
 		return Result{}, errors.New("seat is already building or locked")
 	}
@@ -177,6 +183,54 @@ func (m *Machine) stepFlavor(event domain.FlavorDone) (Result, error) {
 	return Result{Accepted: true, Seat: copySeat(*seat)}, nil
 }
 
+// stepFlavorFailed applies the deterministic, curated fallback name (and a
+// generic look and hook) for a seat whose character_flavor call failed, so
+// the demo never shows a bare seat label like "Hero 1". It is idempotent: a
+// seat whose flavor already arrived, or that is not yet built, is untouched.
+func (m *Machine) stepFlavorFailed(event domain.FlavorFailed) (Result, error) {
+	index, ok := seatIndex(event.Seat)
+	if !ok {
+		return Result{}, errors.New("seat must be 1 or 2")
+	}
+	seat := &m.seats[index]
+	if !seat.Built || seat.Locked {
+		return Result{Accepted: true, Seat: copySeat(*seat)}, nil
+	}
+	if strings.TrimSpace(seat.Flavor.Name) == "" {
+		seat.Flavor = fallbackFlavor(*seat, m.seed, index)
+	}
+	return Result{Accepted: true, Seat: copySeat(*seat)}, nil
+}
+
+// rename applies a player-submitted hero name, valid from roll_hero (Built)
+// until the seat locks. It is rejected outside that window, on an unknown
+// seat, or when the text fails validation.
+func (m *Machine) rename(index int, raw string) (Result, error) {
+	seat := &m.seats[index]
+	if !seat.Built {
+		return Result{}, errors.New("roll a hero before renaming it")
+	}
+	if seat.Locked {
+		return Result{}, errors.New("seat is already locked")
+	}
+	name, err := SanitizeHeroName(raw)
+	if err != nil {
+		return Result{}, fmt.Errorf("rename seat %d: %w", index+1, err)
+	}
+	seat.Flavor.Name = name
+	return Result{Accepted: true, Seat: copySeat(*seat)}, nil
+}
+
+// fallbackFlavor builds a deterministic fallback flavor for a seat, using the
+// curated per-species/gender hero name table (content.FallbackHeroName)
+// seeded from the run seed and seat index, so the same run always yields the
+// same fallback name.
+func fallbackFlavor(seat SeatState, seed []byte, index int) domain.Flavor {
+	nameSeed := append(append([]byte(nil), seed...), byte(index+1), 'n', 'a', 'm', 'e')
+	name := content.FallbackHeroName(seat.Species, seat.Gender, nameSeed)
+	return domain.Flavor{Name: name, Look: "A capable adventurer.", Hook: "A story still waits to be told."}
+}
+
 func (m *Machine) stepLocked(event domain.PCLocked) (Result, error) {
 	index, ok := seatIndex(event.Seat)
 	if !ok {
@@ -214,6 +268,9 @@ func (m *Machine) stepTimeout() (Result, error) {
 		m.seats[i].Build = build
 		m.seats[i].Built = true
 		m.seats[i].Locked = true
+		if strings.TrimSpace(m.seats[i].Flavor.Name) == "" {
+			m.seats[i].Flavor = fallbackFlavor(m.seats[i], m.seed, i)
+		}
 	}
 	return Result{Accepted: true, Complete: m.Complete()}, nil
 }
@@ -242,6 +299,9 @@ func (m *Machine) stepSeatTimeout(seat domain.SeatID) (Result, error) {
 		}
 		m.seats[index].Build = build
 		m.seats[index].Built = true
+	}
+	if strings.TrimSpace(m.seats[index].Flavor.Name) == "" {
+		m.seats[index].Flavor = fallbackFlavor(m.seats[index], m.seed, index)
 	}
 	m.seats[index].Locked = true
 	return Result{Accepted: true, Complete: m.Complete(), Seat: copySeat(m.seats[index])}, nil

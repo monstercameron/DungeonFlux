@@ -232,6 +232,12 @@ message CharacterFlavor {
   string look = 2;
   string hook = 3;
 }
+message EquipmentItem {
+  string name = 1;
+  string description = 2;
+  string slot = 3;
+  bool worn = 4;
+}
 message CharacterBuild {
   repeated int32 abilities = 1;
   repeated string save_profs = 2;
@@ -239,6 +245,11 @@ message CharacterBuild {
   int32 hp = 4;
   int32 hp_max = 5;
   int32 ac = 6;
+  string attack_name = 7;
+  string attack_dice = 8;
+  string attack_damage_type = 9;
+  int32 attack_bonus = 10;
+  repeated EquipmentItem equipment = 11;
 }
 message Character {
   string name = 1;
@@ -253,7 +264,23 @@ message Character {
   bool locked = 10;
 }
 message PTT { bool enabled = 1; PTTState state = 2; }
-message PhoneView { Character character = 1; repeated Move moves = 2; PTT ptt = 3; Timer turn_timer = 4; string status_text = 5; CombatView combat = 6; string locale = 7; Text status_msg = 8; Narration narration = 9; }
+message PhoneView {
+  Character character = 1;
+  repeated Move moves = 2;
+  PTT ptt = 3;
+  Timer turn_timer = 4;
+  string status_text = 5;
+  CombatView combat = 6;
+  string locale = 7;
+  Text status_msg = 8;
+  Narration narration = 9;
+  int32 player_number = 10;
+  string player_name = 11;
+  repeated LobbySeat seats = 12;
+  string scene_image_url = 13;
+  repeated TurnOrderEntry turn_order = 14;
+  Dice dice = 15;
+}
 message AssetSlot { string name = 1; string state = 2; }
 message HostView { DMView dm = 1; repeated string event_log_tail = 2; repeated AssetSlot asset_slots = 3; string run_mode = 4; int32 next_d20 = 5; int64 combat_cap_remaining_ms = 6; repeated string log_tail = 7; string locale = 8; string room_locale = 9; }
 message ScreenState {

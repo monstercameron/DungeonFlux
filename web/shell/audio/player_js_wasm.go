@@ -13,13 +13,15 @@ import (
 // Player schedules PCM chunks on a browser AudioContext and tracks sources by
 // utterance so AudioCancel can stop them without waiting for playback to end.
 type Player struct {
-	context         js.Value
-	sources         map[string][]js.Value
-	buses           map[Channel]js.Value
-	tracks          map[string][]js.Value
-	trackGains      map[string][]js.Value
-	reserved        map[string]bool
-	played          map[string]bool
+	context    js.Value
+	sources    map[string][]js.Value
+	buses      map[Channel]js.Value
+	tracks     map[string][]js.Value
+	trackGains map[string][]js.Value
+	reserved   map[string]bool
+	// bedLevels holds each bed's authored gain so a stinger can dip the
+	// bed under it and restore it afterwards.
+	bedLevels       map[string]float64
 	pending         map[Channel][]encodedChunk
 	pendingCommands map[Channel]pendingMix
 	scheduler       Scheduler
@@ -95,7 +97,7 @@ func NewPlayer() *Player {
 		gain.Call("connect", context.Get("destination"))
 		buses[channel] = gain
 	}
-	return &Player{context: context, sources: make(map[string][]js.Value), buses: buses, tracks: make(map[string][]js.Value), trackGains: make(map[string][]js.Value), reserved: make(map[string]bool), played: make(map[string]bool), pending: make(map[Channel][]encodedChunk), pendingCommands: make(map[Channel]pendingMix)}
+	return &Player{context: context, sources: make(map[string][]js.Value), buses: buses, tracks: make(map[string][]js.Value), trackGains: make(map[string][]js.Value), reserved: make(map[string]bool), bedLevels: make(map[string]float64), pending: make(map[Channel][]encodedChunk), pendingCommands: make(map[Channel]pendingMix)}
 }
 
 // Resume unlocks PCM playback from the table's explicit user gesture.
@@ -182,8 +184,10 @@ func (p *Player) bus(channel Channel) js.Value {
 }
 
 // HasTrack reports whether a track is playing or already reserved for decode.
+// A one-shot that has finished is not held, so a stinger plays again when a
+// reset run reaches its moment a second time.
 func (p *Player) HasTrack(id string) bool {
-	return p != nil && (p.reserved[id] || p.played[id] || len(p.tracks[id]) > 0)
+	return p != nil && (p.reserved[id] || len(p.tracks[id]) > 0)
 }
 
 // PlayURL decodes one gRPC-backed Blob URL into a tracked audio source.

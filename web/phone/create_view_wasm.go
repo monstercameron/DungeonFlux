@@ -39,7 +39,7 @@ func CreationScreen(model *CreationModel) router.Component {
 			creationPicker(model, refresh, "species", "Species", creationSpecies, snapshot.Species, pickerDisabled),
 			creationPicker(model, refresh, "gender", "Gender", creationGenders, snapshot.Gender, pickerDisabled),
 			creationClassPicker(model, refresh, locale, snapshot.Class, pickerDisabled),
-			creationBuildCard(snapshot),
+			creationBuildCard(model, refresh, locale, snapshot),
 			html.Div(html.Props{Style: map[string]string{"margin-top": "auto", "padding-top": "2px"}}, action,
 				html.P(html.Props{Role: "status", Aria: map[string]string{"live": "polite"}, Style: map[string]string{"min-height": "18px", "margin": "7px 0 0", "color": "#a89f8c", "font-size": "12px", "line-height": "1.35", "text-align": "center"}}, html.Text(creationStatus(snapshot)))),
 		)
@@ -82,7 +82,7 @@ func creationBackground() string {
 }
 
 func creationContentStyle() map[string]string {
-	return map[string]string{"min-height": "100%", "box-sizing": "border-box", "display": "flex", "flex-direction": "column", "gap": "12px", "padding": "4px 0 2px", "background": creationBackground(), "background-size": "cover", "background-position": "center", "color": "#efe6d2", "font-family": "Inter, ui-sans-serif, system-ui, sans-serif"}
+	return map[string]string{"min-height": "100%", "box-sizing": "border-box", "display": "flex", "flex-direction": "column", "gap": "12px", "padding": "4px 0 2px", "background-image": creationBackground(), "background-size": "cover", "background-position": "center", "color": "#efe6d2", "font-family": "Inter, ui-sans-serif, system-ui, sans-serif"}
 }
 
 func creationHeading(locale string) ui.Node {
@@ -112,7 +112,7 @@ func creationOptionArt(kind, id, label string) ui.Node {
 	return html.Span(html.Props{Role: "img", Aria: map[string]string{"label": label}, Style: map[string]string{"display": "grid", "place-items": "center", "width": "24px", "height": "24px", "border": "1px solid rgba(217,164,65,.55)", "border-radius": "50%", "color": "#e7c27a", "font-family": "Georgia, serif", "font-size": "14px"}}, html.Text(mark))
 }
 
-func creationBuildCard(snapshot CreationSnapshot) ui.Node {
+func creationBuildCard(model *CreationModel, refresh stateCounter, locale string, snapshot CreationSnapshot) ui.Node {
 	if snapshot.Build == nil {
 		return html.Div(html.Props{Class: "df-phone-create-empty", Style: map[string]string{"padding": "13px 12px", "border": "1px dashed rgba(168,159,140,.35)", "border-radius": "10px", "color": "#a89f8c", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "16px", "text-align": "center"}}, html.Text(T("en", "phone.create.empty", nil)))
 	}
@@ -120,12 +120,12 @@ func creationBuildCard(snapshot CreationSnapshot) ui.Node {
 	portrait := html.Div(html.Props{Role: "img", Aria: map[string]string{"label": build.GetName()}, Style: map[string]string{"width": "76px", "height": "96px", "display": "grid", "place-items": "center", "flex": "0 0 76px", "border-radius": "8px", "border": "1px solid rgba(217,164,65,.5)", "background": "radial-gradient(circle, #354052, #171a23 70%)", "color": "#e7c27a", "font-family": "Georgia, serif", "font-size": "1.4rem"}}, html.Text(T("en", "phone.create.glyph", nil)))
 	src := portraitSrc(build.GetPortraitUrl())
 	if src == "" {
-		src = heroProxyArt(snapshot.Species, build.GetClassName(), build.GetName())
+		src = heroProxyArtGendered(snapshot.Species, snapshot.Gender, build.GetClassName(), build.GetName())
 	}
 	if src != "" {
 		portrait = html.Div(html.Props{Style: map[string]string{"width": "76px", "height": "96px", "flex": "0 0 76px", "border-radius": "8px", "border": "1px solid rgba(217,164,65,.5)", "background": "#25232b", "overflow": "hidden"}}, html.Img(html.Props{Src: src, Alt: build.GetName(), Style: map[string]string{"width": "100%", "height": "100%", "object-fit": "cover"}}))
 	}
-	return html.Section(html.Props{Class: "df-phone-create-build", Style: map[string]string{"display": "flex", "gap": "12px", "align-items": "center", "padding": "10px", "border": "1px solid #d9a441", "border-radius": "10px", "background": "linear-gradient(135deg, rgba(47,39,31,.96), rgba(17,21,29,.98))", "box-shadow": "inset 0 0 24px rgba(217,164,65,.08)"}}, portrait, html.Div(html.Props{Style: map[string]string{"min-width": "0"}}, html.P(html.Props{Style: map[string]string{"margin": "0 0 3px", "color": "#e7c27a", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "22px"}}, html.Text(build.GetName())), html.P(html.Props{Style: map[string]string{"margin": "0", "color": "#efe6d2", "font-size": "13px", "letter-spacing": ".08em", "text-transform": "uppercase"}}, html.Text(build.GetClassName()))))
+	return html.Section(html.Props{Class: "df-phone-create-build", Style: map[string]string{"display": "flex", "gap": "12px", "align-items": "center", "padding": "10px", "border": "1px solid #d9a441", "border-radius": "10px", "background": "linear-gradient(135deg, rgba(47,39,31,.96), rgba(17,21,29,.98))", "box-shadow": "inset 0 0 24px rgba(217,164,65,.08)"}}, portrait, html.Div(html.Props{Style: map[string]string{"min-width": "0", "flex": "1 1 auto"}}, creationNameRow(model, refresh, locale, snapshot), html.P(html.Props{Style: map[string]string{"margin": "3px 0 0", "color": "#efe6d2", "font-size": "13px", "letter-spacing": ".08em", "text-transform": "uppercase"}}, html.Text(build.GetClassName()))))
 }
 
 func creationStatus(snapshot CreationSnapshot) string {

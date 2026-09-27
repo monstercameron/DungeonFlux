@@ -38,6 +38,9 @@ type PlaySound struct {
 	Seat    SeatID
 	Loop    bool
 	Gain    float32
+	// DelayMS starts the sound this long after it reaches the client, so an
+	// impact can land on the TV's contact frame instead of at the tap.
+	DelayMS int
 }
 type Transcribe struct {
 	Seat        SeatID

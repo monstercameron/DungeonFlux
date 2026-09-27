@@ -49,7 +49,9 @@ func previewScreen(props previewScreenProps) ui.Node {
 		name = previewPick
 	}
 	fixture, _ := Preview(name)
-	return renderPhoneScreen(SelectScreen(fixture.View), previewProps(fixture.View), fixture.View.Phone.GetLocale())
+	viewProps := previewProps(fixture.View)
+	viewProps.journal = NewJournalLog()
+	return renderPhoneScreen(SelectScreen(fixture.View), viewProps, fixture.View.Phone.GetLocale(), fixture.View, PhoneTabPlay, nil, ui.Handler{})
 }
 
 func previewProps(view SeatView) phoneViewProps {

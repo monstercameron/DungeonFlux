@@ -26,6 +26,7 @@ import (
 	"github.com/monstercameron/DungeonFlux/internal/ports"
 	"github.com/monstercameron/DungeonFlux/internal/runtime"
 	"github.com/monstercameron/DungeonFlux/internal/store/sqlite"
+	voicein "github.com/monstercameron/DungeonFlux/internal/voice/in"
 	"google.golang.org/grpc"
 )
 
@@ -159,7 +160,9 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 	}
 	watch := api.NewWatchHub()
 	listen := api.NewListenHub()
-	runner, inbox, err := newExecutors(configForWire{config: cfg, logger: logger, recordings: sqlite.NewRecordings(store), cache: sqlite.NewCache(store), billboards: billboards}, listen)
+	listen.SetLogger(logger)
+	assembler := voicein.NewAssembler()
+	runner, inbox, err := newExecutors(configForWire{config: cfg, logger: logger, recordings: sqlite.NewRecordings(store), cache: sqlite.NewCache(store), billboards: billboards, assembler: assembler}, listen)
 	if err != nil {
 		_ = store.Close()
 		_ = logFile.Close()
@@ -225,13 +228,14 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 	}
 	host.SetRoomLocales(session)
 	df.RegisterHostServiceServer(grpcServer, host)
-	talk, err := api.NewTalkServer(room, session, noopTalkSink{})
+	talk, err := api.NewTalkServer(room, session, assemblerTalkSink{assembler: assembler})
 	if err != nil {
 		cancel()
 		_ = store.Close()
 		_ = logFile.Close()
 		return nil, fmt.Errorf("wire: create talk server: %w", err)
 	}
+	talk.SetLogger(logger)
 	df.RegisterVoiceServiceServer(grpcServer, talk)
 	df.RegisterAudioServiceServer(grpcServer, &audioStreamService{hub: listen, sessions: session})
 	apiServer, err := api.NewServer(grpcServer, cfg.Server.AllowedOrigins)

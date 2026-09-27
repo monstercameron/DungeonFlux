@@ -8,8 +8,13 @@ import (
 	"github.com/monstercameron/GoWebComponents/v6/ui"
 )
 
-// CliffhangerComponent renders the final generated still and a shared speaker
-// caption, with a video clip retained when the runtime has one ready.
+// CliffhangerComponent composes the cliffhanger into one moment instead of
+// the raw clip plate: the clip or its CLIFF_GENERIC_TOWER-style browser
+// fallback (a slow tilt move on the single pinned still, plan.md §0.17),
+// a cool colour grade and vignette over it, and a caption card ("To be
+// continued…" plus the DM's line) that fades in once the grade has settled,
+// so the audience reads the beat as a deliberate cut rather than a stalled
+// frame.
 func CliffhangerComponent(model CliffhangerModel) router.Component {
 	return func(_ router.Attrs) *router.Element {
 		locale := localeOrDefault(model.Locale)
@@ -17,10 +22,17 @@ func CliffhangerComponent(model CliffhangerModel) router.Component {
 		if artURL := ArtURL("ui/cliffhanger"); artURL != "" {
 			clip.StillURL = artURL
 		}
-		return html.Section(html.Props{Class: "df-dm-cliffhanger", Role: "status", Aria: map[string]string{"live": "polite", "label": T(locale, "dm.clip_label", nil)}, Style: map[string]string{"position": "relative", "width": "100%", "height": "100%", "overflow": "hidden", "background": "#0f1117"}},
-			clipNode(clip),
-			html.Div(html.Props{Style: map[string]string{"position": "absolute", "inset": "0", "pointer-events": "none", "background": "linear-gradient(180deg,rgba(8,10,15,.12) 25%,rgba(8,10,15,.9) 100%),radial-gradient(circle at 50% 42%,transparent 25%,rgba(8,10,15,.55) 100%)"}}),
-			html.Div(html.Props{Style: map[string]string{"position": "absolute", "left": "260px", "right": "260px", "bottom": "72px", "padding": "22px 30px 10px", "pointer-events": "none"}}, SpeakerCaption(CaptionModel{Speaker: T(locale, "dm.speaker_dm", nil), Text: model.Caption})),
+		class := "df-dm-cliffhanger"
+		if clip.UseFallback {
+			class += " is-fallback-move"
+		}
+		return html.Section(html.Props{Class: class, Role: "status", Aria: map[string]string{"live": "polite", "label": T(locale, "dm.clip_label", nil)}},
+			html.Div(html.Props{Class: "df-dm-cliffhanger-frame"}, clipNode(clip)),
+			html.Div(html.Props{Class: "df-dm-cliffhanger-grade", Aria: map[string]string{"hidden": "true"}}),
+			html.Div(html.Props{Class: "df-dm-cliffhanger-card"},
+				html.P(html.Props{Class: "df-dm-cliffhanger-eyebrow"}, ui.Text(T(locale, "dm.cliffhanger_continued", nil))),
+				SpeakerCaption(CaptionModel{Speaker: T(locale, "dm.speaker_alt", nil), Text: model.Caption}),
+			),
 		)
 	}
 }
@@ -30,21 +42,31 @@ func clipNode(model ClipModel) *router.Element {
 	return component(router.Attrs{})
 }
 
-// EndCardComponent renders the terminal end card with the canonical SRD
-// attribution inside the shared ornate panel language.
+// EndCardComponent renders the terminal end card: a header band, the
+// epilogue, the party recap, the farewell and next step, and the canonical SRD
+// attribution as a quiet footer. Layout and type live in dmEndCardCSS.
 func EndCardComponent(model EndCardModel) router.Component {
 	return func(_ router.Attrs) *router.Element {
-		locale := localeOrDefault(model.Locale)
-		return html.Main(html.Props{Class: "df-dm-end-card", Role: "main", Style: endCardStyle()},
-			html.Div(html.Props{Style: map[string]string{"position": "absolute", "left": "210px", "right": "210px", "top": "145px", "bottom": "120px", "display": "grid", "place-items": "center"}},
-				OrnatePanel("THE TALE CONTINUES",
-					html.Div(html.Props{Style: map[string]string{"width": "860px", "max-width": "100%", "padding": "54px 76px 48px", "box-sizing": "border-box", "text-align": "center"}},
-						html.P(html.Props{Class: "df-eyebrow", Style: map[string]string{"margin": "0 0 18px", "color": "#d9a441", "font-family": "Inter,ui-sans-serif,system-ui,sans-serif", "font-size": "22px", "letter-spacing": ".2em", "font-weight": "700"}}, ui.Text(T(locale, "dm.eyebrow_end", nil))),
-						html.H1(html.Props{Style: map[string]string{"margin": "0", "color": "#efe6d2", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "76px", "font-weight": "500", "line-height": "1.05"}}, ui.Text(model.Title)),
-						html.P(html.Props{Style: map[string]string{"margin": "24px 0 34px", "color": "#c8bda8", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "32px", "line-height": "1.2"}}, ui.Text(model.Subtitle)),
-						html.Div(html.Props{Style: map[string]string{"height": "1px", "margin": "0 auto 24px", "background": "linear-gradient(90deg,transparent,#d9a441,transparent)"}}),
-						html.H2(html.Props{Style: map[string]string{"margin": "0 0 10px", "color": "#e7c27a", "font-family": "Inter,ui-sans-serif,system-ui,sans-serif", "font-size": "18px", "letter-spacing": ".12em", "text-transform": "uppercase"}}, ui.Text(EndRules(locale))),
-						html.P(html.Props{Style: map[string]string{"margin": "0", "color": "#a89f8c", "font-family": "Inter,ui-sans-serif,system-ui,sans-serif", "font-size": "16px", "line-height": "1.5"}}, ui.Text(model.Attribution)),
+		injectEndCardCSS()
+		return html.Main(html.Props{Class: "df-dm-end-card", Role: "main", Lang: model.Locale, Style: endCardStyle()},
+			html.Div(html.Props{Class: "df-end-shade", Aria: map[string]string{"hidden": "true"}}),
+			html.Div(html.Props{Class: "df-end-stage"},
+				html.Section(html.Props{Class: "df-ornate-panel df-end-panel", Role: "region", Aria: map[string]string{"labelledby": "df-end-heading"}},
+					endCorner("is-tl"), endCorner("is-tr"), endCorner("is-bl"), endCorner("is-br"),
+					html.Header(html.Props{Class: "df-end-header"},
+						html.H2(html.Props{ID: "df-end-heading", Class: "df-end-header-title"}, ui.Text(model.Header)),
+					),
+					html.Div(html.Props{Class: "df-end-body"},
+						html.H1(html.Props{Class: "df-end-epilogue df-end-reveal"}, ui.Text(model.Title)),
+						html.P(html.Props{Class: "df-end-hook df-end-reveal"}, ui.Text(model.Hook)),
+						endParty(model),
+						html.Div(html.Props{Class: "df-end-divider df-end-reveal", Aria: map[string]string{"hidden": "true"}}),
+						html.P(html.Props{Class: "df-end-thanks df-end-reveal"}, ui.Text(model.Subtitle)),
+						html.P(html.Props{Class: "df-end-next df-end-reveal"}, ui.Text(model.Next)),
+					),
+					html.Footer(html.Props{Class: "df-end-footer df-end-reveal"},
+						html.H3(html.Props{Class: "df-end-rules"}, ui.Text(model.Rules)),
+						html.P(html.Props{Class: "df-end-attribution"}, ui.Text(model.Attribution)),
 					),
 				),
 			),
@@ -52,12 +74,44 @@ func EndCardComponent(model EndCardModel) router.Component {
 	}
 }
 
-func endCardStyle() map[string]string {
-	style := map[string]string{"position": "relative", "width": "100%", "height": "100%", "overflow": "hidden", "background": "radial-gradient(circle at 50% 35%,#25232a,#171820 48%,#0f1117 100%)", "color": "#efe6d2"}
-	if artURL := ArtURL("ui/end_bg"); artURL != "" {
-		style["background-image"] = "linear-gradient(180deg,rgba(15,17,23,.22),rgba(15,17,23,.86)),url('" + artURL + "')"
-		style["background-size"] = "cover"
-		style["background-position"] = "center"
+func endCorner(position string) ui.Node {
+	return html.Span(html.Props{Class: "df-end-corner " + position, Aria: map[string]string{"hidden": "true"}})
+}
+
+// endParty renders the recap row, or nothing when the view carried no heroes.
+func endParty(model EndCardModel) ui.Node {
+	if len(model.Heroes) == 0 {
+		return html.Span(html.Props{Class: "df-end-party-empty", Hidden: true})
 	}
-	return style
+	heroes := make([]ui.Node, 0, len(model.Heroes))
+	for _, hero := range model.Heroes {
+		heroes = append(heroes, endHeroNode(hero))
+	}
+	return html.Div(html.Props{Class: "df-end-party df-end-reveal", Role: "group", Aria: map[string]string{"label": model.Party}},
+		html.P(html.Props{Class: "df-end-party-label"}, ui.Text(model.Party)),
+		html.Ul(html.Props{Class: "df-end-heroes"}, heroes...),
+	)
+}
+
+func endHeroNode(hero EndHero) ui.Node {
+	var portrait ui.Node
+	if url := endHeroPortrait(hero); url != "" {
+		portrait = html.Img(html.Props{Class: "df-end-hero-img", Src: url, Alt: hero.Name})
+	} else {
+		portrait = html.Span(html.Props{Class: "df-end-hero-glyph", Aria: map[string]string{"hidden": "true"}})
+	}
+	return html.Li(html.Props{Class: "df-end-hero"},
+		html.Span(html.Props{Class: "df-end-hero-portrait"}, portrait),
+		html.Span(html.Props{Class: "df-end-hero-name"}, ui.Text(hero.Name)),
+		html.Span(html.Props{Class: "df-end-hero-class"}, ui.Text(hero.Class)),
+	)
+}
+
+// endCardStyle sets only the backdrop art inline; everything else is in
+// dmEndCardCSS so a re-render never leaves stale inline keys behind.
+func endCardStyle() map[string]string {
+	if artURL := ArtURL("ui/end_bg"); artURL != "" {
+		return map[string]string{"background-image": "url('" + artURL + "')"}
+	}
+	return map[string]string{}
 }

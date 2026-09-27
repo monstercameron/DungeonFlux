@@ -176,10 +176,14 @@ func projectLobby(lobby LobbyProjection) *df.Lobby {
 
 func projectPhone(view domain.View, seat domain.SeatID) *df.PhoneView {
 	out := &df.PhoneView{Ptt: &df.PTT{State: df.PTTState_PTT_STATE_IDLE}, Narration: projectNarration(view.Scene)}
+	out.Seats = projectLobbySeats(view.Seats)
+	out.SceneImageUrl = view.Scene.BackgroundURL
 	for _, item := range view.Seats {
 		if item.Seat != seat {
 			continue
 		}
+		out.PlayerNumber = int32(item.PlayerNumber)
+		out.PlayerName = seatDisplayName(item)
 		out.Character = projectCharacter(item.Character)
 		if out.Character != nil {
 			out.Character.Build = projectCharacterBuild(item.Character, item.Build)
@@ -193,8 +197,26 @@ func projectPhone(view domain.View, seat domain.SeatID) *df.PhoneView {
 	if view.Combat != nil {
 		out.Combat = projectPhoneCombat(*view.Combat)
 		out.Combat = projectPhoneCombatMap(out.Combat, view, seat)
+		out.TurnOrder = projectTurnOrder(view.Combat.TurnOrder)
+	}
+	if view.Dice != nil {
+		// INT-009: the phone needs the same check/attack roll the TV shows
+		// (modifier, DC, kept face, and outcome), not just the move preview.
+		out.Dice = projectDice(*view.Dice)
 	}
 	return out
+}
+
+// seatDisplayName returns the name a player has chosen for their seat,
+// falling back to the rolled character's name when Join set no name.
+func seatDisplayName(seat domain.SeatView) string {
+	if name := strings.TrimSpace(seat.PlayerName); name != "" {
+		return name
+	}
+	if seat.Character != nil && strings.TrimSpace(seat.Character.Name) != "" {
+		return seat.Character.Name
+	}
+	return ""
 }
 
 func projectNarration(scene domain.SceneView) *df.Narration {
@@ -224,7 +246,7 @@ func projectCharacter(character *domain.Character) *df.Character {
 		Name:               character.Name,
 		ClassName:          character.Class,
 		PersuasionModifier: int32(character.PersuasionModifier),
-		PortraitUrl:        heroPortrait(string(character.Portrait), character.Species),
+		PortraitUrl:        heroPortrait(string(character.Portrait), character.Species, character.Gender),
 		HookText:           character.Hook,
 		Species:            character.Species,
 		Gender:             character.Gender,
@@ -256,7 +278,20 @@ func projectCharacterBuild(character *domain.Character, card *domain.BuildCard) 
 		build.SkillProfs[skill] = level
 	}
 	build.Hp, build.HpMax, build.Ac = int32(stats.HP), int32(stats.MaxHP), int32(stats.AC)
+	build.AttackName, build.AttackDice, build.AttackDamageType, build.AttackBonus = stats.AttackName, stats.AttackDice, stats.AttackDamageType, int32(stats.AttackBonus)
+	build.Equipment = projectEquipment(stats.Equipment)
 	return build
+}
+
+func projectEquipment(items []domain.EquipmentItem) []*df.EquipmentItem {
+	if len(items) == 0 {
+		return nil
+	}
+	out := make([]*df.EquipmentItem, 0, len(items))
+	for _, item := range items {
+		out = append(out, &df.EquipmentItem{Name: item.Name, Description: item.Description, Slot: item.Slot, Worn: item.Worn})
+	}
+	return out
 }
 
 func characterLocked(moves []domain.MoveView) bool {
@@ -312,12 +347,12 @@ func projectBuildCards(seats []domain.SeatView) []*df.BuildCard {
 		if seat.Build == nil {
 			continue
 		}
-		species := ""
+		species, gender := "", ""
 		if seat.Character != nil {
-			species = seat.Character.Species
+			species, gender = seat.Character.Species, seat.Character.Gender
 		}
 		out = append(out, &df.BuildCard{PlayerNumber: int32(seat.Build.PlayerNumber), Name: seat.Build.Name,
-			ClassName: seat.Build.Class, PortraitUrl: heroPortrait(string(seat.Build.Portrait), species)})
+			ClassName: seat.Build.Class, PortraitUrl: heroPortrait(string(seat.Build.Portrait), species, gender)})
 	}
 	return out
 }
@@ -549,14 +584,21 @@ func ints32(values []int) []int32 {
 }
 
 // heroPortrait is the portrait clients show for a hero: the generated one when
-// it exists, otherwise the rolled species art as a stand-in. The server picks
-// it so the TV and the player's phone always show the same stand-in.
-func heroPortrait(portrait, species string) string {
+// it exists, otherwise a stand-in for the rolled species and gender (OPS-028
+// registers ui/species_<species>_<gender> for every species x gender the
+// creation phase offers). The server picks it so the TV and the player's
+// phone always show the same stand-in, and so a paladin and a rogue of
+// different genders no longer collapse onto one shared male portrait.
+func heroPortrait(portrait, species, gender string) string {
 	if strings.TrimSpace(portrait) != "" {
 		return portrait
 	}
-	if species = strings.ToLower(strings.TrimSpace(species)); species != "" {
-		return "ui/species_" + species
+	species = strings.ToLower(strings.TrimSpace(species))
+	if species == "" {
+		return ""
 	}
-	return ""
+	if gender = strings.ToLower(strings.TrimSpace(gender)); gender != "" {
+		return "ui/species_" + species + "_" + gender
+	}
+	return "ui/species_" + species
 }

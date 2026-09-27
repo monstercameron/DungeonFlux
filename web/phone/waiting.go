@@ -48,6 +48,14 @@ func NewWaitingModel(view SeatView) WaitingModel {
 	return model
 }
 
+// WaitingWelcome returns the localized seat-card greeting.
+func WaitingWelcome(locale, name string) string {
+	if strings.EqualFold(strings.TrimSpace(locale), "es") {
+		return "Bienvenido, " + name
+	}
+	return "Welcome, " + name
+}
+
 // WaitingStatus returns the concise status line shown beneath the seat card.
 func WaitingStatus(locale string) string {
 	if strings.EqualFold(strings.TrimSpace(locale), "es") {
