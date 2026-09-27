@@ -1,9 +1,12 @@
 package phone
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
+
+	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 )
 
 func TestToggleControl_Tap(t *testing.T) {
@@ -149,5 +152,42 @@ func TestTalkStatus(t *testing.T) {
 				t.Fatalf("talkStatus = (%q, %q, %q), want (%q, %q, %q)", status, label, aria, tc.wantStatus, tc.wantLabel, tc.wantAria)
 			}
 		})
+	}
+}
+
+type countingTalkStream struct{ sent int }
+
+func (s *countingTalkStream) Send(*df.TalkRequest) error { s.sent++; return nil }
+func (s *countingTalkStream) CloseSend() error           { return nil }
+
+type countingOpener struct{ stream *countingTalkStream }
+
+func (o countingOpener) OpenTalk(context.Context) (TalkStream, error) { return o.stream, nil }
+
+func TestPTTModel_SentCountsChunksPerRecording(t *testing.T) {
+	stream := &countingTalkStream{}
+	model := NewPTTModel(countingOpener{stream: stream}, "seat", 4)
+	for round, sizes := range [][]int{{3, 5}, {7}} {
+		if err := model.Start(context.Background(), "audio/webm"); err != nil {
+			t.Fatal(err)
+		}
+		want := SentAudio{}
+		for _, size := range sizes {
+			if !model.QueueChunk(make([]byte, size)) {
+				t.Fatalf("round %d: chunk rejected", round)
+			}
+			want.Chunks++
+			want.Bytes += size
+		}
+		if err := <-model.Stop(context.Background()); err != nil {
+			t.Fatalf("round %d: stop: %v", round, err)
+		}
+		if got := model.Sent(); got != want {
+			t.Fatalf("round %d: sent = %+v, want %+v (counts reset per recording)", round, got, want)
+		}
+	}
+	var nilModel *PTTModel
+	if nilModel.Sent() != (SentAudio{}) {
+		t.Fatal("nil model reported sent audio")
 	}
 }

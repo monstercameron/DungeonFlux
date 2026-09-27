@@ -64,6 +64,7 @@ type PTTModel struct {
 	stop    chan struct{}
 	err     error
 	toggle  *ToggleControl
+	sent    SentAudio
 }
 
 // NewPTTModel creates a recorder model with a bounded audio queue.
@@ -130,6 +131,7 @@ func (m *PTTModel) Start(ctx context.Context, mimeType string) error {
 		<-m.queue
 	}
 	m.pending = 0
+	m.sent = SentAudio{}
 	m.mu.Unlock()
 	stream, err := m.opener.OpenTalk(ctx)
 	if err != nil {
@@ -298,8 +300,29 @@ func (m *PTTModel) sendChunk(stream TalkStream, seq uint64, chunk []byte) error 
 	err := stream.Send(&df.TalkRequest{Message: &df.TalkRequest_Chunk{Chunk: &df.AudioChunk{Seq: seq, Data: chunk}}})
 	if err != nil {
 		m.setError(err)
+		return err
 	}
-	return err
+	m.mu.Lock()
+	m.sent.Chunks++
+	m.sent.Bytes += len(chunk)
+	m.mu.Unlock()
+	return nil
+}
+
+// SentAudio counts what the current recording has put on the Talk stream.
+type SentAudio struct {
+	Chunks int
+	Bytes  int
+}
+
+// Sent reports the chunks and bytes the current (or last) recording sent.
+func (m *PTTModel) Sent() SentAudio {
+	if m == nil {
+		return SentAudio{}
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.sent
 }
 
 func (m *PTTModel) fail(err error) {

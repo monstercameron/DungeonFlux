@@ -5,6 +5,7 @@ package phone
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"syscall/js"
 	"time"
@@ -61,8 +62,10 @@ func beginTalk(model *PTTModel, locale string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	recorder, stream, err := openTalk(ctx, model, locale)
 	if err != nil {
+		talkDebug("[talk] could not start recording: " + err.Error())
 		cancel()
 	} else {
+		talkDebug("[talk] microphone open, Talk stream started (TalkStart sent)")
 		session.mu.Lock()
 		session.recorder, session.stream, session.cancel = recorder, stream, cancel
 		session.mu.Unlock()
@@ -129,8 +132,34 @@ func endTalk(model *PTTModel) {
 		notice = stopErr.Error()
 	}
 	releaseTalk(cancel, stopErr == nil && notice == "")
+	sent := model.Sent()
+	if notice == "" {
+		talkDebug(fmt.Sprintf("[talk] recording sent: %d chunks, %d bytes, about %d ms; TalkEnd sent", sent.Chunks, sent.Bytes, sent.Chunks*100))
+	} else {
+		talkDebug(fmt.Sprintf("[talk] recording failed after %d chunks, %d bytes: %s", sent.Chunks, sent.Bytes, notice))
+	}
 	model.Toggle().Finished(notice)
 	session.redraw()
+}
+
+// talkDebugLog is set once at load: a console logger when the page URL has
+// ?debug=audio, otherwise nil.
+var talkDebugLog = func() func(string) {
+	location := js.Global().Get("location")
+	if !location.Truthy() {
+		return nil
+	}
+	if js.Global().Get("URLSearchParams").New(location.Get("search")).Call("get", "debug").String() != "audio" {
+		return nil
+	}
+	console := js.Global().Get("console")
+	return func(line string) { console.Call("log", line) }
+}()
+
+func talkDebug(line string) {
+	if talkDebugLog != nil {
+		talkDebugLog(line)
+	}
 }
 
 // watchTalk ends a recording whose browser recorder fails mid-take, so the
