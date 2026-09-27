@@ -258,11 +258,11 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: ordinary questions preserve their text and receive NPC dialogue, only explicit legal action commands become moves, the exact reported message has regression coverage, and the live reload demo verifies the distinction.
   status: done (this commit); gate artifacts/test/QA-042/gate-20260927-082616.log; exact message verified in the live browser as NPC dialogue without a roll
 
-- [ ] QA-043 · Audit conversation routing and failed interpretation recovery
+- [x] QA-043 · Audit conversation routing and failed interpretation recovery
   why: Conversation currently sends every line through interpretation; its failure fallback drops non-keyword dialogue and treats isolated leave/step/away words as movement despite the binding chat spec.
-  lane: ORCH (Codex) · paths: pending conversation routing breakdown · depends: QA-042
+  lane: ORCH (Codex) · paths: `internal/game/phase/conversation/conversation.go`, `internal/game/phase/conversation/move_intent.go`, `internal/game/phase/conversation/dialogue_recovery_test.go`, `internal/game/phase/conversation/conversation_test.go`, `internal/game/phase/conversation/typed_test.go`, `internal/sim/walk/voice/voice_test.go`, `TODOS.md`, `docs/devlog.html` · depends: QA-042
   done when: neutral questions cannot become actions on model failure, ordinary dialogue reaches NPC reply, legal explicit commands remain available, and stale results cannot change a newer conversation.
-  status: open
+  status: done (this commit); gate artifacts/test/QA-043/gate-20260927-083608.log; conversation 91.2%, voice walks 83.3%; legacy walk expectations updated for direct dialogue
 
 - [ ] QA-044 · Trace chat input, NPC response, audio and recovery end to end
   why: The developer requests a focused chat audit after the unwanted Persuasion roll exposed a misleading demo path.
@@ -280,6 +280,18 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   why: The compact conversation input does not render TypedInputSnapshot.Error, and Submit does not reject an already sending request, leaving failed messages unexplained and rapid taps unguarded.
   lane: ORCH (Codex) · paths: pending typed-input and conversation UI breakdown · depends: QA-042
   done when: rejection/network errors are visible, drafts remain available for retry, duplicate sends are rejected while pending, and keyboard submission and turn gating are checked.
+  status: open
+
+- [ ] QA-047 · Enforce authoritative chat eligibility and speech lifecycle
+  why: Phase dispatch can acknowledge ignored out-of-turn Say events, PhoneView always projects PTT idle, and the standalone PTT machine is not connected to the production phase state.
+  lane: ORCH (Codex) · paths: pending API, phase and phone projection breakdown · depends: QA-043
+  done when: wrong-turn/busy/paused messages reject clearly, one utterance owns capture and reply, STT failures and pause reach the phone, and stale transcription cannot replace a newer turn.
+  status: open
+
+- [ ] QA-048 · Supply accurate NPC context and chat subtitles
+  why: Interpret receives the player's LastText as NPCLastLine, and NPCReply receives only the latest patron message under a conversation-so-far label; player subtitle/history behavior needs verification.
+  lane: ORCH (Codex) · paths: pending bounded dialogue history and projection breakdown · depends: QA-043
+  done when: NPC and player lines retain their correct speaker identities, bounded context reaches the reply and intent prompts, and displayed/spoken content agrees across clients.
   status: open
 
 ### Kill cam (developer-directed single writer, 2026-09-27)

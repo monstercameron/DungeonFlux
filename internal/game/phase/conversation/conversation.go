@@ -74,15 +74,20 @@ func Step(state State, input Event) (Result, error) {
 }
 
 func (r *Result) transcribed(event domain.Transcribed) {
-	if event.UtteranceID == "" || r.State.Done {
+	text := strings.TrimSpace(event.Text)
+	if event.UtteranceID == "" || r.State.Done || text == "" {
 		return
 	}
 	r.State.UtteranceInFlight = true
 	r.State.ActiveUtteranceID = event.UtteranceID
-	r.State.Transcript = event.Text
+	r.State.Transcript = text
+	if !hasMoveKeyword(text) {
+		r.interpreted(domain.Interpreted{UtteranceID: event.UtteranceID, CleanText: text, InterpretationKind: InterpretationDialogue})
+		return
+	}
 	r.Effects = append(r.Effects, domain.Interpret{
 		Seat: eventSeat(r.State.Seat), UtteranceID: event.UtteranceID,
-		Transcript: event.Text, Moves: legalMoves(), NPCLastLine: r.State.LastText,
+		Transcript: text, Moves: legalMoves(), NPCLastLine: r.State.LastText,
 	})
 }
 
@@ -121,20 +126,24 @@ func (r *Result) interpreted(event domain.Interpreted) {
 	// The interpret schema's enum is upper case ("DIALOGUE", "MOVE"), so the
 	// kind is compared without case.
 	kind := strings.ToLower(strings.TrimSpace(event.InterpretationKind))
-	if kind == InterpretationMove && event.Move != "" {
+	if kind == InterpretationMove && (event.Move == vocab.MovePersuade || event.Move == vocab.MoveStepAway) {
 		r.emitMove(event.Move)
 		return
 	}
-	if kind != "" && kind != InterpretationDialogue {
-		return
+	if kind != "" && kind != InterpretationDialogue || text == "" {
+		text = strings.TrimSpace(r.State.Transcript)
 	}
+	r.dialogue(event.UtteranceID, text)
+}
+
+func (r *Result) dialogue(id domain.UtteranceID, text string) {
 	if text == "" {
 		return
 	}
 	r.State.NPCReplies++
 	r.State.LastText = text
-	r.Events = append(r.Events, domain.UtteranceFinal{Seat: r.State.Seat, UtteranceID: event.UtteranceID, CleanText: text})
-	r.Effects = append(r.Effects, domain.StartLine{UtteranceID: event.UtteranceID, Role: vocab.RoleNPCReply, Speaker: "Mother Vell", Input: text})
+	r.Events = append(r.Events, domain.UtteranceFinal{Seat: r.State.Seat, UtteranceID: id, CleanText: text})
+	r.Effects = append(r.Effects, domain.StartLine{UtteranceID: id, Role: vocab.RoleNPCReply, Speaker: "Mother Vell", Input: text})
 }
 
 func (r *Result) interpretFailed(event domain.InterpretFailed) {
@@ -143,6 +152,7 @@ func (r *Result) interpretFailed(event domain.InterpretFailed) {
 	}
 	move := keywordMove(r.State.Transcript)
 	if move == "" {
+		r.dialogue(event.UtteranceID, strings.TrimSpace(r.State.Transcript))
 		return
 	}
 	r.emitMove(move)
@@ -176,17 +186,4 @@ func eventSeat(seat domain.SeatID) domain.SeatID {
 
 func legalMoves() []vocab.MoveID {
 	return []vocab.MoveID{vocab.MovePersuade, vocab.MoveStepAway}
-}
-
-func keywordMove(text string) vocab.MoveID {
-	words := strings.Fields(strings.ToLower(text))
-	for _, word := range words {
-		switch strings.Trim(word, ".,!?;:") {
-		case "persuade", "convince", "plead":
-			return vocab.MovePersuade
-		case "leave", "step", "away":
-			return vocab.MoveStepAway
-		}
-	}
-	return ""
 }

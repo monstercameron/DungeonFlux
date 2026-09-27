@@ -7,7 +7,7 @@ import (
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
 
-func TestStep_Conversation_typedLineRequestsInterpretation(t *testing.T) {
+func TestStep_Conversation_typedLineRoutesDialogueAndActions(t *testing.T) {
 	cases := []struct {
 		name       string
 		state      State
@@ -16,8 +16,9 @@ func TestStep_Conversation_typedLineRequestsInterpretation(t *testing.T) {
 		wantText   string
 		wantEffect bool
 	}{
-		{name: "spotlight seat is interpreted", state: State{Seat: 1}, say: domain.Say{Seat: 1, UtteranceID: "t1", Text: "  Have you seen the lamplighter?  "}, wantInFly: true, wantText: "Have you seen the lamplighter?", wantEffect: true},
-		{name: "unset seat accepts any speaker", state: State{}, say: domain.Say{Seat: 2, UtteranceID: "t2", Text: "Evening."}, wantInFly: true, wantText: "Evening.", wantEffect: true},
+		{name: "spotlight question goes straight to dialogue", state: State{Seat: 1}, say: domain.Say{Seat: 1, UtteranceID: "t1", Text: "  Have you seen the lamplighter?  "}, wantText: "Have you seen the lamplighter?", wantEffect: true},
+		{name: "explicit action is interpreted", state: State{Seat: 1}, say: domain.Say{Seat: 1, UtteranceID: "t-action", Text: "I try to persuade her."}, wantInFly: true, wantText: "I try to persuade her.", wantEffect: true},
+		{name: "unset seat accepts any speaker", state: State{}, say: domain.Say{Seat: 2, UtteranceID: "t2", Text: "Evening."}, wantText: "Evening.", wantEffect: true},
 		{name: "other seat is ignored", state: State{Seat: 1}, say: domain.Say{Seat: 2, UtteranceID: "t3", Text: "Evening."}},
 		{name: "blank text is ignored", state: State{Seat: 1}, say: domain.Say{Seat: 1, UtteranceID: "t4", Text: "   "}},
 		{name: "missing utterance id is ignored", state: State{Seat: 1}, say: domain.Say{Seat: 1, Text: "Evening."}},
@@ -39,7 +40,14 @@ func TestStep_Conversation_typedLineRequestsInterpretation(t *testing.T) {
 				return
 			}
 			if len(result.Effects) != 1 {
-				t.Fatalf("effects = %#v, want one interpret", result.Effects)
+				t.Fatalf("effects = %#v, want one dispatch", result.Effects)
+			}
+			if !tc.wantInFly {
+				line, ok := result.Effects[0].(domain.StartLine)
+				if !ok || line.UtteranceID != tc.say.UtteranceID || line.Input != tc.wantText {
+					t.Fatalf("effect = %#v, want direct NPC dialogue", result.Effects[0])
+				}
+				return
 			}
 			interpret, ok := result.Effects[0].(domain.Interpret)
 			if !ok || interpret.UtteranceID != tc.say.UtteranceID || interpret.Transcript != tc.wantText {

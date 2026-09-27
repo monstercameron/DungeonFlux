@@ -73,25 +73,17 @@ func TestWalkVoice_PTTDialogueStartsNPCLine(t *testing.T) {
 	w := newWalk(t)
 	w.toConversation(t)
 	result := w.speech(t, "ptt-1", "Where is the bell tower?")
-	if !result.State.UtteranceInFlight || len(result.Effects) != 1 {
+	if result.State.UtteranceInFlight || len(result.Effects) != 1 {
 		t.Fatalf("speech = %#v", result)
 	}
-	interpret := result.Effects[0].(domain.Interpret)
-	if interpret.Transcript != "Where is the bell tower?" || interpret.UtteranceID != "ptt-1" {
-		t.Fatalf("interpret = %#v", interpret)
-	}
-	result = w.interpreted(t, domain.Interpreted{
-		UtteranceID: "ptt-1", CleanText: "The bell is beyond the river.",
-		InterpretationKind: conversation.InterpretationDialogue,
-	})
 	if len(result.Events) != 1 || len(result.Effects) != 1 {
 		t.Fatalf("dialogue result = %#v", result)
 	}
-	if _, ok := result.Events[0].(domain.UtteranceFinal); !ok {
+	if final, ok := result.Events[0].(domain.UtteranceFinal); !ok || final.CleanText != "Where is the bell tower?" {
 		t.Fatalf("event = %#v", result.Events[0])
 	}
 	line := result.Effects[0].(domain.StartLine)
-	if line.Role != vocab.RoleNPCReply || line.UtteranceID != "ptt-1" {
+	if line.Role != vocab.RoleNPCReply || line.UtteranceID != "ptt-1" || line.Input != "Where is the bell tower?" {
 		t.Fatalf("line = %#v", line)
 	}
 }
@@ -99,16 +91,13 @@ func TestWalkVoice_PTTDialogueStartsNPCLine(t *testing.T) {
 func TestWalkVoice_STTFailureTypedSayUsesSameDialoguePath(t *testing.T) {
 	w := newWalk(t)
 	w.toConversation(t)
-	first := w.speech(t, "failed-ptt", "Tell me about the stranger")
-	if !first.State.UtteranceInFlight {
-		t.Fatal("STT utterance was not in flight")
+	first := w.interpreted(t, domain.STTError{UtteranceID: "failed-ptt", FailureKind: vocab.ErrUnavailable})
+	if len(first.Effects) != 0 || len(first.Events) != 0 {
+		t.Fatal("failed transcription invented speech")
 	}
 	// The voice input lane drops the failed audio and enters Say at stage 4.
-	w.voice = conversation.State{Seat: 1}
-	result := w.speech(t, "typed-1", "Tell me about the stranger")
-	result = w.interpreted(t, domain.Interpreted{
-		UtteranceID: "typed-1", CleanText: "Tell me about the stranger",
-		InterpretationKind: conversation.InterpretationDialogue,
+	result := w.interpreted(t, domain.Say{
+		Seat: 1, UtteranceID: "typed-1", Text: "Tell me about the stranger",
 	})
 	if len(result.Events) != 1 || len(result.Effects) != 1 {
 		t.Fatalf("typed result = %#v", result)

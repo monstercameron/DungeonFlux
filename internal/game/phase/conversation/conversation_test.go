@@ -8,7 +8,7 @@ import (
 )
 
 func TestStep_TranscribedRequestsInterpretation(t *testing.T) {
-	result, err := Step(State{Seat: 2}, Event{Event: domain.Transcribed{UtteranceID: "u1", Text: "Tell me about the river"}})
+	result, err := Step(State{Seat: 2}, Event{Event: domain.Transcribed{UtteranceID: "u1", Text: "I try to persuade her"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,9 +83,9 @@ func TestStep_RejectsNilEvent(t *testing.T) {
 
 func TestStep_IgnoresInvalidAndCompletedSpeech(t *testing.T) {
 	for _, event := range []domain.Event{
-		 domain.Transcribed{},
-		 domain.Interpreted{UtteranceID: "u1", CleanText: "hello", InterpretationKind: "unknown"},
-		 domain.Interpreted{UtteranceID: "u1", CleanText: "", InterpretationKind: InterpretationDialogue},
+		domain.Transcribed{},
+		domain.Interpreted{UtteranceID: "u1", CleanText: "hello", InterpretationKind: "unknown"},
+		domain.Interpreted{UtteranceID: "u1", CleanText: "", InterpretationKind: InterpretationDialogue},
 	} {
 		result, err := Step(State{Done: true}, Event{Event: event})
 		if err != nil || len(result.Events) != 0 || len(result.Effects) != 0 {
