@@ -753,6 +753,179 @@
         }
       ]
     },
+    "hero_loop_paladin_attack": {
+      "kind": "VIDEO_LOOP",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "c995fef3424983195a34f6d96c9e77f950063f58a8555c71dc365ed7f5ef4a9a",
+          "path": "assets/c995fef3424983195a34f6d96c9e77f950063f58a8555c71dc365ed7f5ef4a9a.mp4"
+        }
+      ],
+      "duration_ms": 4000,
+      "contact_ms": 1200,
+      "metadata": {
+        "action": "attack",
+        "aspect": "9:16",
+        "cache_key": "f8bf875146bb4b24e77506e64699e2cf9107c7f0cd32987b9e5ca0365ab090c1",
+        "class": "paladin",
+        "contact_source": "default-1.2s",
+        "model": "bytedance/seedance-2.0/fast/reference-to-video",
+        "no_audio": "true",
+        "prompt_version": "bb-green-v2",
+        "resolution": "480p",
+        "reference_sheet_sha256": "fdc8b409acfbc38a3dd694d4240c55ec3f584206bd221b494066119f412e70ea",
+        "battlefield_scene": "/splat/scenes/64bb46d5.json"
+      }
+    },
+    "hero_loop_paladin_hit": {
+      "kind": "VIDEO",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "e2f6568e7efd25acdde1aab7f7eea36f47b57d973ab6261e07dd4d78fec1b478",
+          "path": "assets/e2f6568e7efd25acdde1aab7f7eea36f47b57d973ab6261e07dd4d78fec1b478.mp4"
+        }
+      ],
+      "duration_ms": 4000,
+      "metadata": {
+        "action": "hit",
+        "battlefield_scene": "/splat/scenes/64bb46d5.json",
+        "class": "paladin",
+        "model": "bytedance/seedance-2.0/fast/reference-to-video",
+        "reference_sheet_sha256": "fdc8b409acfbc38a3dd694d4240c55ec3f584206bd221b494066119f412e70ea"
+      }
+    },
+    "hero_loop_paladin_idle": {
+      "kind": "VIDEO_LOOP",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "d55105430b4466796e2a170ac1084c8e2eb71d325f28bf4cd5380f49a70b80c9",
+          "path": "assets/d55105430b4466796e2a170ac1084c8e2eb71d325f28bf4cd5380f49a70b80c9.mp4"
+        }
+      ],
+      "duration_ms": 4000,
+      "metadata": {
+        "action": "idle",
+        "aspect": "9:16",
+        "cache_key": "c3e04c536f172e0e85622efd4d2bce889170f2eca722375ea81e936af0611024",
+        "class": "paladin",
+        "contact_source": "default-1.2s",
+        "model": "bytedance/seedance-2.0/fast/reference-to-video",
+        "no_audio": "true",
+        "pinned": "prompt",
+        "prompt_version": "bb-green-v2",
+        "resolution": "480p",
+        "reference_sheet_sha256": "fdc8b409acfbc38a3dd694d4240c55ec3f584206bd221b494066119f412e70ea",
+        "battlefield_scene": "/splat/scenes/64bb46d5.json"
+      }
+    },
+    "hero_loop_paladin_walk": {
+      "kind": "VIDEO_LOOP",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "802734e8af0c433bc69637f4ffb07f8e34dac3700c2d46efc2c6afc205420aa8",
+          "path": "assets/802734e8af0c433bc69637f4ffb07f8e34dac3700c2d46efc2c6afc205420aa8.mp4"
+        }
+      ],
+      "duration_ms": 4000,
+      "metadata": {
+        "action": "walk",
+        "aspect": "9:16",
+        "cache_key": "dba8db28339850800d85ee057ba5a7206ec90aea59735fac66080833814474b3",
+        "class": "paladin",
+        "contact_source": "default-1.2s",
+        "model": "bytedance/seedance-2.0/fast/reference-to-video",
+        "no_audio": "true",
+        "prompt_version": "bb-green-v3",
+        "resolution": "480p",
+        "reference_sheet_sha256": "fdc8b409acfbc38a3dd694d4240c55ec3f584206bd221b494066119f412e70ea",
+        "battlefield_scene": "/splat/scenes/64bb46d5.json"
+      }
+    },
+    "hero_loop_rogue_attack": {
+      "kind": "VIDEO_LOOP",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "d50f99f33d2445c12b1c99fa203a43d7b27acb06c0338a3984906384c9564065",
+          "path": "assets/d50f99f33d2445c12b1c99fa203a43d7b27acb06c0338a3984906384c9564065.mp4"
+        }
+      ],
+      "duration_ms": 4000,
+      "contact_ms": 1200,
+      "metadata": {
+        "action": "attack",
+        "aspect": "9:16",
+        "cache_key": "59f83fae413ca42f6b81c6820ca7448cd6104a1d3904ba765a3a0ab6c1748b0e",
+        "class": "rogue",
+        "contact_source": "default-1.2s",
+        "model": "bytedance/seedance-2.0/fast/reference-to-video",
+        "no_audio": "true",
+        "prompt_version": "bb-green-v2",
+        "resolution": "480p",
+        "reference_sheet_sha256": "bb9c3f53393282e7fdf7bebe9c63513af7314ad40e1d588b32c1ba3ba31b24e2",
+        "battlefield_scene": "/splat/scenes/64bb46d5.json"
+      }
+    },
+    "hero_loop_rogue_idle": {
+      "kind": "VIDEO_LOOP",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "006e924265033790d337d22529b1b7df00b092b3d5b7dae11bcc2c129e629112",
+          "path": "assets/006e924265033790d337d22529b1b7df00b092b3d5b7dae11bcc2c129e629112.mp4"
+        }
+      ],
+      "duration_ms": 4000,
+      "metadata": {
+        "action": "idle",
+        "aspect": "9:16",
+        "cache_key": "de2ed99205bfacaea4139a1c9ed6cfcf1282943fd475caf64bbebae82158caa8",
+        "class": "rogue",
+        "contact_source": "default-1.2s",
+        "model": "bytedance/seedance-2.0/fast/reference-to-video",
+        "no_audio": "true",
+        "pinned": "prompt",
+        "prompt_version": "bb-green-v2",
+        "resolution": "480p",
+        "reference_sheet_sha256": "bb9c3f53393282e7fdf7bebe9c63513af7314ad40e1d588b32c1ba3ba31b24e2",
+        "battlefield_scene": "/splat/scenes/64bb46d5.json"
+      }
+    },
+    "hero_loop_rogue_walk": {
+      "kind": "VIDEO_LOOP",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "7084fd3fa39f176df96bf662d3504b197a297afdbd21df580fa140a9b42309b2",
+          "path": "assets/7084fd3fa39f176df96bf662d3504b197a297afdbd21df580fa140a9b42309b2.mp4"
+        }
+      ],
+      "duration_ms": 4000,
+      "metadata": {
+        "action": "walk",
+        "aspect": "9:16",
+        "cache_key": "699e22459c84087f4058831378d9ea8f11d95dfd90e05cf20d4333d4a6733bc2",
+        "class": "rogue",
+        "contact_source": "default-1.2s",
+        "model": "bytedance/seedance-2.0/fast/reference-to-video",
+        "no_audio": "true",
+        "prompt_version": "bb-green-v3",
+        "resolution": "480p",
+        "reference_sheet_sha256": "bb9c3f53393282e7fdf7bebe9c63513af7314ad40e1d588b32c1ba3ba31b24e2",
+        "battlefield_scene": "/splat/scenes/64bb46d5.json"
+      }
+    },
     "killcam_paladin_defeat": {
       "kind": "VIDEO",
       "selected": 1,
@@ -2367,99 +2540,20 @@
         }
       ]
     },
-    "hero_loop_paladin_idle": {
-      "kind": "VIDEO",
+    "ui/title_sky_mask": {
+      "kind": "IMAGE_STILL",
       "selected": 1,
       "takes": [
         {
           "number": 1,
-          "sha256": "961fb0422d98ed3174783e0120d82af722ddbbb434edfb65d16e447b10230244",
-          "path": "assets/961fb0422d98ed3174783e0120d82af722ddbbb434edfb65d16e447b10230244.mp4"
+          "sha256": "33b518f06f06f8b7be91e6863799087f345e506ded71b75e8799206e3c815be9",
+          "path": "assets/33b518f06f06f8b7be91e6863799087f345e506ded71b75e8799206e3c815be9.png"
         }
       ],
-      "duration_ms": 4000,
       "metadata": {
-        "class": "paladin",
-        "action": "idle",
-        "battlefield_scene": "/splat/scenes/64bb46d5.json",
-        "reference_sheet_sha256": "fdc8b409acfbc38a3dd694d4240c55ec3f584206bd221b494066119f412e70ea",
-        "model": "bytedance/seedance-2.0/fast/reference-to-video"
-      }
-    },
-    "hero_loop_paladin_attack": {
-      "kind": "VIDEO",
-      "selected": 1,
-      "takes": [
-        {
-          "number": 1,
-          "sha256": "fa128eea7c980070307aa0f6dc72fdbe63622694812dd71b6c467a5915f923e8",
-          "path": "assets/fa128eea7c980070307aa0f6dc72fdbe63622694812dd71b6c467a5915f923e8.mp4"
-        }
-      ],
-      "duration_ms": 4000,
-      "metadata": {
-        "class": "paladin",
-        "action": "attack",
-        "battlefield_scene": "/splat/scenes/64bb46d5.json",
-        "reference_sheet_sha256": "fdc8b409acfbc38a3dd694d4240c55ec3f584206bd221b494066119f412e70ea",
-        "model": "bytedance/seedance-2.0/fast/reference-to-video"
-      }
-    },
-    "hero_loop_paladin_hit": {
-      "kind": "VIDEO",
-      "selected": 1,
-      "takes": [
-        {
-          "number": 1,
-          "sha256": "e2f6568e7efd25acdde1aab7f7eea36f47b57d973ab6261e07dd4d78fec1b478",
-          "path": "assets/e2f6568e7efd25acdde1aab7f7eea36f47b57d973ab6261e07dd4d78fec1b478.mp4"
-        }
-      ],
-      "duration_ms": 4000,
-      "metadata": {
-        "class": "paladin",
-        "action": "hit",
-        "battlefield_scene": "/splat/scenes/64bb46d5.json",
-        "reference_sheet_sha256": "fdc8b409acfbc38a3dd694d4240c55ec3f584206bd221b494066119f412e70ea",
-        "model": "bytedance/seedance-2.0/fast/reference-to-video"
-      }
-    },
-    "hero_loop_rogue_idle": {
-      "kind": "VIDEO",
-      "selected": 1,
-      "takes": [
-        {
-          "number": 1,
-          "sha256": "84c8c92e9eb2b41a4790ca9e0c0c0ffe0b73dad0860d5cc459bdb2a5224bc4d4",
-          "path": "assets/84c8c92e9eb2b41a4790ca9e0c0c0ffe0b73dad0860d5cc459bdb2a5224bc4d4.mp4"
-        }
-      ],
-      "duration_ms": 4000,
-      "metadata": {
-        "class": "rogue",
-        "action": "idle",
-        "battlefield_scene": "/splat/scenes/64bb46d5.json",
-        "reference_sheet_sha256": "bb9c3f53393282e7fdf7bebe9c63513af7314ad40e1d588b32c1ba3ba31b24e2",
-        "model": "bytedance/seedance-2.0/fast/reference-to-video"
-      }
-    },
-    "hero_loop_rogue_attack": {
-      "kind": "VIDEO",
-      "selected": 1,
-      "takes": [
-        {
-          "number": 1,
-          "sha256": "2c1167f7244b6e355c22fe80909c516eaa0ea915d99571863ab57b1a308c2b72",
-          "path": "assets/2c1167f7244b6e355c22fe80909c516eaa0ea915d99571863ab57b1a308c2b72.mp4"
-        }
-      ],
-      "duration_ms": 4000,
-      "metadata": {
-        "class": "rogue",
-        "action": "attack",
-        "battlefield_scene": "/splat/scenes/64bb46d5.json",
-        "reference_sheet_sha256": "bb9c3f53393282e7fdf7bebe9c63513af7314ad40e1d588b32c1ba3ba31b24e2",
-        "model": "bytedance/seedance-2.0/fast/reference-to-video"
+        "mask_of": "ui/title_bg",
+        "method": "flood-filled smooth cool sky bounded by a hand-placed skyline polygon, traced edges eroded 9px and feathered 10px, the bound feathered 60px, faded above the horizon",
+        "use": "CSS mask-image (alpha) for the lobby weather layer; same cover geometry as the title background"
       }
     }
   }
