@@ -100,6 +100,10 @@ func projectHUDParty(view *dungeonfluxv1.DMView, spotlight int32) []HUDPartyMemb
 			CrestArt:    classCrestArt(card.GetClassName()),
 			Spotlight:   card.GetPlayerNumber() == spotlight,
 		}
+		if build := card.GetCharacter().GetBuild(); build != nil {
+			member.HP, member.HPMax = build.GetHp(), build.GetHpMax()
+			member.HPKnown, member.HPPercent = member.HPMax > 0, hpPercent(member.HP, member.HPMax)
+		}
 		if token, ok := tokenForMember(view.GetTokens(), member.Name); ok {
 			member.HP, member.HPMax = token.GetHp(), token.GetHpMax()
 			member.HPKnown = member.HPMax > 0

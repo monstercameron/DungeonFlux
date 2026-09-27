@@ -30,7 +30,7 @@ func phaseLayers(state *dungeonfluxv1.ScreenState, roomCode, extra string) []ui.
 			lobby.SetLocale(locale)
 			content = LobbyComponent(lobby)(router.Attrs{})
 		case LayerScene:
-			content = SceneComponent(view)(router.Attrs{})
+			content = SceneComponent(view, phase)(router.Attrs{})
 			if strings.EqualFold(strings.TrimSpace(phase), "conversation") {
 				content = html.Div(html.Props{Style: map[string]string{"position": "relative", "width": "100%", "height": "100%"}}, content, DialogueComponent(DialogueModelFromState(state))(router.Attrs{}))
 			}

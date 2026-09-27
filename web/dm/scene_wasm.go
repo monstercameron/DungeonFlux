@@ -12,16 +12,28 @@ import (
 )
 
 // SceneComponent renders the painterly scene on the fixed DM canvas.
-func SceneComponent(view *dungeonfluxv1.DMView) router.Component {
+func SceneComponent(view *dungeonfluxv1.DMView, phase ...string) router.Component {
 	model := SceneModelFromView(view)
+	composition := sceneComposition("opening")
+	if len(phase) > 0 {
+		composition = sceneComposition(phase[0])
+	}
 	locale := localeOrDefault(view.GetLocale())
 	return func(_ router.Attrs) *router.Element {
-		return html.Section(html.Props{Class: "df-dm-scene", Role: "img", Aria: map[string]string{"label": T(locale, "dm.scene_label", nil)}, Style: map[string]string{"position": "absolute", "left": "0", "top": "0", "width": "1920px", "height": "1080px", "overflow": "hidden"}},
+		children := []ui.Node{
 			html.Div(html.Props{Class: "df-dm-scene-stage", Style: sceneStageStyle(model.BackgroundURL)}, sceneLayers(model.Layers)...),
-			sceneVignette(), sceneBrand(model), sceneLocation(model), sceneTitle(model),
-			scenePartyRail(model.Characters, locale), sceneProgressRail(model, locale),
-			sceneCaption(model.Caption, model.SpeakerPortraitURL, model.FrameURL, model.DividerURL, locale),
-		)
+			sceneVignette(),
+		}
+		if composition.chrome {
+			children = append(children, sceneBrand(model), sceneLocation(model), scenePartyRail(model.Characters, locale))
+		}
+		if composition.opening {
+			children = append(children, sceneTitle(model), sceneProgressRail(model, locale))
+		}
+		if composition.caption {
+			children = append(children, sceneCaption(model.Caption, model.SpeakerPortraitURL, model.FrameURL, model.DividerURL, locale))
+		}
+		return html.Section(html.Props{Class: "df-dm-scene", Aria: map[string]string{"label": T(locale, "dm.scene_label", nil)}, Style: map[string]string{"position": "absolute", "inset": "0", "width": "1920px", "height": "1080px", "overflow": "hidden"}}, children...)
 	}
 }
 

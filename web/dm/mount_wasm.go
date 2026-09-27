@@ -290,7 +290,7 @@ func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handle
 	children = append(children, phaseLayers(state, roomCode, "")...)
 	children = append(children, transitionVeil(tx, active, state, tvTransitions.Seq())...)
 	if !tableAudioUnlocked {
-		children = append(children, html.Button(html.Props{Type: "button", Class: "df-dm-audio-unlock", OnClick: unlock, Style: map[string]string{"position": "absolute", "right": "1rem", "top": "1rem", "z-index": "100"}}, html.Text(AudioUnlock(locale))))
+		children = append(children, html.Button(html.Props{Type: "button", Class: "df-dm-audio-unlock", OnClick: unlock, Style: map[string]string{"position": "absolute", "right": "1rem", "bottom": "1rem", "z-index": "100"}}, html.Text(AudioUnlock(locale))))
 	}
 	stage := html.Div(html.Props{Class: "df-dm-stage"}, children...)
 	canvas := html.Div(html.Props{Class: "df-dm-canvas"}, stage)
