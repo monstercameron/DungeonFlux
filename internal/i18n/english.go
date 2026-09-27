@@ -6,6 +6,9 @@ package i18n
 // drift so the catalog cannot silently diverge from the game.
 func EnglishEntries() map[string]Entry {
 	return map[string]Entry{
+		"dm.killcam.label":                   {Text: "Finishing blow"},
+		"dm.killcam.victory":                 {Text: "Enemy vanquished"},
+		"dm.killcam.defeat":                  {Text: "Hero fallen"},
 		"dm.preview.silent":                  {Text: "Visual preview · Audio off"},
 		"phone.check.listen":                 {Text: "Listen as the story continues…"},
 		"dm.stranger_alt":                    {Text: "The soaked stranger"},

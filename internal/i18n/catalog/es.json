@@ -1,4 +1,7 @@
 {
+  "dm.killcam.label": "Golpe final",
+  "dm.killcam.victory": "Enemigo derrotado",
+  "dm.killcam.defeat": "Héroe caído",
   "move.class": "Elige una clase",
   "reason.MISSING_CLASS": "Elige una clase antes de crear tu héroe",
   "class.barbarian.name": "Bárbaro",

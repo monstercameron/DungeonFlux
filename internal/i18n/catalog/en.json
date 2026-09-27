@@ -1,4 +1,7 @@
 {
+  "dm.killcam.label": "Finishing blow",
+  "dm.killcam.victory": "Enemy vanquished",
+  "dm.killcam.defeat": "Hero fallen",
   "move.class": "Choose a class",
   "reason.MISSING_CLASS": "Choose a class before rolling",
   "class.barbarian.name": "Barbarian",

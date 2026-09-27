@@ -22,6 +22,7 @@ func phaseLayers(state *dungeonfluxv1.ScreenState, roomCode, extra string) []ui.
 		scheduleBattlePrewarm(view)
 	}
 	var children []ui.Node
+	children = append(children, ui.CreateElement(killcamLayer, killcamProps{view: view}))
 	for _, layer := range SelectLayers(state) {
 		var content ui.Node
 		switch layer {

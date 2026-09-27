@@ -5,6 +5,9 @@ package i18n
 // stay as proper nouns.
 func SpanishEntries() map[string]Entry {
 	return map[string]Entry{
+		"dm.killcam.label":                   {Text: "Golpe final"},
+		"dm.killcam.victory":                 {Text: "Enemigo derrotado"},
+		"dm.killcam.defeat":                  {Text: "Héroe caído"},
 		"dm.preview.silent":                  {Text: "Vista previa visual · Sin audio"},
 		"phone.check.listen":                 {Text: "Escucha cómo continúa la historia…"},
 		"dm.stranger_alt":                    {Text: "El desconocido empapado"},
