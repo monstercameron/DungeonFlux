@@ -53,7 +53,7 @@ func TestValidateText(t *testing.T) {
 	if err := ValidateText(vocab.RoleNPCReply, "A short answer."); err != nil {
 		t.Fatal(err)
 	}
-	tooLong := strings.Repeat("word ", 26)
+	tooLong := strings.Repeat("word ", 31)
 	if err := ValidateText(vocab.RoleNPCReply, tooLong); err == nil {
 		t.Fatal("accepted over-cap text")
 	}
@@ -75,7 +75,8 @@ func TestValidateText_outcomeCutoffIsThirtyWords(t *testing.T) {
 		{name: "reveal over the cutoff", role: vocab.RoleNPCReveal, words: 31, wantErr: true},
 		{name: "refuse at the cutoff", role: vocab.RoleNPCRefuse, words: 30},
 		{name: "refuse over the cutoff", role: vocab.RoleNPCRefuse, words: 31, wantErr: true},
-		{name: "npc reply keeps 25", role: vocab.RoleNPCReply, words: 26, wantErr: true},
+		{name: "npc reply allows a little over the target", role: vocab.RoleNPCReply, words: 28},
+		{name: "npc reply over the cutoff", role: vocab.RoleNPCReply, words: 31, wantErr: true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -88,7 +89,7 @@ func TestValidateText_outcomeCutoffIsThirtyWords(t *testing.T) {
 }
 
 func TestTemplateFor_outcomePromptStillAsksForTwentyFive(t *testing.T) {
-	for _, role := range []vocab.Role{vocab.RoleNPCReveal, vocab.RoleNPCRefuse} {
+	for _, role := range []vocab.Role{vocab.RoleNPCReply, vocab.RoleNPCReveal, vocab.RoleNPCRefuse} {
 		template, err := TemplateFor(role)
 		if err != nil {
 			t.Fatal(err)

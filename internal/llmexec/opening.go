@@ -76,11 +76,12 @@ func (e *OpeningExecutor) Execute(ctx context.Context, effect domain.StartLine, 
 	for {
 		chunk, recvErr := stream.Recv()
 		if errors.Is(recvErr, io.EOF) {
-			if err := prompts.ValidateText(vocab.RoleOpening, text.String()); err != nil {
+			spoken := spokenText(text.String())
+			if err := prompts.ValidateText(vocab.RoleOpening, spoken); err != nil {
 				postLineFailure(ctx, scope, in, effect.UtteranceID, vocab.ErrBadOutput)
 				return
 			}
-			postNarration(ctx, scope, in, effect, "", text.String(), true)
+			postNarration(ctx, scope, in, effect, spoken, spoken, true)
 			post(ctx, in, scope, domain.LineDone{UtteranceID: effect.UtteranceID})
 			return
 		}
@@ -90,11 +91,16 @@ func (e *OpeningExecutor) Execute(ctx context.Context, effect domain.StartLine, 
 			}
 			return
 		}
-		if strings.TrimSpace(chunk) == "" {
+		if chunk == "" {
 			continue
 		}
+		// Hold the short utterance until the complete line passes validation.
+		// Raw chunks must never reach subtitles or the speech pipeline.
+		if text.Len()+len(chunk) > maxSpokenBytes {
+			postFailure(ctx, scope, in, effect.UtteranceID, vocab.ErrBadOutput)
+			return
+		}
 		text.WriteString(chunk)
-		postNarration(ctx, scope, in, effect, chunk, text.String(), false)
 	}
 }
 
