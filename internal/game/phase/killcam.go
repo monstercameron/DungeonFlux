@@ -64,7 +64,8 @@ func (m *Machine) stepKillcam(event domain.Event) (Result, bool, error) {
 	if _, ok := event.(domain.Act); ok {
 		return Result{}, true, errors.New("combat cinematic is playing")
 	}
-	// Delayed narration, turn and cap callbacks cannot cut off the cinematic.
+	// Delayed narration and turn callbacks cannot cut off the cinematic.
+	// The fixed combat deadline is handled first by stepCombat.
 	return Result{}, true, nil
 }
 

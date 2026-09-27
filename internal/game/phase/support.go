@@ -45,6 +45,9 @@ func (m *Machine) stepHook(event domain.Event) (Result, error) {
 }
 
 func (m *Machine) stepCombat(event domain.Event) (Result, error) {
+	if timer, ok := event.(domain.TimerFired); ok && timer.Name == combatDeadlineTimer {
+		return m.expireCombatDeadline()
+	}
 	if result, handled, err := m.stepKillcam(event); handled {
 		return result, err
 	}
@@ -164,6 +167,9 @@ func (m *Machine) transition(event vocab.EventKind, effects []domain.Effect) (Re
 		return Result{}, err
 	}
 	out := Result{Transition: transition, Effects: append([]domain.Effect(nil), effects...), Paused: m.paused}
+	if transition.From == vocab.StateCombat && transition.To != vocab.StateCombat {
+		out.Effects = append(out.Effects, m.leaveCombatTimers()...)
+	}
 	if transition.From == vocab.StateResolution && transition.To == vocab.StateExploration {
 		m.conversationDone = true
 		if m.timersEnabled {
@@ -186,6 +192,7 @@ func (m *Machine) transition(event vocab.EventKind, effects []domain.Effect) (Re
 		if err := m.startCombat(); err != nil {
 			return Result{}, err
 		}
+		out.Effects = append(out.Effects, combatDeadline())
 	}
 	if transition.To == vocab.StateCliffhanger {
 		started, err := m.startCliffhanger()
