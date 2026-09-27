@@ -15,14 +15,15 @@ import (
 const lobbyCrestCSS = `
 .df-lobby-crest{position:absolute;left:250px;top:36px;width:222px;height:246px;overflow:hidden;pointer-events:none;z-index:1}
 .df-lobby-crest-video{display:block;width:100%;height:100%;object-fit:cover;object-position:center;filter:brightness(1.3) contrast(1.18) saturate(1.1)}
-@media (prefers-reduced-motion:reduce){.df-lobby-crest{display:none}}
 `
 
 // lobbyCrestLoop renders the looping lantern-crest video over the lobby title
 // plate's still crest art. It is muted, autoplaying, and loops silently; a
 // stable Key keeps GWC from tearing the element down (and restarting playback)
-// on unrelated lobby re-renders. Reduced-motion viewers keep the still crest
-// that is already part of the wordmark art underneath.
+// on unrelated lobby re-renders. It plays even when the OS asks for reduced
+// motion: the TV is a shared display, and the laptop driving it should not
+// silently strip the lobby's one piece of ambient motion (developer decision,
+// 2026-09-27).
 func lobbyCrestLoop() ui.Node {
 	injectStyleSheet("df-dm-lobby-crest", lobbyCrestCSS)
 	videoURL := ArtURL("ui/logo_crest_loop")
