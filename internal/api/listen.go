@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
@@ -76,6 +77,8 @@ type ListenHub struct {
 	nextID      uint64
 	subscribers map[uint64]*ListenSubscription
 	latest      *ListenSubscription
+	logger      *slog.Logger
+	lines       map[domain.UtteranceID]lineStats
 }
 
 // ListenSubscription is one bounded listener queue owned by a client.
@@ -135,7 +138,9 @@ func (h *ListenHub) subscribe(ctx context.Context, target AudioTarget, phone, le
 		h.latest = sub
 	}
 	h.subscribers[id] = sub
+	count := len(h.subscribers)
 	h.mu.Unlock()
+	h.log().Info("listen subscribed", "target", target.Kind, "seat", target.Seat, "phone", phone, "listeners", count)
 	if previous != nil {
 		previous.remove()
 	}
@@ -150,6 +155,7 @@ func (h *ListenHub) Frame(frame domain.AudioFrame) {
 	h.Publish(AudioMessage{Channel: AudioVoice, Target: AudioTarget{Kind: TargetDM}, Frame: &frame})
 	duration := frameDurationMS(frame)
 	h.mu.Lock()
+	line, lineDone := h.countFrame(frame, h.voiceListeners())
 	deferred := make([]*ListenSubscription, 0)
 	for id, sub := range h.subscribers {
 		if !sub.legacy {
@@ -161,6 +167,9 @@ func (h *ListenHub) Frame(frame domain.AudioFrame) {
 		}
 	}
 	h.mu.Unlock()
+	if lineDone {
+		h.log().Info("voice line sent", "utterance", string(frame.UtteranceID), "speaker", frame.Speaker, "frames", line.frames, "bytes", line.bytes, "listeners", line.listeners)
+	}
 	for _, sub := range deferred {
 		sub.finish()
 	}
@@ -179,6 +188,7 @@ func (h *ListenHub) Publish(message AudioMessage) {
 			continue
 		}
 		if sub.queueMessage(message) {
+			h.log().Warn("listen dropped a lagging listener", "target", sub.target.Kind, "seat", sub.target.Seat, "phone", sub.phone)
 			deferred = append(deferred, sub)
 			delete(h.subscribers, id)
 		}
@@ -211,6 +221,7 @@ func (h *ListenHub) remove(id uint64, sub *ListenSubscription) {
 		if h.latest == sub {
 			h.latest = nil
 		}
+		h.log().Info("listen closed", "target", sub.target.Kind, "seat", sub.target.Seat, "phone", sub.phone, "listeners", len(h.subscribers))
 	}
 	h.mu.Unlock()
 	sub.finish()

@@ -160,6 +160,7 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 	}
 	watch := api.NewWatchHub()
 	listen := api.NewListenHub()
+	listen.SetLogger(logger)
 	assembler := voicein.NewAssembler()
 	runner, inbox, err := newExecutors(configForWire{config: cfg, logger: logger, recordings: sqlite.NewRecordings(store), cache: sqlite.NewCache(store), billboards: billboards, assembler: assembler}, listen)
 	if err != nil {
@@ -227,6 +228,7 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 		_ = logFile.Close()
 		return nil, fmt.Errorf("wire: create talk server: %w", err)
 	}
+	talk.SetLogger(logger)
 	df.RegisterVoiceServiceServer(grpcServer, talk)
 	df.RegisterAudioServiceServer(grpcServer, &audioStreamService{hub: listen, sessions: session})
 	apiServer, err := api.NewServer(grpcServer, cfg.Server.AllowedOrigins)
