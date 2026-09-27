@@ -53,3 +53,23 @@ func TestMachine_CreationCountdownHiddenWhenTimersDisabled(t *testing.T) {
 		t.Fatalf("disabled timer leaked into view = %#v", timer)
 	}
 }
+
+func TestMachine_CreationCountdownStartsWhenHostSkipsIntoCreation(t *testing.T) {
+	machine, err := NewWithSeed(domain.OneShot{}, []byte("creation-skip-countdown"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := machine.Step(domain.HostCmd{Cmd: vocab.HostSkip})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if machine.State() != vocab.StateCreation {
+		t.Fatalf("state = %s, want creation", machine.State())
+	}
+	for _, effect := range result.Effects {
+		if timer, ok := effect.(domain.StartTimer); ok && timer.Name == "creation_timeout" && timer.After == 30*time.Second {
+			return
+		}
+	}
+	t.Fatalf("creation timeout missing from skip effects: %#v", result.Effects)
+}

@@ -179,7 +179,7 @@ func (m *Machine) transition(event vocab.EventKind, effects []domain.Effect) (Re
 			})
 		}
 	}
-	if event == eventStart && m.timersEnabled {
+	if transition.To == vocab.StateCreation && m.timersEnabled {
 		m.creationActive = true
 		m.creationElapsed = 0
 		out.Effects = append(out.Effects, domain.StartTimer{Name: "creation_timeout", After: creationTimeoutDuration, Pausable: true, Scope: domain.Scope{Machine: vocab.MachineSession}})

@@ -33,6 +33,17 @@ type AbilityScores struct {
 	STR, DEX, CON, INT, WIS, CHA int32
 }
 
+func creationTimerRemainingAt(remainingMS int64, anchorMS, nowMS float64) int64 {
+	if nowMS <= anchorMS {
+		return remainingMS
+	}
+	remainingMS -= int64(nowMS - anchorMS)
+	if remainingMS < 0 {
+		return 0
+	}
+	return remainingMS
+}
+
 // abilityModifier returns the standard SRD modifier for an ability score.
 func abilityModifier(score int32) int32 {
 	if score == 0 {
@@ -71,6 +82,7 @@ func titleCaseWord(value string) string {
 type CreationModel struct {
 	Seats  [2]CreationSeat
 	Prompt string
+	Timer  TimerView
 }
 
 // featuredCreationSeat chooses the seat with the most useful live preview.
@@ -106,6 +118,7 @@ func CreationModelFromView(view *dungeonfluxv1.DMView) CreationModel {
 	if view == nil {
 		return model
 	}
+	model.Timer = TimerViewFromDMView(view)
 	for _, card := range view.GetBuildCards() {
 		if card == nil || card.GetPlayerNumber() < 1 || card.GetPlayerNumber() > 2 {
 			continue

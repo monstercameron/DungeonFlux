@@ -10,15 +10,28 @@ import (
 
 func TestCreationModelFromView_ProjectsPicksAndBuilds(t *testing.T) {
 	view := &dungeonfluxv1.DMView{
+		TurnTimer:  &dungeonfluxv1.Timer{RemainingMs: 30000, TotalMs: 30000},
 		Callout:    "creation seat=1 species=elf gender=female class=rogue class_crest=/assets/rogue-crest.webp",
 		BuildCards: []*dungeonfluxv1.BuildCard{{PlayerNumber: 2, Name: "Rook", ClassName: "Paladin", PortraitUrl: "rook.png"}},
 	}
 	model := CreationModelFromView(view)
+	if model.Timer.RemainingMS != 30000 || model.Timer.TotalMS != 30000 {
+		t.Fatalf("creation timer = %#v", model.Timer)
+	}
 	if model.Seats[0].Species != "Elf" || model.Seats[0].Gender != "Female" || model.Seats[0].Class != "Rogue" || model.Seats[0].ClassCrestURL != "" || model.Seats[0].Status != "Ready to roll" {
 		t.Fatalf("seat 1 = %#v", model.Seats[0])
 	}
 	if !model.Seats[1].Ready || model.Seats[1].Name != "Rook" || model.Seats[1].Class != "Paladin" {
 		t.Fatalf("seat 2 = %#v", model.Seats[1])
+	}
+}
+
+func TestCreationTimerRemainingAtAnchorsToServerSnapshot(t *testing.T) {
+	if got := creationTimerRemainingAt(30000, 1000, 3000); got != 28000 {
+		t.Fatalf("remaining = %d, want 28000", got)
+	}
+	if got := creationTimerRemainingAt(30000, 1000, 900); got != 30000 {
+		t.Fatalf("clock-before-anchor remaining = %d, want 30000", got)
 	}
 }
 

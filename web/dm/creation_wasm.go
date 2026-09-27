@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/monstercameron/GoWebComponents/v6/html"
 	"github.com/monstercameron/GoWebComponents/v6/router"
@@ -15,12 +16,24 @@ import (
 // CreationComponent renders the fixed-canvas character-creation tableau.
 func CreationComponent(model CreationModel) router.Component {
 	return func(_ router.Attrs) *router.Element {
+		timerTick := ui.UseState(0)
+		timerAnchor := ui.UseRef(creationTimerAnchor{})
+		now := transitionNowMS()
+		anchor := creationTimerAnchorFor(timerAnchor, model.Timer, now)
+		timer := creationTimerSnapshot(model.Timer, anchor, now)
+		ui.UseEffect(func() func() {
+			if timer.TotalMS <= 0 || timer.Frozen {
+				return nil
+			}
+			clock := time.AfterFunc(250*time.Millisecond, func() { timerTick.Set(timerTick.Get() + 1) })
+			return func() { clock.Stop() }
+		}, timer.RemainingMS, timer.TotalMS, timer.Frozen, timerTick.Get())
 		featured := featuredCreationSeat(model)
 		style := creationStyle()
 		style["position"], style["left"], style["top"] = "absolute", "0", "0"
 		style["width"], style["height"] = "1920px", "1080px"
 		return html.Section(html.Props{Class: "df-dm-creation", Role: "region", Aria: map[string]string{"label": "Character creation"}, Style: style},
-			creationHeader(), creationPortraitPanel(featured), creationBuildPanel(featured), creationPhonePanel(featured), creationSeatStrip(model.Seats, featured.Number), creationLockup(featured),
+			creationHeader(), creationTimerNode(timer), creationPortraitPanel(featured), creationBuildPanel(featured), creationPhonePanel(featured), creationSeatStrip(model.Seats, featured.Number), creationLockup(featured),
 		)
 	}
 }

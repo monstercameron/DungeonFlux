@@ -41,7 +41,7 @@ func phaseLayers(state *dungeonfluxv1.ScreenState, roomCode, extra string) []ui.
 		case LayerHUD:
 			content = ExplorationHUDComponent(state)(router.Attrs{})
 		case LayerCreation:
-			content = CreationComponent(CreationModelFromView(view))(router.Attrs{})
+			content = ui.CreateElement(CreationComponent(CreationModelFromView(view)))
 		case LayerCallout:
 			content = CalloutComponent(CalloutViewFromDMView(view))(router.Attrs{})
 		case LayerClip:

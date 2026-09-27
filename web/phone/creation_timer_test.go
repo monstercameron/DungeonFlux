@@ -27,3 +27,23 @@ func TestCreationTimerLabelLocalizesPauseState(t *testing.T) {
 		t.Fatalf("spanish paused label = %q", got)
 	}
 }
+
+func TestCreationTimerRemainingAtAnchorsToServerSnapshot(t *testing.T) {
+	tests := []struct {
+		name        string
+		remaining   int64
+		anchor, now float64
+		want        int64
+	}{
+		{name: "two seconds later", remaining: 30000, anchor: 1000, now: 3000, want: 28000},
+		{name: "clock before anchor", remaining: 30000, anchor: 1000, now: 900, want: 30000},
+		{name: "clamps at zero", remaining: 1000, anchor: 1000, now: 2500, want: 0},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := creationTimerRemainingAt(test.remaining, test.anchor, test.now); got != test.want {
+				t.Fatalf("remaining = %d, want %d", got, test.want)
+			}
+		})
+	}
+}

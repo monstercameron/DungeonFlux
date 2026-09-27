@@ -5,6 +5,7 @@ package phone
 import (
 	"context"
 	"strconv"
+	"time"
 
 	"github.com/monstercameron/GoWebComponents/v6/html"
 	"github.com/monstercameron/GoWebComponents/v6/router"
@@ -15,7 +16,19 @@ import (
 func CreationScreen(model *CreationModel) router.Component {
 	return func(_ router.Attrs) *router.Element {
 		refresh := ui.UseState(0)
+		timerTick := ui.UseState(0)
+		timerAnchor := ui.UseRef(creationTimerAnchor{})
 		snapshot := model.Snapshot()
+		now := performanceNow()
+		anchor := creationTimerAnchorFor(timerAnchor, snapshot, now)
+		snapshot = creationTimerSnapshot(snapshot, anchor, now)
+		ui.UseEffect(func() func() {
+			if snapshot.TimerTotalMS <= 0 || snapshot.TimerFrozen || snapshot.TimerRemainingMS <= 0 {
+				return nil
+			}
+			timer := time.AfterFunc(250*time.Millisecond, func() { timerTick.Set(timerTick.Get() + 1) })
+			return func() { timer.Stop() }
+		}, snapshot.TimerRemainingMS, snapshot.TimerTotalMS, snapshot.TimerFrozen, timerTick.Get())
 		locale := snapshot.Locale
 		if locale == "" {
 			locale = "en"

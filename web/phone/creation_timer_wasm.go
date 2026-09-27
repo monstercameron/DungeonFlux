@@ -9,6 +9,30 @@ import (
 	"github.com/monstercameron/GoWebComponents/v6/ui"
 )
 
+type creationTimerAnchor struct {
+	remainingMS int64
+	totalMS     int64
+	frozen      bool
+	atMS        float64
+}
+
+func creationTimerAnchorFor(ref ui.Ref[creationTimerAnchor], snapshot CreationSnapshot, now float64) creationTimerAnchor {
+	anchor := ref.Get()
+	if anchor.totalMS != snapshot.TimerTotalMS || anchor.remainingMS != snapshot.TimerRemainingMS || anchor.frozen != snapshot.TimerFrozen {
+		anchor = creationTimerAnchor{remainingMS: snapshot.TimerRemainingMS, totalMS: snapshot.TimerTotalMS, frozen: snapshot.TimerFrozen, atMS: now}
+		ref.Set(anchor)
+	}
+	return anchor
+}
+
+func creationTimerSnapshot(snapshot CreationSnapshot, anchor creationTimerAnchor, now float64) CreationSnapshot {
+	if snapshot.TimerTotalMS <= 0 || snapshot.TimerFrozen || now <= anchor.atMS {
+		return snapshot
+	}
+	snapshot.TimerRemainingMS = creationTimerRemainingAt(snapshot.TimerRemainingMS, anchor.atMS, now)
+	return snapshot
+}
+
 func creationTimerNode(snapshot CreationSnapshot) ui.Node {
 	if snapshot.TimerTotalMS <= 0 {
 		return nil
