@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/monstercameron/DungeonFlux/internal/httpx"
@@ -23,6 +24,8 @@ type Adapter struct {
 	model    string
 	endpoint string
 	client   *httpx.Client
+	mu       sync.Mutex
+	jobs     map[string]queueURLs
 }
 
 // New returns an adapter for model. The endpoint is configurable for fixture tests.
@@ -36,7 +39,7 @@ func New(key, model, endpoint string, client *httpx.Client) *Adapter {
 	if client == nil {
 		client = httpx.NewVendorClient(string(vocab.VendorFal), 3*time.Minute, nil)
 	}
-	return &Adapter{key: key, model: model, endpoint: strings.TrimRight(endpoint, "/"), client: client}
+	return &Adapter{key: key, model: model, endpoint: strings.TrimRight(endpoint, "/"), client: client, jobs: make(map[string]queueURLs)}
 }
 
 var _ ports.VideoGen = (*Adapter)(nil)
@@ -95,13 +98,16 @@ func (a *Adapter) Submit(ctx context.Context, req ports.VideoRequest) (ports.Vid
 	if err != nil {
 		return ports.VideoJob{}, err
 	}
-	var result response
+	var result submitResponse
 	if err := json.Unmarshal(data, &result); err != nil {
 		return ports.VideoJob{}, bad(fmt.Errorf("decode submit response: %w", err))
 	}
 	if result.RequestID == "" {
 		return ports.VideoJob{}, bad(fmt.Errorf("submit response has no request_id"))
 	}
+	a.mu.Lock()
+	a.jobs[result.RequestID] = queueURLs{status: result.StatusURL, response: result.ResponseURL}
+	a.mu.Unlock()
 	return ports.VideoJob{Vendor: string(vocab.VendorFal), ID: result.RequestID}, nil
 }
 
@@ -110,16 +116,37 @@ func (a *Adapter) Poll(ctx context.Context, job ports.VideoJob) (ports.VideoStat
 	if job.ID == "" {
 		return ports.VideoStatus{}, bad(fmt.Errorf("job ID is required"))
 	}
-	request, err := httpx.ContextRequest(ctx, http.MethodGet, a.endpoint+"/"+a.model+"/requests/"+job.ID+"/status", nil)
-	if err != nil {
-		return ports.VideoStatus{}, fmt.Errorf("create fal poll request: %w", err)
-	}
-	request.Header.Set("Authorization", "Key "+a.key)
-	data, err := a.doResponse(request)
+	urls := a.urls(job.ID)
+	data, err := a.get(ctx, urls.status)
 	if err != nil {
 		return ports.VideoStatus{}, err
 	}
-	return parseStatus(data)
+	var status response
+	if err := json.Unmarshal(data, &status); err != nil {
+		return ports.VideoStatus{}, bad(fmt.Errorf("decode status response: %w", err))
+	}
+	current, err := state(status.Status)
+	if err != nil {
+		return ports.VideoStatus{}, bad(err)
+	}
+	if current == vocab.JobFailed {
+		return ports.VideoStatus{}, bad(fmt.Errorf("video job failed: %s", status.Error))
+	}
+	if current != vocab.JobDone {
+		return ports.VideoStatus{State: current, QueuePos: status.QueuePos}, nil
+	}
+	data, err = a.get(ctx, urls.response)
+	if err != nil {
+		return ports.VideoStatus{}, err
+	}
+	url, err := resultURL(data)
+	if err != nil {
+		return ports.VideoStatus{}, bad(err)
+	}
+	a.mu.Lock()
+	delete(a.jobs, job.ID)
+	a.mu.Unlock()
+	return ports.VideoStatus{State: vocab.JobDone, URL: url}, nil
 }
 
 // Download retrieves the completed video URL returned by fal.ai.
@@ -131,7 +158,34 @@ func (a *Adapter) Download(ctx context.Context, url string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create fal download request: %w", err)
 	}
-	request.Header.Set("Authorization", "Key "+a.key)
+	if strings.HasPrefix(url, a.endpoint+"/") {
+		request.Header.Set("Authorization", "Key "+a.key)
+	}
+	return a.doResponse(request)
+}
+
+func (a *Adapter) urls(id string) queueURLs {
+	a.mu.Lock()
+	known, ok := a.jobs[id]
+	a.mu.Unlock()
+	base := a.endpoint + "/" + appID(a.model) + "/requests/" + id
+	if !ok || !strings.HasPrefix(known.status, a.endpoint+"/") {
+		known.status = base + "/status"
+	}
+	if !strings.HasPrefix(known.response, a.endpoint+"/") {
+		known.response = base
+	}
+	return known
+}
+
+func (a *Adapter) get(ctx context.Context, url string) ([]byte, error) {
+	request, err := httpx.ContextRequest(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create fal poll request: %w", err)
+	}
+	if strings.HasPrefix(url, a.endpoint+"/") {
+		request.Header.Set("Authorization", "Key "+a.key)
+	}
 	return a.doResponse(request)
 }
 

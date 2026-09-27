@@ -49,6 +49,10 @@ func TestAdapter_SubmitPollDownload(t *testing.T) {
 			_, _ = w.Write(fixture(t, "done.json"))
 			return
 		}
+		if strings.HasSuffix(r.URL.Path, "/requests/fal-1") {
+			_, _ = w.Write([]byte(`{"video":{"url":"https://cdn.example/fal-1.mp4"}}`))
+			return
+		}
 		_, _ = w.Write([]byte("fal-bytes"))
 	}))
 	defer server.Close()
@@ -63,6 +67,44 @@ func TestAdapter_SubmitPollDownload(t *testing.T) {
 	}
 	data, err := a.Download(t.Context(), server.URL+"/download")
 	if err != nil || string(data) != "fal-bytes" {
+		t.Fatalf("data=%q err=%v", data, err)
+	}
+}
+
+func TestAdapter_PollResumesRecordedJob(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Key secret" {
+			t.Errorf("authorization=%q", r.Header.Get("Authorization"))
+		}
+		if strings.HasSuffix(r.URL.Path, "/status") {
+			_, _ = w.Write(fixture(t, "done.json"))
+			return
+		}
+		if strings.HasSuffix(r.URL.Path, "/requests/recorded-job") {
+			_, _ = w.Write([]byte(`{"video":{"url":"https://cdn.example/recorded.mp4"}}`))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+	a := New("secret", "bytedance/seedance-2.0/fast/image-to-video", server.URL, httpx.NewVendorClient("fal", 0, nil))
+	status, err := a.Poll(t.Context(), ports.VideoJob{Vendor: "fal", ID: "recorded-job"})
+	if err != nil || status.State != vocab.JobDone || status.URL != "https://cdn.example/recorded.mp4" {
+		t.Fatalf("status=%+v err=%v", status, err)
+	}
+}
+
+func TestAdapter_DownloadDoesNotSendKeyToCDN(t *testing.T) {
+	cdn := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.Header.Get("Authorization"); got != "" {
+			t.Errorf("cdn authorization=%q", got)
+		}
+		_, _ = w.Write([]byte("cdn-video"))
+	}))
+	defer cdn.Close()
+	a := New("secret", "model", "https://queue.example", httpx.NewVendorClient("fal", 0, nil))
+	data, err := a.Download(t.Context(), cdn.URL+"/video.mp4")
+	if err != nil || string(data) != "cdn-video" {
 		t.Fatalf("data=%q err=%v", data, err)
 	}
 }
