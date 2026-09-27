@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -117,6 +118,20 @@ func (s *supervisor) liveRoutes(mux *http.ServeMux) {
 	})
 }
 
+func configureLiveProxy(proxy *httputil.ReverseProxy) {
+	rewrite := proxy.Rewrite
+	proxy.Rewrite = func(request *httputil.ProxyRequest) {
+		rewrite(request)
+		// A browser may still hold HTML cached before live reload was enabled.
+		// A downstream 304 would reuse that page without our injected module.
+		if strings.Contains(request.Out.Header.Get("Accept"), "text/html") {
+			request.Out.Header.Del("If-None-Match")
+			request.Out.Header.Del("If-Modified-Since")
+		}
+	}
+	proxy.ModifyResponse = injectLiveReload
+}
+
 func injectLiveReload(response *http.Response) error {
 	if !strings.Contains(response.Header.Get("Content-Type"), "text/html") || response.StatusCode != http.StatusOK {
 		return nil
@@ -133,6 +148,7 @@ func injectLiveReload(response *http.Response) error {
 	response.ContentLength = int64(len(data))
 	response.Header.Set("Content-Length", strconv.Itoa(len(data)))
 	response.Header.Del("ETag")
+	response.Header.Del("Last-Modified")
 	response.Header.Set("Cache-Control", "no-store")
 	return nil
 }

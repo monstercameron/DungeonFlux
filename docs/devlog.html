@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-live-reload-cached-html">
+  <div class="entry-head"><time datetime="2026-09-27T04:48-04:00">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-live-reload-cached-html">Existing browser pages missed the development reload script</a></h2>
+  <p>The supervisor rebuilt the Go server and WASM bundle, but an existing host tab still required manual refreshes. The browser was revalidating HTML cached before the supervisor injected its reload module. The backend returned 304, so the proxy had no response body to modify and the browser reused the old page. A fresh URL contained the module, confirming the difference. Development HTML requests now remove conditional cache headers before reaching the backend; injected responses remove old validators and remain no-store. Asset revalidation is preserved. A proxy regression test covers both cases, the tooling gate passes, and the updated supervisor serves the reload module at the original host URL. The human test server is unchanged.</p>
+</li>
 <li class="entry" data-kind="issue" id="e-20260927-authoritative-action-acks">
   <div class="entry-head"><time datetime="2026-09-27T04:44-04:00">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-authoritative-action-acks">Queued commands were reported as successful before the game decided</a></h2>

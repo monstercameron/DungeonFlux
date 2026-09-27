@@ -4,6 +4,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -150,5 +152,52 @@ func TestLiveReconcile_UnchangedTreeKeepsCurrentProcess(t *testing.T) {
 	s.reconcile()
 	if _, err := os.Stat(s.cfg.buildDir); !os.IsNotExist(err) {
 		t.Fatal("unchanged source triggered build")
+	}
+}
+
+func TestLiveProxy_ReplacesCachedHTMLButPreservesAssetValidation(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("If-None-Match") != "" || r.Header.Get("If-Modified-Since") != "" {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html")
+		w.Header().Set("ETag", `"old-page"`)
+		w.Header().Set("Last-Modified", "Sat, 26 Sep 2026 00:00:00 GMT")
+		_, _ = io.WriteString(w, "<html><body>Demo</body></html>")
+	}))
+	defer upstream.Close()
+	target, err := url.Parse(upstream.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name, accept string
+		status       int
+	}{
+		{"cached page", "text/html,application/xhtml+xml", http.StatusOK},
+		{"cached asset", "*/*", http.StatusNotModified},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			proxy := &httputil.ReverseProxy{Rewrite: func(request *httputil.ProxyRequest) { request.SetURL(target) }}
+			configureLiveProxy(proxy)
+			request := httptest.NewRequest(http.MethodGet, "/host", nil)
+			request.Header.Set("Accept", tc.accept)
+			request.Header.Set("If-None-Match", `"old-page"`)
+			request.Header.Set("If-Modified-Since", "Sat, 26 Sep 2026 00:00:00 GMT")
+			response := httptest.NewRecorder()
+			proxy.ServeHTTP(response, request)
+			if response.Code != tc.status {
+				t.Fatalf("status=%d want=%d", response.Code, tc.status)
+			}
+			if tc.status == http.StatusOK {
+				if !strings.Contains(response.Body.String(), "/__dev/reload.mjs") {
+					t.Fatal("cached browser still lacks reload module")
+				}
+				if response.Header().Get("ETag") != "" || response.Header().Get("Last-Modified") != "" || response.Header().Get("Cache-Control") != "no-store" {
+					t.Fatal("injected HTML retained conditional cache metadata")
+				}
+			}
+		})
 	}
 }

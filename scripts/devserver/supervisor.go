@@ -362,9 +362,12 @@ func (s *supervisor) proxy(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 	target, _ := url.Parse(fmt.Sprintf("http://127.0.0.1:%d", s.cfg.port+1))
-	proxy := httputil.NewSingleHostReverseProxy(target)
+	proxy := &httputil.ReverseProxy{Rewrite: func(request *httputil.ProxyRequest) {
+		request.SetURL(target)
+		request.Out.Host = request.In.Host
+	}}
 	if s.cfg.liveReload {
-		proxy.ModifyResponse = injectLiveReload
+		configureLiveProxy(proxy)
 	}
 	proxy.ErrorHandler = func(rw http.ResponseWriter, _ *http.Request, _ error) {
 		http.Error(rw, "server starting", http.StatusServiceUnavailable)
