@@ -33,24 +33,63 @@ func TestDemoCues_coversEveryDemoState(t *testing.T) {
 
 func TestCueEffect_EffectsTargetsDMAndPreservesAudioOrder(t *testing.T) {
 	effects := CueForState(vocab.StateCombat).Effects()
-	if len(effects) != 3 {
-		t.Fatalf("combat effects = %d, want 3", len(effects))
+	if len(effects) != 4 {
+		t.Fatalf("combat effects = %d, want 4", len(effects))
 	}
 	want := []struct {
 		channel vocab.SoundKind
 		name    string
+		target  string
 		loop    bool
 		gain    float32
+		delay   int
 	}{
-		{vocab.SoundMusic, "STING_COMBAT_START", false, 0.5},
-		{vocab.SoundMusic, "COMBAT_SKIRMISH_LOOP", true, 0.5},
-		{vocab.SoundAmbience, "ambience_combat_tension", true, 0.25},
+		{vocab.SoundMusic, "STING_COMBAT_START", audioTargetDM, false, 0.8, 0},
+		{vocab.SoundMusic, "COMBAT_SKIRMISH_LOOP", audioTargetDM, true, 0.5, 1500},
+		{vocab.SoundAmbience, "ambience_wooded_path", audioTargetDM, true, 0.25, 0},
+		{vocab.SoundSFX, "sfx_your_turn", audioTargetSeat, false, 0.9, 2500},
 	}
 	for index, expected := range want {
 		got, ok := effects[index].(domain.PlaySound)
-		if !ok || got.Channel != expected.channel || got.Name != expected.name || got.Target != audioTargetDM || got.Loop != expected.loop || got.Gain != expected.gain {
+		if !ok || got.Channel != expected.channel || got.Name != expected.name || got.Target != expected.target || got.Loop != expected.loop || got.Gain != expected.gain || got.DelayMS != expected.delay {
 			t.Fatalf("effect %d = %#v, want %#v", index, effects[index], expected)
 		}
+	}
+}
+
+func TestCueEffect_placesAndStingersFollowTheScript(t *testing.T) {
+	tests := []struct {
+		state    vocab.StateID
+		ambience string
+		stinger  string
+	}{
+		{vocab.StateLobby, "ambience_river_night", ""},
+		{vocab.StateConversation, "ambience_tavern_rain", ""},
+		{vocab.StateCheck, "ambience_tavern_rain", "sfx_dice_roll"},
+		{vocab.StateHookEvent, "ambience_bell_tower_wind", "sfx_door_burst"},
+		{vocab.StateCliffhanger, "ambience_bell_tower_wind", ""},
+		{vocab.StateEnd, "ambience_dawn", ""},
+	}
+	for _, tc := range tests {
+		t.Run(string(tc.state), func(t *testing.T) {
+			cue := CueForState(tc.state)
+			if cue.Ambience != tc.ambience || cue.Stinger != tc.stinger {
+				t.Fatalf("cue = %#v", cue)
+			}
+		})
+	}
+	end := CueForState(vocab.StateEnd).Effects()
+	hit, theme := end[0].(domain.PlaySound), end[1].(domain.PlaySound)
+	if hit.Name != "STING_CLIFF_HIT" || hit.Gain != stingerGain || theme.Name != "END_CARD_THEME" || theme.Loop || theme.DelayMS != 2500 {
+		t.Fatalf("end effects = %#v", end)
+	}
+	opening := CueForState(vocab.StateOpening).Effects()
+	swell, tavern := opening[0].(domain.PlaySound), opening[1].(domain.PlaySound)
+	if swell.Gain != openingGain || tavern.DelayMS != 6000 || !tavern.Loop || tavern.Gain != 0.3 {
+		t.Fatalf("opening effects = %#v", opening)
+	}
+	if check := CueForState(vocab.StateCheck).Effects(); check[len(check)-1].(domain.PlaySound).Gain != tableSFXGain {
+		t.Fatalf("check stinger = %#v", check)
 	}
 }
 

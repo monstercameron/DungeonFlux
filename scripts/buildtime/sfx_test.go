@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,7 +15,7 @@ import (
 
 func TestSFXAssets_CoversGeneralAndCombatLibrary(t *testing.T) {
 	assets := SFXAssets()
-	if len(assets) != 24 {
+	if len(assets) != 32 {
 		t.Fatalf("got %d SFX assets", len(assets))
 	}
 	seen := make(map[string]bool)
@@ -24,7 +25,7 @@ func TestSFXAssets_CoversGeneralAndCombatLibrary(t *testing.T) {
 		}
 		seen[asset.ID] = true
 	}
-	for _, id := range []string{"sfx_dice_roll", "sfx_tavern_ambience", "sfx_sword_slash", "sfx_wet_footsteps"} {
+	for _, id := range []string{"sfx_dice_roll", "sfx_tavern_ambience", "sfx_sword_slash", "sfx_wet_footsteps", "sfx_down", "sfx_thrall_slam", "sfx_your_turn"} {
 		if !seen[id] {
 			t.Fatalf("missing required SFX %q", id)
 		}
@@ -138,7 +139,7 @@ func TestPlanSFX_AccountsForTwoTakes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if plan.Requests != 48 || plan.EstimatedSeconds != 104.2 || plan.EstimatedCostUSD <= 0 {
+	if plan.Requests != 64 || math.Abs(plan.EstimatedSeconds-124.8) > 1e-9 || plan.EstimatedCostUSD <= 0 {
 		t.Fatalf("unexpected plan: %#v", plan)
 	}
 	if _, err := PlanSFX(SFXAssets(), 4); err == nil {
@@ -164,7 +165,7 @@ func TestRunSFXBuild_SelectsBestTakeAndReleasesLock(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(root, "manifest.lock")); !os.IsNotExist(err) {
 		t.Fatalf("manifest lock remains: %v", err)
 	}
-	if !strings.Contains(log.String(), "sfx_summary requests=24") {
+	if !strings.Contains(log.String(), "sfx_summary requests=32") {
 		t.Fatalf("summary log missing: %s", log.String())
 	}
 }

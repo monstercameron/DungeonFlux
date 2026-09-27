@@ -39,11 +39,11 @@ func TestAudioRouter_RouteSoundPublishesPlayMix(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = router.RouteSound(domain.PlaySound{Channel: vocab.SoundSFX, Name: "dice", Target: "seat", Seat: 2, Loop: false, Gain: .8}, domain.Asset{MIME: "audio/ogg;codecs=opus"}, []byte("dice"))
+	err = router.RouteSound(domain.PlaySound{Channel: vocab.SoundSFX, Name: "dice", Target: "seat", Seat: 2, Loop: false, Gain: .8, DelayMS: 1700}, domain.Asset{MIME: "audio/ogg;codecs=opus"}, []byte("dice"))
 	if err != nil || len(sink.chunks) != 1 || len(sink.mixes) != 1 {
 		t.Fatalf("err=%v chunks=%d mixes=%d", err, len(sink.chunks), len(sink.mixes))
 	}
-	if sink.mixes[0].Target.Seat != 2 || sink.mixes[0].Command != "play" || sink.mixes[0].Gain != .8 {
+	if sink.mixes[0].Target.Seat != 2 || sink.mixes[0].Command != "play" || sink.mixes[0].Gain != .8 || sink.mixes[0].StartAtMS != 1700 {
 		t.Fatalf("mix=%+v", sink.mixes[0])
 	}
 }

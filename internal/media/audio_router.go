@@ -88,7 +88,7 @@ func (r *AudioRouter) RouteSound(effect domain.PlaySound, asset domain.Asset, da
 	if err := r.RouteAsset(asset, data, effect.Channel, AudioTarget{Kind: effect.Target, Seat: effect.Seat}); err != nil {
 		return err
 	}
-	r.sink.PublishMix(MixCommand{Channel: effect.Channel, Target: AudioTarget{Kind: effect.Target, Seat: effect.Seat}, Command: "play", TrackID: effect.Name, Loop: effect.Loop, Gain: effect.Gain})
+	r.sink.PublishMix(MixCommand{Channel: effect.Channel, Target: AudioTarget{Kind: effect.Target, Seat: effect.Seat}, Command: "play", TrackID: effect.Name, StartAtMS: int64(max(effect.DelayMS, 0)), Loop: effect.Loop, Gain: effect.Gain})
 	return nil
 }
 

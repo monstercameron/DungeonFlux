@@ -4,6 +4,7 @@ package audio
 
 import (
 	"fmt"
+	"math"
 	"syscall/js"
 	"time"
 
@@ -172,13 +173,20 @@ func (p *Player) startDecoded(id string, channel Channel, buffer js.Value, loop 
 	trackGain := p.context.Call("createGain")
 	trackGain.Call("connect", p.bus(channel))
 	source.Call("connect", trackGain)
-	if loop && (channel == MusicChannel || channel == AmbienceChannel) {
-		// One bed per channel: a new phase loop crossfades out the old one.
-		if p.replaceBed(id, channel) {
+	when := p.context.Get("currentTime").Float() + float64(max64(delayMS, 0))/1000
+	duration := buffer.Get("duration").Float()
+	switch RoleFor(channel, loop, duration) {
+	case RoleBed:
+		// One bed per channel: a new phase bed (a loop, or a long one-shot
+		// such as the opening swell or the cliffhanger bed) crossfades out
+		// the old one when it starts.
+		if p.replaceBedAt(id, channel, when) {
 			fadeInMS = max(fadeInMS, bedCrossfadeMS)
 		}
+		p.bedLevels[id] = gain
+	case RoleStinger:
+		p.dipBed(channel, when, duration)
 	}
-	when := p.context.Get("currentTime").Float() + float64(max64(delayMS, 0))/1000
 	trackGain.Get("gain").Call("setValueAtTime", 0, when)
 	trackGain.Get("gain").Call("linearRampToValueAtTime", gain, when+float64(max(fadeInMS, 0))/1000)
 	if channel == SFXChannel && !loop {
@@ -192,7 +200,6 @@ func (p *Player) startDecoded(id string, channel Channel, buffer js.Value, loop 
 	p.trackGains[id] = append(p.trackGains[id], trackGain)
 	source.Call("start", when)
 	if !loop {
-		p.played[id] = true
 		var goDelete js.Func
 		goDelete = js.FuncOf(func(_ js.Value, _ []js.Value) any {
 			delete(p.tracks, id)
@@ -201,17 +208,18 @@ func (p *Player) startDecoded(id string, channel Channel, buffer js.Value, loop 
 			goDelete.Release()
 			return nil
 		})
-		durationMS := int(buffer.Get("duration").Float() * 1000)
-		js.Global().Get("setTimeout").Invoke(goDelete, durationMS+100)
+		durationMS := int((duration+float64(max64(delayMS, 0))/1000)*1000) + 100
+		js.Global().Get("setTimeout").Invoke(goDelete, durationMS)
 	}
 }
 
 // bedCrossfadeMS is the crossfade between two looping beds on one channel.
 const bedCrossfadeMS = 1200
 
-// replaceBed records id as the channel's looping bed and fades out any other
-// bed on that channel. It reports whether a previous bed was replaced.
-func (p *Player) replaceBed(id string, channel Channel) bool {
+// replaceBedAt records id as the channel's bed and fades out any other bed
+// on that channel at when (the new bed's start, which may be delayed). It
+// reports whether a previous bed was replaced.
+func (p *Player) replaceBedAt(id string, channel Channel, when float64) bool {
 	if p.beds == nil {
 		p.beds = make(map[Channel]string)
 	}
@@ -220,8 +228,42 @@ func (p *Player) replaceBed(id string, channel Channel) bool {
 	if !ok || previous == id {
 		return false
 	}
-	p.StopTrack(previous, bedCrossfadeMS)
+	delete(p.bedLevels, previous)
+	now := p.context.Get("currentTime").Float()
+	if when <= now+0.05 {
+		p.StopTrack(previous, bedCrossfadeMS)
+		return true
+	}
+	// A delayed bed (the tavern loop after the opening swell) lets the old
+	// one play on until the new one starts, then crossfades.
+	var stop js.Func
+	stop = js.FuncOf(func(js.Value, []js.Value) any {
+		stop.Release()
+		if p.beds[channel] != previous {
+			p.StopTrack(previous, bedCrossfadeMS)
+		}
+		return nil
+	})
+	js.Global().Get("setTimeout").Invoke(stop, int((when-now)*1000))
 	return true
+}
+
+// dipBed lowers the channel's current bed under a stinger that starts at
+// when and lasts duration seconds, then brings it back.
+func (p *Player) dipBed(channel Channel, when, duration float64) {
+	bed, ok := p.beds[channel]
+	if !ok {
+		return
+	}
+	level, ok := p.bedLevels[bed]
+	if !ok {
+		return
+	}
+	for _, gain := range p.trackGains[bed] {
+		param := gain.Get("gain")
+		param.Call("setTargetAtTime", level*StingerDip, when, .08)
+		param.Call("setTargetAtTime", level, when+math.Max(duration-0.8, 0.2), .5)
+	}
 }
 
 func max64(left, right int64) int64 {
