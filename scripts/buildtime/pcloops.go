@@ -16,6 +16,7 @@ type PCBillboardSpec struct {
 func PCBillboardSpecs() []LoopSpec {
 	poses := []struct{ name, prompt string }{
 		{"idle", "full-body fantasy hero breathing and shifting weight, static camera"},
+		{"walk", "full-body fantasy hero takes two deliberate steps toward the drowned thrall on the right, then returns to the starting combat stance, static camera"},
 		{"attack", "full-body fantasy hero performs one weapon swing toward screen right, static camera"},
 		{"hit", "full-body fantasy hero recoils from an impact, static camera"},
 		{"down", "full-body fantasy hero holds a defeated standing pose, static camera"},

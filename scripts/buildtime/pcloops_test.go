@@ -7,7 +7,7 @@ import (
 
 func TestPCBillboardSpecs_IncludeAllTemplatesAndPoses(t *testing.T) {
 	specs := PCBillboardSpecs()
-	if len(specs) != 8 {
+	if len(specs) != 10 {
 		t.Fatalf("got %d specs", len(specs))
 	}
 	seen := map[string]bool{}
@@ -17,7 +17,7 @@ func TestPCBillboardSpecs_IncludeAllTemplatesAndPoses(t *testing.T) {
 			t.Fatalf("unexpected timing: %#v", spec)
 		}
 	}
-	for _, name := range []string{"pc_template_1_idle", "pc_template_1_attack", "pc_template_1_hit", "pc_template_1_down", "pc_template_2_idle", "pc_template_2_attack", "pc_template_2_hit", "pc_template_2_down"} {
+	for _, name := range []string{"pc_template_1_idle", "pc_template_1_walk", "pc_template_1_attack", "pc_template_1_hit", "pc_template_1_down", "pc_template_2_idle", "pc_template_2_walk", "pc_template_2_attack", "pc_template_2_hit", "pc_template_2_down"} {
 		if !seen[name] {
 			t.Fatalf("missing %s", name)
 		}

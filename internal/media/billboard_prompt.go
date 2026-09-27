@@ -9,11 +9,12 @@ import (
 
 // BillboardPromptVersion names the prompt template below. It is part of the
 // cache key, so any wording change must bump it or stale clips are served.
-const BillboardPromptVersion = "bb-green-v1"
+const BillboardPromptVersion = "bb-green-v3"
 
 // Billboard loop actions (plan §0.17 BB_LOOP_*).
 const (
 	BillboardIdle   = "idle"
+	BillboardWalk   = "walk"
 	BillboardAttack = "attack"
 	BillboardHit    = "hit"
 	BillboardFall   = "fall"
@@ -49,7 +50,7 @@ type BillboardSpec struct {
 // BillboardActions reports whether action is a known loop action.
 func BillboardActions(action string) bool {
 	switch action {
-	case BillboardIdle, BillboardAttack, BillboardHit, BillboardFall:
+	case BillboardIdle, BillboardWalk, BillboardAttack, BillboardHit, BillboardFall:
 		return true
 	}
 	return false
@@ -86,7 +87,7 @@ func BillboardPrompt(spec BillboardSpec) string {
 		look = "character"
 	}
 	parts := []string{
-		fmt.Sprintf("The %s from %s, shown full body from head to feet, %s", look, identity, billboardAction(spec.Action, spec.Subject.Weapon)),
+		fmt.Sprintf("The %s from %s, shown full body from head to feet, %s", look, identity, billboardAction(spec.Action, spec.Subject.Weapon, look)),
 		"Solid flat chroma-key green background (#00B140) everywhere behind the character, no ground, no scenery, no shadows on the background",
 		fmt.Sprintf("Static locked-off camera, full-body shot, the character centered with the feet near the bottom of the frame, seen from the same camera height and angle as %s", level),
 		fmt.Sprintf("Light the character like %s: the same key light direction, color temperature and softness; %s is a lighting reference only and none of its scenery appears", level, level),
@@ -107,24 +108,34 @@ func identityRefs(count int) string {
 	return strings.Join(refs[:count-1], ", ") + " and " + refs[count-1]
 }
 
-func billboardAction(action, weapon string) string {
+func billboardAction(action, weapon, look string) string {
 	weapon = strings.ToLower(strings.TrimSpace(weapon))
 	switch action {
+	case BillboardWalk:
+		return facingLine(look) + ", performs two deliberate in-place walking steps toward its opponent while keeping its feet aligned, then returns to the same ready stance"
 	case BillboardAttack:
 		if weapon == "" {
 			weapon = "weapon"
 		}
 		if rangedWeapon(weapon) {
-			return "draws and looses one shot from a " + weapon + " toward the right side of the frame, then returns to a ready stance"
+			return facingLine(look) + ", draws and looses one shot from a " + weapon + " toward it, then returns to a ready stance"
 		}
-		return "swings a " + weapon + " once toward the right side of the frame, then returns to a ready stance"
+		return facingLine(look) + ", swings a " + weapon + " once toward it, then returns to a ready stance"
 	case BillboardHit:
 		return "recoils from a blow that comes from the right, staggers half a step, then recovers to a guarded stance"
 	case BillboardFall:
 		return "is struck, collapses down to the bottom of the frame and lies still"
 	default:
-		return "stands in a relaxed combat-ready idle, breathing slowly and shifting weight, ending in the same pose it started in so the clip loops"
+		return facingLine(look) + " in a relaxed combat-ready idle, breathing slowly and shifting weight, ending in the same pose it started in so the clip loops"
 	}
+}
+
+func facingLine(look string) string {
+	look = strings.ToLower(look)
+	if strings.Contains(look, "thrall") || strings.Contains(look, "undead") || strings.Contains(look, "enemy") {
+		return "faces the heroes on the left side of the frame"
+	}
+	return "faces the drowned thrall on the right side of the frame"
 }
 
 func rangedWeapon(weapon string) bool {

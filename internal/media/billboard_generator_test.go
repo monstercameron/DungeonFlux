@@ -264,7 +264,7 @@ func TestBillboardPrompt_slots(t *testing.T) {
 		want           []string
 	}{
 		{BillboardIdle, "", []string{"@Image1 and @Image2", "breathing slowly", "@Image3 is a lighting reference only", "#00B140", "no shadows on the background", "One continuous shot, no cuts"}},
-		{BillboardAttack, "Longsword", []string{"swings a longsword once toward the right side"}},
+		{BillboardAttack, "Longsword", []string{"swings a longsword once toward it"}},
 		{BillboardAttack, "Longbow", []string{"looses one shot from a longbow"}},
 		{BillboardAttack, "", []string{"swings a weapon"}},
 		{BillboardHit, "", []string{"recoils from a blow"}},

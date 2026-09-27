@@ -186,6 +186,7 @@ func registerLoops(root, prefix string, lines []billboardLine) error {
 	}
 	for index, line := range lines {
 		logical := prefix + line.Action
+		previous := writer.manifest.Assets[logical]
 		if _, err := writer.AddFile(logical, "VIDEO_LOOP", line.Path, 1); err != nil {
 			return err
 		}
@@ -194,6 +195,16 @@ func registerLoops(root, prefix string, lines []billboardLine) error {
 		}
 		metadata := map[string]string{"model": "bytedance/seedance-2.0/fast/reference-to-video", "resolution": media.BillboardResolution,
 			"aspect": media.BillboardAspect, "no_audio": "true", "cache_key": line.Key, "prompt_version": media.BillboardPromptVersion, "contact_source": "default-1.2s"}
+		if class, ok := strings.CutPrefix(prefix, "hero_loop_"); ok {
+			if class = strings.TrimSuffix(class, "_"); class != "" {
+				metadata["class"] = class
+			}
+			metadata["action"] = line.Action
+			metadata["battlefield_scene"] = "/splat/scenes/64bb46d5.json"
+		}
+		if reference := previous.Metadata["reference_sheet_sha256"]; reference != "" {
+			metadata["reference_sheet_sha256"] = reference
+		}
 		if line.Action == media.BillboardIdle {
 			metadata["pinned"] = "prompt"
 		}

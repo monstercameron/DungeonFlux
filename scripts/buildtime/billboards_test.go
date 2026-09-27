@@ -100,6 +100,9 @@ func TestLevelStillAndLoopsRegistration(t *testing.T) {
 	if entry.ContactMS != 1200 || entry.DurationMS != 4000 || entry.Kind != "VIDEO_LOOP" || entry.Metadata["cache_key"] != attack.Key {
 		t.Fatalf("entry=%+v", entry)
 	}
+	if entry.Metadata["class"] != "" || entry.Metadata["action"] != "attack" || entry.Metadata["battlefield_scene"] == "" {
+		t.Fatalf("hero metadata=%+v", entry.Metadata)
+	}
 	if writer.manifest.Assets["hero_loop_idle"].ContactMS != 0 {
 		t.Fatal("idle loop has a contact frame")
 	}
