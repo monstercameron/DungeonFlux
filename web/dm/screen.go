@@ -72,7 +72,7 @@ func SelectLayers(state *dungeonfluxv1.ScreenState) []Layer {
 	case "hookevent", "hook_event":
 		return []Layer{LayerScene, LayerClip, LayerCallout, LayerMusic}
 	case "combat":
-		return []Layer{LayerCombat, LayerDice, LayerTimer, LayerMusic}
+		return []Layer{LayerCombat, LayerDice, LayerMusic}
 	case "cliffhanger":
 		return []Layer{LayerScene, LayerClip, LayerMusic}
 	case "end":

@@ -6,6 +6,8 @@ package i18n
 // drift so the catalog cannot silently diverge from the game.
 func EnglishEntries() map[string]Entry {
 	return map[string]Entry{
+		"phone.check.listen":                 {Text: "Listen as the story continues…"},
+		"dm.stranger_alt":                    {Text: "The soaked stranger"},
 		"canned.canned_cliffhanger_vell":     {Text: "Midnight. The tower bell Mother Vell warned of tolls, and every lantern in the tavern gutters out. In the dark it rings again, slow and patient. Whoever pulls that rope already knows your names."},
 		"canned.canned_combat_slain_seat1":   {Text: "Steel finds the thrall's heart of river mud, and it collapses into a pool of dark water."},
 		"canned.canned_combat_slain_seat2":   {Text: "One last blow, and the thrall sags. The river takes back its own."},
@@ -14,7 +16,7 @@ func EnglishEntries() map[string]Entry {
 		"phone.combat.move":                  {Text: "Move"},
 		"phone.combat.dash":                  {Text: "Dash"},
 		"phone.combat.enemy":                 {Text: "Enemy"},
-		"phone.combat.enemy_glyph":           {Text: "Skull"},
+		"phone.combat.enemy_glyph":           {Text: "☠"},
 		"phone.combat.unavailable":           {Text: "Combat is unavailable."},
 		"phone.combat.vitals":                {Text: "VITALS"},
 		"phone.combat.target":                {Text: "Target"},

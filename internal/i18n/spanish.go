@@ -5,6 +5,8 @@ package i18n
 // stay as proper nouns.
 func SpanishEntries() map[string]Entry {
 	return map[string]Entry{
+		"phone.check.listen":                 {Text: "Escucha cómo continúa la historia…"},
+		"dm.stranger_alt":                    {Text: "El desconocido empapado"},
 		"canned.canned_cliffhanger_vell":     {Text: "Medianoche. La campana de la torre que advirtio Madre Vell tañe y cada farol de la taberna se apaga. En la oscuridad vuelve a sonar, lenta y paciente. Quien tira de esa cuerda ya sabe vuestros nombres."},
 		"canned.canned_combat_slain_seat1":   {Text: "El acero encuentra el corazon de lodo del ahogado y se desploma en un charco de agua oscura."},
 		"canned.canned_combat_slain_seat2":   {Text: "Un ultimo golpe y el ahogado se derrumba. El rio recupera lo suyo."},
@@ -13,7 +15,7 @@ func SpanishEntries() map[string]Entry {
 		"phone.combat.move":                  {Text: "Mover"},
 		"phone.combat.dash":                  {Text: "Carrera"},
 		"phone.combat.enemy":                 {Text: "Enemigo"},
-		"phone.combat.enemy_glyph":           {Text: "Calavera"},
+		"phone.combat.enemy_glyph":           {Text: "☠"},
 		"phone.combat.unavailable":           {Text: "El combate no esta disponible."},
 		"phone.combat.vitals":                {Text: "ESTADO"},
 		"phone.combat.target":                {Text: "Objetivo"},

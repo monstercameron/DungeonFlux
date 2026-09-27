@@ -16,7 +16,7 @@ type PreviewFixture struct {
 func Previews() map[string]PreviewFixture {
 	return map[string]PreviewFixture{
 		"lobby":         preview("lobby", lobbyPreview()),
-		"creation":      preview("creation", scenePreview("creation")),
+		"creation":      preview("creation", creationPreview()),
 		"opening":       preview("opening", openingPreview()),
 		"exploration":   preview("exploration", scenePreview("exploration")),
 		"conversation":  preview("conversation", conversationPreview()),
@@ -66,6 +66,15 @@ func lobbyPreview() *dungeonfluxv1.ScreenState {
 
 func scenePreview(phase string) *dungeonfluxv1.ScreenState {
 	return state(phase, baseView())
+}
+
+func creationPreview() *dungeonfluxv1.ScreenState {
+	view := baseView()
+	for _, card := range view.BuildCards {
+		card.Character = &dungeonfluxv1.Character{Name: card.Name, ClassName: card.ClassName, Species: "elf", Gender: "female", Build: &dungeonfluxv1.CharacterBuild{Abilities: []int32{10, 16, 14, 12, 13, 8}, Hp: 10, HpMax: 10, Ac: 14}}
+		card.Ready = card.PlayerNumber == 2
+	}
+	return state("creation", view)
 }
 
 func openingPreview() *dungeonfluxv1.ScreenState {

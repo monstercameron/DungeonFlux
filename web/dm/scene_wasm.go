@@ -32,7 +32,7 @@ func SceneComponent(view *dungeonfluxv1.DMView, phase ...string) router.Componen
 		}
 		if len(phase) > 0 && transitionPhase(phase[0]) == "hook_event" {
 			if portrait := ArtURL("stranger"); portrait != "" {
-				children = append(children, html.Img(html.Props{Src: portrait, Alt: "The soaked stranger", Style: map[string]string{"position": "absolute", "right": "340px", "top": "145px", "height": "590px", "max-width": "650px", "object-fit": "contain", "border-radius": "12px", "box-shadow": "0 16px 60px #05090e", "z-index": "3"}}))
+				children = append(children, html.Img(html.Props{Src: portrait, Alt: T(locale, "dm.stranger_alt", nil), Style: map[string]string{"position": "absolute", "right": "340px", "top": "145px", "height": "590px", "max-width": "650px", "object-fit": "contain", "border-radius": "12px", "box-shadow": "0 16px 60px #05090e", "z-index": "3"}}))
 			}
 		}
 		if composition.caption {
@@ -70,6 +70,7 @@ func sceneLayers(layers []SceneLayer) []ui.Node {
 		style := SceneLayerStyle(layer)
 		style["position"], style["z-index"] = "absolute", "1"
 		style["max-width"], style["max-height"] = "52%", "72%"
+		style["mask-image"] = "radial-gradient(ellipse at 50% 40%,#000 35%,transparent 72%)"
 		nodes = append(nodes, html.Img(html.Props{ID: layer.ID, Class: class, Src: artSrc(layer.URL), Alt: "", Style: style, Raw: map[string]any{"aria-hidden": "true"}}))
 	}
 	return nodes

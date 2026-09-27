@@ -230,8 +230,7 @@ func SceneLayerStyle(layer SceneLayer) map[string]string {
 		"transform": "translate(-50%, -50%)",
 	}
 	if layer.Scale > 0 {
-		style["--df-layer-scale"] = number(layer.Scale)
-		style["transform"] = "translate(-50%, -50%) scale(var(--df-layer-scale))"
+		style["transform"] = "translate(-50%, -50%) scale(" + number(layer.Scale) + ")"
 	}
 	return style
 }

@@ -59,7 +59,7 @@ func TestSceneLayerStyle_UsesPositionAndScale(t *testing.T) {
 	if style["left"] != "32%" || style["top"] != "58%" {
 		t.Fatalf("position style = %#v", style)
 	}
-	if style["transform"] == "translate(-50%, -50%)" || style["--df-layer-scale"] != "1.2" {
+	if style["transform"] != "translate(-50%, -50%) scale(1.2)" {
 		t.Fatalf("scale style = %#v", style)
 	}
 }
