@@ -96,7 +96,7 @@ func (m Machine) LegalMoveViews(seat domain.SeatID) []domain.MoveView {
 		active := m.spotlight == seat
 		return []domain.MoveView{move(vocab.MovePersuade, "Persuade +4 vs DC 10", active, waitingReason(m.spotlight)), move(vocab.MoveStepAway, "Step away", active, waitingReason(m.spotlight))}
 	case vocab.StateCheck:
-		active := m.spotlight == seat
+		active := m.spotlight == seat && m.check.State() == check.Offered
 		return []domain.MoveView{move(vocab.MovePersuade, "Persuade +4 vs DC 10", active, waitingReason(m.spotlight))}
 	case vocab.StateCombat:
 		return m.combatMoves(seat, card)

@@ -56,7 +56,8 @@ func TestLegalMoveViews_ConversationAndCheckRespectSpotlight(t *testing.T) {
 			if len(first) != test.want || len(second) != test.want {
 				t.Fatalf("menus = %#v / %#v", first, second)
 			}
-			if !first[0].Enabled || second[0].Enabled || second[0].Reason != "Waiting for seat 1" {
+			wantEnabled := test.state == vocab.StateConversation
+			if first[0].Enabled != wantEnabled || second[0].Enabled || second[0].Reason != "Waiting for seat 1" {
 				t.Fatalf("spotlight menus = %#v / %#v", first, second)
 			}
 		})
