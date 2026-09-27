@@ -3,6 +3,7 @@ package wire
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -52,7 +53,9 @@ func TestResolveDebugToken(t *testing.T) {
 			if readErr != nil || strings.TrimSpace(string(data)) != token {
 				t.Fatalf("token file = %q, %v; want %q", data, readErr, token)
 			}
-			if info, _ := os.Stat(path); info.Mode().Perm() != 0o600 {
+			// Windows has no Unix permission bits (files report 0666), so the
+			// owner-only mode is only checked where it exists.
+			if info, _ := os.Stat(path); runtime.GOOS != "windows" && info.Mode().Perm() != 0o600 {
 				t.Fatalf("token file mode = %v, want 0600", info.Mode().Perm())
 			}
 		})
