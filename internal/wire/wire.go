@@ -147,6 +147,9 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 		_ = logFile.Close()
 		return nil, err
 	}
+	roomEngine.checkpointFactory(cfg.Server.Debug, func() ports.Engine {
+		return newBillboardEngine(newLobbyEngine(game.NewWithDebug(oneShot, seed, cfg.Server.Debug, cfg.DebugStart, gameOptions...), lobbyProjection), billboards)
+	})
 	run, err := domainRun(roomID, seed)
 	if err != nil {
 		_ = store.Close()
@@ -178,6 +181,7 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 	room := runtime.NewRoom(roomEngine, clock.Real{}, store, logger, watch.Publish,
 		runtime.WithRunner(runner), runtime.WithRoomState(roomState),
 		runtime.WithTurnTimersEnabled(cfg.Features.TurnTimers),
+		runtime.WithCheckpointCleanup(func(view domain.View) { listen.Cancel(view.Scene.NarrationLineID) }),
 		runtime.WithRunLog(run.ID, func(ctx context.Context, runSeed []byte) (domain.RunID, error) {
 			next, err := domainRun(roomID, runSeed)
 			if err != nil {
@@ -186,7 +190,11 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 			return next.ID, store.Start(ctx, next)
 		}),
 		runtime.WithNewGame(func(runSeed []byte) ports.Engine {
-			roomEngine.replace(newBillboardEngine(newLobbyEngine(game.NewWithDebug(oneShot, runSeed, cfg.Server.Debug, "", gameOptions...), lobbyProjection), billboards))
+			factory := func() ports.Engine {
+				return newBillboardEngine(newLobbyEngine(game.NewWithDebug(oneShot, runSeed, cfg.Server.Debug, "", gameOptions...), lobbyProjection), billboards)
+			}
+			roomEngine.replace(factory())
+			roomEngine.checkpointFactory(cfg.Server.Debug, factory)
 			return roomEngine
 		}))
 	inbox.room = room

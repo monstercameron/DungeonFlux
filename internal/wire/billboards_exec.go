@@ -88,8 +88,15 @@ func billboardServices(cfg config.Config, assets *assetStore, cache ports.Cache,
 // Work runs under the hub's run context, not the reference slot's scope, so
 // leaving Creation does not cancel a 3-minute render; a new run does.
 func billboardLoopsExecutor(hub *billboardHub, base media.BillboardGeneratorConfig, logger *slog.Logger) runtime.Executor[domain.GenerateBillboardLoops] {
-	return func(_ context.Context, effect domain.GenerateBillboardLoops, scope domain.Scope, in ports.Inbox) {
-		runCtx, ledger := hub.run()
+	return func(ctx context.Context, effect domain.GenerateBillboardLoops, scope domain.Scope, in ports.Inbox) {
+		hubCtx, ledger := hub.run()
+		runCtx, cancel := context.WithCancel(hubCtx)
+		stop := context.AfterFunc(ctx, cancel)
+		defer stop()
+		defer cancel()
+		if ctx.Err() != nil {
+			cancel()
+		}
 		config := base
 		config.Budget = ledger
 		generator := media.NewBillboardGenerator(config)

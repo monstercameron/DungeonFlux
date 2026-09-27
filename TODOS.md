@@ -33,11 +33,11 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: timer, splat and safe-mode controls show authoritative state, each direction works after reload and reconnect, rejected commands do not change the displayed state, and live playtests plus gates pass.
   status: open; observed in browser host page and web/host/mount_wasm.go
 
-- [ ] QA-005 · Implement CLI checkpoints for fast in-process retries
+- [x] QA-005 · Implement CLI checkpoints for fast in-process retries
   why: snapshot save/load is exposed by dfctl but the runtime does not install a snapshot controller, preventing the requested undo-and-retry workflow.
-  lane: ORCH (Codex) · paths: pending engine/runtime/API breakdown after design review · depends: QA-003
+  lane: ORCH (Codex) · paths: implemented through QA-019, QA-020, QA-021 and QA-022 · depends: QA-003
   done when: named checkpoints restore engine state and timers through the room loop, cancel abandoned work, preserve connected clients, reject stale results, and pass live CLI save-change-load-retry checks without restarting the app.
-  status: open; runtime controller missing; BL-002 promoted by developer request
+  status: done through QA-019–QA-022; actual CLI restored HP, cell, pause state, cached sprites and deterministic attack damage without restarting; same player stream survived repeated loads
 
 - [x] QA-006 · Make the host Turn timers button read and change authoritative policy
   why: A local false default and an off-only command make the host timer control misleading and irreversible.
@@ -131,6 +131,30 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   lane: ORCH (Codex) · paths: `TODOS.md`, `internal/wire/engine.go`, `internal/wire/engine_checkpoint.go`, `internal/wire/engine_checkpoint_test.go`, `docs/devlog.html` · depends: QA-020
   done when: checkpoints replay deep-copied events with original timing and scope, repeated restores remain independent, publication versions increase, history has a memory limit, and the wire gate passes.
   status: done (this commit); artifacts/test/QA-021/gate-20260927-054911.log green; engine portion of QA-005
+
+- [x] QA-022 · Connect CLI checkpoints to room state, timers and pending work
+  why: The existing snapshot CLI must save and restore a live scene without restarting the application or losing player connections.
+  lane: ORCH (Codex) · paths: `TODOS.md`, `internal/domain/checkpoint.go`, `internal/domain/envelope.go`, `internal/game/game.go`, `internal/game/debug.go`, `internal/game/checkpoint.go`, `internal/game/checkpoint_test.go`, `internal/runtime/room.go`, `internal/runtime/generation.go`, `internal/runtime/checkpoint.go`, `internal/runtime/checkpoint_work.go`, `internal/runtime/checkpoint_test.go`, `internal/api/debug/control.go`, `internal/api/debug/checkpoint_test.go`, `internal/wire/wire.go`, `internal/wire/checkpoint.go`, `internal/wire/checkpoint_test.go`, `docs/devlog.html` · depends: QA-019, QA-020, QA-021
+  done when: save/load runs through a validated engine event and room control effect, restores logical time and timers, restarts saved pending work, cancels abandoned work, preserves connected identities, and passes gates plus a real CLI save-change-load-retry check.
+  status: done (this commit); gate artifacts/test/QA-022/gate-20260927-060724.log; full gate artifacts/test/ORCH/gate-20260927-060525.log; CLI evidence artifacts/test/QA-022/cli-checkpoints.json and cli-attack-retry.json; additional owned paths: `internal/runtime/effects.go`, `internal/runtime/generation_test.go`, `internal/runtime/runner.go`, `internal/store/sqlite/eventlog.go`, `internal/store/sqlite/eventlog_test.go`, `internal/wire/billboards_exec.go`
+
+- [ ] QA-023 · Verify media playback after loading game checkpoints
+  why: The engine and timers rewind, but buffered browser audio and already-mounted video elements also need an explicit media continuity review.
+  lane: ORCH (Codex) · paths: pending audio and video playback investigation · depends: QA-022
+  done when: loading across narration, music and kill-cam scenes cancels abandoned playback and presents the saved scene coherently; browser verification covers repeated loads.
+  status: open; logical-state restoration is verified, browser media seek and bed restoration are not yet audited
+
+- [ ] QA-024 · Make combat end accept its documented CLI syntax
+  why: The usage says combat end slain|fled, but the parser requires three arguments and reads the outcome from the third.
+  lane: L-OPS (Codex) · paths: `cmd/dfctl/control.go`, `cmd/dfctl/control_test.go`, `docs/devlog.html` · depends: none
+  done when: the documented command constructs the correct thrall outcome event, malformed arguments fail clearly, and CLI tests and live verification pass.
+  status: open; found while verifying snapshot retries
+
+- [ ] QA-025 · Make lobby readiness visible and authoritative
+  why: Tapping Ready in the joined player lobby leaves the button and party state unchanged, with no confirmation or explanation.
+  lane: ORCH (Codex) · paths: pending phone waiting-screen and engine lobby investigation · depends: QA-007
+  done when: the lobby offers a meaningful readiness action with visible server-confirmed state or accurately explains that only the host starts the game; no inert button remains.
+  status: open; reproduced on player tab 25 after both seats joined during QA-022 verification
 
 ### Kill cam (developer-directed single writer, 2026-09-27)
 

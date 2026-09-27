@@ -68,7 +68,7 @@ func isControl(effect domain.Effect) bool {
 	switch effect.(type) {
 	case domain.StartTimer, domain.CancelTimer, domain.FreezeTimer, domain.ThawTimer,
 		domain.PauseAll, domain.ResumeAll, domain.CancelScope, domain.CancelKey, domain.NewRun,
-		domain.TalkStop, domain.SendAudioCancel:
+		domain.TalkStop, domain.SendAudioCancel, domain.Checkpoint:
 		return true
 	default:
 		return false

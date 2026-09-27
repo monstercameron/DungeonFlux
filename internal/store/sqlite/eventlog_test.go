@@ -64,6 +64,14 @@ func TestDecodeEvent_supportsCommonKinds(t *testing.T) {
 	}
 }
 
+func TestDecodeEvent_CheckpointRetainsOperationAndName(t *testing.T) {
+	event := decodeEvent("debug_checkpoint", []byte(`{"operation":"load","name":"before-fight"}`))
+	point, ok := event.(*domain.DebugCheckpoint)
+	if !ok || point.Operation != "load" || point.Name != "before-fight" {
+		t.Fatalf("decoded checkpoint = %#v", event)
+	}
+}
+
 func testStore(t *testing.T) *Store {
 	t.Helper()
 	store, err := Open(context.Background(), t.TempDir()+"/store.db", nil)

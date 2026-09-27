@@ -19,6 +19,8 @@ type Envelope struct {
 	// RuntimeGeneration identifies internally produced callbacks. Zero denotes
 	// external input; this process-local fence is never persisted or replayed.
 	RuntimeGeneration uint64 `json:"-"`
+	// RuntimeWorkDone is a room-internal completion marker, never a game event.
+	RuntimeWorkDone uint64 `json:"-"`
 }
 type Event interface {
 	Kind() vocab.EventKind

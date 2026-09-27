@@ -92,6 +92,8 @@ func (s *State) apply(env domain.Envelope) domain.StepOut {
 		return s.applyDebugPatch(event, env)
 	case domain.DebugTimer:
 		return s.applyDebugTimer(event, env)
+	case domain.DebugCheckpoint:
+		return s.applyCheckpoint(event, env)
 	default:
 		return s.applyPhase(env)
 	}

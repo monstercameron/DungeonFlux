@@ -124,6 +124,8 @@ func decodeEvent(kind vocab.EventKind, data []byte) domain.Event {
 		event = &domain.Interpreted{}
 	case vocab.EventPCLocked:
 		event = &domain.PCLocked{}
+	case "debug_checkpoint":
+		event = &domain.DebugCheckpoint{}
 	default:
 		return nil
 	}

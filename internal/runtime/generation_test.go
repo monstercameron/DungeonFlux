@@ -68,6 +68,10 @@ func TestRoom_ResetCancelsRootWorkAndFencesLatePost(t *testing.T) {
 		if !room.rejectStale(late) {
 			t.Fatal("late callback adopted the new generation")
 		}
+		completion := <-room.inbox
+		if completion.RuntimeWorkDone == 0 || !room.rejectStale(completion) {
+			t.Fatal("abandoned work completion was not fenced")
+		}
 		room.applyEffects(context.Background(), []domain.Effect{domain.GenerateImage{}}, domain.Scope{})
 		<-started
 		room.scopes.Close()

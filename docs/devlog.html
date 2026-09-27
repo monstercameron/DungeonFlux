@@ -87,6 +87,12 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="milestone" id="e-20260927-live-cli-checkpoints">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Milestone</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-live-cli-checkpoints">The CLI can rewind and retry a running scene</a></h2>
+  <p>The previously unimplemented snapshot command now enters the engine as a validated debug event and executes in the room loop. A named point restores engine history, logical time, remaining countdowns and paused timers. Pending jobs are tracked until their completion reaches the inbox; loading cancels abandoned jobs, rejects their queued results and restarts the saved pending work. Completed jobs are not replayed. Player identities and open streams survive the restore. Billboard jobs now belong to the run scope and honor its cancellation while still surviving phase changes. Checkpoints are process-local, limited to 16 names, and disappear when the server restarts.</p>
+  <p>A loopback-only fake server verified the actual CLI: HP changed from 12 to 1 and returned to 12; position returned from row 5 to row 6; repeated loads and a load across game Reset retained the cached hero clips. Two attacks from the same point each left the enemy at 3 HP. The server PID stayed unchanged. A missing point returned rejection exit code 1. An integration test retained the same player Watch stream and accepted another phone action after two restores. The full native, WASM and walk gate passed; runtime coverage is 81.5%. The isolated probe was stopped. Browser audio and video continuity on checkpoint load remains a separate audit item.</p>
+</li>
 <li class="entry" data-kind="decision" id="e-20260927-engine-checkpoint-replay">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Decision</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-engine-checkpoint-replay">Checkpoint engines rebuild from events without executing effects</a></h2>

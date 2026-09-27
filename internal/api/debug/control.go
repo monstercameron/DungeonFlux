@@ -31,7 +31,10 @@ func (s *Server) Snapshot(ctx context.Context, request *df.SnapshotRequest) (*df
 	if request == nil || request.GetOperation() == "" {
 		return nil, status.Error(codes.InvalidArgument, "snapshot operation is required")
 	}
-	controller, ok := s.engine.(snapshotController)
+	controller, ok := s.inbox.(snapshotController)
+	if !ok {
+		controller, ok = s.engine.(snapshotController)
+	}
 	if !ok {
 		return nil, status.Error(codes.Unimplemented, "snapshot controller is not configured")
 	}

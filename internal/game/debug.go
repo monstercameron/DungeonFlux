@@ -14,7 +14,7 @@ import (
 // room. Host commands remain available in every room.
 func isDebugEvent(event domain.Event) bool {
 	switch event.(type) {
-	case domain.DebugGoto, domain.DebugPatch, domain.DebugTimer, domain.DebugForceDice, domain.DebugReset:
+	case domain.DebugGoto, domain.DebugPatch, domain.DebugTimer, domain.DebugForceDice, domain.DebugReset, domain.DebugCheckpoint:
 		return true
 	default:
 		return false

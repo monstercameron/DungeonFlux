@@ -19,22 +19,26 @@ const rollResolvedAfter = 3 * time.Second
 
 // Room serializes events for one game engine.
 type Room struct {
-	eng        ports.Engine
-	inbox      chan domain.Envelope
-	clk        clock.Clock
-	start      time.Time
-	log        ports.EventLog
-	pub        func(domain.View)
-	logger     *slog.Logger
-	runner     roomRunner
-	timers     *Timers
-	scopes     *ScopeTree
-	state      *RoomState
-	newGame    func([]byte) ports.Engine
-	seq        uint64
-	run        domain.RunID
-	startRun   StartRunFunc
-	generation uint64
+	eng               ports.Engine
+	inbox             chan domain.Envelope
+	clk               clock.Clock
+	start             time.Time
+	log               ports.EventLog
+	pub               func(domain.View)
+	logger            *slog.Logger
+	runner            roomRunner
+	timers            *Timers
+	scopes            *ScopeTree
+	state             *RoomState
+	newGame           func([]byte) ports.Engine
+	seq               uint64
+	run               domain.RunID
+	startRun          StartRunFunc
+	generation        uint64
+	pending           map[uint64]pendingWork
+	nextWork          uint64
+	checkpoints       map[string]roomCheckpoint
+	checkpointCleanup func(domain.View)
 }
 
 // RoomOption configures the runtime services owned by a Room.
@@ -50,6 +54,7 @@ type roomOptions struct {
 	startRun                 StartRunFunc
 	turnTimersEnabled        bool
 	turnTimersPolicyProvided bool
+	checkpointCleanup        func(domain.View)
 }
 
 // WithRunner installs the work-effect runner used by the room.
@@ -134,21 +139,22 @@ func NewRoom(eng ports.Engine, clk clock.Clock, eventLog ports.EventLog, logger 
 		options.state, _ = NewRoomState(nil)
 	}
 	return &Room{
-		eng:        eng,
-		inbox:      inbox.queue,
-		clk:        clk,
-		start:      clk.Now(),
-		log:        eventLog,
-		pub:        pub,
-		logger:     logger,
-		runner:     options.runner,
-		timers:     options.timers,
-		scopes:     options.scopes,
-		state:      options.state,
-		newGame:    options.newGame,
-		run:        options.run,
-		startRun:   options.startRun,
-		generation: 1,
+		eng:               eng,
+		inbox:             inbox.queue,
+		clk:               clk,
+		start:             clk.Now(),
+		log:               eventLog,
+		pub:               pub,
+		logger:            logger,
+		runner:            options.runner,
+		timers:            options.timers,
+		scopes:            options.scopes,
+		state:             options.state,
+		newGame:           options.newGame,
+		run:               options.run,
+		startRun:          options.startRun,
+		generation:        1,
+		checkpointCleanup: options.checkpointCleanup,
 	}
 }
 
@@ -201,6 +207,10 @@ func (r *Room) process(ctx context.Context, env domain.Envelope) {
 	if r.rejectStale(env) {
 		return
 	}
+	if env.RuntimeWorkDone != 0 {
+		delete(r.pending, env.RuntimeWorkDone)
+		return
+	}
 	r.seq++
 	env.Seq = r.seq
 	env.At = r.clk.Since(r.start)
@@ -215,12 +225,14 @@ func (r *Room) process(ctx context.Context, env domain.Envelope) {
 			r.logger.Error("log append", "err", err, "seq", env.Seq)
 		}
 	}
+	if err := r.applyEffects(ctx, out.Effects, env.Scope); err != nil {
+		out.Ack = &domain.Ack{Reason: err.Error()}
+	}
+	r.logger.Debug("room step", "seq", env.Seq, "from", from, "to", to)
+	r.pub(r.eng.View())
 	if env.Reply != nil && out.Ack != nil {
 		env.Reply <- *out.Ack
 	}
-	r.applyEffects(ctx, out.Effects, env.Scope)
-	r.logger.Debug("room step", "seq", env.Seq, "from", from, "to", to)
-	r.pub(r.eng.View())
 }
 
 func rollTimerWiring(event domain.Event, from, to vocab.StateID, out domain.StepOut) []domain.Effect {
@@ -240,21 +252,26 @@ func rollTimerWiring(event domain.Event, from, to vocab.StateID, out domain.Step
 	return nil
 }
 
-func (r *Room) applyEffects(ctx context.Context, effects []domain.Effect, scope domain.Scope) {
+func (r *Room) applyEffects(ctx context.Context, effects []domain.Effect, scope domain.Scope) error {
 	work := make([]domain.Effect, 0, len(effects))
 	for _, effect := range effects {
+		if checkpoint, ok := effect.(domain.Checkpoint); ok {
+			if err := r.applyCheckpoint(ctx, checkpoint); err != nil {
+				return err
+			}
+			continue
+		}
 		if r.applyControl(ctx, effect) {
 			continue
 		}
 		work = append(work, effect)
 	}
 	if runner, ok := r.runner.(*Runner); ok {
-		bound := *runner
-		bound.in = generationInbox{target: runner.in, generation: r.generation}
-		runScopedEffects(&bound, work, scope, r.scopes)
-		return
+		r.dispatchWork(ctx, runner, work, scope)
+		return nil
 	}
 	r.runner.Run(work)
+	return nil
 }
 
 func (r *Room) applyControl(ctx context.Context, effect domain.Effect) bool {
