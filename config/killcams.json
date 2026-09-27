@@ -1,0 +1,8 @@
+{
+  "battlefield_reference": "level_still_64bb46d5_tactical",
+  "enemy_reference": "thrall_still",
+  "heroes": [
+    {"class": "paladin", "hero_reference": "artifacts/runtime/BB-LIVE/assets/fdc8b409acfbc38a3dd694d4240c55ec3f584206bd221b494066119f412e70ea.png", "weapon": "longsword and shield"},
+    {"class": "rogue", "hero_reference": "artifacts/runtime/BB-LIVE/assets/bb9c3f53393282e7fdf7bebe9c63513af7314ad40e1d588b32c1ba3ba31b24e2.png", "weapon": "paired daggers"}
+  ]
+}

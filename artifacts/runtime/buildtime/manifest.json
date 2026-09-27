@@ -753,6 +753,98 @@
         }
       ]
     },
+    "killcam_paladin_defeat": {
+      "kind": "VIDEO",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "cbd5dfdf0a65be4f4f9eebd7873a8d44bc1a1805165fd952ac5e8d99d50fd659",
+          "path": "assets/cbd5dfdf0a65be4f4f9eebd7873a8d44bc1a1805165fd952ac5e8d99d50fd659.mp4"
+        }
+      ],
+      "duration_ms": 4000,
+      "contact_ms": 2000,
+      "metadata": {
+        "aspect": "16:9",
+        "audio": "false",
+        "cache_key": "7075f497c8593e70d1112bf995f1a5d1fb6fa858be18dc6e22637dcbbf7598bc",
+        "class": "paladin",
+        "model": "bytedance/seedance-2.0/fast/reference-to-video",
+        "outcome": "defeat",
+        "prompt_version": "killcam-v1",
+        "resolution": "720p"
+      }
+    },
+    "killcam_paladin_victory": {
+      "kind": "VIDEO",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "6666b00d702d744e5310f1221b90caae048ede4f45319ef03c06840f682e90ab",
+          "path": "assets/6666b00d702d744e5310f1221b90caae048ede4f45319ef03c06840f682e90ab.mp4"
+        }
+      ],
+      "duration_ms": 4000,
+      "contact_ms": 2000,
+      "metadata": {
+        "aspect": "16:9",
+        "audio": "false",
+        "cache_key": "858a8c401fbfaada7bf0baf3b3d999a6e7a22e9ae9e4b0c440bc4e80c0eabd7f",
+        "class": "paladin",
+        "model": "bytedance/seedance-2.0/fast/reference-to-video",
+        "outcome": "victory",
+        "prompt_version": "killcam-v1",
+        "resolution": "720p"
+      }
+    },
+    "killcam_rogue_defeat": {
+      "kind": "VIDEO",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "d82bbc07ef58f5feedbafd49f4b94543db3808f11eb434bd3c4d412bc8782db2",
+          "path": "assets/d82bbc07ef58f5feedbafd49f4b94543db3808f11eb434bd3c4d412bc8782db2.mp4"
+        }
+      ],
+      "duration_ms": 4000,
+      "contact_ms": 2000,
+      "metadata": {
+        "aspect": "16:9",
+        "audio": "false",
+        "cache_key": "4cc9889776d333ce641eab208fafd2fbf8d7aeb8e68097ef350d77dd6d59d5ee",
+        "class": "rogue",
+        "model": "bytedance/seedance-2.0/fast/reference-to-video",
+        "outcome": "defeat",
+        "prompt_version": "killcam-v1",
+        "resolution": "720p"
+      }
+    },
+    "killcam_rogue_victory": {
+      "kind": "VIDEO",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "94b456e488d3f973d0710f2f1a2813a86e83de03efbc29aa717500ddda732bef",
+          "path": "assets/94b456e488d3f973d0710f2f1a2813a86e83de03efbc29aa717500ddda732bef.mp4"
+        }
+      ],
+      "duration_ms": 4000,
+      "contact_ms": 2000,
+      "metadata": {
+        "aspect": "16:9",
+        "audio": "false",
+        "cache_key": "c73f4570ecd0fa98e97fe5015e6213667724e3a852789baed37d857763a6c7d0",
+        "class": "rogue",
+        "model": "bytedance/seedance-2.0/fast/reference-to-video",
+        "outcome": "victory",
+        "prompt_version": "killcam-v1",
+        "resolution": "720p"
+      }
+    },
     "level_still_64bb46d5_combat_est": {
       "kind": "IMAGE_STILL",
       "selected": 1,
