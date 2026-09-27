@@ -2342,7 +2342,7 @@ The developer explicitly authorized reviewing, fixing, and safely merging the op
 
 - [ ] REVIEW-002 · Integrate PR 6 microphone lifetime and resolve UI conflicts
   why: Recordings must survive snapshot rerenders and flush TalkEnd before releasing the stream while preserving current UI states.
-  lane: ORCH (Codex) · paths: PR 6 paths plus `web/phone/preview.go`, `web/phone/preview_wasm.go`, `web/phone/screen_render_wasm_test.go` · depends: REVIEW-001
+  lane: ORCH (Codex) · paths: PR 6 paths plus `web/phone/ptt_test.go`, `web/phone/preview.go`, `web/phone/preview_wasm.go`, `web/phone/screen_render_wasm_test.go` · depends: REVIEW-001
   done when: conflicts are resolved without losing repaired preview behavior; microphone lifetime, native tests, WASM build and component tests pass.
   status: claimed Codex 2026-09-27
 

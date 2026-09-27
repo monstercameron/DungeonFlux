@@ -143,7 +143,7 @@ func reconnectingListen(ctx context.Context, service audio.Service, token string
 		defer close(results)
 		delay := 250 * time.Millisecond
 		for ctx.Err() == nil {
-			stream := audio.NewListenClient(service).Listen(ctx, token)
+			stream := audio.NewListenClient(service).WithDebug(audio.DebugConsole()).Listen(ctx, token)
 			received := false
 			for result := range stream {
 				if result.Err != nil {

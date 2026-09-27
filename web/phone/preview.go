@@ -31,7 +31,7 @@ func Previews() []PhonePreview {
 		preview("creation-rolled", "creation", characterPhone("Astra Vale", "Rogue", "Your rolled hero is ready.")),
 		preview("sheet", "opening", characterPhone("Astra Vale", "Rogue", "A shadow waits beyond the tavern door.")),
 		preview("legal-moves", "exploration", moves(joinMove("Talk to Mother Vell", "talk_vell", true, ""), joinMove("Persuade", "persuade", false, "Requires a spoken argument"), joinMove("Leave", "leave", false, "The door is sealed"))),
-		preview("ptt-idle", "conversation", conversationPhone("Press and hold to speak", df.PTTState_PTT_STATE_IDLE)),
+		preview("ptt-idle", "conversation", conversationPhone("Tap to speak", df.PTTState_PTT_STATE_IDLE)),
 		preview("ptt-recording", "conversation", conversationPhone("Listening…", df.PTTState_PTT_STATE_RECORDING)),
 		preview("ptt-sending", "conversation", conversationPhone("Transcribing your words…", df.PTTState_PTT_STATE_TRANSCRIBING)),
 		preview("typed-input", "conversation", conversationPhone("Speech unavailable — type your reply", df.PTTState_PTT_STATE_FAILED)),

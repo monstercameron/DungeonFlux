@@ -148,3 +148,32 @@ func (f *talkFake) Send(request *df.TalkRequest) error {
 }
 
 func (f *talkFake) CloseSend() error { return nil }
+
+func TestPTTModel_retriesAfterFailedOpen(t *testing.T) {
+	fake := &talkFake{openErr: errors.New("offline")}
+	m := NewPTTModel(fake, "seat", 1)
+	if err := m.Start(context.Background(), "audio/webm"); err == nil {
+		t.Fatal("missing initial failure")
+	}
+	fake.openErr = nil
+	if err := m.Start(context.Background(), "audio/webm"); err != nil {
+		t.Fatalf("retry remained stuck: %v", err)
+	}
+	if err := <-m.Stop(context.Background()); err != nil {
+		t.Fatalf("retry stop: %v", err)
+	}
+}
+func TestPTTModel_doesNotReplaceAnUnfinishedFailedUpload(t *testing.T) {
+	m := NewPTTModel(&talkFake{}, "seat", 1)
+	m.state, m.done = PTTFailed, make(chan struct{})
+	if err := m.Start(context.Background(), "audio/webm"); err == nil {
+		t.Fatal("replaced active uploader")
+	}
+	close(m.done)
+	if err := m.Start(context.Background(), "audio/webm"); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-m.Stop(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+}

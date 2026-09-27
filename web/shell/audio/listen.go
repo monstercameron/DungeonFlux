@@ -25,11 +25,28 @@ type Result struct {
 // ListenClient opens an AudioService stream without blocking the caller.
 type ListenClient struct {
 	service Service
+	debug   func(string)
 }
 
 // NewListenClient creates a listener backed by service.
 func NewListenClient(service Service) *ListenClient {
 	return &ListenClient{service: service}
+}
+
+// WithDebug makes the client report what it receives: the stream opening,
+// one summary per finished voice line, cancels, and the stream ending.
+// log is called on the receive goroutine; nil turns reporting off.
+func (c *ListenClient) WithDebug(log func(string)) *ListenClient {
+	if c != nil {
+		c.debug = log
+	}
+	return c
+}
+
+func (c *ListenClient) report(line string) {
+	if c != nil && c.debug != nil && line != "" {
+		c.debug(line)
+	}
 }
 
 // Listen starts a bounded-result stream. The channel closes when ctx is
@@ -48,15 +65,20 @@ func (c *ListenClient) listen(ctx context.Context, seatToken string, results cha
 	}
 	stream, err := c.service.Listen(ctx, &dungeonfluxv1.ListenRequest{SeatToken: seatToken})
 	if err != nil {
+		c.report("[audio] listen stream failed to open: " + err.Error())
 		sendResult(ctx, results, Result{Err: err})
 		return
 	}
+	c.report("[audio] listen stream open")
+	var received ReceiveLog
 	for ctx.Err() == nil {
 		message, recvErr := stream.Recv()
 		if recvErr != nil {
+			c.report("[audio] listen stream ended: " + recvErr.Error())
 			sendResult(ctx, results, Result{Err: recvErr})
 			return
 		}
+		c.report(received.Observe(message))
 		if !sendResult(ctx, results, Result{Message: message}) {
 			return
 		}
