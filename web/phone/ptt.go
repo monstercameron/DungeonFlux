@@ -63,6 +63,7 @@ type PTTModel struct {
 	done    chan struct{}
 	stop    chan struct{}
 	err     error
+	toggle  *ToggleControl
 }
 
 // NewPTTModel creates a recorder model with a bounded audio queue.

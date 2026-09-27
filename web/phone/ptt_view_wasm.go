@@ -3,8 +3,7 @@
 package phone
 
 import (
-	"context"
-	"syscall/js"
+	"time"
 
 	"github.com/monstercameron/GoWebComponents/v6/html"
 	"github.com/monstercameron/GoWebComponents/v6/ui"
@@ -15,49 +14,42 @@ type talkPTTProps struct {
 	locale string
 }
 
-// talkPTTScreen renders a single round hold-to-talk control for conversation.
+// talkPTTScreen renders the tap-to-talk microphone: one tap starts recording,
+// the next sends it. The recording lives on the PTTModel (ToggleControl and
+// browserTalk), not in this component, so a remount while recording keeps the
+// microphone open. Status and errors are shown on screen.
 func talkPTTScreen(props talkPTTProps) ui.Node {
 	locale := props.locale
 	if locale == "" {
 		locale = "en"
 	}
-	status := ui.UseState(PTTReady(locale))
-	busy := ui.UseState(false)
-	recorder := ui.UseState((*BrowserRecorder)(nil))
-	stream := ui.UseState(js.Value{})
-	cancelRecording := ui.UseState((context.CancelFunc)(nil))
-	ui.UseEffect(func() func() {
-		return func() {
-			if cancel := cancelRecording.Get(); cancel != nil {
-				cancel()
-			}
-			if current := recorder.Get(); current != nil {
-				current.Dispose()
-			}
-			stopTracks(stream.Get())
-		}
-	}, props.model)
-	start := ui.UseEvent(func() {
-		if busy.Get() {
-			current := recorder.Get()
-			if current != nil {
-				status.Set(T(locale, "ptt.finishing", nil))
-				go finishPTT(current, props.model, locale, stream.Get(), cancelRecording.Get, status.Set, busy.Set)
-			}
+	control := props.model.Toggle()
+	revision := ui.UseState(0)
+	if props.model != nil {
+		browserTalkFor(props.model).setRefresh(func() { revision.Set(revision.Get() + 1) })
+	}
+	tap := ui.UseEvent(func(event ui.Event) {
+		event.PreventDefault()
+		if control == nil {
 			return
 		}
-		busy.Set(true)
-		ctx, cancel := context.WithCancel(context.Background())
-		cancelRecording.Set(cancel)
-		go startPTT(ctx, cancel, props.model, locale, status.Set, busy.Set, recorder.Set, stream.Set)
+		switch control.Tap(time.Now()) {
+		case ToggleStart:
+			go beginTalk(props.model, locale)
+		case ToggleFinish:
+			go endTalk(props.model)
+		}
+		revision.Set(revision.Get() + 1)
 	})
-	label := "●"
-	if busy.Get() {
-		label = "■"
+	phase := ToggleIdle
+	notice := T(locale, "ptt.unavail", nil)
+	if control != nil {
+		phase, notice = control.Phase(), control.Notice()
 	}
+	status, label, aria := talkStatus(locale, phase, notice)
 	return html.Div(html.Props{Class: "df-phone-talk-ptt", Style: map[string]string{"display": "flex", "align-items": "center", "gap": "7px", "flex": "0 0 auto"}},
-		html.Button(html.Props{Type: "button", OnClick: start, Aria: map[string]string{"label": PTTStart(locale)}, Style: talkMicStyle(busy.Get())}, html.Text(label)),
-		html.Span(html.Props{Role: "status", Style: map[string]string{"position": "absolute", "width": "1px", "height": "1px", "overflow": "hidden", "clip": "rect(0 0 0 0)"}}, html.Text(status.Get())),
+		html.Button(html.Props{Type: "button", OnClick: tap, Aria: map[string]string{"label": aria}, Style: talkMicStyle(phase == ToggleRecording || phase == ToggleStarting)}, html.Text(label)),
+		html.Span(html.Props{Role: "status", Style: map[string]string{"position": "absolute", "width": "1px", "height": "1px", "overflow": "hidden", "clip": "rect(0 0 0 0)"}}, html.Text(status)),
 	)
 }
 
