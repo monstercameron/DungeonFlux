@@ -25,6 +25,7 @@ func (in generationInbox) Post(ctx context.Context, env domain.Envelope) bool {
 func (r *Room) invalidateWork(ctx context.Context) {
 	r.generation++
 	r.pending = make(map[uint64]pendingWork)
+	r.calls = callSequence{}
 	r.scopes.Reset(ctx)
 	r.timers.setRuntimeGeneration(r.generation)
 }

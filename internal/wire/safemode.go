@@ -13,14 +13,17 @@ import (
 // enabled for every run; sequence mode changes the layer to replay-only so no
 // network-backed provider can be reached during a show.
 func sequenceLLM(cfg config.Config, next ports.LLM, recordings ports.Recordings) ports.LLM {
-	if next == nil || recordings == nil {
+	if next == nil {
 		return next
+	}
+	if recordings == nil {
+		return positionedLLM{next: next}
 	}
 	decorated := modelchain.RecordReplay(next, recordings, "sequence")
 	if !cfg.Features.SequenceMode {
-		return decorated
+		return positionedLLM{next: decorated}
 	}
-	return replayOnlyLLM{next: decorated}
+	return positionedLLM{next: replayOnlyLLM{next: decorated}}
 }
 
 type replayOnlyLLM struct{ next ports.LLM }

@@ -21,6 +21,7 @@ type roomCheckpoint struct {
 	timers  timerCheckpoint
 	at      time.Duration
 	work    []pendingWork
+	calls   callSequence
 }
 
 // DebugSnapshot submits save/load through the room inbox and waits until its
@@ -57,7 +58,8 @@ func (r *Room) applyCheckpoint(ctx context.Context, effect domain.Checkpoint) er
 	if err != nil {
 		return err
 	}
-	point := roomCheckpoint{restore: restore, timers: r.timers.checkpoint(), at: r.eng.Inspect().At}
+	r.releaseCanceledCalls()
+	point := roomCheckpoint{restore: restore, timers: r.timers.checkpoint(), at: r.eng.Inspect().At, calls: r.calls.clone()}
 	ids := make([]uint64, 0, len(r.pending))
 	for id := range r.pending {
 		ids = append(ids, id)
@@ -98,6 +100,7 @@ func (r *Room) loadCheckpoint(ctx context.Context, name string) error {
 		return err
 	}
 	r.invalidateWork(ctx)
+	r.calls = point.calls.clone()
 	if r.checkpointCleanup != nil {
 		r.checkpointCleanup(current)
 	}
@@ -111,7 +114,11 @@ func (r *Room) loadCheckpoint(ctx context.Context, name string) error {
 		}
 	}
 	for index, effect := range effects {
-		if err := r.applyEffects(ctx, []domain.Effect{effect}, point.work[index].scope); err != nil {
+		workCtx := ctx
+		if point.work[index].hasCall {
+			workCtx = context.WithValue(ctx, restoredCallKey{}, point.work[index].call)
+		}
+		if err := r.applyEffects(workCtx, []domain.Effect{effect}, point.work[index].scope); err != nil {
 			return err
 		}
 	}

@@ -37,6 +37,7 @@ type Room struct {
 	generation        uint64
 	pending           map[uint64]pendingWork
 	nextWork          uint64
+	calls             callSequence
 	checkpoints       map[string]roomCheckpoint
 	checkpointCleanup func(domain.View)
 }
@@ -208,6 +209,7 @@ func (r *Room) process(ctx context.Context, env domain.Envelope) {
 		return
 	}
 	if env.RuntimeWorkDone != 0 {
+		r.releaseCanceledCalls()
 		delete(r.pending, env.RuntimeWorkDone)
 		return
 	}

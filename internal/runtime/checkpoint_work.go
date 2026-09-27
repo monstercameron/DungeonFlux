@@ -5,17 +5,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sync/atomic"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
+	"github.com/monstercameron/DungeonFlux/internal/ports"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
 
 type pendingWork struct {
-	scope domain.Scope
-	ctx   context.Context
-	typ   reflect.Type
-	data  []byte
-	err   error
+	scope     domain.Scope
+	ctx       context.Context
+	typ       reflect.Type
+	data      []byte
+	err       error
+	call      callReservation
+	hasCall   bool
+	completed *atomic.Bool
 }
 
 func (r *Room) dispatchWork(ctx context.Context, runner *Runner, effects []domain.Effect, scope domain.Scope) {
@@ -32,20 +37,30 @@ func (r *Room) dispatchWork(ctx context.Context, runner *Runner, effects []domai
 			workScope = domain.Scope{Machine: vocab.MachineRun, Key: "billboards"}
 		}
 		workCtx := r.scopes.Context(workScope, parentScope(workScope))
+		call, hasCall := r.reserveCall(ctx, effect, id)
+		if hasCall {
+			workCtx = ports.WithCallMeta(workCtx, call.meta)
+		}
 		data, err := json.Marshal(effect)
 		if r.pending == nil {
 			r.pending = make(map[uint64]pendingWork)
 		}
-		r.pending[id] = pendingWork{scope: workScope, ctx: workCtx, typ: reflect.TypeOf(effect), data: data, err: err}
+		completed := new(atomic.Bool)
+		r.pending[id] = pendingWork{scope: workScope, ctx: workCtx, typ: reflect.TypeOf(effect), data: data, err: err, call: call, hasCall: hasCall, completed: completed}
 		bound := *runner
 		bound.in = generationInbox{target: runner.in, generation: r.generation}
 		done := generationInbox{target: r, generation: r.generation}
-		go executeTracked(ctx, workCtx, &bound, done, effect, workScope, id)
+		go executeTracked(ctx, workCtx, &bound, done, effect, workScope, id, completed)
 	}
 }
 
-func executeTracked(roomCtx, workCtx context.Context, runner *Runner, done generationInbox, effect domain.Effect, scope domain.Scope, id uint64) {
-	defer done.Post(roomCtx, domain.Envelope{RuntimeWorkDone: id})
+func executeTracked(roomCtx, workCtx context.Context, runner *Runner, done generationInbox, effect domain.Effect, scope domain.Scope, id uint64, completed *atomic.Bool) {
+	defer func() {
+		if workCtx.Err() == nil {
+			completed.Store(true)
+		}
+		done.Post(roomCtx, domain.Envelope{RuntimeWorkDone: id})
+	}()
 	fn, ok := runner.registry[reflect.TypeOf(effect)]
 	if !ok {
 		runner.unregistered(effect)
