@@ -306,17 +306,19 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: the fixture asserts Opening rejection and accepted Conversation dialogue through the debug RPC, and the full gate passes.
   status: done (this commit); TestE2E_DfctlRunThroughLobby passes; full candidate gate artifacts/test/QA-046/source/artifacts/test/ORCH/gate-20260927-091015.log green (whole module 70.5%, wire 78.0%), predating unrelated website commit 781ada9.
 
-- [x] EMK-004 · Remove the duplicated attack label from the combat target card
-  why: PR #9 reports two apparent attack controls; the target card should identify the enemy while the action row owns Attack.
-  lane: PR9 review · paths: `web/phone/combat_view_wasm.go` · depends: QA-036
-  done when: the target card is informational, exactly one Attack control remains, and isolated gate plus browser playtest pass.
-  status: done 6ac99fe; isolated gate artifacts/test/EMK004/source-run-01/artifacts/test/EMK004/gate-20260927-090412.log green, phone 86.4%; reviewer browser preview shows informational target and one Strike thrall control. Todo recorded late after worker committed before hand-in.
 
-- [ ] EMK-005 · Show the authoritative creation countdown
-  why: PR #9 reports the character picker disappearing without a visible deadline; QA-015 already builds missing heroes on timeout, but players still need to see the remaining choice time.
-  lane: PR9 review · paths: `internal/game/phase/phase.go`, `internal/game/phase/support.go`, `internal/game/phase/view.go`, `internal/game/phase/creation_timer.go`, `internal/game/phase/creation_timer_test.go`, `internal/api/project_creation_test.go`, `web/phone/create.go`, `web/phone/create_view_wasm.go`, `web/phone/creation_timer.go`, `web/phone/creation_timer_test.go`, `web/phone/creation_timer_wasm.go` · depends: QA-015
-  done when: the existing domain/proto timer projects the real 30-second creation deadline, phones display it counting down, Pause freezes it, Resume continues it, timers-off hides the deadline, and timeout still builds missing heroes; lane gate and browser verification pass.
-  status: claimed pr9_review 2026-09-27
+
+- [ ] QA-051 · Match the offline NPC reply caption to its cached speech
+  why: In fake mode Mother Vell displayed a model placeholder while fake TTS played the different prerecorded canned reply.
+  lane: ORCH (Codex) · paths: `internal/wire/fake.go`, `internal/wire/fake_dialogue_test.go`, `TODOS.md`, `docs/devlog.html` · depends: QA-042
+  done when: the fake NPC reply uses the same content line selected by its cached TTS asset and a regression test verifies the text/asset pairing; broader STT and live-fallback work remains QA-045/EMK-009.
+  status: claimed Codex 2026-09-27; independent atomic part of open QA-045
+
+- [x] QA-052 · Allow JavaScript only in the standalone marketing site in addition to existing exceptions
+  why: The developer explicitly approved website/ as a marketing-only exception on 2026-09-27; game code must retain its existing Go-first boundary.
+  lane: ORCH (Codex) · paths: `AGENTS.md`, `internal/archtest/architecture_test.go`, `internal/archtest/javascript_boundary_test.go`, `TODOS.md`, `docs/devlog.html` · depends: none
+  done when: website scripts pass, game scripts outside web/splat still fail, prefix lookalikes fail, and the architecture gate passes.
+  status: done (this commit); architecture gate artifacts/test/QA-052/gate-20260927-092408.log green, 75.0% coverage; game and directory-prefix boundary regression tests pass.
 
 ### Kill cam (developer-directed single writer, 2026-09-27)
 
@@ -3468,17 +3470,17 @@ Useful but not needed for the demo.
 
 Issues from the tester's playtests on the Droplet (`notes/emmaka/2026-09-27-playtests.md`, with event-log evidence and screenshots). EMK-* IDs belong to the emmaka branch so they never collide with the lanes' numbering; "suggested lane" is where the fix belongs, and ORCH may reassign.
 
-- [ ] EMK-004 · one attack control on the phone combat screen
-  why: The phone shows "Attack the drowned thrall" twice: a TARGET card that looks like a button and the real move row (disabled when the hero is missing), so players cannot tell which one attacks (playtest item 1).
-  lane: suggested L-WEB-PHONE · paths: `web/phone/combat*.go` · depends: none
-  done when: exactly one attack control, labelled with its target; disabled states show one reason; a screenshot fixture covers active, waiting and no-hero turns.
-  status: open
+- [x] EMK-004 · Remove the duplicated attack label from the combat target card
+  why: PR #9 reports two apparent attack controls; the target card should identify the enemy while the action row owns Attack.
+  lane: PR9 review · paths: `web/phone/combat_view_wasm.go` · depends: QA-036
+  done when: the target card is informational, exactly one Attack control remains, and isolated gate plus browser playtest pass.
+  status: done 6ac99fe; isolated gate artifacts/test/EMK004/source-run-01/artifacts/test/EMK004/gate-20260927-090412.log green, phone 86.4%; reviewer browser preview shows informational target and one Strike thrall control. Todo recorded late after worker committed before hand-in.
 
-- [ ] EMK-005 · creation timeout gives every seat a hero, with a visible countdown
-  why: The 30 s creation timer fired before anyone picked in games A and C (playtest item 4); a seat that never tapped Roll hero got no character, so in combat Attack stayed disabled ("Building your hero…"), the TV showed PC-1/PC-2 with broken portraits, and the host had to Skip (items 2 and 5).
-  lane: suggested L-ENG · paths: `internal/game/phase/support.go`, `internal/game/phase/creation/**` · depends: none
-  done when: on creation_timeout or host Skip each unrolled seat gets a seeded default hero (plan §0.5 "empty or not-ready seats get default characters"); combat Attack is enabled for both seats; phone and TV show the remaining creation time; a sim test covers timeout-then-combat.
-  status: open
+- [ ] EMK-005 · Show the authoritative creation countdown
+  why: PR #9 reports the character picker disappearing without a visible deadline; QA-015 already builds missing heroes on timeout, but players still need to see the remaining choice time.
+  lane: PR9 review · paths: `internal/game/phase/phase.go`, `internal/game/phase/support.go`, `internal/game/phase/view.go`, `internal/game/phase/creation_timer.go`, `internal/game/phase/creation_timer_test.go`, `internal/game/phase/creation_countdown_test.go`, `internal/game/phase/killcam.go`, `internal/api/project_creation_test.go`, `web/phone/create.go`, `web/phone/create_test.go`, `web/phone/create_view_wasm.go`, `web/phone/creation_timer.go`, `web/phone/creation_timer_test.go`, `web/phone/creation_timer_wasm.go` · depends: QA-015
+  done when: the existing domain/proto timer projects the real 30-second creation deadline, phones display it counting down, Pause freezes it, Resume continues it, timers-off hides the deadline, and timeout still builds missing heroes; lane gate and browser verification pass.
+  status: claimed pr9_review 2026-09-27
 
 - [ ] EMK-006 · combat long enough to play, with a victory beat
   why: The thrall (12 HP, AC 8) dies to two hits, so every fight is one round and cuts straight to the cliffhanger (game B); a 30 s combat cap will also cut slower fights short (playtest items 5 and 6).
@@ -3503,3 +3505,9 @@ Issues from the tester's playtests on the Droplet (`notes/emmaka/2026-09-27-play
   lane: suggested L-VOUT (+ L-WEB-DM for the browser voice) · paths: `internal/voice/out/**`, `internal/wire/adapters.go`, `web/dm/**` · depends: none
   done when: each line tries ElevenLabs → OpenAI TTS → the matching canned line → TV browser speechSynthesis (distinct pitch/rate per NPC); with the ElevenLabs key removed a full run is audible and the log names the fallback used.
   status: open
+
+- [ ] EMK-010 · Make the creation countdown tick on idle phones and TV
+  why: Review of EMK-005 found that a static server snapshot stayed at 30 seconds while idle and the TV creation view did not render it.
+  lane: PR9 review · paths: `web/phone/create_view_wasm.go`, `web/phone/creation_timer_wasm.go`, `web/phone/creation_timer.go`, `web/phone/creation_timer_test.go`, `web/dm/creation.go`, `web/dm/creation_wasm.go`, `web/dm/creation_test.go`, `web/dm/creation_timer_wasm.go`, `web/dm/creation_timer_wasm_test.go` · depends: EMK-005
+  done when: the real creation screen counts down without input on phone and TV, pause freezes, resume continues, timers-off hides it, and lane gates plus browser playtests pass.
+  status: claimed pr9_review 2026-09-27; fixes forward 40996a0, whose review remains incomplete until this todo passes

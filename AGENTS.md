@@ -14,7 +14,7 @@ Rules for every coding agent in this repo. Read it in full before your first edi
 7. **Work comes from `TODOS.md`, and each todo is one atomic commit.** You commit your own todo when its gate is green, staging only your todo's paths by name. No push, stash, reset, checkout, rebase, pull, amend, or branch operation (section 13).
 8. No paid or live API calls in any lane test or lane gate. Live tests sit behind `//go:build live` plus `DF_LIVE=1`. The block gates at hours 2, 5, 8, 11, and 14 (plan §0.18.9) are live checkpoints run by the developer and ORCH on the human test server; lanes never run them.
 9. Kill only the PIDs you started. Use only your lane's port. Stop your server before you hand in.
-10. Go first. JavaScript exists only in `web/splat` (plus the stock `wasm_exec.js`).
+10. Go first. Game JavaScript exists only in `web/splat` (plus the stock `wasm_exec.js`). The standalone marketing site under `website/` has a developer-approved exception (2026-09-27); it does not extend to game code.
 11. Hit something hard, surprising, or instructive? Write a devlog entry (section 9) in your hand-in.
 12. Codex runs as many worker lanes at once as the lane map allows (section 10); idle lanes are wasted hours.
 13. The human test server on `:8443` is always up (section 11). Never stop it, never bind its port, never break the build it runs.
@@ -130,7 +130,7 @@ Full coding rules: plan §0.18.8 (24 rules) and §0.18.7 (errors, context, loggi
 12. No new third-party dependency without ORCH (file a contract request).
 13. Only `go tool buf generate` writes `gen/`.
 14. No new Markdown files without the developer's approval. Do not edit `plan.md`, `README.md`, or `docs/`.
-15. No JavaScript (`.js`, `.mjs`) outside `web/splat`; `wasm_exec.js` is copied from GOROOT at build time, never committed.
+15. Game JavaScript (`.js`, `.mjs`) is limited to `web/splat`; standalone marketing scripts under `website/` are explicitly allowed (developer decision, 2026-09-27), alongside the existing documentation-site exception. `wasm_exec.js` is copied from GOROOT at build time, never committed.
 
 **Forbidden**
 16. Killing processes you did not start: no `taskkill /IM`, no `Stop-Process -Name`, no killing by image name. Stop only PIDs you launched.

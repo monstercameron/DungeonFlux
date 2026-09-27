@@ -87,6 +87,12 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="decision" id="e-20260927-marketing-javascript-boundary">
+  <div class="entry-head"><time datetime="2026-09-27T09:25-04:00">Sep 27, 2026</time><span class="kind">Decision</span><span class="who">ORCH</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-marketing-javascript-boundary">Keep marketing scripts outside the game boundary</a></h2>
+  <p>The standalone marketing site introduced a script under website/, which correctly failed the existing architecture gate. The developer explicitly approved a marketing-only exception. The rule now permits that directory alongside the existing documentation and splat directories, while phone and TV game code retain their Go-first constraint. Regression fixtures cover allowed directories, forbidden game scripts, and similarly named sibling directories. This also closes an old prefix loophole that could admit web/splat-other. The architecture gate passes with 75.0% statement coverage.</p>
+</li>
+
 <li class="entry" data-kind="issue" id="e-20260927-chat-rpc-rehearsal">
   <div class="entry-head"><time datetime="2026-09-27T09:14:00-04:00">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">ORCH (Codex)</span></div>
   <h2 class="entry-title"><a href="#e-20260927-chat-rpc-rehearsal">The RPC rehearsal had expected a discarded message to succeed</a></h2>

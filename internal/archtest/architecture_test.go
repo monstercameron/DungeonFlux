@@ -338,8 +338,8 @@ func checkJavaScript(root string) []violation {
 		ext := filepath.Ext(path)
 		rel, _ := filepath.Rel(root, path)
 		rel = filepath.ToSlash(rel)
-		if (ext == ".js" || ext == ".mjs") && !strings.HasPrefix(filepath.ToSlash(path), filepath.ToSlash(filepath.Join(root, "web", "splat"))) && !strings.HasPrefix(rel, "docs/") {
-			out = append(out, violation{rel, 0, "JavaScript is allowed only under web/splat"})
+		if (ext == ".js" || ext == ".mjs") && !strings.HasPrefix(rel, "web/splat/") && !strings.HasPrefix(rel, "docs/") && !strings.HasPrefix(rel, "website/") {
+			out = append(out, violation{rel, 0, "JavaScript is allowed only under web/splat, docs, or the standalone website"})
 		}
 		return nil
 	})
