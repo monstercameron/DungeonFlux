@@ -7,6 +7,44 @@ Status values: `open` · `claimed <agent> <time>` · `committed <hash>` · `done
 The build todos below cover the whole architecture in plan §0, grouped by system from the simplest foundations to the most integrated systems. Any feature not covered here is backfilled before or alongside the work (AGENTS.md rule 18).
 
 ## Planning (ORCH)
+### Kill cam (developer-directed single writer, 2026-09-27)
+
+- [x] KC-004 · Remove unused domain scaffolding exposed by the feature gate
+  why: Staticcheck rejects two unused placeholder types, preventing the shared combat contract gate from passing.
+  lane: ORCH (Codex) · paths: `internal/domain/effects.go`, `internal/domain/events.go` · depends: none
+  done when: only unused placeholders are removed and the domain gate passes.
+  status: done 9a57ac8
+
+- [x] KC-005 · Run the demo through a live-reload development supervisor
+  why: The developer needs source edits to rebuild and refresh clients through one persistent server instead of repeated manual executable launches.
+  lane: ORCH (Codex) · paths: `scripts/devserver/live*.go`, `scripts/devserver/main.go`, `scripts/devserver/supervisor.go`, `web/splat/js/dev_reload.mjs` · depends: none
+  done when: source changes trigger native and WASM builds, failed builds preserve the running server, successful builds refresh clients, unchanged trees do not restart, and a persistent instance serves localhost:8444.
+  status: done d5f226e
+
+- [x] KC-001 · Generate and cache cinematic combat finishers
+  why: The three-minute demo needs identity-consistent hero victories and villain takedowns ready before play, with no vendor wait during combat.
+  lane: ORCH (Codex) · paths: `scripts/buildtime/killcam*.go`, `scripts/buildtime/run.go`, `config/killcams.json`, `internal/wire/video_tool.go`, `artifacts/runtime/buildtime/manifest.json`, `artifacts/runtime/buildtime/assets/6666b00d702d744e5310f1221b90caae048ede4f45319ef03c06840f682e90ab.mp4`, `artifacts/runtime/buildtime/assets/cbd5dfdf0a65be4f4f9eebd7873a8d44bc1a1805165fd952ac5e8d99d50fd659.mp4`, `artifacts/runtime/buildtime/assets/94b456e488d3f973d0710f2f1a2813a86e83de03efbc29aa717500ddda732bef.mp4`, `artifacts/runtime/buildtime/assets/d82bbc07ef58f5feedbafd49f4b94543db3808f11eb434bd3c4d412bc8782db2.mp4` · depends: none
+  done when: four reference-driven battlefield videos are generated through fal, content-addressed and registered; rerunning uses verified cached files without paid calls; offline tests and gate pass.
+  status: done 088d8a8
+
+- [x] KC-002 · Trigger bounded kill cams from authoritative combat outcomes
+  why: Cinematics must identify the actual attacker and victim, run once, respect pause/reset/skip, and resume combat without blocking on media generation.
+  lane: ORCH (Codex) · paths: `internal/domain/killcam.go`, `internal/domain/oneshot.go`, `internal/domain/view.go`, `internal/wire/killcam*.go`, `internal/wire/manifest.go`, `internal/game/game.go`, `internal/game/phase/killcam*.go`, `internal/game/phase/phase.go`, `internal/game/phase/support.go`, `internal/game/phase/view.go`, `internal/api/killcam*.go`, `internal/api/project.go`, `proto/dungeonflux/v1/common.proto`, `gen/dungeonflux/v1/common.pb.go` · depends: KC-001
+  done when: hero victory and villain knockout select the matching cached clip, expose preload and playback state, reject actions while playing, and resume within a fixed four-second beat; missing clips preserve combat; tests and gates pass.
+  status: done 56f9573
+
+- [x] KC-003 · Present and visually verify the cinematic kill cam
+  why: The finishing blow needs a polished full-screen presentation that returns cleanly to the battlefield and stays reliable in the three-minute demo.
+  lane: ORCH (Codex) · paths: `web/dm/killcam*.go`, `web/dm/layers_wasm.go`, `internal/i18n/english.go`, `internal/i18n/spanish.go`, `internal/i18n/keys.go`, `internal/i18n/catalog/en.json`, `internal/i18n/catalog/es.json` · depends: KC-002
+  done when: cached clips preload, play once with graded cinematic framing, handle pause/failed media/reduced motion, and return to combat; native/WASM checks and visual review cover both outcomes.
+  status: done ef18fbf
+
+- [x] KC-006 · Record kill-cam and live-reload completion evidence
+  why: The completed feature needs traceable commits, gates, cached-asset verification, visual findings, and a clear developer handoff.
+  lane: ORCH (Codex) · paths: `TODOS.md` · depends: KC-001, KC-002, KC-003, KC-004, KC-005
+  done when: completed todos record their commit hashes, full verification and per-todo hand-ins are saved under artifacts, and the developer's live-reload server remains available.
+  status: done (this commit); hand-ins: artifacts/lanes/KILLCAM/handins.json; full gate: artifacts/test/ORCH/gate-20260927-040914.log
+
 ### Visual-review repair batch (developer-directed, 2026-09-27)
 The developer assigned Codex to create and implement this batch directly, without Luna or other subagents. These sequential claims take precedence over older overlapping web/integration claims for the repair scope only; existing unrelated work remains untouched. The baseline is ebcb4dc and artifacts/test/L-E2E/visual-20260927/report.html. Every implementation item gets its own green gate, named-path commit and hand-in; completion is recorded by PLAN-022 after a fresh-build browser review. No changes to the human server. The later BB-002 request explicitly authorizes live fal generation; all automated tests remain fake.
 
