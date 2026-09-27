@@ -62,7 +62,7 @@ func phaseLayers(state *dungeonfluxv1.ScreenState, roomCode, extra string) []ui.
 		case LayerTimer:
 			content = TimerComponent(TimerViewFromDMView(view))(router.Attrs{})
 		case LayerCombat:
-			content = ui.CreateElement(combatLayer, combatLayerProps{view: view})
+			content = ui.CreateElement(combatLayer, combatLayerProps{view: view, revision: routeRenders.Load()})
 		case LayerEnd:
 			content = EndCardComponent(EndCardModelFromView(view))(router.Attrs{})
 		default:
@@ -75,7 +75,8 @@ func phaseLayers(state *dungeonfluxv1.ScreenState, roomCode, extra string) []ui.
 
 // combatLayerProps carries the snapshot into combatLayer.
 type combatLayerProps struct {
-	view *dungeonfluxv1.DMView
+	view     *dungeonfluxv1.DMView
+	revision uint64
 }
 
 // combatLayer gives the combat layer its own component fiber. Called inline,

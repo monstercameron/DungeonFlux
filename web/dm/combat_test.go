@@ -71,3 +71,18 @@ func abs(value float32) float32 {
 	}
 	return value
 }
+
+func TestCombatModelFromView_DegenerateFloorStillProjectsFallback(t *testing.T) {
+	for _, mode := range []string{"FLAT", "SPLAT"} {
+		t.Run(mode, func(t *testing.T) {
+			view := &dungeonfluxv1.DMView{
+				Battlefield: &dungeonfluxv1.Battlefield{Mode: mode, Visible: true, SceneUrl: "/missing-scene.json", Grid: &dungeonfluxv1.Grid{Cols: 2, Rows: 2, Walkable: []*dungeonfluxv1.Cell{{C: 1, R: 1}}}, Flat: &dungeonfluxv1.FlatBattlefield{FloorQuadPx: make([]float32, 8)}},
+				Tokens:      []*dungeonfluxv1.Token{{TokenId: "pc-1", Name: "Hero", Cell: &dungeonfluxv1.Cell{C: 1, R: 1}, Hp: 12, HpMax: 12, Active: true}},
+			}
+			got := CombatModelFromView(view)
+			if len(got.Segments) != 4 || len(got.Tokens) != 1 || got.Tokens[0].X <= 120 || got.Tokens[0].Y <= 180 || got.Tokens[0].HP != 12 || !got.Tokens[0].Active {
+				t.Fatalf("fallback must retain visible floor and hero: %#v", got)
+			}
+		})
+	}
+}

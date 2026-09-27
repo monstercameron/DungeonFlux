@@ -177,14 +177,21 @@ func enemyCard(token CombatToken) ui.Node {
 	if portrait == "" {
 		portrait = "thrall_still"
 	}
+	var face ui.Node = html.Div(html.Props{Role: "img", Aria: map[string]string{"label": token.Name}, Style: map[string]string{"width": "92px", "height": "92px", "display": "grid", "place-items": "center", "font-size": "48px", "color": "#e7c27a"}}, ui.Text("☠"))
+	if src := artSrc(portrait); src != "" {
+		face = html.Img(html.Props{Src: src, Alt: token.Name, Style: map[string]string{"width": "92px", "height": "92px", "object-fit": "cover", "object-position": "center 18%", "border": "2px solid #b3372f"}})
+	}
 	return html.Div(html.Props{Class: "df-dm-combat-enemy", Style: map[string]string{"position": "absolute", "right": "36px", "top": "135px", "width": "310px", "padding": "14px", "border": "1px solid #b3372f", "border-radius": "10px", "background": "rgba(12,18,28,.9)", "box-shadow": "0 12px 28px rgba(0,0,0,.52)"}},
 		html.Div(html.Props{Style: map[string]string{"color": "#e7c27a", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "22px", "letter-spacing": ".1em", "text-transform": "uppercase"}}, ui.Text(T("en", "dm.combat.enemy", nil))),
-		html.Div(html.Props{Style: map[string]string{"display": "flex", "gap": "14px", "align-items": "center", "margin-top": "10px"}}, html.Img(html.Props{Src: artSrc(portrait), Alt: token.Name, Style: map[string]string{"width": "92px", "height": "92px", "object-fit": "cover", "object-position": "center 18%", "border": "2px solid #b3372f"}}), html.Div(html.Props{Style: map[string]string{"font-family": "Cormorant Garamond,Georgia,serif", "font-size": "28px"}}, ui.Text(token.Name))),
+		html.Div(html.Props{Style: map[string]string{"display": "flex", "gap": "14px", "align-items": "center", "margin-top": "10px"}}, face, html.Div(html.Props{Style: map[string]string{"font-family": "Cormorant Garamond,Georgia,serif", "font-size": "28px"}}, ui.Text(token.Name))),
 		html.Div(html.Props{Style: map[string]string{"margin-top": "12px", "height": "8px", "background": "#291b1b", "border-radius": "5px", "overflow": "hidden"}}, html.Div(html.Props{Style: map[string]string{"width": combatHPPercent(token.HP, token.HPMax), "height": "100%", "background": "#b3372f"}})),
 	)
 }
 
 func combatTimer(view TimerView) ui.Node {
+	if view.TotalMS <= 0 {
+		return nil
+	}
 	return html.Div(html.Props{Class: "df-dm-combat-timer", Style: map[string]string{"position": "absolute", "left": "730px", "top": "112px", "width": "460px", "padding": "10px 18px", "border": "1px solid #b8893a", "border-radius": "8px", "background": "rgba(12,18,28,.84)"}}, TimerComponent(view)(router.Attrs{}))
 }
 
