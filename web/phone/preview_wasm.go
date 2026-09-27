@@ -3,6 +3,7 @@
 package phone
 
 import (
+	"sync/atomic"
 	"syscall/js"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
@@ -16,10 +17,15 @@ func RenderPreview(name string) (ui.Node, bool) {
 	if _, ok := Preview(name); !ok {
 		return nil, false
 	}
-	return ui.CreateElement(previewScreen, previewScreenProps{name: name}), true
+	return ui.CreateElement(previewScreen, previewScreenProps{name: name, revision: previewRevision.Add(1)}), true
 }
 
-type previewScreenProps struct{ name string }
+type previewScreenProps struct {
+	name     string
+	revision uint64
+}
+
+var previewRevision atomic.Uint64
 
 // previewPick is the fixture chosen through window.dfPreview; it survives a
 // shell re-render (art loaded).
@@ -32,7 +38,6 @@ func previewScreen(props previewScreenProps) ui.Node {
 			if len(args) > 0 && args[0].Type() == js.TypeString {
 				if _, ok := Preview(args[0].String()); ok {
 					previewPick = args[0].String()
-					snapshotVersion++
 					picks.Set(picks.Get() + 1)
 				}
 			}

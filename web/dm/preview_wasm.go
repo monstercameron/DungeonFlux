@@ -3,6 +3,7 @@
 package dm
 
 import (
+	"sync/atomic"
 	"syscall/js"
 
 	"github.com/monstercameron/GoWebComponents/v6/ui"
@@ -16,13 +17,16 @@ import (
 // (for example dfPreview("creation") on /dm?preview=lobby).
 func RenderPreview(name, roomCode string, value any) ui.Node {
 	unlock, _ := value.(ui.Handler)
-	return ui.CreateElement(previewScreen, previewProps{name: name, roomCode: roomCode, unlock: unlock})
+	return ui.CreateElement(previewScreen, previewProps{name: name, roomCode: roomCode, unlock: unlock, revision: previewRevision.Add(1)})
 }
+
+var previewRevision atomic.Uint64
 
 type previewProps struct {
 	name     string
 	roomCode string
 	unlock   ui.Handler
+	revision uint64
 }
 
 // previewPick is the fixture chosen through window.dfPreview. It lives outside

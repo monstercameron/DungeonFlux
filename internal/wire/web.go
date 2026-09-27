@@ -47,6 +47,7 @@ func mountWeb(mux *http.ServeMux, cfg config.Config) error {
 	mux.HandleFunc("/p/", pageHandler(staticRoot))
 	mux.HandleFunc("/host", loopbackTokenRedirect("t", cfg.Server.HostToken, pageHandler(staticRoot)))
 	mux.HandleFunc("/about", pageHandler(staticRoot))
+	mux.HandleFunc("/preview", pageHandler(staticRoot))
 	mux.HandleFunc("/app/dungeonflux.wasm", wasmHandler(filepath.Join(wasmRoot, "dungeonflux.wasm")))
 	mux.HandleFunc("/wasm_exec.js", fileHandler(filepath.Join(wasmRoot, "wasm_exec.js"), "text/javascript; charset=utf-8"))
 	mux.Handle("/splat/js/", staticHandler(filepath.Join(root, "splat", "js")))

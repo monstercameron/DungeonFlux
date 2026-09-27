@@ -77,7 +77,3 @@ func phoneOverlay(p phoneContentProps) ui.Node {
 		return SheetScreen(p.models.sheet)(router.Attrs{})
 	}
 }
-
-// snapshotVersion is retained for the preview fixture switcher until its
-// lifecycle is migrated; live screen identity never depends on this counter.
-var snapshotVersion uint64

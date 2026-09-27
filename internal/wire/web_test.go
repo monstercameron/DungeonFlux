@@ -47,7 +47,7 @@ func TestMountWeb_ServesPagesAndWasm(t *testing.T) {
 	if err := mountWeb(mux, config.Config{Server: config.ServerConfig{DataDir: filepath.Join(root, "runtime")}}); err != nil {
 		t.Fatal(err)
 	}
-	for _, path := range []string{"/dm", "/p", "/p/seat", "/host", "/about"} {
+	for _, path := range []string{"/dm", "/p", "/p/seat", "/host", "/about", "/preview"} {
 		res := request(mux, path, "")
 		if res.Code != http.StatusOK || res.Body.String() != "host" {
 			t.Errorf("GET %s = %d %q", path, res.Code, res.Body.String())
