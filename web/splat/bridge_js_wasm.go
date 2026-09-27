@@ -106,6 +106,22 @@ func (b *Bridge) Pause(value Pause) error { return b.send("pause", value) }
 // Dispose unloads the PlayCanvas scene.
 func (b *Bridge) Dispose() error { return b.send("dispose", nil) }
 
+// Preload asks the loaded dfSplat module to build a battle scene's collider,
+// grid filter and occluder data ahead of the Init that will need them, so the
+// combat entry that follows does not stall the main thread on them.
+func Preload(value Init) error {
+	module := js.Global().Get("dfSplat")
+	if !module.Truthy() || module.Get("preload").Type() != js.TypeFunction {
+		return errors.New("window.dfSplat.preload is unavailable")
+	}
+	payload, err := envelope("init", value)
+	if err != nil {
+		return err
+	}
+	module.Call("preload", string(payload))
+	return nil
+}
+
 // Events returns the bounded stream of JavaScript events.
 func (b *Bridge) Events() <-chan Event { return b.events }
 
