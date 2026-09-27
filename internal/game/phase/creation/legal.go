@@ -13,6 +13,7 @@ const (
 	reasonRollHero       = "Roll your hero first"
 	reasonReady          = "Ready your rolled hero first"
 	reasonLocked         = "Your hero is already ready"
+	reasonRenameFirst    = "Roll your hero first"
 )
 
 // LegalMoveViews returns the complete creation menu for one seat. Moves that
@@ -27,8 +28,19 @@ func LegalMoveViews(state SeatState) []domain.MoveView {
 		creationMove(vocab.MoveGender, "Choose gender", !rolled && !locked, reasonForCreation(rolled, locked, reasonLocked)),
 		classMove(!rolled && !locked, reasonForCreation(rolled, locked, reasonLocked)),
 		creationMove(vocab.MoveRollHero, "Roll my hero", selected && !rolled && !locked, rollReason(selected, rolled, locked)),
+		creationMove(vocab.MoveRename, "Rename hero", rolled && !locked, renameReason(rolled, locked)),
 		creationMove(vocab.MoveReady, "Ready", rolled && !locked, readyReason(rolled, locked)),
 	}
+}
+
+func renameReason(rolled, locked bool) string {
+	if locked {
+		return reasonLocked
+	}
+	if !rolled {
+		return reasonRenameFirst
+	}
+	return ""
 }
 
 func classMove(enabled bool, reason string) domain.MoveView {

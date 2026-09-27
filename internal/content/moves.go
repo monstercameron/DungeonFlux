@@ -41,6 +41,8 @@ func MoveLabel(id vocab.MoveID) string {
 		return "Choose a gender"
 	case vocab.MoveRollHero:
 		return "Roll my hero"
+	case vocab.MoveRename:
+		return "Rename hero"
 	case vocab.MoveTalkVell:
 		return "Talk to Mother Vell"
 	case vocab.MovePersuade:
@@ -63,10 +65,10 @@ func MoveLabel(id vocab.MoveID) string {
 // MoveLabels returns a fresh catalog containing a label for every MoveID in
 // vocab. Callers may modify the returned map without changing this package.
 func MoveLabels() map[vocab.MoveID]string {
-	labels := make(map[vocab.MoveID]string, 11)
+	labels := make(map[vocab.MoveID]string, 12)
 	for _, id := range []vocab.MoveID{
 		vocab.MoveReady, vocab.MoveSpecies, vocab.MoveGender, vocab.MoveRollHero,
-		vocab.MoveTalkVell, vocab.MovePersuade, vocab.MoveStepAway, vocab.MoveLeave,
+		vocab.MoveRename, vocab.MoveTalkVell, vocab.MovePersuade, vocab.MoveStepAway, vocab.MoveLeave,
 		vocab.MoveAttack, vocab.MoveMove, vocab.MoveEndTurn,
 	} {
 		labels[id] = MoveLabel(id)

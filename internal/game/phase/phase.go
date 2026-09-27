@@ -269,7 +269,10 @@ func (m *Machine) stepCreation(event domain.Event) (Result, error) {
 	if _, ok := event.(domain.PCLocked); ok {
 		locked = true
 	}
-	if isPassive(event) {
+	// FlavorFailed is passive in every other phase, but Creation needs it to
+	// apply the deterministic fallback hero name (creation.stepFlavorFailed),
+	// so it is the one passive event let through here.
+	if _, ok := event.(domain.FlavorFailed); !ok && isPassive(event) {
 		return Result{}, nil
 	}
 	if _, ok := event.(domain.PCLocked); ok && !m.strictCreation {

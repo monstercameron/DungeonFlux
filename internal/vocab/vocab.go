@@ -105,6 +105,9 @@ const (
 	MoveClass MoveID = "class"
 	// MoveRollHero rolls a hero.
 	MoveRollHero MoveID = "roll_hero"
+	// MoveRename edits the rolled hero's generated name (Act.Arg carries the
+	// new name). Legal from roll_hero until the seat locks.
+	MoveRename MoveID = "rename"
 	// MoveTalkVell starts a conversation with Vell.
 	MoveTalkVell MoveID = "talk_vell"
 	// MovePersuade attempts persuasion.

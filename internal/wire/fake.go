@@ -9,9 +9,11 @@ import (
 	"image/color"
 	"image/png"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/monstercameron/DungeonFlux/internal/config"
+	"github.com/monstercameron/DungeonFlux/internal/content"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/ports"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
@@ -50,7 +52,14 @@ func (fakeLLM) JSON(ctx context.Context, req ports.TextRequest, _ ports.Schema) 
 	var values map[string]any
 	switch req.Meta.Role {
 	case vocab.RoleCharacterFlavor:
-		values = map[string]any{"name": "Asha", "look": "A rain-dark cloak and bright eyes", "hook": "Find the vanished lamplighter"}
+		species, gender := flavorSpeciesGender(req.Messages)
+		seed := append([]byte("wire-fake-flavor:"), byte(req.Meta.Seat))
+		seed = append(seed, ':')
+		seed = append(seed, species...)
+		seed = append(seed, ':')
+		seed = append(seed, gender...)
+		name := content.FallbackHeroName(species, gender, seed)
+		values = map[string]any{"name": name, "look": "A rain-dark cloak and bright eyes", "hook": "Find the vanished lamplighter"}
 	case vocab.RoleInterpret:
 		values = map[string]any{"clean_text": "I persuade her", "kind": "MOVE", "move_id": string(vocab.MovePersuade)}
 	case vocab.RoleStrangerLines:
@@ -67,6 +76,40 @@ func (fakeLLM) JSON(ctx context.Context, req ports.TextRequest, _ ports.Schema) 
 		return nil, err
 	}
 	return data, nil
+}
+
+// flavorSpeciesGender recovers the species and gender named in the rendered
+// character_flavor user prompt ("...for species human, gender male,
+// class..."), so the fake LLM's fallback name still varies by species and
+// gender instead of returning the same name for every seat. It never errors:
+// an unparsed prompt yields empty strings, and content.FallbackHeroName
+// already falls back to a generic name for an unknown species or gender.
+func flavorSpeciesGender(messages []ports.Message) (species, gender string) {
+	for _, message := range messages {
+		text := strings.ToLower(message.Text)
+		if species == "" {
+			species = fieldAfter(text, "species ")
+		}
+		if gender == "" {
+			gender = fieldAfter(text, "gender ")
+		}
+	}
+	return species, gender
+}
+
+// fieldAfter returns the single word following label in text, with any
+// trailing comma or period trimmed.
+func fieldAfter(text, label string) string {
+	index := strings.Index(text, label)
+	if index < 0 {
+		return ""
+	}
+	rest := strings.TrimSpace(text[index+len(label):])
+	fields := strings.Fields(rest)
+	if len(fields) == 0 {
+		return ""
+	}
+	return strings.Trim(fields[0], ",.")
 }
 
 type fakeTextStream struct {
