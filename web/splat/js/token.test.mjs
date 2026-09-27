@@ -52,3 +52,22 @@ test("controller restores idle when a walk route arrives", () => {
   controller.update(0.2);
   assert.equal(plays.at(-1), "idle");
 });
+
+test("controller ignores stale cells and does not replay the current animation", () => {
+  const { controller, plays } = harness();
+  const current = { id: "hero", kind: "player", cell: [0, 0], anim_seq: 2, anim: "idle", clips: { idle: "idle" } };
+  controller.acceptToken(current);
+  controller.acceptToken({ ...current, cell: [1, 0], anim_seq: 1, anim: "walk" });
+  controller.acceptToken({ ...current, anim: "attack" });
+  controller.acceptToken({ ...current, anim: "attack" });
+  assert.equal(controller.getState().tokens[0].cell[0], 0);
+  assert.deepEqual(plays, ["idle", "attack"]);
+});
+
+test("controller adopts a newer animation on an unchanged route", () => {
+  const { controller, plays } = harness();
+  const current = { id: "hero", kind: "player", cell: [0, 0], anim_seq: 1, anim: "idle", clips: { idle: "idle" } };
+  controller.acceptToken(current);
+  controller.acceptToken({ ...current, anim_seq: 2, anim: "attack" });
+  assert.deepEqual(plays, ["idle", "attack"]);
+});

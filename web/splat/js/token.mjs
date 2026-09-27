@@ -55,7 +55,8 @@ class TokenController {
     if (gone(token)) { this.remove(token.id); return; }
     const seq = Number(token.anim_seq ?? 0);
     if (!Number.isSafeInteger(seq) || seq < 0 || !validTokenCell(this.grid,token.cell)) return;
-    if (entry && seq <= entry.seq) {
+    if (entry && seq < entry.seq) return;
+    if (entry && seq === entry.seq) {
       const restart = animationRestarted(entry.token,token,entry.seq,seq);
       entry.token = {...entry.token,...token,name:token.name ?? entry.token.name,clips:token.clips ?? entry.token.clips};
       this.adoptClips(entry,token,restart);
