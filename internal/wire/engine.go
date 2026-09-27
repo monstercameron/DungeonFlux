@@ -14,13 +14,15 @@ import (
 type synchronizedEngine struct {
 	mu      sync.RWMutex
 	current ports.Engine
+	version uint64
+	journal engineJournal
 }
 
 func newSynchronizedEngine(engine ports.Engine) (*synchronizedEngine, error) {
 	if engine == nil {
 		return nil, errors.New("wire: engine is required")
 	}
-	return &synchronizedEngine{current: engine}, nil
+	return &synchronizedEngine{current: engine, version: engine.View().Version}, nil
 }
 
 func (e *synchronizedEngine) replace(engine ports.Engine) bool {
@@ -29,6 +31,8 @@ func (e *synchronizedEngine) replace(engine ports.Engine) bool {
 	}
 	e.mu.Lock()
 	e.current = engine
+	e.version++
+	e.journal = engineJournal{}
 	e.mu.Unlock()
 	return true
 }
@@ -36,6 +40,8 @@ func (e *synchronizedEngine) replace(engine ports.Engine) bool {
 func (e *synchronizedEngine) Step(env domain.Envelope) domain.StepOut {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	e.journal.append(env)
+	e.version++
 	return e.current.Step(env)
 }
 
@@ -48,7 +54,9 @@ func (e *synchronizedEngine) LegalMoves(seat domain.SeatID) []vocab.MoveID {
 func (e *synchronizedEngine) View() domain.View {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	return e.current.View()
+	view := e.current.View()
+	view.Version = e.version
+	return view
 }
 
 func (e *synchronizedEngine) Inspect() domain.Inspect {

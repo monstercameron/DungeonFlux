@@ -126,6 +126,12 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: callbacks carry their originating runtime generation, the room rejects stale results before Step, resets cancel all scopes, new work still runs, and runtime/domain gates pass.
   status: done (this commit); runtime 80.0%, domain 91.8%; artifacts/test/QA-020/gate-20260927-054314.log green; required for safe QA-005 checkpoint loads
 
+- [x] QA-021 · Rebuild checkpoint engines from immutable event history
+  why: Nested engine state cannot be safely copied with JSON, while deterministic replay can restore every phase and dice state without executing vendor effects.
+  lane: ORCH (Codex) · paths: `TODOS.md`, `internal/wire/engine.go`, `internal/wire/engine_checkpoint.go`, `internal/wire/engine_checkpoint_test.go`, `docs/devlog.html` · depends: QA-020
+  done when: checkpoints replay deep-copied events with original timing and scope, repeated restores remain independent, publication versions increase, history has a memory limit, and the wire gate passes.
+  status: done (this commit); artifacts/test/QA-021/gate-20260927-054911.log green; engine portion of QA-005
+
 ### Kill cam (developer-directed single writer, 2026-09-27)
 
 - [x] KC-004 · Remove unused domain scaffolding exposed by the feature gate

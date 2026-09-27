@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="decision" id="e-20260927-engine-checkpoint-replay">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Decision</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-engine-checkpoint-replay">Checkpoint engines rebuild from events without executing effects</a></h2>
+  <p>The game contains private nested state machines, so serializing its public view would lose combat, creation and dice state. The synchronized engine now supports an optional bounded journal of immutable event payloads. Each checkpoint retains the exact constructor for its run and replays events with their original logical time, sequence and scope. Replay discards returned effects; completed vendor requests and audio cues are not executed again. Every restore decodes fresh event values, preventing later map edits or repeated retries from corrupting the saved point. Client publication versions continue increasing even when game state moves backward. A four-megabyte history limit fails explicitly instead of growing without bound. Tests cover mutable payloads, repeated loads, original-run factories, missing configuration and invalid histories. The wire gate passed. Room control and pending-work restoration are the next part of QA-005.</p>
+</li>
 <li class="entry" data-kind="issue" id="e-20260927-abandoned-results">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-abandoned-results">Reset rejects callbacks from the previous attempt</a></h2>
