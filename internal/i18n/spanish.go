@@ -5,6 +5,8 @@ package i18n
 // stay as proper nouns.
 func SpanishEntries() map[string]Entry {
 	return map[string]Entry{
+		"combat.location":                    {Text: "El sendero del río"},
+		"combat.entry":                       {Text: "Empujáis al ahogado fuera de la taberna, hacia el sendero del río."},
 		"dm.killcam.label":                   {Text: "Golpe final"},
 		"dm.killcam.victory":                 {Text: "Enemigo derrotado"},
 		"dm.killcam.defeat":                  {Text: "Héroe caído"},

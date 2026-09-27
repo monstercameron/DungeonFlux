@@ -368,6 +368,12 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: section 0 records the chosen wooded setting and bridge while preserving the three-minute run, combat deadline, and cached cinematic duration.
   status: done (this commit); section 0 and combat sequence updated to the developer-selected wooded path; timing and cache requirements preserved.
 
+- [x] QA-061 · Localize the wooded combat location and transition
+  why: The new exterior bridge and location must remain readable in both supported game languages.
+  lane: ORCH (Codex) · paths: `internal/i18n/english.go`, `internal/i18n/spanish.go`, `internal/i18n/keys.go`, `TODOS.md`, `docs/devlog.html` · depends: QA-060
+  done when: both catalogs contain the combat location and story bridge, key guards pass, and the i18n gate is green.
+  status: done (this commit); gate artifacts/test/QA-061/gate-20260927-094939.log green, i18n 98.1%; required-key guards include both new strings.
+
 ### Kill cam (developer-directed single writer, 2026-09-27)
 
 - [ ] KC-010 · Generate opponent-facing idle, walk and attack loops from hero references

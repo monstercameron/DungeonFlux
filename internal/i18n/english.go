@@ -6,6 +6,8 @@ package i18n
 // drift so the catalog cannot silently diverge from the game.
 func EnglishEntries() map[string]Entry {
 	return map[string]Entry{
+		"combat.location":                    {Text: "The wooded river path"},
+		"combat.entry":                       {Text: "You drive the thrall through the tavern doors onto the wooded river path."},
 		"dm.killcam.label":                   {Text: "Finishing blow"},
 		"dm.killcam.victory":                 {Text: "Enemy vanquished"},
 		"dm.killcam.defeat":                  {Text: "Hero fallen"},
