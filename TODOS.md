@@ -7,6 +7,38 @@ Status values: `open` · `claimed <agent> <time>` · `committed <hash>` · `done
 The build todos below cover the whole architecture in plan §0, grouped by system from the simplest foundations to the most integrated systems. Any feature not covered here is backfilled before or alongside the work (AGENTS.md rule 18).
 
 ## Planning (ORCH)
+### Six-hour competition-demo audit (developer-directed, 2026-09-27)
+
+- [x] QA-001 · Keep debug credentials out of CLI help and parse errors
+  why: Read and control flag sets capture DF_DEBUG_TOKEN as a printable flag default, leaking it when help or invalid arguments print usage.
+  lane: L-OPS (Codex) · paths: `cmd/dfctl/cli.go`, `cmd/dfctl/read.go`, `cmd/dfctl/control.go`, `cmd/dfctl/token_flag.go`, `cmd/dfctl/token_flag_test.go`, `docs/devlog.html` · depends: none
+  done when: help and parse-error paths never contain environment or explicit tokens, authentication precedence remains correct, the CLI gate is green, and the fix is committed and pushed with a devlog entry.
+  status: done be946e4; pushed; CLI coverage 72.5%
+
+- [x] QA-002 · Record checkpoint findings and publish the audit ledger
+  why: The sustained playtest needs evidence for each control, unresolved gaps, devlog updates, and pushed commit references.
+  lane: ORCH (Codex) · paths: `TODOS.md`, `docs/devlog.html` · depends: QA-001
+  done when: current audit findings and verified fixes are recorded, the earlier kill-cam hand-ins are reflected in the devlog, and checked commits are pushed.
+  status: done (this commit); audit evidence: artifacts/test/QA-AUDIT/checkpoint-01.json
+
+- [x] QA-003 · Ignore callbacks from replaced or reset gameplay timers
+  why: Recreated timers reuse generation one, allowing an already-started callback from the previous timer to expire the new timer prematurely.
+  lane: L-RT (Codex) · paths: `internal/runtime/timers.go`, `internal/runtime/timers_stale_test.go`, `docs/devlog.html` · depends: none
+  done when: callbacks are tied to their exact timer instance as well as arm generation, replacement/reset/cancel regressions pass, the runtime gate is green, and the fix is committed and pushed with its devlog entry.
+  status: done 96a05c3; pushed; runtime coverage 77.6%; remote race tests passed
+
+- [ ] QA-004 · Make host toggle state authoritative and reversible
+  why: The host initializes local timer state to off and sends TIMERS_OFF for both directions, so its displayed state can contradict the engine and cannot reliably re-enable timers.
+  lane: ORCH (Codex) · paths: pending contract and implementation breakdown after review · depends: none
+  done when: timer, splat and safe-mode controls show authoritative state, each direction works after reload and reconnect, rejected commands do not change the displayed state, and live playtests plus gates pass.
+  status: open; observed in browser host page and web/host/mount_wasm.go
+
+- [ ] QA-005 · Implement CLI checkpoints for fast in-process retries
+  why: snapshot save/load is exposed by dfctl but the runtime does not install a snapshot controller, preventing the requested undo-and-retry workflow.
+  lane: ORCH (Codex) · paths: pending engine/runtime/API breakdown after design review · depends: QA-003
+  done when: named checkpoints restore engine state and timers through the room loop, cancel abandoned work, preserve connected clients, reject stale results, and pass live CLI save-change-load-retry checks without restarting the app.
+  status: open; runtime controller missing; BL-002 promoted by developer request
+
 ### Kill cam (developer-directed single writer, 2026-09-27)
 
 - [x] KC-004 · Remove unused domain scaffolding exposed by the feature gate

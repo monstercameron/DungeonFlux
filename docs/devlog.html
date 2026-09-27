@@ -87,6 +87,12 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="milestone" id="e-20260927-cached-killcam-review">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Milestone</span><span class="who">Codex and GPT-6 reviewer</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-cached-killcam-review">Four cached finishing-blow videos and an independent reconnect review</a></h2>
+  <p>The two demo reference heroes now have four-second victory and defeat videos generated against the existing battlefield and enemy references. The four 720p clips are stored by content hash and preloaded before combat; a cache-only rerun verified all four without another vendor request. The engine selects the actual attacking or defeated seat, locks combat input for the cinematic beat, and resumes after a bounded pausable timer. Missing media leaves normal combat available. An independent GPT-6 review found that reconnects could replay an old offset: commits <code>2412be2</code> and <code>939dc25</code> synchronize buffered playback and advance the cached snapshot offset for late subscribers while preserving paused frames. Native, WASM, package, and full walk checks passed. Coverage is limited to the paladin and rogue reference heroes; other classes retain normal combat.</p>
+</li>
+
 <li class="entry" data-kind="issue" id="e-20260927-replaced-timer-callback">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-replaced-timer-callback">An old timer callback could expire a newly started turn</a></h2>
