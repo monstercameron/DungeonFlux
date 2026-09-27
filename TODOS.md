@@ -3664,10 +3664,10 @@ Issues from the tester's playtests on the Droplet (`notes/emmaka/2026-09-27-play
   done when: holding the talk button on iOS Safari records until release and produces a transcript; a device test on iPhone is recorded in the playtest notes.
   status: open
 
-- [ ] EMK-008 · the non-speaking player is told they cannot talk yet
-  why: Only the spotlight seat's speech is interpreted; the other player's typed "Hi" (×3) was silently ignored while the text box and send button stayed enabled (playtest item 7).
-  lane: suggested L-WEB-PHONE (or L-ENG if both players should be able to speak) · paths: `web/phone/talk*.go`, `web/phone/typed*.go` · depends: none
-  done when: the non-spotlight phone shows "<name> is talking to Mother Vell" and disables input, or the engine accepts both players' lines (team decision); banner and buttons use the same player name (no "seat 1").
+- [ ] EMK-008 · both players can talk to Mother Vell (no silent single-speaker lock)
+  why: Tester note: "When 2 players interact with Mother Vell, only the first player gets to interact with her." The first seat to tap Talk takes the conversation spotlight and only its speech is interpreted; the other player's typed "Hi" (×3) was silently ignored while the text box and send button stayed enabled (playtest item 7).
+  lane: suggested L-ENG (conversation spotlight) + L-WEB-PHONE · paths: `internal/game/phase/conversation/**`, `web/phone/talk*.go`, `web/phone/typed*.go` · depends: none
+  done when: either player can speak to Mother Vell, persuade, or step away during the conversation, and her reply addresses whoever spoke (tester requirement); until then the other phone at least shows "<name> is talking to Mother Vell" instead of a live text box; banner and buttons use the player's name, never "seat 1".
   status: open
 
 - [ ] EMK-009 · NPCs and the DM always speak: TTS fallback chain
