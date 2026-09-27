@@ -37,6 +37,9 @@ type SeatView struct {
 	PlayerName   string
 	PlayerNumber int32
 	LobbySeats   []*df.LobbySeat
+	// SpotlightSeat is the seat number (as a string) the engine currently
+	// gives the floor to, in every phase, not just combat.
+	SpotlightSeat string
 }
 
 // NarrationModel is the phone-safe read-along line projection.
@@ -55,7 +58,11 @@ func seatViewFromState(state *df.ScreenState) SeatView {
 	if narration := phone.GetNarration(); narration != nil {
 		model = NarrationModel{Speaker: narration.GetSpeaker(), Text: narration.GetTextSoFar(), Done: narration.GetDone()}
 	}
-	return SeatView{Version: state.GetVersion(), Phase: state.GetPhase(), Phone: phone, Narration: model}
+	return SeatView{
+		Version: state.GetVersion(), Phase: state.GetPhase(), Phone: phone, Narration: model,
+		PlayerName: phone.GetPlayerName(), PlayerNumber: phone.GetPlayerNumber(), LobbySeats: phone.GetSeats(),
+		SpotlightSeat: state.GetSpotlightSeat(),
+	}
 }
 
 // ConnectionState identifies the transport state shown in the phone header.
@@ -82,6 +89,12 @@ type FrameModel struct {
 	Screen      ScreenKind
 	Mode        PhoneMode
 	ActiveTab   PhoneTabID
+	// TurnLabel is the persistent whose-turn banner text ("Your turn",
+	// "Waiting for Lyra…"), or empty when no turn is relevant on this
+	// screen (lobby, creation, end).
+	TurnLabel string
+	// TurnYours highlights TurnLabel gold when it is this seat's turn.
+	TurnYours bool
 	// Enter plays the short screen entry (fade and 8 px rise) on this frame.
 	// The mount sets it only on the frame where the screen kind changed.
 	Enter bool
@@ -159,7 +172,12 @@ func SelectScreen(view SeatView) ScreenKind {
 		return ScreenCombat
 	case "conversation":
 		return ScreenConversation
-	case "opening", "resolution", "hook_event", "cliffhanger":
+	case "resolution":
+		// INT-009/PHONE-033: resolution is the outcome beat for the check
+		// that just ran (the d20 face, total, and Success/Failure banner),
+		// so it stays on the dice screen instead of the generic sheet.
+		return ScreenDice
+	case "opening", "hook_event", "cliffhanger":
 		return ScreenSheet
 	case "end":
 		return ScreenEnd

@@ -64,16 +64,16 @@ type StatValue struct {
 }
 
 // FrameTabs returns the stable five-tab order used by every phone screen.
-func FrameTabs(active PhoneTabID, mode PhoneMode) []PhoneTab {
+func FrameTabs(locale string, active PhoneTabID, mode PhoneMode) []PhoneTab {
 	if active == "" {
 		active = PhoneTabPlay
 	}
 	return []PhoneTab{
-		{ID: PhoneTabCharacter, Label: "Character", Icon: "♙", Active: active == PhoneTabCharacter},
-		{ID: PhoneTabJournal, Label: "Journal", Icon: "▤", Active: active == PhoneTabJournal},
-		{ID: PhoneTabPlay, Label: "Play", Icon: modeIcon(mode), Active: active == PhoneTabPlay, Raised: true},
-		{ID: PhoneTabMap, Label: "Map", Icon: "⌖", Active: active == PhoneTabMap},
-		{ID: PhoneTabMenu, Label: "Menu", Icon: "☰", Active: active == PhoneTabMenu},
+		{ID: PhoneTabCharacter, Label: T(locale, "tabs.character", nil), Icon: "♙", Active: active == PhoneTabCharacter},
+		{ID: PhoneTabJournal, Label: T(locale, "tabs.journal", nil), Icon: "▤", Active: active == PhoneTabJournal},
+		{ID: PhoneTabPlay, Label: T(locale, "tabs.play", nil), Icon: modeIcon(mode), Active: active == PhoneTabPlay, Raised: true},
+		{ID: PhoneTabMap, Label: T(locale, "tabs.map", nil), Icon: "⌖", Active: active == PhoneTabMap},
+		{ID: PhoneTabMenu, Label: T(locale, "tabs.menu", nil), Icon: "☰", Active: active == PhoneTabMenu},
 	}
 }
 

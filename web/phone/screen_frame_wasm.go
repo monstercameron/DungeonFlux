@@ -10,10 +10,13 @@ import (
 	"github.com/monstercameron/GoWebComponents/v6/ui"
 )
 
-// PhoneFrame renders the shared header, status, content region, and bottom
-// action affordance around a phone screen. Callers can use it when composing
-// a screen in the shell without duplicating accessibility or theme tokens.
-func PhoneFrame(model FrameModel, content ui.Node, action ui.Node) router.Component {
+// PhoneFrame renders the shared header, turn banner, status, content region,
+// and bottom action affordance around a phone screen. tabBar is the fully
+// built bottom navigation (with its tap handlers already attached by the
+// caller, which alone owns the stable hook state a tab switch needs).
+// Callers can use it when composing a screen in the shell without
+// duplicating accessibility or theme tokens.
+func PhoneFrame(model FrameModel, content ui.Node, action ui.Node, tabBar ui.Node) router.Component {
 	return func(_ router.Attrs) *router.Element {
 		theme := DefaultPhoneTheme()
 		status := ConnectionLabel(model.Locale, model.Connection)
@@ -23,13 +26,42 @@ func PhoneFrame(model FrameModel, content ui.Node, action ui.Node) router.Compon
 		}
 		header := phoneFrameHeader(model, statusClass, status)
 		body := html.Section(html.Props{Class: "df-phone-frame-content", Role: "region", Aria: map[string]string{"label": model.Title}, Style: map[string]string{"flex": "1 1 auto", "min-height": "0", "overflow": "auto", "padding": "12px 14px 18px"}}, content)
-		footer := html.Footer(html.Props{Class: "df-phone-action", Style: map[string]string{"min-height": theme.TouchTarget}}, action, phoneTabBar(model))
+		footer := html.Footer(html.Props{Class: "df-phone-action", Style: map[string]string{"min-height": theme.TouchTarget}}, action, tabBar)
 		class := "df-phone df-phone-frame"
 		if model.Enter {
 			class += " df-phone-enter df-phone-enter-" + string(model.Screen)
 		}
-		return html.Main(html.Props{Class: class, Style: phoneFrameStyle(theme)}, phoneFinishStyle(), header, body, footer)
+		children := []ui.Node{phoneFinishStyle(), header}
+		if banner := turnBanner(model, theme); banner != nil {
+			children = append(children, banner)
+		}
+		children = append(children, body, footer)
+		return html.Main(html.Props{Class: class, Style: phoneFrameStyle(theme)}, children...)
 	}
+}
+
+// turnBanner renders the persistent whose-turn label directly under the
+// header on every screen where a turn is relevant, so the acting player and
+// the waiting player never have to guess who currently has the floor.
+func turnBanner(model FrameModel, theme PhoneTheme) ui.Node {
+	label := strings.TrimSpace(model.TurnLabel)
+	if label == "" {
+		return nil
+	}
+	style := map[string]string{
+		"flex": "0 0 auto", "display": "flex", "align-items": "center", "justify-content": "center", "gap": "8px",
+		"min-height": "34px", "padding": "6px 14px", "font-family": theme.Sans, "font-size": "13px", "font-weight": "600",
+		"letter-spacing": ".01em", "text-align": "center",
+	}
+	if model.TurnYours {
+		style["color"] = theme.InkDeep
+		style["background"] = "linear-gradient(180deg, " + theme.GoldBright + ", " + theme.Gold + ")"
+	} else {
+		style["color"] = theme.Muted
+		style["background"] = "rgba(23,26,35,.92)"
+		style["border-bottom"] = "1px solid rgba(168,159,140,.24)"
+	}
+	return html.Div(html.Props{Class: "df-phone-turn-banner", Role: "status", Aria: map[string]string{"live": "polite"}, Style: style}, html.Text(label))
 }
 
 func phoneFrameStyle(theme PhoneTheme) map[string]string {
@@ -56,9 +88,13 @@ func phoneFrameHeader(model FrameModel, statusClass, status string) ui.Node {
 	return html.Header(html.Props{Class: "df-phone-header", Style: map[string]string{"height": theme.HeaderHeight, "box-sizing": "border-box", "flex": "0 0 " + theme.HeaderHeight, "display": "flex", "align-items": "center", "justify-content": "space-between", "gap": "10px", "padding": "8px 16px", "border-bottom": "1px solid rgba(217,164,65,.55)", "background": "linear-gradient(180deg, rgba(24,28,37,.98), rgba(11,15,22,.98))"}}, html.Div(html.Props{Class: "df-phone-brand", Style: map[string]string{"min-width": "0"}}, html.Div(html.Props{Style: map[string]string{"font-family": theme.Serif, "font-size": "26px", "font-weight": "600", "letter-spacing": "-.035em", "line-height": "1"}}, html.Span(html.Props{Style: map[string]string{"color": theme.GoldBright}}, html.Text(T(model.Locale, "phone.brand.dungeon", nil))), html.Span(html.Props{Style: map[string]string{"color": "#8fc6e8"}}, html.Text(T(model.Locale, "phone.brand.flux", nil)))), html.Span(html.Props{Class: "df-phone-seat", Style: map[string]string{"display": "none"}}, html.Text(model.DisplayName))), html.Div(html.Props{Style: map[string]string{"min-width": "0", "text-align": "right"}}, html.Div(html.Props{Style: map[string]string{"overflow": "hidden", "color": theme.GoldBright, "font-family": theme.Serif, "font-size": "15px", "text-overflow": "ellipsis", "white-space": "nowrap"}}, html.Text(location)), html.Div(html.Props{Style: map[string]string{"color": theme.Muted, "font-family": theme.Serif, "font-size": "12px"}}, html.Text(act+" · "+scene)), html.Span(html.Props{Class: statusClass, Role: "status", Aria: map[string]string{"live": "polite"}, Style: map[string]string{"display": "none"}}, html.Text(status))))
 }
 
-func phoneTabBar(model FrameModel) ui.Node {
+// phoneTabBar renders the five-tab bottom navigation. taps supplies the
+// click handler for each tab, built once by the caller that owns the stable
+// hook state (mount_wasm.go's phoneView), since a tab switch is client-side
+// navigation independent of the current server phase.
+func phoneTabBar(model FrameModel, taps map[PhoneTabID]ui.Handler) ui.Node {
 	theme := DefaultPhoneTheme()
-	tabs := FrameTabs(model.ActiveTab, model.Mode)
+	tabs := FrameTabs(model.Locale, model.ActiveTab, model.Mode)
 	items := make([]ui.Node, 0, len(tabs))
 	for _, tab := range tabs {
 		style := map[string]string{"min-width": "0", "min-height": theme.TouchTarget, "position": "relative", "display": "grid", "place-items": "center", "gap": "2px", "padding": "6px 2px 4px", "border": "0", "background": "transparent", "color": theme.Muted, "font-family": theme.Sans, "font-size": "11px", "line-height": "1", "touch-action": "manipulation"}
@@ -73,7 +109,7 @@ func phoneTabBar(model FrameModel) ui.Node {
 			style["background"] = "linear-gradient(180deg, rgba(57,43,24,.98), rgba(22,20,18,.98))"
 			style["box-shadow"] = "0 0 18px rgba(217,164,65,.24), inset 0 0 12px rgba(217,164,65,.12)"
 		}
-		items = append(items, html.Button(html.Props{Type: "button", Class: "df-phone-tab df-phone-tab-" + string(tab.ID), Aria: map[string]string{"current": currentTabValue(tab.Active), "label": tab.Label}, Style: style}, html.Span(html.Props{Style: map[string]string{"font-family": theme.Serif, "font-size": "24px", "line-height": "1"}}, html.Text(tab.Icon)), html.Span(html.Props{}, html.Text(tab.Label))))
+		items = append(items, html.Button(html.Props{Type: "button", Class: "df-phone-tab df-phone-tab-" + string(tab.ID), OnClick: taps[tab.ID], Aria: map[string]string{"current": currentTabValue(tab.Active), "label": tab.Label}, Style: style}, html.Span(html.Props{Style: map[string]string{"font-family": theme.Serif, "font-size": "24px", "line-height": "1"}}, html.Text(tab.Icon)), html.Span(html.Props{}, html.Text(tab.Label))))
 	}
 	return html.Nav(html.Props{Class: "df-phone-tabs", Aria: map[string]string{"label": "Phone navigation"}, Style: map[string]string{"height": theme.TabBarHeight, "box-sizing": "border-box", "flex": "0 0 " + theme.TabBarHeight, "display": "grid", "grid-template-columns": "repeat(5, minmax(0, 1fr))", "align-items": "end", "gap": "4px", "padding": "8px 10px calc(6px + env(safe-area-inset-bottom))", "border-top": "1px solid rgba(168,159,140,.26)", "background": "rgba(11,15,22,.98)"}}, items...)
 }

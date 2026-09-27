@@ -232,7 +232,17 @@ func buildStats(build rules.Build) *domain.BuildStats {
 		SkillProficiencies: cloneStringMap(build.SkillProficiencies),
 		HP:                 build.HP, MaxHP: build.MaxHP, AC: build.AC,
 		AttackName: build.Attack.Name, AttackDice: build.Attack.Dice, AttackDamageType: build.Attack.DamageType, AttackBonus: build.AttackBonus,
+		Equipment: equipmentItems(build.Class),
 	}
+}
+
+func equipmentItems(class rules.Class) []domain.EquipmentItem {
+	items := rules.Equipment(class)
+	views := make([]domain.EquipmentItem, 0, len(items))
+	for _, item := range items {
+		views = append(views, domain.EquipmentItem{Name: item.Name, Description: item.Description, Slot: item.Slot, Worn: item.Worn})
+	}
+	return views
 }
 
 func cloneStringMap(values map[string]string) map[string]string {

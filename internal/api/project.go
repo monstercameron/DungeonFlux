@@ -176,10 +176,14 @@ func projectLobby(lobby LobbyProjection) *df.Lobby {
 
 func projectPhone(view domain.View, seat domain.SeatID) *df.PhoneView {
 	out := &df.PhoneView{Ptt: &df.PTT{State: df.PTTState_PTT_STATE_IDLE}, Narration: projectNarration(view.Scene)}
+	out.Seats = projectLobbySeats(view.Seats)
+	out.SceneImageUrl = view.Scene.BackgroundURL
 	for _, item := range view.Seats {
 		if item.Seat != seat {
 			continue
 		}
+		out.PlayerNumber = int32(item.PlayerNumber)
+		out.PlayerName = seatDisplayName(item)
 		out.Character = projectCharacter(item.Character)
 		if out.Character != nil {
 			out.Character.Build = projectCharacterBuild(item.Character, item.Build)
@@ -193,8 +197,26 @@ func projectPhone(view domain.View, seat domain.SeatID) *df.PhoneView {
 	if view.Combat != nil {
 		out.Combat = projectPhoneCombat(*view.Combat)
 		out.Combat = projectPhoneCombatMap(out.Combat, view, seat)
+		out.TurnOrder = projectTurnOrder(view.Combat.TurnOrder)
+	}
+	if view.Dice != nil {
+		// INT-009: the phone needs the same check/attack roll the TV shows
+		// (modifier, DC, kept face, and outcome), not just the move preview.
+		out.Dice = projectDice(*view.Dice)
 	}
 	return out
+}
+
+// seatDisplayName returns the name a player has chosen for their seat,
+// falling back to the rolled character's name when Join set no name.
+func seatDisplayName(seat domain.SeatView) string {
+	if name := strings.TrimSpace(seat.PlayerName); name != "" {
+		return name
+	}
+	if seat.Character != nil && strings.TrimSpace(seat.Character.Name) != "" {
+		return seat.Character.Name
+	}
+	return ""
 }
 
 func projectNarration(scene domain.SceneView) *df.Narration {
@@ -256,7 +278,20 @@ func projectCharacterBuild(character *domain.Character, card *domain.BuildCard) 
 		build.SkillProfs[skill] = level
 	}
 	build.Hp, build.HpMax, build.Ac = int32(stats.HP), int32(stats.MaxHP), int32(stats.AC)
+	build.AttackName, build.AttackDice, build.AttackDamageType, build.AttackBonus = stats.AttackName, stats.AttackDice, stats.AttackDamageType, int32(stats.AttackBonus)
+	build.Equipment = projectEquipment(stats.Equipment)
 	return build
+}
+
+func projectEquipment(items []domain.EquipmentItem) []*df.EquipmentItem {
+	if len(items) == 0 {
+		return nil
+	}
+	out := make([]*df.EquipmentItem, 0, len(items))
+	for _, item := range items {
+		out = append(out, &df.EquipmentItem{Name: item.Name, Description: item.Description, Slot: item.Slot, Worn: item.Worn})
+	}
+	return out
 }
 
 func characterLocked(moves []domain.MoveView) bool {

@@ -44,6 +44,7 @@ func Mount(client PhoneClient, seatToken, locale string) router.Component {
 			sheet:    NewSheetModel(), moves: NewMovesModel(client, seatToken),
 			typed: NewTypedInputModel(client, seatToken), dice: NewDiceModel(client, seatToken),
 			combat: NewCombatModel(client, seatToken), ptt: NewPTTModel(client, seatToken, 0), end: NewEndModel(), audio: newPhoneAudio(client, seatToken),
+			journal: NewJournalLog(),
 		}
 		return ui.CreateElement(phoneView, props)
 	}
@@ -61,6 +62,7 @@ type phoneViewProps struct {
 	ptt       *PTTModel
 	end       *EndModel
 	audio     *PhoneAudio
+	journal   *JournalLog
 }
 
 func phoneError(locale, message string) ui.Node {
@@ -72,6 +74,7 @@ func phoneError(locale, message string) ui.Node {
 
 func phoneView(props phoneViewProps) ui.Node {
 	view := ui.UseState(SeatView{})
+	activeTab := ui.UseState(PhoneTabPlay)
 	ui.UseEffect(func() func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		updates := props.client.Watch(ctx, &df.WatchRequest{SeatToken: props.seatToken})
@@ -86,16 +89,16 @@ func phoneView(props phoneViewProps) ui.Node {
 				props.dice.ApplyScreenState(result.State)
 				props.combat.ApplyScreenState(result.State)
 				props.end.ApplyScreenState(result.State)
+				if narration := result.State.GetPhone().GetNarration(); narration.GetDone() {
+					props.journal.Record(narration.GetLineId(), narration.GetSpeaker(), narration.GetTextSoFar())
+				}
 				view.Set(seatViewFromState(result.State))
 			}
 		}()
 		return cancel
 	}, props.client, props.seatToken)
 	state := view.Get()
-	locale := state.Phone.GetLocale()
-	if locale == "" {
-		locale = "en"
-	}
+	locale := phoneLocale(state.Phone)
 	props.typed.SetLocale(locale)
 	ui.UseEffect(func() func() {
 		return func() {
@@ -105,33 +108,78 @@ func phoneView(props phoneViewProps) ui.Node {
 		}
 	}, props.audio)
 	snapshotVersion = state.Version
-	screen := renderPhoneScreen(SelectScreen(state), props, locale)
+	kind := SelectScreen(state)
+	// A tab switch is a client-only navigation choice, independent of the
+	// server phase. It resets to Play whenever the underlying phase screen
+	// changes, so the active player is never stuck looking at the Journal
+	// while their own turn moves on.
+	ui.UseEffect(func() func() { activeTab.Set(PhoneTabPlay); return nil }, kind)
+	selectCharacter := ui.UseEvent(func() { activeTab.Set(PhoneTabCharacter) })
+	selectJournal := ui.UseEvent(func() { activeTab.Set(PhoneTabJournal) })
+	selectPlay := ui.UseEvent(func() { activeTab.Set(PhoneTabPlay) })
+	selectMap := ui.UseEvent(func() { activeTab.Set(PhoneTabMap) })
+	selectMenu := ui.UseEvent(func() { activeTab.Set(PhoneTabMenu) })
+	taps := map[PhoneTabID]ui.Handler{
+		PhoneTabCharacter: selectCharacter, PhoneTabJournal: selectJournal, PhoneTabPlay: selectPlay,
+		PhoneTabMap: selectMap, PhoneTabMenu: selectMenu,
+	}
+	screen := renderPhoneScreen(kind, props, locale, state, activeTab.Get(), taps, selectPlay)
 	if bubble := narrationBubble(state.Narration); bubble != nil {
 		return html.Div(html.Props{Class: "df-phone-read-along-host"}, screen, bubble)
 	}
 	return screen
 }
 
-func renderPhoneScreen(kind ScreenKind, props phoneViewProps, locale string) ui.Node {
+func renderPhoneScreen(kind ScreenKind, props phoneViewProps, locale string, view SeatView, activeTab PhoneTabID, taps map[PhoneTabID]ui.Handler, selectPlay ui.Handler) ui.Node {
 	frame := NewFrameModel("Player", locale)
 	frame.Screen = kind
 	frame.Mode = modeForScreen(kind)
 	frame.Connection = ConnectionOnline
+	frame.ActiveTab = activeTab
+	status := ComputeTurnStatus(view)
+	frame.TurnLabel = TurnBannerText(locale, status)
+	frame.TurnYours = status.Known && status.Yours
+	tabBar := phoneTabBar(frame, taps)
+	if activeTab != PhoneTabPlay {
+		content := overlayScreen(activeTab, props, view, locale, selectPlay)
+		return frameScreen(frame, content, props.audio, locale, tabBar)
+	}
 	switch kind {
 	case ScreenCreate:
-		return frameScreen(frame, ui.CreateElement(CreationScreen(props.creation)), props.audio, locale)
+		return frameScreen(frame, ui.CreateElement(CreationScreen(props.creation)), props.audio, locale, tabBar)
 	case ScreenDice:
-		return frameScreen(frame, ui.CreateElement(DiceScreen(props.dice)), props.audio, locale)
+		return frameScreen(frame, ui.CreateElement(DiceScreen(props.dice)), props.audio, locale, tabBar)
 	case ScreenCombat:
-		return frameScreen(frame, ui.CreateElement(func() ui.Node { return combatScreen(props.combat, locale) }), props.audio, locale)
+		return frameScreen(frame, ui.CreateElement(func() ui.Node { return combatScreen(props.combat, locale) }), props.audio, locale, tabBar)
 	case ScreenEnd:
-		return frameScreen(frame, ui.CreateElement(EndScreen(props.end)), props.audio, locale)
+		return frameScreen(frame, ui.CreateElement(EndScreen(props.end)), props.audio, locale, tabBar)
 	case ScreenConversation:
-		return frameScreen(frame, ui.CreateElement(func() ui.Node { return conversationScreen(props, locale) }), props.audio, locale)
+		return frameScreen(frame, ui.CreateElement(func() ui.Node { return conversationScreen(props, locale) }), props.audio, locale, tabBar)
 	case ScreenMoves:
-		return frameScreen(frame, ui.CreateElement(MovesScreen(props.moves)), props.audio, locale)
+		return frameScreen(frame, ui.CreateElement(MovesScreen(props.moves)), props.audio, locale, tabBar)
+	case ScreenWaiting:
+		return frameScreen(frame, ui.CreateElement(WaitingScreen(NewWaitingModel(view), locale, props.moves)), props.audio, locale, tabBar)
 	default:
-		return frameScreen(frame, ui.CreateElement(SheetScreen(props.sheet)), props.audio, locale)
+		return frameScreen(frame, ui.CreateElement(SheetScreen(props.sheet)), props.audio, locale, tabBar)
+	}
+}
+
+// overlayScreen renders the Character, Journal, Map, or Menu tab in place of
+// the current phase's Play content. The Character tab reuses the same
+// server-authoritative sheet (with the real inventory) shown by the Play
+// tab in non-combat phases; only the tab bar's Play state actually differs.
+func overlayScreen(tab PhoneTabID, props phoneViewProps, view SeatView, locale string, selectPlay ui.Handler) ui.Node {
+	switch tab {
+	case PhoneTabCharacter:
+		return ui.CreateElement(SheetScreen(props.sheet))
+	case PhoneTabJournal:
+		return ui.CreateElement(func() ui.Node { return journalScreen(props.journal, locale) })
+	case PhoneTabMap:
+		return ui.CreateElement(func() ui.Node { return mapScreen(view, locale, selectPlay) })
+	case PhoneTabMenu:
+		return ui.CreateElement(func() ui.Node { return menuScreen(props.audio, locale) })
+	default:
+		return ui.CreateElement(SheetScreen(props.sheet))
 	}
 }
 
@@ -151,7 +199,7 @@ var phoneEnter struct {
 	key  string
 }
 
-func frameScreen(model FrameModel, content ui.Node, audio *PhoneAudio, locale string) ui.Node {
+func frameScreen(model FrameModel, content ui.Node, audio *PhoneAudio, locale string, tabBar ui.Node) ui.Node {
 	key := string(model.Screen) + ":" + strconv.FormatUint(artRevision.Load(), 10)
 	if model.Screen != ScreenConversation {
 		key += ":" + strconv.FormatUint(snapshotVersion, 10)
@@ -160,7 +208,7 @@ func frameScreen(model FrameModel, content ui.Node, audio *PhoneAudio, locale st
 		phoneEnter.kind, phoneEnter.key = model.Screen, key
 	}
 	model.Enter = key == phoneEnter.key
-	return html.WithKey(ui.CreateElement(PhoneFrame(model, content, audioControls(audio, locale))), key)
+	return html.WithKey(ui.CreateElement(PhoneFrame(model, content, audioControls(audio, locale), tabBar)), key)
 }
 
 func conversationScreen(props phoneViewProps, locale string) ui.Node {
