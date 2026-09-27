@@ -93,7 +93,7 @@ class TokenController {
       return;
     }
     entry.sprite.setClips?.(token);
-    if (newSeq && ["attack","hit","fall"].includes(String(token.anim))) entry.sprite.play?.(token.anim);
+    if (newSeq && ["idle","walk","attack","hit","fall"].includes(String(token.anim))) entry.sprite.play?.(token.anim);
   }
   snap(entry) {
     place(entry,cellPosition(this.grid,entry.token.cell));
@@ -107,7 +107,14 @@ class TokenController {
     while (entry.queue.length && entry.elapsed + 1e-9 >= pace) {
       place(entry,entry.queue.shift()); entry.start=entry.position.slice(); entry.elapsed=Math.max(0,entry.elapsed-pace); moved = true;
     }
-    if (!entry.queue.length) { entry.elapsed=0; return moved; }
+    if (!entry.queue.length) {
+      entry.elapsed=0;
+      if (entry.token.anim === "walk") {
+        entry.token={...entry.token,anim:"idle"};
+        entry.sprite.play?.("idle");
+      }
+      return moved;
+    }
     const t=entry.elapsed/pace, end=entry.queue[0];
     const position=entry.start.map((value,i)=>value+(end[i]-value)*t);
     const size=this.grid.cell_m ?? 1.524, origin=this.grid.origin ?? [0,0];

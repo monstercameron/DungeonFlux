@@ -234,12 +234,13 @@ export function hasClips(token) {
   return Boolean(token?.clips && Object.values(token.clips).some(value => typeof value === "string" && value));
 }
 
-/** clipFor picks the loop for an animation: its own, else the hit loop held
- * for fall (PCs have no fall loop), else idle. `hold` keeps the last frame. */
+/** clipFor picks the loop for an animation: walk loops while a token moves,
+ * attack and hit are one-shots, and fall holds the last frame. */
 export function clipFor(token, anim = token?.anim) {
   const clips = token?.clips ?? {};
   const name = String(anim || "idle");
   if (name === "fall") return { url: clips.fall || clips.hit || clips.idle || "", loop: false, hold: true };
+  if (name === "walk") return { url: clips.walk || clips.idle || "", loop: true, hold: false };
   if (name === "idle" || name === "flee" || !clips[name]) return { url: clips.idle || "", loop: true, hold: false };
   return { url: clips[name], loop: false, hold: false };
 }
