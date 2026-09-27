@@ -18,6 +18,10 @@ func SceneComponent(view *dungeonfluxv1.DMView, phase ...string) router.Componen
 	if len(phase) > 0 {
 		composition = sceneComposition(phase[0])
 	}
+	isHook := len(phase) > 0 && transitionPhase(phase[0]) == "hook_event"
+	if isHook && ArtURL("stranger") != "" {
+		model.Layers = nil
+	}
 	locale := localeOrDefault(view.GetLocale())
 	return func(_ router.Attrs) *router.Element {
 		children := []ui.Node{
@@ -30,9 +34,9 @@ func SceneComponent(view *dungeonfluxv1.DMView, phase ...string) router.Componen
 		if composition.opening {
 			children = append(children, sceneTitle(model), sceneProgressRail(model, locale))
 		}
-		if len(phase) > 0 && transitionPhase(phase[0]) == "hook_event" {
+		if isHook {
 			if portrait := ArtURL("stranger"); portrait != "" {
-				children = append(children, html.Img(html.Props{Src: portrait, Alt: T(locale, "dm.stranger_alt", nil), Style: map[string]string{"position": "absolute", "right": "340px", "top": "145px", "height": "590px", "max-width": "650px", "object-fit": "contain", "border-radius": "12px", "box-shadow": "0 16px 60px #05090e", "z-index": "3"}}))
+				children = append(children, html.Img(html.Props{Src: portrait, Alt: T(locale, "dm.stranger_alt", nil), Style: map[string]string{"position": "absolute", "right": "340px", "top": "145px", "height": "650px", "max-width": "650px", "object-fit": "contain", "mask-image": "radial-gradient(ellipse at 50% 45%,#000 35%,transparent 74%)", "z-index": "3"}}))
 			}
 		}
 		if composition.caption {
