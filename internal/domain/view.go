@@ -168,25 +168,26 @@ type CombatView struct {
 	Shake      ShakeView
 }
 type View struct {
-	Version     uint64
-	At          time.Duration
-	Path        vocab.StateID
-	Paused      bool
-	Spotlight   SeatID
-	RunMode     vocab.RunMode
-	NextD20     int
-	Locale      string
-	Notice      LocalizedMessage
-	Seats       []SeatView
-	Scene       SceneView
-	Dice        *DiceView
-	Battlefield *BattlefieldView
-	Combat      *CombatView
-	KillCam     KillCamView
-	Preload     []string
-	Callout     string
-	Music       MusicView
-	Slots       []SlotView
+	Version           uint64
+	At                time.Duration
+	Path              vocab.StateID
+	Paused            bool
+	TurnTimersEnabled bool
+	Spotlight         SeatID
+	RunMode           vocab.RunMode
+	NextD20           int
+	Locale            string
+	Notice            LocalizedMessage
+	Seats             []SeatView
+	Scene             SceneView
+	Dice              *DiceView
+	Battlefield       *BattlefieldView
+	Combat            *CombatView
+	KillCam           KillCamView
+	Preload           []string
+	Callout           string
+	Music             MusicView
+	Slots             []SlotView
 }
 
 func (v View) DeepCopy() View {

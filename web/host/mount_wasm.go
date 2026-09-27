@@ -59,7 +59,6 @@ func hostView(props hostViewProps) ui.Node {
 	state := ui.UseState(hostSnapshot{Status: ConnectingLine("en"), Locale: "en", RoomLocale: "en", Selector: NewRoomLocaleSelector("en")})
 	status := ui.UseState(ReadyLine("en"))
 	safeMode := ui.UseState(false)
-	timersOn := ui.UseState(false)
 	splatOn := ui.UseState(true)
 	query := router.UseQuery()
 	token := query.Get("t")
@@ -104,9 +103,9 @@ func hostView(props hostViewProps) ui.Node {
 			}))
 			continue
 		}
-		button := ui.CreateElement(hostActionButton, hostActionButtonProps{Action: item, Locale: locale, Phase: snapshot.Phase, Paused: snapshot.Paused, Click: func() {
-			on := toggleState(snapshot, item, safeMode.Get(), timersOn.Get(), splatOn.Get())
-			setToggleState(item, on, safeMode.Set, timersOn.Set, splatOn.Set)
+		button := ui.CreateElement(hostActionButton, hostActionButtonProps{Action: item, Locale: locale, Phase: snapshot.Phase, Paused: snapshot.Paused, TimersOn: snapshot.TimersOn, Connected: snapshot.Connected, Click: func() {
+			on := toggleState(snapshot, item, safeMode.Get(), snapshot.TimersOn, splatOn.Get())
+			setToggleState(item, on, safeMode.Set, splatOn.Set)
 			sendHostCommand(props.Client, token, locale, item, on, status.Update)
 		}})
 		switch {
@@ -124,7 +123,7 @@ func hostView(props hostViewProps) ui.Node {
 			html.Div(html.Props{Class: "df-host-hero-title"}, html.Div(html.Props{Class: "df-host-kicker"}, html.Text(HostKicker(locale))), html.H1(html.Props{}, html.Text(HostTitle(locale)))),
 			html.P(html.Props{Class: "df-host-status", Aria: map[string]string{"live": "polite"}}, html.Span(html.Props{Class: "df-host-status-dot"}), html.Text(snapshot.Status+" · "+status.Get())),
 		),
-		ui.CreateElement(statusStrip, statusStripProps{Snapshot: snapshot, TimersOn: timersOn.Get(), Locale: locale}),
+		ui.CreateElement(statusStrip, statusStripProps{Snapshot: snapshot, TimersOn: snapshot.TimersOn, Locale: locale}),
 		html.Section(html.Props{Class: "df-host-controls"},
 			html.Div(html.Props{Class: "df-host-section-head"}, html.H2(html.Props{}, html.Text(ControlsHeading(locale))), html.Small(html.Props{}, html.Text(ControlsHint(locale)))),
 			html.Div(html.Props{Class: "df-host-actions df-host-actions-primary"}, primary...),
@@ -331,11 +330,13 @@ func roomLocaleSection(client *hostClient, token string, snapshot hostSnapshot, 
 }
 
 type hostActionButtonProps struct {
-	Action hostAction
-	Locale string
-	Phase  string
-	Paused bool
-	Click  func()
+	Action    hostAction
+	Locale    string
+	Phase     string
+	Paused    bool
+	TimersOn  bool
+	Connected bool
+	Click     func()
 }
 
 // hostActionButton renders one stage-control button, styled and enabled by
@@ -371,7 +372,16 @@ func hostActionButton(props hostActionButtonProps) ui.Node {
 			class += " df-host-action-accent"
 		}
 	}
-	return html.Button(html.Props{Type: "button", Class: class, Disabled: disabled, OnClick: click}, html.Text(HostActionLabel(props.Locale, props.Action)))
+	aria := map[string]string{}
+	if props.Action.Command == v1.HostCommandKind_HOST_COMMAND_KIND_TIMERS_OFF {
+		aria["pressed"] = "false"
+		disabled = !props.Connected
+		if props.TimersOn {
+			aria["pressed"] = "true"
+			class += " df-host-action-primary"
+		}
+	}
+	return html.Button(html.Props{Type: "button", Class: class, Aria: aria, Disabled: disabled, OnClick: click}, html.Text(HostActionLabel(props.Locale, props.Action)))
 }
 
 const hostStyles = `
@@ -467,12 +477,10 @@ func toggleState(snapshot hostSnapshot, action hostAction, safe, timers, splat b
 	}
 }
 
-func setToggleState(action hostAction, on bool, safe, timers, splat func(bool)) {
+func setToggleState(action hostAction, on bool, safe, splat func(bool)) {
 	switch action.Command {
 	case v1.HostCommandKind_HOST_COMMAND_KIND_SAFE_MODE:
 		safe(on)
-	case v1.HostCommandKind_HOST_COMMAND_KIND_TIMERS_OFF:
-		timers(on)
 	case v1.HostCommandKind_HOST_COMMAND_KIND_SPLAT_OFF:
 		splat(on)
 	}

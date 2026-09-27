@@ -76,6 +76,7 @@ func (s *State) view() domain.View {
 	view.Path = s.path
 	view.Paused = s.paused
 	view.NextD20 = s.nextD20
+	view.TurnTimersEnabled = s.TurnTimersEnabled()
 	view.Seats = mergeSeatViews(view.Seats, s.seats)
 	view.Scene.Narration = s.narrationText
 	view.Scene.NarrationSpeaker = s.narrationSpeaker

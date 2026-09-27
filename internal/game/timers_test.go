@@ -45,3 +45,30 @@ func countCancelTimers(effects []domain.Effect) int {
 	}
 	return count
 }
+
+func TestState_ViewReportsAuthoritativeTimerPolicy(t *testing.T) {
+	for _, initial := range []bool{false, true} {
+		name := "initially off"
+		if initial {
+			name = "initially on"
+		}
+		t.Run(name, func(t *testing.T) {
+			state := New(domain.OneShot{}, []byte("policy-view"), WithTurnTimers(initial))
+			if state.View().TurnTimersEnabled != initial {
+				t.Fatal("initial policy not projected")
+			}
+			for _, tc := range []struct {
+				cmd  vocab.HostCmd
+				want bool
+			}{
+				{vocab.HostTimersOff, false}, {vocab.HostCmd("TIMERS_ON"), true},
+				{vocab.HostTimersOff, false}, {vocab.HostReset, initial},
+			} {
+				out := state.Step(domain.Envelope{Event: domain.HostCmd{Cmd: tc.cmd}, Reply: make(chan domain.Ack, 1)})
+				if out.Ack == nil || !out.Ack.Accepted || state.View().TurnTimersEnabled != tc.want {
+					t.Fatalf("%s: policy=%v want=%v ack=%v", tc.cmd, state.View().TurnTimersEnabled, tc.want, out.Ack)
+				}
+			}
+		})
+	}
+}

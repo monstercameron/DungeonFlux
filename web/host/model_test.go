@@ -164,3 +164,34 @@ func containsLine(lines []string, want string) bool {
 	}
 	return false
 }
+
+func TestTimerToggle_UsesAuthoritativeSnapshotAndExplicitCommand(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		name := "enable"
+		if enabled {
+			name = "disable"
+		}
+		t.Run(name, func(t *testing.T) {
+			state := &df.ScreenState{View: &df.ScreenState_Host{Host: &df.HostView{TurnTimersEnabled: enabled}}}
+			snapshot := snapshotFromState(state)
+			if snapshot.TimersOn != enabled {
+				t.Fatal("snapshot ignored authoritative timer policy")
+			}
+			command := commandForToggle(hostAction{Command: df.HostCommandKind_HOST_COMMAND_KIND_TIMERS_OFF}, "test-host", !snapshot.TimersOn)
+			want := df.HostCommandKind_HOST_COMMAND_KIND_TIMERS_ON
+			if enabled {
+				want = df.HostCommandKind_HOST_COMMAND_KIND_TIMERS_OFF
+			}
+			if command.Command != want {
+				t.Fatalf("command=%v want=%v", command.Command, want)
+			}
+			if snapshotFromState(state).TimersOn != enabled {
+				t.Fatal("unacknowledged command changed displayed policy")
+			}
+			state.GetHost().TurnTimersEnabled = !enabled
+			if snapshotFromState(state).TimersOn == enabled {
+				t.Fatal("fresh snapshot did not update policy")
+			}
+		})
+	}
+}

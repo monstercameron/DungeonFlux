@@ -140,6 +140,7 @@ func snapshotFromState(state *df.ScreenState) hostSnapshot {
 	snapshot.Paused = state.GetPaused()
 	if state.GetHost() != nil {
 		snapshot.View = state.GetHost()
+		snapshot.TimersOn = state.GetHost().GetTurnTimersEnabled()
 		snapshot.Locale = localeOrDefault(state.GetHost().GetLocale())
 		snapshot.RoomLocale = localeOrDefault(state.GetHost().GetRoomLocale())
 		snapshot.Selector = NewRoomLocaleSelector(snapshot.RoomLocale)
@@ -244,5 +245,8 @@ func runStatusLines(snapshot hostSnapshot) []string {
 func commandForToggle(action hostAction, token string, on bool) *df.HostCommand {
 	command := commandFor(action, token)
 	command.On = on
+	if action.Command == df.HostCommandKind_HOST_COMMAND_KIND_TIMERS_OFF && on {
+		command.Command = df.HostCommandKind_HOST_COMMAND_KIND_TIMERS_ON
+	}
 	return command
 }
