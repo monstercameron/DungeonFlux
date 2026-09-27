@@ -52,10 +52,14 @@ func baseView() *dungeonfluxv1.DMView {
 			{Id: "mother-vell", Url: "mother_vell", X: 68, Y: 49, Scale: 1},
 		},
 		BuildCards: []*dungeonfluxv1.BuildCard{
-			{PlayerNumber: 1, Name: "Mira", ClassName: "Rogue", PortraitUrl: "ui/class_rogue"},
-			{PlayerNumber: 2, Name: "Rook", ClassName: "Paladin", PortraitUrl: "ui/class_paladin"},
+			{PlayerNumber: 1, Name: "Mira", ClassName: "Rogue", PortraitUrl: "ui/class_rogue", Character: previewCharacter("Mira", "Rogue", 10, 14)},
+			{PlayerNumber: 2, Name: "Rook", ClassName: "Paladin", PortraitUrl: "ui/class_paladin", Character: previewCharacter("Rook", "Paladin", 12, 16)},
 		},
 	}
+}
+
+func previewCharacter(name, className string, hp, ac int32) *dungeonfluxv1.Character {
+	return &dungeonfluxv1.Character{Name: name, ClassName: className, Species: "elf", Gender: "female", Build: &dungeonfluxv1.CharacterBuild{Hp: hp, HpMax: hp, Ac: ac}}
 }
 
 func lobbyPreview() *dungeonfluxv1.ScreenState {

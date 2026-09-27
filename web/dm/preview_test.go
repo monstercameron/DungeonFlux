@@ -84,3 +84,14 @@ func TestPreview_LobbyAndEndCarryTheirDistinctData(t *testing.T) {
 		t.Fatalf("end fixture = %#v", end)
 	}
 }
+
+func TestPreview_ExplorationCarriesPartyHP(t *testing.T) {
+	fixture, ok := Preview("exploration")
+	if !ok {
+		t.Fatal("exploration fixture missing")
+	}
+	model := HUDModelFromState(fixture.State)
+	if len(model.Party) != 2 || !model.Party[0].HPKnown || model.Party[0].HP != 10 || model.Party[0].HPMax != 10 || !model.Party[1].HPKnown || model.Party[1].HP != 12 || model.Party[1].HPMax != 12 {
+		t.Fatalf("preview party HP = %#v", model.Party)
+	}
+}
