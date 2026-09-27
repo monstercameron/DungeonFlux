@@ -72,7 +72,7 @@ func parseControlOptions(args []string, verb string, stderr io.Writer) (options,
 	flags.SetOutput(stderr)
 	flags.StringVar(&opts.address, "addr", opts.address, "debug gRPC address")
 	flags.StringVar(&opts.room, "room", "", "room code")
-	flags.StringVar(&opts.token, "token", opts.token, "debug token")
+	bindTokenFlag(flags, &opts.token)
 	flags.BoolVar(&opts.pretty, "pretty", false, "indent JSON for people")
 	flags.BoolVar(&opts.dryRun, "dry-run", false, "print the event without posting it")
 	if err := flags.Parse(prefix); err != nil {

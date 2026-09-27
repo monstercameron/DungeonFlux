@@ -87,6 +87,12 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-dfctl-token-help">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-dfctl-token-help">Debug CLI help exposed the environment token as a flag default</a></h2>
+  <p>The competition-demo audit found that the read and control parsers registered the current debug credential as the default value of the token flag. Go's flag package includes nonempty defaults in usage output, so asking for help or passing an unknown option could print the credential. QA-001 replaces that binding with a value callback: authentication still inherits the environment value and accepts an explicit override, while usage only describes the option. Regression tests exercise help, invalid options, explicit-token help, and authentication precedence across all four CLI parser paths. No live credential is used by these tests.</p>
+</li>
+
 <li class="entry" data-kind="milestone" id="e-20260927-endcard-header-recap">
   <div class="entry-head"><time datetime="2026-09-27T00:05-04:00">Sep 27, 2026, 12:05 AM</time><span class="kind">Milestone</span><span class="who">ORCH</span></div>
   <h2 class="entry-title"><a href="#e-20260927-endcard-header-recap">The TV end card gets a header band, a party recap, and a quiet SRD footer — round 1's first fix lands</a></h2>

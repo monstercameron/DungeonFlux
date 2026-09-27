@@ -93,7 +93,7 @@ func parseOptions(args []string, stderr io.Writer) (options, string, error) {
 	flags.SetOutput(stderr)
 	flags.StringVar(&opts.address, "addr", opts.address, "debug gRPC address")
 	flags.StringVar(&opts.room, "room", "", "room code")
-	flags.StringVar(&opts.token, "token", opts.token, "debug token (defaults to DF_DEBUG_TOKEN)")
+	bindTokenFlag(flags, &opts.token)
 	flags.BoolVar(&opts.pretty, "pretty", false, "indent JSON for people")
 	if err := flags.Parse(args); err != nil {
 		return options{}, "", err

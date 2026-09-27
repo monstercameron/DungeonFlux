@@ -137,7 +137,7 @@ func parseReadOptions(args []string, verb string, stderr io.Writer) (options, re
 	flags.SetOutput(stderr)
 	flags.StringVar(&opts.address, "addr", opts.address, "debug gRPC address")
 	flags.StringVar(&opts.room, "room", "", "room code")
-	flags.StringVar(&opts.token, "token", opts.token, "debug token")
+	bindTokenFlag(flags, &opts.token)
 	flags.BoolVar(&opts.pretty, "pretty", false, "indent JSON for people")
 	if err := flags.Parse(prefix); err != nil {
 		return options{}, nil, err
