@@ -45,6 +45,24 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: completed todos record their commit hashes, full verification and per-todo hand-ins are saved under artifacts, and the developer's live-reload server remains available.
   status: done (this commit); hand-ins: artifacts/lanes/KILLCAM/handins.json; full gate: artifacts/test/ORCH/gate-20260927-040914.log
 
+- [x] KC-007 · Keep kill-cam playback synchronized after reconnect or resume
+  why: A buffered video can retain an old position while the authoritative combat timer advances, showing the wrong finishing beat after a reconnect.
+  lane: L-WEB-DM (GPT-6 subagent, developer-directed) · paths: `web/dm/killcam_view.go`, `web/dm/killcam_test.go`, `web/dm/killcam_wasm.go` · depends: KC-003
+  done when: playback seeks on pause/resume or meaningful drift, normal playback remains buffered, regression tests pass, and the DM lane gate is green.
+  status: done 2412be2; independently gated by ORCH
+
+- [x] KC-008 · Record independent GPT-6 kill-cam review and cache verification
+  why: The requested GPT-6 review needs a recorded hand-in and independently verified fixes while preserving the live demo.
+  lane: ORCH (Codex) · paths: `TODOS.md` · depends: KC-007, KC-009
+  done when: the review fix is independently gated, all four demo clips pass cache-only verification, and completion evidence is recorded under artifacts/test/KC-REVIEW.
+  status: done (this commit); evidence: artifacts/test/KC-REVIEW/handin.json; full gate: artifacts/test/ORCH/gate-20260927-041713.log
+
+- [x] KC-009 · Advance cached kill-cam offsets for reconnecting viewers
+  why: A reconnect receives the last event snapshot, whose video offset becomes stale while no engine event occurs during playback.
+  lane: L-API (Codex) · paths: `internal/api/watch.go`, `internal/api/watch_killcam.go`, `internal/api/watch_killcam_test.go` · depends: KC-002
+  done when: late subscribers receive elapsed playback offsets, paused clips remain frozen, completed clips cannot replay, fake-clock regression tests pass, and the API gate is green.
+  status: done 939dc25; independently reviewed by GPT-6 killcam_review
+
 ### Visual-review repair batch (developer-directed, 2026-09-27)
 The developer assigned Codex to create and implement this batch directly, without Luna or other subagents. These sequential claims take precedence over older overlapping web/integration claims for the repair scope only; existing unrelated work remains untouched. The baseline is ebcb4dc and artifacts/test/L-E2E/visual-20260927/report.html. Every implementation item gets its own green gate, named-path commit and hand-in; completion is recorded by PLAN-022 after a fresh-build browser review. No changes to the human server. The later BB-002 request explicitly authorizes live fal generation; all automated tests remain fake.
 
