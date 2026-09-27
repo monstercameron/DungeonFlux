@@ -306,6 +306,7 @@ const (
 	HostCommandKind_HOST_COMMAND_KIND_SPLAT_OFF   HostCommandKind = 10
 	HostCommandKind_HOST_COMMAND_KIND_ROOM_LOCALE HostCommandKind = 11
 	HostCommandKind_HOST_COMMAND_KIND_TIMERS_ON   HostCommandKind = 12
+	HostCommandKind_HOST_COMMAND_KIND_SPLAT_ON    HostCommandKind = 13
 )
 
 // Enum value maps for HostCommandKind.
@@ -324,6 +325,7 @@ var (
 		10: "HOST_COMMAND_KIND_SPLAT_OFF",
 		11: "HOST_COMMAND_KIND_ROOM_LOCALE",
 		12: "HOST_COMMAND_KIND_TIMERS_ON",
+		13: "HOST_COMMAND_KIND_SPLAT_ON",
 	}
 	HostCommandKind_value = map[string]int32{
 		"HOST_COMMAND_KIND_UNSPECIFIED": 0,
@@ -339,6 +341,7 @@ var (
 		"HOST_COMMAND_KIND_SPLAT_OFF":   10,
 		"HOST_COMMAND_KIND_ROOM_LOCALE": 11,
 		"HOST_COMMAND_KIND_TIMERS_ON":   12,
+		"HOST_COMMAND_KIND_SPLAT_ON":    13,
 	}
 )
 
@@ -4090,6 +4093,8 @@ type HostView struct {
 	Locale               string                 `protobuf:"bytes,8,opt,name=locale,proto3" json:"locale,omitempty"`
 	RoomLocale           string                 `protobuf:"bytes,9,opt,name=room_locale,json=roomLocale,proto3" json:"room_locale,omitempty"`
 	TurnTimersEnabled    bool                   `protobuf:"varint,10,opt,name=turn_timers_enabled,json=turnTimersEnabled,proto3" json:"turn_timers_enabled,omitempty"`
+	SplatEnabled         bool                   `protobuf:"varint,11,opt,name=splat_enabled,json=splatEnabled,proto3" json:"splat_enabled,omitempty"`
+	SplatAvailable       bool                   `protobuf:"varint,12,opt,name=splat_available,json=splatAvailable,proto3" json:"splat_available,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -4190,6 +4195,20 @@ func (x *HostView) GetRoomLocale() string {
 func (x *HostView) GetTurnTimersEnabled() bool {
 	if x != nil {
 		return x.TurnTimersEnabled
+	}
+	return false
+}
+
+func (x *HostView) GetSplatEnabled() bool {
+	if x != nil {
+		return x.SplatEnabled
+	}
+	return false
+}
+
+func (x *HostView) GetSplatAvailable() bool {
+	if x != nil {
+		return x.SplatAvailable
 	}
 	return false
 }
@@ -6505,7 +6524,7 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\x04dice\x18\x0f \x01(\v2\x14.dungeonflux.v1.DiceR\x04dice\"5\n" +
 	"\tAssetSlot\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05state\x18\x02 \x01(\tR\x05state\"\x85\x03\n" +
+	"\x05state\x18\x02 \x01(\tR\x05state\"\xd3\x03\n" +
 	"\bHostView\x12&\n" +
 	"\x02dm\x18\x01 \x01(\v2\x16.dungeonflux.v1.DMViewR\x02dm\x12$\n" +
 	"\x0eevent_log_tail\x18\x02 \x03(\tR\feventLogTail\x12:\n" +
@@ -6519,7 +6538,9 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\vroom_locale\x18\t \x01(\tR\n" +
 	"roomLocale\x12.\n" +
 	"\x13turn_timers_enabled\x18\n" +
-	" \x01(\bR\x11turnTimersEnabled\"\xa9\x02\n" +
+	" \x01(\bR\x11turnTimersEnabled\x12#\n" +
+	"\rsplat_enabled\x18\v \x01(\bR\fsplatEnabled\x12'\n" +
+	"\x0fsplat_available\x18\f \x01(\bR\x0esplatAvailable\"\xa9\x02\n" +
 	"\vScreenState\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\x04R\aversion\x12\x14\n" +
 	"\x05phase\x18\x02 \x01(\tR\x05phase\x12%\n" +
@@ -6700,7 +6721,7 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\x0ePTT_STATE_IDLE\x10\x01\x12\x17\n" +
 	"\x13PTT_STATE_RECORDING\x10\x02\x12\x1a\n" +
 	"\x16PTT_STATE_TRANSCRIBING\x10\x03\x12\x14\n" +
-	"\x10PTT_STATE_FAILED\x10\x04*\xaf\x03\n" +
+	"\x10PTT_STATE_FAILED\x10\x04*\xcf\x03\n" +
 	"\x0fHostCommandKind\x12!\n" +
 	"\x1dHOST_COMMAND_KIND_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17HOST_COMMAND_KIND_START\x10\x01\x12\x1b\n" +
@@ -6715,7 +6736,8 @@ const file_dungeonflux_v1_common_proto_rawDesc = "" +
 	"\x1bHOST_COMMAND_KIND_SPLAT_OFF\x10\n" +
 	"\x12!\n" +
 	"\x1dHOST_COMMAND_KIND_ROOM_LOCALE\x10\v\x12\x1f\n" +
-	"\x1bHOST_COMMAND_KIND_TIMERS_ON\x10\f*\x92\x01\n" +
+	"\x1bHOST_COMMAND_KIND_TIMERS_ON\x10\f\x12\x1e\n" +
+	"\x1aHOST_COMMAND_KIND_SPLAT_ON\x10\r*\x92\x01\n" +
 	"\fAudioChannel\x12\x1d\n" +
 	"\x19AUDIO_CHANNEL_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13AUDIO_CHANNEL_VOICE\x10\x01\x12\x17\n" +

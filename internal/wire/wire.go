@@ -136,7 +136,7 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 	printURLs(out, urls)
 	lobbyProjection := api.LobbyProjection{RoomCode: roomID, JoinURL: joinURL, QRURL: qrURL}
 	lobbyOption := game.Lobby{RoomCode: roomID, JoinURL: joinURL, QRAsset: domain.AssetID(qrURL)}
-	gameOptions := []game.Option{game.WithLobby(lobbyOption), game.WithTurnTimers(cfg.Features.TurnTimers), game.WithCombatMoveUI(cfg.Features.CombatMoveUI)}
+	gameOptions := []game.Option{game.WithLobby(lobbyOption), game.WithTurnTimers(cfg.Features.TurnTimers), game.WithCombatMoveUI(cfg.Features.CombatMoveUI), game.WithSplat(cfg.Features.Splat)}
 	// server.debug enables the live dfctl control events (goto, seat, timer,
 	// combat); the engine rejects them otherwise (ENG-033).
 	billboards := billboardHubFor(cfg, manifest)

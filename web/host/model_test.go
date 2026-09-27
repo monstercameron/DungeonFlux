@@ -195,3 +195,37 @@ func TestTimerToggle_UsesAuthoritativeSnapshotAndExplicitCommand(t *testing.T) {
 		})
 	}
 }
+
+func TestSplatToggle_UsesSnapshotWithoutOptimisticMutation(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		name := "enable"
+		if enabled {
+			name = "disable"
+		}
+		t.Run(name, func(t *testing.T) {
+			state := &df.ScreenState{View: &df.ScreenState_Host{Host: &df.HostView{SplatEnabled: enabled, SplatAvailable: true}}}
+			snapshot := snapshotFromState(state)
+			if snapshot.SplatOn != enabled || !snapshot.SplatAvailable {
+				t.Fatal("renderer snapshot lost")
+			}
+			command := commandForToggle(hostAction{Command: df.HostCommandKind_HOST_COMMAND_KIND_SPLAT_OFF}, "test-host", !snapshot.SplatOn)
+			want := df.HostCommandKind_HOST_COMMAND_KIND_SPLAT_ON
+			if enabled {
+				want = df.HostCommandKind_HOST_COMMAND_KIND_SPLAT_OFF
+			}
+			if command.Command != want {
+				t.Fatalf("command=%v want=%v", command.Command, want)
+			}
+			if snapshotFromState(state).SplatOn != enabled {
+				t.Fatal("request changed displayed policy before confirmation")
+			}
+			state.GetHost().SplatEnabled = !enabled
+			if snapshotFromState(state).SplatOn == enabled {
+				t.Fatal("confirmed policy was ignored")
+			}
+		})
+	}
+	if snapshotFromState(nil).SplatAvailable {
+		t.Fatal("disconnected client advertised renderer availability")
+	}
+}

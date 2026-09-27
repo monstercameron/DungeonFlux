@@ -59,7 +59,6 @@ func hostView(props hostViewProps) ui.Node {
 	state := ui.UseState(hostSnapshot{Status: ConnectingLine("en"), Locale: "en", RoomLocale: "en", Selector: NewRoomLocaleSelector("en")})
 	status := ui.UseState(ReadyLine("en"))
 	safeMode := ui.UseState(false)
-	splatOn := ui.UseState(true)
 	query := router.UseQuery()
 	token := query.Get("t")
 	if token == "" {
@@ -103,9 +102,9 @@ func hostView(props hostViewProps) ui.Node {
 			}))
 			continue
 		}
-		button := ui.CreateElement(hostActionButton, hostActionButtonProps{Action: item, Locale: locale, Phase: snapshot.Phase, Paused: snapshot.Paused, TimersOn: snapshot.TimersOn, Connected: snapshot.Connected, Click: func() {
-			on := toggleState(snapshot, item, safeMode.Get(), snapshot.TimersOn, splatOn.Get())
-			setToggleState(item, on, safeMode.Set, splatOn.Set)
+		button := ui.CreateElement(hostActionButton, hostActionButtonProps{Action: item, Locale: locale, Phase: snapshot.Phase, Paused: snapshot.Paused, TimersOn: snapshot.TimersOn, SplatOn: snapshot.SplatOn, SplatAvailable: snapshot.SplatAvailable, Connected: snapshot.Connected, Click: func() {
+			on := toggleState(snapshot, item, safeMode.Get(), snapshot.TimersOn, snapshot.SplatOn)
+			setToggleState(item, on, safeMode.Set)
 			sendHostCommand(props.Client, token, locale, item, on, status.Update)
 		}})
 		switch {
@@ -330,13 +329,15 @@ func roomLocaleSection(client *hostClient, token string, snapshot hostSnapshot, 
 }
 
 type hostActionButtonProps struct {
-	Action    hostAction
-	Locale    string
-	Phase     string
-	Paused    bool
-	TimersOn  bool
-	Connected bool
-	Click     func()
+	Action         hostAction
+	Locale         string
+	Phase          string
+	Paused         bool
+	TimersOn       bool
+	SplatOn        bool
+	SplatAvailable bool
+	Connected      bool
+	Click          func()
 }
 
 // hostActionButton renders one stage-control button, styled and enabled by
@@ -377,6 +378,14 @@ func hostActionButton(props hostActionButtonProps) ui.Node {
 		aria["pressed"] = "false"
 		disabled = !props.Connected
 		if props.TimersOn {
+			aria["pressed"] = "true"
+			class += " df-host-action-primary"
+		}
+	}
+	if props.Action.Command == v1.HostCommandKind_HOST_COMMAND_KIND_SPLAT_OFF {
+		aria["pressed"] = "false"
+		disabled = !props.Connected || !props.SplatAvailable
+		if props.SplatOn {
 			aria["pressed"] = "true"
 			class += " df-host-action-primary"
 		}
@@ -477,12 +486,10 @@ func toggleState(snapshot hostSnapshot, action hostAction, safe, timers, splat b
 	}
 }
 
-func setToggleState(action hostAction, on bool, safe, splat func(bool)) {
+func setToggleState(action hostAction, on bool, safe func(bool)) {
 	switch action.Command {
 	case v1.HostCommandKind_HOST_COMMAND_KIND_SAFE_MODE:
 		safe(on)
-	case v1.HostCommandKind_HOST_COMMAND_KIND_SPLAT_OFF:
-		splat(on)
 	}
 }
 

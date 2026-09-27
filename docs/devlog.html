@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-authoritative-splat-toggle">
+  <div class="entry-head"><time datetime="2026-09-27T05:04-04:00">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-authoritative-splat-toggle">The host renderer switch now reaches the battlefield</a></h2>
+  <p>The Splat button changed a local boolean and sent an unsupported off-only command. Explicit SPLAT_ON and SPLAT_OFF commands now update engine policy, and host snapshots expose the confirmed preference and scene availability. New runs honor the configured renderer; missing scenes reject enable requests. Tests cover both directions, repeated commands, reset defaults, and switching while paused without changing combat state. The live test confirmed flat mode and policy persistence after reloading the host, but also exposed a HUD reconciliation defect when the canvas returned: unkeyed conditional children reused the wrong layout nodes. Stable canvas, fallback, and HUD identities address that defect; a repeat test with the rebuilt WASM preserved the HUD when 3D returned. Renderer readiness reporting remains a separate follow-up, as do the generic hero sprites and incorrect flat-scene art discovered in this rehearsal. Combat timing caps are unchanged.</p>
+</li>
 <li class="entry" data-kind="issue" id="e-20260927-live-reload-cached-html">
   <div class="entry-head"><time datetime="2026-09-27T04:48-04:00">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-live-reload-cached-html">Existing browser pages missed the development reload script</a></h2>

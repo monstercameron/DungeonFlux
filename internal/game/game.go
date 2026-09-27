@@ -98,6 +98,9 @@ func (s *State) apply(env domain.Envelope) domain.StepOut {
 }
 
 func (s *State) applyHost(cmd domain.HostCmd, env domain.Envelope) domain.StepOut {
+	if out, handled := s.applySplatToggle(cmd.Cmd, env); handled {
+		return out
+	}
 	if enabled, ok := timerToggleCommand(cmd.Cmd); ok {
 		s.phase.SetTurnTimersEnabled(enabled)
 	}
@@ -245,6 +248,7 @@ func (s *State) phaseCueEffects(previous vocab.StateID) []domain.Effect {
 }
 
 func (s *State) resetPhase() {
+	s.splatEnabled = s.defaultSplatEnabled
 	defaultTimers := s.phase.DefaultTurnTimersEnabled()
 	moveUI := s.phase.CombatMoveUI()
 	dispatcher, err := phase.NewWithSeed(s.oneShot, s.seed)

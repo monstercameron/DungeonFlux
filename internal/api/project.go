@@ -234,6 +234,8 @@ func projectHost(view domain.View) *df.HostView {
 		RunMode:              string(view.RunMode),
 		NextD20:              int32(view.NextD20),
 		TurnTimersEnabled:    view.TurnTimersEnabled,
+		SplatEnabled:         view.SplatEnabled,
+		SplatAvailable:       view.SplatAvailable,
 		CombatCapRemainingMs: timerRemaining(view.Combat),
 		AssetSlots:           projectSlots(view.Slots),
 	}

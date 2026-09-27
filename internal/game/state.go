@@ -10,24 +10,26 @@ import (
 
 // State is the pure, single-threaded state owned by one game room.
 type State struct {
-	oneShot          domain.OneShot
-	seed             []byte
-	path             vocab.StateID
-	debug            bool
-	debugStart       vocab.StateID
-	paused           bool
-	version          uint64
-	at               int64
-	spotlight        domain.SeatID
-	diceCounter      uint64
-	nextD20          int
-	seats            []domain.SeatView
-	lobby            Lobby
-	phase            phase.Machine
-	narrationSpeaker string
-	narrationText    string
-	narrationLineID  domain.UtteranceID
-	narrationDone    bool
+	oneShot             domain.OneShot
+	seed                []byte
+	path                vocab.StateID
+	debug               bool
+	debugStart          vocab.StateID
+	paused              bool
+	splatEnabled        bool
+	defaultSplatEnabled bool
+	version             uint64
+	at                  int64
+	spotlight           domain.SeatID
+	diceCounter         uint64
+	nextD20             int
+	seats               []domain.SeatView
+	lobby               Lobby
+	phase               phase.Machine
+	narrationSpeaker    string
+	narrationText       string
+	narrationLineID     domain.UtteranceID
+	narrationDone       bool
 }
 
 func newState(oneShot domain.OneShot, seed []byte, options ...Option) *State {
@@ -60,12 +62,14 @@ func newDebugState(oneShot domain.OneShot, seed []byte, debug bool, debugStart s
 		seats:      seats,
 		phase:      dispatcher,
 	}
+	state.splatEnabled = state.splatAvailable() && oneShot.Encounter.Battlefield.Mode != BattlefieldModeFlat
 	for _, option := range options {
 		if option != nil {
 			option(state)
 		}
 	}
 	state.lobby.Seats = state.lobbySeats()
+	state.defaultSplatEnabled = state.splatEnabled
 	return state
 }
 
@@ -77,6 +81,14 @@ func (s *State) view() domain.View {
 	view.Paused = s.paused
 	view.NextD20 = s.nextD20
 	view.TurnTimersEnabled = s.TurnTimersEnabled()
+	view.SplatEnabled = s.splatEnabled
+	view.SplatAvailable = s.splatAvailable()
+	if view.Battlefield != nil {
+		view.Battlefield.Mode = BattlefieldModeFlat
+		if s.splatEnabled {
+			view.Battlefield.Mode = BattlefieldModeSplat
+		}
+	}
 	view.Seats = mergeSeatViews(view.Seats, s.seats)
 	view.Scene.Narration = s.narrationText
 	view.Scene.NarrationSpeaker = s.narrationSpeaker

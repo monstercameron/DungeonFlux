@@ -138,6 +138,8 @@ func hostCommand(command df.HostCommandKind) (vocab.HostCmd, bool) {
 		return vocab.HostCmd("TIMERS_ON"), true
 	case df.HostCommandKind_HOST_COMMAND_KIND_SPLAT_OFF:
 		return vocab.HostSplatOff, true
+	case df.HostCommandKind_HOST_COMMAND_KIND_SPLAT_ON:
+		return vocab.HostCmd("SPLAT_ON"), true
 	default:
 		return "", false
 	}

@@ -54,25 +54,26 @@ func actionLabels() []string {
 }
 
 type hostSnapshot struct {
-	State       *df.ScreenState
-	View        *df.HostView
-	Status      string
-	SafeMode    bool
-	TimersOn    bool
-	SplatOn     bool
-	Connected   bool
-	Locale      string
-	RoomLocale  string
-	Selector    RoomLocaleSelector
-	Phase       string
-	Spotlight   string
-	TurnSeat    string
-	TurnMs      int64
-	TurnTotal   int64
-	Paused      bool
-	SeatsJoined int
-	SeatsTotal  int
-	Failures    int
+	State          *df.ScreenState
+	View           *df.HostView
+	Status         string
+	SafeMode       bool
+	TimersOn       bool
+	SplatOn        bool
+	SplatAvailable bool
+	Connected      bool
+	Locale         string
+	RoomLocale     string
+	Selector       RoomLocaleSelector
+	Phase          string
+	Spotlight      string
+	TurnSeat       string
+	TurnMs         int64
+	TurnTotal      int64
+	Paused         bool
+	SeatsJoined    int
+	SeatsTotal     int
+	Failures       int
 }
 
 type testerLinks struct {
@@ -141,6 +142,8 @@ func snapshotFromState(state *df.ScreenState) hostSnapshot {
 	if state.GetHost() != nil {
 		snapshot.View = state.GetHost()
 		snapshot.TimersOn = state.GetHost().GetTurnTimersEnabled()
+		snapshot.SplatOn = state.GetHost().GetSplatEnabled()
+		snapshot.SplatAvailable = state.GetHost().GetSplatAvailable()
 		snapshot.Locale = localeOrDefault(state.GetHost().GetLocale())
 		snapshot.RoomLocale = localeOrDefault(state.GetHost().GetRoomLocale())
 		snapshot.Selector = NewRoomLocaleSelector(snapshot.RoomLocale)
@@ -247,6 +250,9 @@ func commandForToggle(action hostAction, token string, on bool) *df.HostCommand 
 	command.On = on
 	if action.Command == df.HostCommandKind_HOST_COMMAND_KIND_TIMERS_OFF && on {
 		command.Command = df.HostCommandKind_HOST_COMMAND_KIND_TIMERS_ON
+	}
+	if action.Command == df.HostCommandKind_HOST_COMMAND_KIND_SPLAT_OFF && on {
+		command.Command = df.HostCommandKind_HOST_COMMAND_KIND_SPLAT_ON
 	}
 	return command
 }

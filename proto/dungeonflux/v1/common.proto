@@ -58,6 +58,7 @@ enum HostCommandKind {
   HOST_COMMAND_KIND_SPLAT_OFF = 10;
   HOST_COMMAND_KIND_ROOM_LOCALE = 11;
   HOST_COMMAND_KIND_TIMERS_ON = 12;
+  HOST_COMMAND_KIND_SPLAT_ON = 13;
 }
 
 message Cell { int32 c = 1; int32 r = 2; }
@@ -302,7 +303,7 @@ message PhoneView {
   Dice dice = 15;
 }
 message AssetSlot { string name = 1; string state = 2; }
-message HostView { DMView dm = 1; repeated string event_log_tail = 2; repeated AssetSlot asset_slots = 3; string run_mode = 4; int32 next_d20 = 5; int64 combat_cap_remaining_ms = 6; repeated string log_tail = 7; string locale = 8; string room_locale = 9; bool turn_timers_enabled = 10; }
+message HostView { DMView dm = 1; repeated string event_log_tail = 2; repeated AssetSlot asset_slots = 3; string run_mode = 4; int32 next_d20 = 5; int64 combat_cap_remaining_ms = 6; repeated string log_tail = 7; string locale = 8; string room_locale = 9; bool turn_timers_enabled = 10; bool splat_enabled = 11; bool splat_available = 12; }
 message ScreenState {
   uint64 version = 1;
   string phase = 2;

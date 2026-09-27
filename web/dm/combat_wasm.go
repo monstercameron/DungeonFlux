@@ -47,17 +47,19 @@ func CombatComponent(view *dungeonfluxv1.DMView, sequence ...uint64) router.Comp
 			// props, every re-render reset them (clearing the drawing buffer
 			// and hiding the canvas), so the splat kept fading away. The
 			// starting opacity lives in dmCombatStageCSS.
-			children = append(children, html.Canvas(html.Props{ID: stage.Init.CanvasID, Class: "df-dm-combat-splat", Style: map[string]string{"position": "absolute", "inset": "0", "width": "100%", "height": "100%", "transition": "opacity 1s ease", "z-index": "0", "pointer-events": "none"}}))
+			children = append(children, html.Canvas(html.Props{Key: "battle-canvas", ID: stage.Init.CanvasID, Class: "df-dm-combat-splat", Style: map[string]string{"position": "absolute", "inset": "0", "width": "100%", "height": "100%", "transition": "opacity 1s ease", "z-index": "0", "pointer-events": "none"}}))
 		}
 		fallback := []ui.Node{combatGrid(model.Segments), combatHighlights(model.Highlights)}
 		fallback = append(fallback, combatTokens(model.Tokens)...)
-		if stage.Enabled {
-			children = append(children, html.Div(html.Props{ID: "df-combat-flat-fallback", Style: map[string]string{"position": "absolute", "inset": "0", "z-index": "1", "transition": "opacity 180ms ease", "pointer-events": "none"}}, fallback...))
-		} else {
-			children = append(children, fallback...)
+		// Keep fallback and HUD identities stable when the canvas is inserted or
+		// removed. Reusing positional children corrupts their layout on re-enable.
+		fallbackStyle := map[string]string{"position": "absolute", "inset": "0", "z-index": "1", "transition": "opacity 180ms ease", "pointer-events": "none"}
+		if !stage.Enabled {
+			fallbackStyle["opacity"] = "1"
 		}
+		children = append(children, html.Div(html.Props{Key: "battle-fallback", ID: "df-combat-flat-fallback", Style: fallbackStyle}, fallback...))
 		hud := []ui.Node{combatVignette(), combatPartyRail(model), combatEnemyCard(model), combatTimer(model.Timer), combatTopTitle(locale, model), combatInitiativeStrip(locale, model), combatActionBar()}
-		children = append(children, html.Div(html.Props{Style: map[string]string{"position": "absolute", "inset": "0", "z-index": "2", "pointer-events": "none"}}, hud...))
+		children = append(children, html.Div(html.Props{Key: "battle-hud", Style: map[string]string{"position": "absolute", "inset": "0", "z-index": "2", "pointer-events": "none"}}, hud...))
 		return html.Section(html.Props{Class: "df-dm-combat", Role: "img", Aria: map[string]string{"label": T(locale, "dm.combat_label", nil)}, Style: map[string]string{"position": "relative", "width": "100%", "height": "100%", "overflow": "hidden"}},
 			html.Div(html.Props{Class: "df-dm-combat-stage", Style: combatStageStyle(model)}, children...),
 		)

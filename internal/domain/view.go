@@ -173,6 +173,8 @@ type View struct {
 	Path              vocab.StateID
 	Paused            bool
 	TurnTimersEnabled bool
+	SplatEnabled      bool
+	SplatAvailable    bool
 	Spotlight         SeatID
 	RunMode           vocab.RunMode
 	NextD20           int
