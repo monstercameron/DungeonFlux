@@ -3066,3 +3066,43 @@ Useful but not needed for the demo.
   lane: L-LLM · block: backlog · paths: `internal/adapters/llm/**` · depends: LLM-009
   done when: Accuracy measured against fixtures.
   status: backlog
+
+## 29. Tester findings (emmaka)
+
+Issues from the tester's playtests on the Droplet (`notes/emmaka/2026-09-27-playtests.md`, with event-log evidence and screenshots). EMK-* IDs belong to the emmaka branch so they never collide with the lanes' numbering; "suggested lane" is where the fix belongs, and ORCH may reassign.
+
+- [ ] EMK-004 · one attack control on the phone combat screen
+  why: The phone shows "Attack the drowned thrall" twice: a TARGET card that looks like a button and the real move row (disabled when the hero is missing), so players cannot tell which one attacks (playtest item 1).
+  lane: suggested L-WEB-PHONE · paths: `web/phone/combat*.go` · depends: none
+  done when: exactly one attack control, labelled with its target; disabled states show one reason; a screenshot fixture covers active, waiting and no-hero turns.
+  status: open
+
+- [ ] EMK-005 · creation timeout gives every seat a hero, with a visible countdown
+  why: The 30 s creation timer fired before anyone picked in games A and C (playtest item 4); a seat that never tapped Roll hero got no character, so in combat Attack stayed disabled ("Building your hero…"), the TV showed PC-1/PC-2 with broken portraits, and the host had to Skip (items 2 and 5).
+  lane: suggested L-ENG · paths: `internal/game/phase/support.go`, `internal/game/phase/creation/**` · depends: none
+  done when: on creation_timeout or host Skip each unrolled seat gets a seeded default hero (plan §0.5 "empty or not-ready seats get default characters"); combat Attack is enabled for both seats; phone and TV show the remaining creation time; a sim test covers timeout-then-combat.
+  status: open
+
+- [ ] EMK-006 · combat long enough to play, with a victory beat
+  why: The thrall (12 HP, AC 8) dies to two hits, so every fight is one round and cuts straight to the cliffhanger (game B); a 30 s combat cap will also cut slower fights short (playtest items 5 and 6).
+  lane: decision for the team (content/engine tuning) · paths: `internal/content/oneshot.go`, `internal/game/combat/**` · depends: EMK-005
+  done when: agreed target (e.g. 3–4 rounds, cap sized to it); a short victory or flee beat plays before the cliffhanger; attacks show dice and damage on the TV (DM-042).
+  status: open (needs a decision)
+
+- [ ] EMK-007 · push-to-talk records on iPhone Safari
+  why: Dennis's iPhone (audio/mp4) opened 16 talk streams and every one closed in the same second it opened; the Android phone (audio/webm) recorded 9–11 s streams (playtest item 7).
+  lane: suggested L-WEB-PHONE / L-VIN · paths: `web/phone/ptt*.go`, `internal/voice/in/**` · depends: none
+  done when: holding the talk button on iOS Safari records until release and produces a transcript; a device test on iPhone is recorded in the playtest notes.
+  status: open
+
+- [ ] EMK-008 · the non-speaking player is told they cannot talk yet
+  why: Only the spotlight seat's speech is interpreted; the other player's typed "Hi" (×3) was silently ignored while the text box and send button stayed enabled (playtest item 7).
+  lane: suggested L-WEB-PHONE (or L-ENG if both players should be able to speak) · paths: `web/phone/talk*.go`, `web/phone/typed*.go` · depends: none
+  done when: the non-spotlight phone shows "<name> is talking to Mother Vell" and disables input, or the engine accepts both players' lines (team decision); banner and buttons use the same player name (no "seat 1").
+  status: open
+
+- [ ] EMK-009 · NPCs and the DM always speak: TTS fallback chain
+  why: Tester requirement: with no ElevenLabs key or during an outage, lines are silent (live) or play one fixed clip per role regardless of the caption (fake), though an OpenAI TTS adapter exists (playtest item 8).
+  lane: suggested L-VOUT (+ L-WEB-DM for the browser voice) · paths: `internal/voice/out/**`, `internal/wire/adapters.go`, `web/dm/**` · depends: none
+  done when: each line tries ElevenLabs → OpenAI TTS → the matching canned line → TV browser speechSynthesis (distinct pitch/rate per NPC); with the ElevenLabs key removed a full run is audible and the log names the fallback used.
+  status: open
