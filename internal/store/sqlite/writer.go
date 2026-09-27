@@ -3,11 +3,13 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 const writerQueueSize = 1024
@@ -19,10 +21,18 @@ type writeRequest struct {
 }
 
 type writeLoop struct {
+	// mu guards queue sends against close: a write submitted while the store
+	// shuts down used to race close(queue) and could panic with "send on
+	// closed channel". Senders hold the read lock; close takes the write lock.
+	mu     sync.RWMutex
+	closed bool
 	queue  chan writeRequest
 	done   chan struct{}
 	logger *slog.Logger
 }
+
+// errWriterClosed is returned for writes that arrive after Close.
+var errWriterClosed = errors.New("sqlite writer is closed")
 
 // Store owns a SQLite write connection and a separate read pool.
 type Store struct {
@@ -91,12 +101,15 @@ func (w *writeLoop) run(conn *sql.Conn) {
 }
 
 func (w *writeLoop) close() {
-	select {
-	case <-w.done:
+	w.mu.Lock()
+	if w.closed {
+		w.mu.Unlock()
+		<-w.done
 		return
-	default:
 	}
+	w.closed = true
 	close(w.queue)
+	w.mu.Unlock()
 	<-w.done
 }
 
@@ -106,9 +119,16 @@ func (w *writeLoop) submit(ctx context.Context, work func(context.Context, *sql.
 	}
 	ack := make(chan error, 1)
 	req := writeRequest{ctx: ctx, work: work, ack: ack}
+	w.mu.RLock()
+	if w.closed {
+		w.mu.RUnlock()
+		return errWriterClosed
+	}
 	select {
 	case w.queue <- req:
+		w.mu.RUnlock()
 	case <-ctx.Done():
+		w.mu.RUnlock()
 		return ctx.Err()
 	}
 	select {
@@ -124,6 +144,11 @@ func (w *writeLoop) enqueue(ctx context.Context, work func(context.Context, *sql
 		ctx = context.Background()
 	}
 	if err := ctx.Err(); err != nil {
+		return false
+	}
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+	if w.closed {
 		return false
 	}
 	select {
