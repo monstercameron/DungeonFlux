@@ -34,11 +34,13 @@ func CreationScreen(model *CreationModel) router.Component {
 		if snapshot.Phase == CreationLocked {
 			action = creationLockedButton(locale)
 		}
-		return html.Section(html.Props{Class: "df-phone-create", Role: "main", Style: creationContentStyle()},
-			creationHeading(locale),
+		// Build picker handlers in a stable hook order, then hide spent choices.
+		choices := html.Div(html.Props{ID: "hero-choices", Hidden: snapshot.Build != nil},
 			creationPicker(model, refresh, "species", "Species", creationSpecies, snapshot.Species, pickerDisabled),
 			creationPicker(model, refresh, "gender", "Gender", creationGenders, snapshot.Gender, pickerDisabled),
-			creationClassPicker(model, refresh, locale, snapshot.Class, pickerDisabled),
+			creationClassPicker(model, refresh, locale, snapshot.Class, pickerDisabled))
+		return html.Section(html.Props{Class: "df-phone-create", Role: "main", Style: creationContentStyle()},
+			creationHeading(locale, snapshot.Build != nil), choices,
 			creationBuildCard(model, refresh, locale, snapshot),
 			html.Div(html.Props{Style: map[string]string{"margin-top": "auto", "padding-top": "2px"}}, action,
 				html.P(html.Props{Role: "status", Aria: map[string]string{"live": "polite"}, Style: map[string]string{"min-height": "18px", "margin": "7px 0 0", "color": "#a89f8c", "font-size": "12px", "line-height": "1.35", "text-align": "center"}}, html.Text(creationStatus(snapshot)))),
@@ -85,11 +87,11 @@ func creationContentStyle() map[string]string {
 	return map[string]string{"min-height": "100%", "box-sizing": "border-box", "display": "flex", "flex-direction": "column", "gap": "12px", "padding": "4px 0 2px", "background-image": creationBackground(), "background-size": "cover", "background-position": "center", "color": "#efe6d2", "font-family": "Inter, ui-sans-serif, system-ui, sans-serif"}
 }
 
-func creationHeading(locale string) ui.Node {
+func creationHeading(locale string, rolled bool) ui.Node {
 	return html.Div(html.Props{Class: "df-phone-create-heading", Style: map[string]string{"padding": "8px 4px 5px", "text-align": "center"}},
 		html.P(html.Props{Style: map[string]string{"margin": "0 0 3px", "color": "#d9a441", "font-size": "10px", "font-weight": "700", "letter-spacing": ".2em"}}, html.Text(T(locale, "phone.create.controls", nil))),
 		html.H1(html.Props{Style: map[string]string{"margin": "0", "color": "#efe6d2", "font-family": "Cormorant Garamond, Cinzel, Georgia, serif", "font-size": "29px", "line-height": "1.05"}}, html.Text(CreateTitle(locale))),
-		html.P(html.Props{Style: map[string]string{"margin": "5px 0 0", "color": "#a89f8c", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "16px", "line-height": "1.25"}}, html.Text(creationHint(locale))),
+		html.P(html.Props{Hidden: rolled, Style: map[string]string{"margin": "5px 0 0", "color": "#a89f8c", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "16px", "line-height": "1.25"}}, html.Text(creationHint(locale))),
 	)
 }
 

@@ -84,6 +84,8 @@ type acknowledgedInbox interface {
 func decodeEvent(kind, payload string) (domain.Event, error) {
 	var event domain.Event
 	switch vocab.EventKind(kind) {
+	case vocab.EventAssetReady:
+		return decodeBillboardAsset(payload)
 	case vocab.EventHostStart:
 		event = domain.HostCmd{Cmd: vocab.HostStart}
 	case vocab.EventHostReset:
