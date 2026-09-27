@@ -354,7 +354,7 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   why: The developer chose on 2026-09-27 to keep the existing wooded battlefield and revise the story transition rather than regenerate the scene.
   lane: live_report_audit · paths: `internal/content/oneshot.go`, `internal/content/oneshot_test.go`, `web/dm/combat.go`, `web/dm/combat_wasm.go`, `web/dm/combat_test.go`, `web/phone/screen.go`, `web/phone/screen_test.go` · depends: QA-014
   done when: the authored story and visible combat introduction explain heroes driving the thrall outside onto the wooded river path, location labels agree, cached speech is not relabeled with mismatching text, the existing phase durations remain unchanged, and relevant gates/WASM visual review pass.
-  status: claimed live_report_audit 2026-09-27; parent updates binding plan separately
+  status: committed 4833c10; parent QA058-REVIEW gate green (content 93.6%, DM 91.9%, phone 86.7%) and full DM/phone WASM tests pass; live visual header review pending.
 
 - [x] QA-059 · Give exploration preview heroes valid known HP
   why: Old preview screenshots said HP unavailable despite the live projection supplying build HP, making review evidence misleading.
@@ -374,7 +374,53 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: both catalogs contain the combat location and story bridge, key guards pass, and the i18n gate is green.
   status: done (this commit); gate artifacts/test/QA-061/gate-20260927-094939.log green, i18n 98.1%; required-key guards include both new strings.
 
+- [x] QA-062 · Record report-audit review and battle repair follow-ups
+  why: Parent review must distinguish accepted source fixes from missing runtime evidence and rejected rendering patches.
+  lane: ORCH (Codex) · paths: `TODOS.md`, `docs/devlog.html` · depends: QA-058, KC-016
+  done when: the ledger records actual commits, gates and remaining visual proof without marking unfinished media work done.
+  status: done (this commit); accepted fal field fix, story gate/WASM proof, and renderer follow-ups recorded.
+
 ### Kill cam (developer-directed single writer, 2026-09-27)
+
+- [ ] KC-018 · Correct video fallback visibility and exercise real sprite wiring
+  why: KC-015's bridge referenced undefined variables and its helper-only tests missed disabled-state and positioning failures.
+  lane: battle_animation · paths: `web/splat/js/token_sprite.mjs`, `web/splat/js/token_sprite.test.mjs` · depends: KC-015
+  done when: actual sprite tests cover enabled/disabled loading, decoded/error events, clip changes, correct foot position and destruction with no black quad or duplicate bases; splat gate and browser review pass.
+  status: claimed battle_animation 2026-09-27; KC-015 rejected in parent review.
+
+
+- [ ] KC-017 · Preserve authoritative animation state across stale snapshots
+  why: KC-014 copied stale token fields before ignoring their animation sequence, allowing later repeats to restart attacks.
+  lane: battle_animation · paths: `web/splat/js/token.mjs`, `web/splat/js/token.test.mjs` · depends: KC-014
+  done when: lower-sequence snapshots do not regress animation or position, equal-route newer sequences play once, controller behavioral tests and gate pass.
+  status: claimed battle_animation 2026-09-27
+
+
+- [ ] KC-014 · Verify actual token controller animation transitions
+  why: KC-013 helper tests missed stale stored animation state and equal-path sequence updates.
+  lane: battle_animation · paths: `web/splat/js/token.mjs`, `web/splat/js/token.test.mjs` · depends: KC-013
+  done when: controller tests cover stationary attacks without repeat, same-route new sequences, movement arrival and reduced motion; parent review and gate pass.
+  status: committed 396de82; stationary attack and arrival tests pass; stale snapshot regression found in parent review and repaired by KC-017. Backfilled after worker commit.
+
+- [ ] KC-015 · Show a safe sprite until a video frame is decoded
+  why: Missing or undecoded clip textures currently render opaque black planes instead of a usable hero.
+  lane: battle_animation · paths: `web/splat/js/token_sprite.mjs`, `web/splat/js/token_sprite.test.mjs` · depends: KC-014
+  done when: initial loading, clip changes, HTTP/decode failure and successful recovery preserve a visible fallback without altering black armor pixels; behavioral tests and visual review pass.
+  status: claimed battle_animation 2026-09-27
+
+- [x] KC-016 · Correct fal image-to-video endpoint frame pinning
+  why: The existing adapter sends last_frame_url but the Seedance endpoint schema accepts end_image_url, preventing reliable loop pinning.
+  lane: pr9_review · paths: `internal/adapters/video/fal/fal.go`, `internal/adapters/video/fal/fal_test.go` · depends: none
+  done when: official endpoint schema is checked, first/end frames are encoded correctly, request fixture tests reject obsolete fields, and adapter gate passes.
+  status: done 17e3569; parent source review and KC016-REVIEW gate green, fal 88.0%; official endpoint field corrected before pinned generation.
+
+
+- [ ] KC-013 · Replay stationary attacks and finish walking on snapped movement
+  why: Review of KC-011 found that unchanged path signatures discard new animation sequences and reduced-motion movement clears its path without returning the clip to idle.
+  lane: battle_animation · paths: `web/splat/js/token.mjs`, `web/splat/js/token_sprite.mjs`, `web/splat/js/token.test.mjs`, `web/splat/js/token_sprite.test.mjs` · depends: KC-011
+  done when: behavioral JS tests cover repeated attacks in one cell, walk-to-idle arrival, reduced-motion snapping and pause; runtime visual proof shows decoded hero animation and both kill-cam outcomes.
+  status: committed cf90b83; parent rejected helper-only proof; controller repair continues in KC-014 and KC-017.
+
 
 - [ ] KC-010 · Generate opponent-facing idle, walk and attack loops from hero references
   why: The developer requested both demo heroes facing the villain with coherent animation poses and first/last frame control where the vendor supports it.

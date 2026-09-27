@@ -87,6 +87,12 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-battle-review-failures">
+  <div class="entry-head"><time datetime="2026-09-27T10:04-04:00">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">ORCH</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-battle-review-failures">Decoded video and tested helpers do not prove a working battlefield</a></h2>
+  <p>The report audit found black hero planes even though the cached H.264 files decoded correctly. A video texture could be shown before its first frame loaded, and a runtime started before a manifest update could lack newer assets. The first fallback patch passed helper tests but referenced undefined variables in the actual sprite visibility setter. Parent review rejected it and requested tests against the complete sprite, including loading, failure, disabled state and positioning. A separate adapter review found that fal Seedance expects <code>end_image_url</code>, while our request sent <code>last_frame_url</code>. That field is corrected in <a href="https://github.com/monstercameron/DungeonFlux/commit/17e3569">17e3569</a>; the parent gate passed with 88.0% adapter coverage. Frame-pinned generation and both live kill-cam outcomes remain verification work.</p>
+</li>
+
 <li class="entry" data-kind="decision" id="e-20260927-localized-battle-bridge">
   <div class="entry-head"><time datetime="2026-09-27T09:51-04:00">Sep 27, 2026</time><span class="kind">Decision</span><span class="who">ORCH</span></div>
   <h2 class="entry-title"><a href="#e-20260927-localized-battle-bridge">Localize the exterior combat transition</a></h2>
