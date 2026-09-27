@@ -210,6 +210,12 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: Safe Mode on/off is acknowledged by the engine, projected to all host sessions, honored by executors, restored by Reset/checkpoints, and verified through the live host UI.
   status: open
 
+- [x] QA-035 · Wait for both processed events in the room sequence test
+  why: Race CI exposed a test that counts the startup snapshot as one of two processed events and can cancel the room with only sequence one recorded.
+  lane: ORCH (Codex) · paths: `internal/runtime/room_test.go`, `TODOS.md`, `docs/devlog.html` · depends: none
+  done when: the test consumes startup separately, retains exact two-event sequence and log assertions, passes repeated execution, and the runtime gate and race CI pass.
+  status: done (this commit); 1000 repeated runs passed; gate artifacts/test/QA-035/gate-20260927-070606.log green, runtime 81.9%; follow-up race CI required
+
 ### Kill cam (developer-directed single writer, 2026-09-27)
 
 - [x] KC-004 · Remove unused domain scaffolding exposed by the feature gate

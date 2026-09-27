@@ -81,8 +81,10 @@ func TestRoom_Run_serializesEventsAndStampsSequence(t *testing.T) {
 	published := make(chan struct{}, 2)
 	room := NewRoom(engine, clk, log, slog.New(slog.NewTextHandler(io.Discard, nil)), func(domain.View) { published <- struct{}{} })
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	done := make(chan error, 1)
 	go func() { done <- room.Run(ctx) }()
+	<-published // Startup is not a processed event.
 	if !room.Post(ctx, domain.Envelope{Event: domain.Join{Seat: 1}}) || !room.Post(ctx, domain.Envelope{Event: domain.Join{Seat: 2}}) {
 		t.Fatal("post unexpectedly rejected")
 	}

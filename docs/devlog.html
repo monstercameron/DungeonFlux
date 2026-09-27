@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-room-sequence-test-barrier">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-room-sequence-test-barrier">The room sequence test distinguishes startup from processed events</a></h2>
+  <p>Linux race CI caught the room serialization test observing only sequence one before shutdown. The runtime publishes an initial snapshot before processing its inbox, but the test counted that snapshot toward its two expected event publications. Depending on scheduling, cancellation could win before the second queued event ran. The test now consumes startup explicitly before posting the two joins, then waits for both event publications before canceling and checking the exact sequence and event log. The assertions remain unchanged. One thousand consecutive local executions passed. This was a test synchronization error, not evidence of a runtime event ordering failure; the modelchain race tests in the same failed run passed.</p>
+</li>
 <li class="entry" data-kind="issue" id="e-20260927-complete-cancelable-recordings">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-complete-cancelable-recordings">Only complete, uncanceled responses become recordings</a></h2>
