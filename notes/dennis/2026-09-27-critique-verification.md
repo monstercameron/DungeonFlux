@@ -89,6 +89,36 @@ Note: `TODOS.md` statuses lag the code. DM-033..040, PHONE-032..035, OPS-027/028
 44. README setup is Windows only. — **Open**.
 45. Restarts invalidate host and TV links. — **Open** for local runs: tokens still regenerate each start. `bce7aef` masks the host token on the host page, and `55a9758` adds `server.public_url` for the droplet.
 
+## Live re-check on `f2f6311` (Claude, solo run, both seats)
+
+Rebuilt from `f2f6311` and played the whole demo: two phones in desktop browser tabs, turn timers off, live OpenAI, ElevenLabs and fal. Checked through page text, DOM, the event log and the server log (no screenshots).
+
+**Confirmed fixed live**
+- 7 Class shows "Bard", not lowercase.
+- 11, 26, 29 Typed line to Mother Vell went through; she answered live, spoken, and her words showed as the TV caption and on the phone ("Friend, were they? River's beside us, and folk vanish. I keep this lantern lit for my regulars—not every answer comes cheap.").
+- 21 Hero portrait loads on the phone combat screen.
+- 23 Check reads "Roll d20 +4".
+- 37 DM voice works: 5 ElevenLabs voice streams, no errors; the opening was generated live (53 narration deltas) and spoken; Mother Vell's reveal was written live ("They dragged your friend toward the old bell tower…").
+- New: phones update live on desktop (waiting room showed the second player joining; turn changes arrived without reloads). Not yet tested on a real phone (see 46).
+- New: phone waiting room ("Welcome, Lyra — Seat 1 — At the table"), hero name editor ("Edit name"), "Your turn" banner, host token behind "Hold to reveal".
+
+**Improved but not done**
+- 5 TV creation no longer shows fake stats, but shows "—" for every stat, HP, AC, species and gender even after the roll; the real roll still never appears on the TV.
+- 13 TV shows a dice panel ("D20 + 4 VS DC 10 · ROLLING") while the check is open; no final number or outcome was captured on the TV before it returned to exploration.
+- 24 The check resolves itself: a `roll_resolved` timer fired 3.0 s after Persuade, before the player tapped Roll (the Roll button had already gone); the phone went straight back to exploration without the d20, total, outcome or Mother Vell's reveal.
+- 33 The stranger appears, but for about 2 s: an arrival sting (1.3 s) and one line, "It followed me from the river." (1.5 s), then combat. No letter and no backstory steering beat as the README describes.
+- 4 The end card now lists "The heroes of this tale" with both portraits and a new closing line ("Midnight has tolled, and whoever rang the bell already knows your names"), but still no background (item 1).
+
+**Still open (confirmed live)**
+- 1 End card background empty (`background-image: none`); still no TV art redraw.
+- 8 TV creation shows only the first hero large; the second is a small chip.
+- 27 At the End both phones sat on their character sheets instead of the end card (the second phone read "Waiting for Liora Vell…").
+- 30 Enter does not send a typed line; only the send button works.
+- 38 Sound effects: 12 of 12 `sound-generation` calls returned HTTP 400.
+- 41 fal: one billboard job submitted (~$0.46) and polled 38 times with 202 without finishing; four more blocked by the fal budget cap.
+- 42 Nine build-time assets still missing at start (tavern splat and lite, `/splat/scenes/64bb46d5.json`, `cb2fddd6`, `thrall_loop_hit`, `thrall_loop_fall`, `canned_fled`, two nudge lines).
+- 12, 14, 16, 19 not re-checked visually in this run.
+
 ## Next step
 
-Rebuild on `f2f6311` after Dennis's current game, run the demo once more with a screenshot of every screen, and turn every "Likely improved" and "Partly fixed" above into Fixed or Open.
+`main` gained 4 commits after this run (ENG-035 check resolution and duplicate rolls, PHONE-036 phone updates without remounting, PHONE-039 phone audio state, PLAN-021 visual review todos). ENG-035 and PHONE-036 target items 24, 27 and 46; re-run once more, including one real phone, to close them.
