@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"strings"
 	"testing"
@@ -24,6 +25,7 @@ func TestControlCommands_CallDeclaredRPCs(t *testing.T) {
 		{"timer", []string{"timer", "set", "turn_timer", "250"}, "send"},
 		{"pause", []string{"pause"}, "send"},
 		{"combat", []string{"combat", "hp", "thrall", "4"}, "send"},
+		{"combat end", []string{"combat", "end", "slain"}, "send"},
 		{"snapshot", []string{"snapshot", "save", "before"}, "snapshot"},
 		{"vendor", []string{"vendor", "llm", "slow", "50"}, "vendor"},
 		{"client", []string{"client", "DM", "reload"}, "client"},
@@ -90,6 +92,41 @@ func TestControlParsingRejectsInvalidCommands(t *testing.T) {
 	} {
 		if _, _, _, err := parseControlOptions(args, args[0], io.Discard); err == nil {
 			t.Fatalf("accepted %v", args)
+		}
+	}
+}
+
+func TestCombatEnd_DocumentedSyntaxTargetsTheEnemy(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		args    []string
+		outcome string
+	}{
+		{"slain", []string{"end", "slain"}, "slain"},
+		{"fled", []string{"end", "fled"}, "fled"},
+		{"legacy explicit enemy", []string{"end", "thrall", "slain"}, "slain"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, message, err := makeCombatCommand("test-room", tc.args)
+			if err != nil {
+				t.Fatal(err)
+			}
+			request := message.(*dungeonfluxv1.SendRequest)
+			var payload struct {
+				Target string
+				Fields map[string]string
+			}
+			if err := json.Unmarshal([]byte(request.GetPayloadJson()), &payload); err != nil {
+				t.Fatal(err)
+			}
+			if request.GetRoom() != "test-room" || request.GetEvent() != "debug_patch" || payload.Target != "token:thrall" || payload.Fields["outcome"] != tc.outcome {
+				t.Fatalf("combat end request: %v, payload=%+v", request, payload)
+			}
+		})
+	}
+	for _, args := range [][]string{{}, {"end"}, {"end", "dead"}, {"end", "pc1", "slain"}, {"end", "slain", "extra"}} {
+		if _, _, err := makeCombatCommand("test-room", args); err == nil {
+			t.Fatalf("accepted malformed combat command %v", args)
 		}
 	}
 }

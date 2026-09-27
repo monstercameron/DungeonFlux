@@ -208,7 +208,10 @@ func makeTimerCommand(room string, args []string) (controlCommand, proto.Message
 }
 
 func makeCombatCommand(room string, args []string) (controlCommand, proto.Message, error) {
-	if len(args) != 3 || (args[0] != "hp" && args[0] != "move" && args[0] != "end") {
+	if len(args) > 0 && args[0] == "end" {
+		return makeCombatEndCommand(room, args[1:])
+	}
+	if len(args) != 3 || (args[0] != "hp" && args[0] != "move") {
 		return nil, nil, errors.New("usage: combat hp TOKEN N | combat move TOKEN c,r | combat end slain|fled")
 	}
 	fields := map[string]string{}
@@ -223,13 +226,21 @@ func makeCombatCommand(room string, args []string) (controlCommand, proto.Messag
 			return nil, nil, err
 		}
 		fields["cell"] = args[2]
-	case "end":
-		if args[2] != "slain" && args[2] != "fled" {
-			return nil, nil, errors.New("combat end must be slain or fled")
-		}
-		fields["outcome"] = args[2]
 	}
 	return sendJSONCommand(room, "debug_patch", map[string]any{"target": "token:" + args[1], "fields": fields})
+}
+
+func makeCombatEndCommand(room string, args []string) (controlCommand, proto.Message, error) {
+	// Keep the previously accepted explicit thrall form for existing scripts.
+	if len(args) == 2 && args[0] == "thrall" {
+		args = args[1:]
+	}
+	if len(args) != 1 || (args[0] != "slain" && args[0] != "fled") {
+		return nil, nil, errors.New("usage: combat end slain|fled")
+	}
+	return sendJSONCommand(room, "debug_patch", map[string]any{
+		"target": "token:thrall", "fields": map[string]string{"outcome": args[0]},
+	})
 }
 
 func makeSnapshotCommand(room string, args []string) (controlCommand, proto.Message, error) {

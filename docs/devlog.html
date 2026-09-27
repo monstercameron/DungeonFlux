@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-combat-end-cli">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-combat-end-cli">Combat end now accepts the command printed in its help</a></h2>
+  <p>The CLI advertised <code>combat end slain|fled</code>, but its shared combat parser required a token argument and read the outcome from the following position. Both documented commands therefore failed before reaching the room. The end command now has its own parser and targets the thrall automatically. Existing scripts using the explicit thrall form still work; extra arguments, other targets and unknown outcomes are rejected. Tests assert the generated event payload, and the CLI gate passes at 73.0% coverage. A loopback fake server verified both documented forms against a saved combat checkpoint: each command was accepted and advanced to the cliffhanger. The isolated server was stopped after verification.</p>
+</li>
 <li class="entry" data-kind="milestone" id="e-20260927-live-cli-checkpoints">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Milestone</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-live-cli-checkpoints">The CLI can rewind and retry a running scene</a></h2>

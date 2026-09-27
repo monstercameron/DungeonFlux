@@ -144,11 +144,11 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: loading across narration, music and kill-cam scenes cancels abandoned playback and presents the saved scene coherently; browser verification covers repeated loads.
   status: open; logical-state restoration is verified, browser media seek and bed restoration are not yet audited
 
-- [ ] QA-024 · Make combat end accept its documented CLI syntax
+- [x] QA-024 · Make combat end accept its documented CLI syntax
   why: The usage says combat end slain|fled, but the parser requires three arguments and reads the outcome from the third.
-  lane: L-OPS (Codex) · paths: `cmd/dfctl/control.go`, `cmd/dfctl/control_test.go`, `docs/devlog.html` · depends: none
+  lane: L-OPS (Codex) · paths: `TODOS.md`, `cmd/dfctl/control.go`, `cmd/dfctl/control_test.go`, `docs/devlog.html` · depends: none
   done when: the documented command constructs the correct thrall outcome event, malformed arguments fail clearly, and CLI tests and live verification pass.
-  status: open; found while verifying snapshot retries
+  status: done (this commit); CLI coverage 73.0%; artifacts/test/QA-024/gate-20260927-061029.log green; both documented outcomes accepted by real CLI and advanced combat to cliffhanger
 
 - [ ] QA-025 · Make lobby readiness visible and authoritative
   why: Tapping Ready in the joined player lobby leaves the button and party state unchanged, with no confirmation or explanation.
