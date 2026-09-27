@@ -87,6 +87,12 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-killcam-combat-deadline">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">GPT-6 review</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-killcam-combat-deadline">Kill cams now consume the combat time budget</a></h2>
+  <p>The four-second finishing videos held combat but did not consume an enforced phase deadline. The planned 30-second cap existed in the standalone simulator, while production phase entry started no cap timer. Cinematic handling also swallowed cap callbacks. Commit fe2695e starts one pausable deadline at Combat entry and handles expiry before cinematic events. A clip near the deadline is truncated, the overlay closes, and combat resolves without changing an already determined victory. Regression tests cover both outcomes, disabled turn timers, pause, host exits, and stale callbacks. The phase package passes its gate with 81.7% statement coverage. Cached clips cover the paladin and rogue reference heroes; the whole interactive demo still requires a timed rehearsal.</p>
+</li>
+
 <li class="entry" data-kind="issue" id="e-20260927-document-encoding">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-document-encoding">Use explicit UTF-8 when editing Windows documentation</a></h2>

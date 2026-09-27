@@ -216,17 +216,29 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: the test consumes startup separately, retains exact two-event sequence and log assertions, passes repeated execution, and the runtime gate and race CI pass.
   status: done (this commit); 1000 repeated runs passed; gate artifacts/test/QA-035/gate-20260927-070606.log green, runtime 81.9%; follow-up race CI required
 
-- [ ] QA-036 · Keep kill cams inside the combat demo deadline
+- [x] QA-036 · Keep kill cams inside the combat demo deadline
   why: The production combat phase never starts the planned 30-second cap, and active kill cams swallow cap callbacks, allowing cinematics to extend rehearsal pacing.
   lane: L-ENG (GPT-6 subagent, developer-directed) · paths: `internal/game/phase/support.go`, `internal/game/phase/killcam.go`, `internal/game/phase/combat_deadline.go`, `internal/game/phase/combat_deadline_test.go` · depends: KC-002
   done when: production combat starts one fixed 30-second deadline, kill cams never extend it, expiry during a clip resolves combat coherently, pause/resume remains supported, and the phase gate passes.
-  status: claimed killcam_review 2026-09-27
+  status: done fe2695e; gate artifacts/test/QA-036/gate-20260927-072020.log; phase 81.7%; independent gate artifacts/test/QA-036/gate-20260927-072241.log and full gate artifacts/test/ORCH/gate-20260927-072132.log passed
 
 - [x] QA-037 · Repair documentation encoding after a Windows edit
   why: A Python edit decoded UTF-8 documentation using the Windows default encoding, corrupting punctuation in existing prose.
   lane: ORCH (Codex) · paths: `TODOS.md`, `docs/devlog.html` · depends: QA-032
   done when: historical content matches the pre-edit UTF-8 bytes, intended new entries remain, and both files validate as UTF-8 without BOM and LF endings.
   status: done (this commit); prior sections compared against 3697267
+
+- [x] QA-038 · Record the combat deadline review and cache verification
+  why: The GPT-6 correction needs completion evidence and a public explanation of its demo timing behavior.
+  lane: ORCH (Codex) · paths: `TODOS.md`, `docs/devlog.html` · depends: QA-036
+  done when: the subagent change is independently reviewed and gated, cached videos are verified, and remaining timing limitations are recorded.
+  status: done (this commit); full verification artifacts/test/QA-AUDIT/checkpoint-09.json
+
+- [ ] QA-039 · Dispatch entry effects when starting directly at a debug phase
+  why: The debug_start constructor discards phase-entry effects, including the new combat deadline, while normal and event-driven transitions dispatch them.
+  lane: ORCH (Codex) · paths: pending game/bootstrap ownership breakdown · depends: QA-036
+  done when: a debug-start combat run dispatches its entry effects exactly once and respects the same deadline as normal entry.
+  status: open
 
 ### Kill cam (developer-directed single writer, 2026-09-27)
 
