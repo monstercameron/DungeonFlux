@@ -20,7 +20,7 @@ var killcamVideos *killcamPlayer
 
 type killcamPlayer struct {
 	pool   map[string]js.Value
-	key    string
+	model  KillcamModel
 	video  js.Value
 	failed js.Func
 }
@@ -91,7 +91,7 @@ func applyKillcamPlayer(model KillcamModel, preloads []string) {
 		if p.video.Truthy() {
 			p.video.Call("pause")
 		}
-		p.key = ""
+		p.model = KillcamModel{}
 		return
 	}
 	p.preload(model.URL)
@@ -104,13 +104,15 @@ func applyKillcamPlayer(model KillcamModel, preloads []string) {
 		return
 	}
 	container.Call("appendChild", video)
-	if p.key != model.Key {
+	if p.model.Key != model.Key {
 		if p.video.Truthy() {
 			p.video.Call("pause")
 		}
-		video.Set("currentTime", float64(model.OffsetMS)/1000)
-		p.key, p.video = model.Key, video
 	}
+	if killcamNeedsSeek(p.model, model, video.Get("currentTime").Float()*1000) {
+		video.Set("currentTime", float64(model.OffsetMS)/1000)
+	}
+	p.model, p.video = model, video
 	if !model.Playing || reducedMotion() {
 		video.Call("pause")
 		return

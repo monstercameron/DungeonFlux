@@ -40,3 +40,30 @@ func TestKillcamPreloads(t *testing.T) {
 		t.Fatalf("preload=%v", got)
 	}
 }
+
+func TestKillcamNeedsSeek(t *testing.T) {
+	playing := KillcamModel{Key: "1:clip", Playing: true, OffsetMS: 1000}
+	for _, tc := range []struct {
+		name           string
+		previous, next KillcamModel
+		currentMS      float64
+		seek           bool
+	}{
+		{"new cinematic", KillcamModel{}, playing, 0, true},
+		{"different cinematic", KillcamModel{Key: "2:clip", Playing: true}, playing, 1000, true},
+		{"same snapshot remount", playing, playing, 2500, false},
+		{"pause snaps to server", playing, KillcamModel{Key: "1:clip", OffsetMS: 1500}, 1700, true},
+		{"resume snaps to server", KillcamModel{Key: "1:clip", OffsetMS: 1000}, playing, 700, true},
+		{"fresh snapshot small latency", KillcamModel{Key: "1:clip", Playing: true}, playing, 1200, false},
+		{"fresh snapshot threshold", KillcamModel{Key: "1:clip", Playing: true}, playing, 1250, false},
+		{"reconnect behind", KillcamModel{Key: "1:clip", Playing: true}, playing, 200, true},
+		{"reconnect ahead", KillcamModel{Key: "1:clip", Playing: true}, playing, 2500, true},
+		{"server finished", playing, KillcamModel{}, 1000, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := killcamNeedsSeek(tc.previous, tc.next, tc.currentMS); got != tc.seek {
+				t.Fatalf("seek = %v, want %v", got, tc.seek)
+			}
+		})
+	}
+}
