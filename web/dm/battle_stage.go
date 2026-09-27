@@ -3,6 +3,7 @@ package dm
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strings"
 
 	dungeonfluxv1 "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
@@ -66,6 +67,9 @@ func BattleStageFromView(view *dungeonfluxv1.DMView, sequence uint64) BattleStag
 	if battlefield != nil && battlefield.GetCamera() != nil {
 		command := battlefield.GetCamera()
 		camera.Preset = command.GetPreset()
+		if command.GetSeq() > 0 {
+			camera.Seq = command.GetSeq()
+		}
 		camera.FocusTokenID = command.GetFocusTokenId()
 		follow = command.GetFollow()
 		camera.Follow = &follow
@@ -80,7 +84,12 @@ func BattleStageFromView(view *dungeonfluxv1.DMView, sequence uint64) BattleStag
 			hp[stageTokenID(token, index)] = token.GetHp()
 		}
 	}
-	effects := splat.Effects{Seq: sequence}
+	effects := splat.Effects{Seq: sequence, TiltShift: &splat.TiltShift{
+		Enabled: true, Center: 0.54, Band: 0.48, Falloff: 0.24, BlurPX: 4,
+	}}
+	if sceneURL == splat.WoodedPathSceneURL {
+		effects.ColorGrade = &splat.ColorGrade{Theme: "harbor", Strength: 1}
+	}
 	if battlefield != nil {
 		if shake := battlefield.GetShake(); shake != nil {
 			effects.Shake = &splat.Shake{AmplitudePX: float64(shake.GetAmplitudePx()), DurationMS: float64(shake.GetDurationMs())}
@@ -211,8 +220,6 @@ func copyClips(clips map[string]string) map[string]string {
 		return nil
 	}
 	result := make(map[string]string, len(clips))
-	for name, clip := range clips {
-		result[name] = clip
-	}
+	maps.Copy(result, clips)
 	return result
 }

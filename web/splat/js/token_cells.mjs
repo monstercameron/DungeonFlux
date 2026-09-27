@@ -1,8 +1,8 @@
 const MAX_TOKENS = 64;
 const LIFT = 0.025;
 const INSET = 0.08;
-const PLAYER_COLOR = [0.04, 0.86, 1.0];
-const VILLAIN_COLOR = [1.0, 0.09, 0.16];
+const PLAYER_COLOR = [0.16, 0.58, 0.58];
+const VILLAIN_COLOR = [0.70, 0.16, 0.13];
 
 const VERTEX_GLSL = `
 attribute vec3 aPosition;
@@ -25,7 +25,7 @@ void main(void) {
   float aa = max(fwidth(edge.x), fwidth(edge.y));
   float border = 1.0 - smoothstep(0.035 - aa, 0.035 + aa, min(edge.x, edge.y));
   float glow = 1.0 - smoothstep(0.16, 0.48, min(edge.x, edge.y));
-  float alpha = clamp((0.48 + 0.46 * border + 0.10 * glow) * uOpacity, 0.0, 1.0);
+  float alpha = clamp((0.08 + 0.58 * border + 0.08 * glow) * uOpacity, 0.0, 1.0);
   vec3 color = mix(uColor, min(vec3(1.0), uColor + vec3(0.35)), border);
   gl_FragColor = vec4(color, alpha);
 }`;
