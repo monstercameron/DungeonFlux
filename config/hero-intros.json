@@ -1,0 +1,16 @@
+{
+  "heroes": [
+    {
+      "id": "male",
+      "reference": "artifacts/runtime/buildtime/assets/fdc8b409acfbc38a3dd694d4240c55ec3f584206bd221b494066119f412e70ea.png",
+      "person": "a man in his early thirties with short dark hair, a trimmed beard and a steady, determined gaze",
+      "costume": "the paladin's steel plate, blue hooded cloak and cream tabard with the gold star"
+    },
+    {
+      "id": "female",
+      "reference": "artifacts/runtime/buildtime/assets/bb9c3f53393282e7fdf7bebe9c63513af7314ad40e1d588b32c1ba3ba31b24e2.png",
+      "person": "a woman in her late twenties with dark hair tied back, sharp cheekbones and a wry, watchful gaze",
+      "costume": "the rogue's dark leather armor, teal scarf and hooded half-cloak, with daggers at her belt"
+    }
+  ]
+}
