@@ -163,3 +163,19 @@ func TestScriptedOutcomeText(t *testing.T) {
 		t.Fatalf("empty bible clue = %q, want none", got)
 	}
 }
+
+func TestWithKeyterms(t *testing.T) {
+	bible := content.DefaultWorldBible().Keyterms
+	got := withKeyterms(domain.Transcribe{UtteranceID: "u"}, bible)
+	if len(got.Keyterms) == 0 || got.Keyterms[0] != bible[0] {
+		t.Fatalf("keyterms = %v, want the world bible's %v", got.Keyterms, bible)
+	}
+	got.Keyterms[0] = "changed"
+	if bible[0] == "changed" {
+		t.Fatal("withKeyterms shares the caller's slice")
+	}
+	kept := withKeyterms(domain.Transcribe{Keyterms: []string{"own"}}, bible)
+	if len(kept.Keyterms) != 1 || kept.Keyterms[0] != "own" {
+		t.Fatalf("keyterms = %v, want the effect's own terms kept", kept.Keyterms)
+	}
+}

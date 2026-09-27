@@ -51,6 +51,8 @@ func Step(state State, input Event) (Result, error) {
 		result.transcribed(event)
 	case domain.Say:
 		result.typed(event)
+	case domain.TalkEnd:
+		result.talkEnded(event)
 	case domain.Interpreted:
 		result.interpreted(event)
 	case domain.InterpretFailed:
@@ -96,6 +98,19 @@ func (r *Result) typed(event domain.Say) {
 		return
 	}
 	r.transcribed(domain.Transcribed{UtteranceID: event.UtteranceID, Text: text})
+}
+
+// talkEnded asks for the finished push-to-talk recording to be transcribed.
+// The Transcribed result then enters at the transcript stage like typed text.
+// Only the seat in the conversation may speak; other seats are ignored.
+func (r *Result) talkEnded(event domain.TalkEnd) {
+	if r.State.Done || event.UtteranceID == "" {
+		return
+	}
+	if r.State.Seat != 0 && event.Seat != r.State.Seat {
+		return
+	}
+	r.Effects = append(r.Effects, domain.Transcribe{Seat: eventSeat(event.Seat), UtteranceID: event.UtteranceID})
 }
 
 func (r *Result) interpreted(event domain.Interpreted) {

@@ -98,7 +98,10 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 		Sounds: set.sound, Assets: assets, Budget: ledger, Fake: fakeMode,
 		Fallbacks: loadVoiceFallbacks(filepath.Join("artifacts", "runtime", "buildtime", "manifest.json")),
 	})
-	runtime.Handle(runner, loggedExecutor(cfg.logger, transcriber.Execute))
+	keyterms := content.DefaultWorldBible().Keyterms
+	runtime.Handle(runner, loggedExecutor(cfg.logger, func(ctx context.Context, effect domain.Transcribe, scope domain.Scope, in ports.Inbox) {
+		transcriber.Execute(ctx, withKeyterms(effect, keyterms), scope, in)
+	}))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, interpret.Execute))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, llmexec.NewCharacterFlavorExecutor(set.llm).Execute))
 	cast := content.DefaultOneShot().NPCs

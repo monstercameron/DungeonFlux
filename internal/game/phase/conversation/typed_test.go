@@ -88,3 +88,39 @@ func TestStep_Conversation_interpretKindIgnoresCase(t *testing.T) {
 		})
 	}
 }
+
+func TestStep_Conversation_talkEndRequestsTranscription(t *testing.T) {
+	cases := []struct {
+		name  string
+		state State
+		end   domain.TalkEnd
+		want  bool
+	}{
+		{name: "speaking seat is transcribed", state: State{Seat: 1}, end: domain.TalkEnd{Seat: 1, UtteranceID: "utt-1"}, want: true},
+		{name: "unset seat accepts any speaker", state: State{}, end: domain.TalkEnd{Seat: 2, UtteranceID: "utt-2"}, want: true},
+		{name: "other seat is ignored", state: State{Seat: 1}, end: domain.TalkEnd{Seat: 2, UtteranceID: "utt-3"}},
+		{name: "missing utterance id is ignored", state: State{Seat: 1}, end: domain.TalkEnd{Seat: 1}},
+		{name: "finished conversation is ignored", state: State{Seat: 1, Done: true}, end: domain.TalkEnd{Seat: 1, UtteranceID: "utt-4"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := Step(tc.state, Event{Event: tc.end})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !tc.want {
+				if len(result.Effects) != 0 {
+					t.Fatalf("effects = %#v, want none", result.Effects)
+				}
+				return
+			}
+			if len(result.Effects) != 1 {
+				t.Fatalf("effects = %#v, want one transcribe", result.Effects)
+			}
+			transcribe, ok := result.Effects[0].(domain.Transcribe)
+			if !ok || transcribe.UtteranceID != tc.end.UtteranceID || transcribe.Seat != tc.end.Seat {
+				t.Fatalf("effect = %#v, want transcribe for %q seat %d", result.Effects[0], tc.end.UtteranceID, tc.end.Seat)
+			}
+		})
+	}
+}

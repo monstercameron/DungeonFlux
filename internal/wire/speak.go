@@ -165,3 +165,13 @@ func gatedClue(bible content.WorldBible) string {
 	}
 	return ""
 }
+
+// withKeyterms gives speech-to-text the setting's proper nouns ("Mother
+// Vell", "the lamplighter") when the effect carries none, so they are
+// transcribed as spoken.
+func withKeyterms(effect domain.Transcribe, keyterms []string) domain.Transcribe {
+	if len(effect.Keyterms) == 0 && len(keyterms) > 0 {
+		effect.Keyterms = append([]string(nil), keyterms...)
+	}
+	return effect
+}
