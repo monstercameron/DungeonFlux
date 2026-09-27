@@ -49,6 +49,12 @@ func (m Machine) LegalMoveViews(seat domain.SeatID) []domain.MoveView {
 		}
 		return creation.LegalMoveViews(state)
 	case vocab.StateExploration:
+		if m.conversationDone {
+			return []domain.MoveView{
+				move(vocab.MoveLeave, "Leave the tavern", true, ""),
+				move(vocab.MoveTalkVell, "Talk to Mother Vell", false, "The conversation is over"),
+			}
+		}
 		active := m.spotlight == seat
 		return []domain.MoveView{move(vocab.MoveTalkVell, "Talk to Mother Vell", active, waitingReason(m.spotlight)), move(vocab.MoveLeave, "Leave", active, waitingReason(m.spotlight))}
 	case vocab.StateConversation:

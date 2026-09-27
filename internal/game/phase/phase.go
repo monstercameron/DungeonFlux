@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/monstercameron/DungeonFlux/internal/core/fsm"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
@@ -20,19 +21,21 @@ import (
 )
 
 const (
-	eventStart       vocab.EventKind = "phase_start"
-	eventCreationEnd vocab.EventKind = "phase_creation_end"
-	eventOpeningEnd  vocab.EventKind = "phase_opening_end"
-	eventTalk        vocab.EventKind = "phase_talk"
-	eventPersuade    vocab.EventKind = "phase_persuade"
-	eventStepAway    vocab.EventKind = "phase_step_away"
-	eventLeave       vocab.EventKind = "phase_leave"
-	eventRoll        vocab.EventKind = "phase_roll"
-	eventResolution  vocab.EventKind = "phase_resolution"
-	eventCombat      vocab.EventKind = "phase_combat"
-	eventCliffhanger vocab.EventKind = "phase_cliffhanger"
-	eventSkip        vocab.EventKind = "phase_skip"
-	eventReset       vocab.EventKind = "phase_reset"
+	eventStart        vocab.EventKind = "phase_start"
+	eventCreationEnd  vocab.EventKind = "phase_creation_end"
+	eventOpeningEnd   vocab.EventKind = "phase_opening_end"
+	eventTalk         vocab.EventKind = "phase_talk"
+	eventPersuade     vocab.EventKind = "phase_persuade"
+	eventStepAway     vocab.EventKind = "phase_step_away"
+	eventLeave        vocab.EventKind = "phase_leave"
+	eventRoll         vocab.EventKind = "phase_roll"
+	eventResolution   vocab.EventKind = "phase_resolution"
+	eventCombat       vocab.EventKind = "phase_combat"
+	eventCliffhanger  vocab.EventKind = "phase_cliffhanger"
+	eventSkip         vocab.EventKind = "phase_skip"
+	eventReset        vocab.EventKind = "phase_reset"
+	idleHookTimerName                 = "idle_hook"
+	idleHookDelay                     = 15 * time.Second
 )
 
 // Definition describes one registered top-level phase.
@@ -198,7 +201,7 @@ func (m *Machine) stepHost(cmd domain.HostCmd) (Result, error) {
 			m.syncCombatSeats()
 		}
 		if m.State() == vocab.StateExploration && m.conversationDone {
-			return m.step(eventLeave)
+			return m.beginHook(m.spotlight)
 		}
 		return m.step(eventSkip)
 	case vocab.HostStart:
@@ -216,11 +219,12 @@ func cancelTurnTimerEffects() []domain.Effect {
 		domain.CancelTimer{Name: "seat_deadline:1"},
 		domain.CancelTimer{Name: "seat_deadline:2"},
 		domain.CancelTimer{Name: "turn_timer"},
+		domain.CancelTimer{Name: idleHookTimerName},
 	}
 }
 
 func isTurnTimer(name string) bool {
-	if name == "creation_timeout" || name == "turn_timer" {
+	if name == "creation_timeout" || name == "turn_timer" || name == idleHookTimerName {
 		return true
 	}
 	return strings.HasPrefix(name, "seat_deadline:") || strings.HasPrefix(name, "turn_timer/") || strings.HasPrefix(name, "combat_turn_timer")
@@ -301,26 +305,25 @@ func (m *Machine) stepOpening(event domain.Event) (Result, error) {
 }
 
 func (m *Machine) stepExploration(event domain.Event) (Result, error) {
+	if timer, ok := event.(domain.TimerFired); ok {
+		if timer.Name == idleHookTimerName && m.conversationDone {
+			return m.beginHook(m.spotlight)
+		}
+		return m.unhandled(event)
+	}
 	act, ok := event.(domain.Act)
 	if !ok {
 		return m.passive(event)
 	}
 	switch act.Move {
 	case vocab.MoveTalkVell:
+		if m.conversationDone {
+			return m.unhandled(event)
+		}
 		m.spotlight, m.conversation = act.Seat, conversation.State{Seat: act.Seat}
 		return m.step(eventTalk)
 	case vocab.MoveLeave:
-		m.spotlight = act.Seat
-		started, err := m.startHook()
-		if err != nil {
-			return Result{}, err
-		}
-		result, err := m.step(eventLeave)
-		if err != nil {
-			return Result{}, err
-		}
-		result.Effects = append(started, result.Effects...)
-		return result, nil
+		return m.beginHook(act.Seat)
 	default:
 		return m.unhandled(event)
 	}

@@ -110,6 +110,72 @@ func TestMachine_LeaveStartsArrivalCannedLine(t *testing.T) {
 	}
 }
 
+func TestMachine_ResolutionOffersLeaveAndIdleHookReachesCombat(t *testing.T) {
+	machine := newMachine(t)
+	for _, event := range []domain.Event{
+		domain.HostCmd{Cmd: vocab.HostStart},
+		domain.PCLocked{Seat: 1},
+		domain.LineDone{UtteranceID: "opening"},
+		domain.Act{Seat: 1, Move: vocab.MoveTalkVell},
+		domain.Act{Seat: 1, Move: vocab.MovePersuade},
+		domain.TimerFired{Name: "roll_resolved"},
+	} {
+		if _, err := machine.Step(event); err != nil {
+			t.Fatalf("setup event %T: %v", event, err)
+		}
+	}
+	result, err := machine.Step(domain.LineDone{UtteranceID: "reveal"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if machine.State() != vocab.StateExploration || !hasTimer(result.Effects, idleHookTimerName, idleHookDelay) {
+		t.Fatalf("resolution result = %q/%#v", machine.State(), result.Effects)
+	}
+	for _, seat := range []domain.SeatID{1, 2} {
+		moves := machine.LegalMoveViews(seat)
+		if len(moves) != 2 || moves[0].ID != vocab.MoveLeave || moves[0].Label != "Leave the tavern" || !moves[0].Enabled {
+			t.Fatalf("seat %d leave menu = %#v", seat, moves)
+		}
+		if moves[1].Enabled {
+			t.Fatalf("seat %d retained talk action = %#v", seat, moves)
+		}
+	}
+
+	result, err = machine.Step(domain.TimerFired{Name: idleHookTimerName})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if machine.State() != vocab.StateHookEvent || !hasPlayCanned(result.Effects, "hook-arrival") {
+		t.Fatalf("idle hook result = %q/%#v", machine.State(), result.Effects)
+	}
+	result, err = machine.Step(domain.LineDone{UtteranceID: "hook-arrival"})
+	if err != nil || !hasStartLine(result.Effects, "stranger") {
+		t.Fatalf("arrival completion = %#v err=%v", result, err)
+	}
+	result, err = machine.Step(domain.LineDone{UtteranceID: "stranger"})
+	if err != nil || machine.State() != vocab.StateCombat {
+		t.Fatalf("stranger completion = %q/%#v err=%v", machine.State(), result, err)
+	}
+}
+
+func hasPlayCanned(effects []domain.Effect, id domain.UtteranceID) bool {
+	for _, effect := range effects {
+		if play, ok := effect.(domain.PlayCanned); ok && play.UtteranceID == id {
+			return true
+		}
+	}
+	return false
+}
+
+func hasStartLine(effects []domain.Effect, id domain.UtteranceID) bool {
+	for _, effect := range effects {
+		if line, ok := effect.(domain.StartLine); ok && line.UtteranceID == id {
+			return true
+		}
+	}
+	return false
+}
+
 func newMachine(t *testing.T) Machine {
 	t.Helper()
 	machine, err := New()

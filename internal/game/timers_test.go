@@ -27,7 +27,7 @@ func TestState_TimersOffCancelsAndOnAllowsFutureTimers(t *testing.T) {
 	state := New(domain.OneShot{}, []byte("toggle"))
 	state.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostStart}})
 	off := state.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostTimersOff}})
-	if state.TurnTimersEnabled() || countCancelTimers(off.Effects) != 4 {
+	if state.TurnTimersEnabled() || countCancelTimers(off.Effects) != 5 {
 		t.Fatalf("off state/effects = %v/%#v", state.TurnTimersEnabled(), off.Effects)
 	}
 	on := state.Step(domain.Envelope{Event: domain.HostCmd{Cmd: vocab.HostCmd("TIMERS_ON")}})

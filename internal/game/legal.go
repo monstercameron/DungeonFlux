@@ -98,7 +98,7 @@ func explorationMoves(view domain.View, seat domain.SeatID) []domain.MoveView {
 	active := view.Spotlight == seat
 	return []domain.MoveView{
 		move(vocab.MoveTalkVell, "Talk to Mother Vell", active, reasonFor(!active, reasonWaiting)),
-		move(vocab.MoveLeave, "Leave", active, reasonFor(!active, reasonWaiting)),
+		move(vocab.MoveLeave, "Leave the tavern", active, reasonFor(!active, reasonWaiting)),
 	}
 }
 

@@ -27,12 +27,12 @@ func newPhaseEngine(t *testing.T) *phaseEngine {
 }
 
 func (e *phaseEngine) Step(envelope domain.Envelope) domain.StepOut {
-	_, err := e.machine.Step(envelope.Event)
+	result, err := e.machine.Step(envelope.Event)
 	e.entries[e.machine.State()]++
 	if err != nil {
 		return domain.StepOut{Ack: &domain.Ack{Reason: err.Error()}}
 	}
-	return domain.StepOut{Ack: &domain.Ack{Accepted: true}}
+	return domain.StepOut{Effects: result.Effects, Ack: &domain.Ack{Accepted: true}}
 }
 
 func (e *phaseEngine) Inspect() domain.Inspect {
@@ -84,6 +84,24 @@ func TestWalkStory_HappyRollEnds(t *testing.T) {
 	send(t, driver, domain.TimerFired{Name: "roll_resolved"})
 	send(t, driver, domain.LineDone{UtteranceID: "reveal"})
 	send(t, driver, domain.Act{Seat: 1, Move: vocab.MoveLeave})
+	finishFromHook(t, driver)
+	finishWalk(t, engine, driver)
+}
+
+func TestWalkStory_IdleAfterResolutionStartsHook(t *testing.T) {
+	engine := newPhaseEngine(t)
+	driver := sim.New(engine, sim.Script{})
+	walkToExploration(t, driver)
+	send(t, driver, domain.Act{Seat: 1, Move: vocab.MoveTalkVell})
+	send(t, driver, domain.Act{Seat: 1, Move: vocab.MovePersuade})
+	send(t, driver, domain.TimerFired{Name: "roll_resolved"})
+	send(t, driver, domain.LineDone{UtteranceID: "reveal"})
+	if _, err := driver.Advance(15 * time.Second); err != nil {
+		t.Fatal(err)
+	}
+	if got := engine.machine.State(); got != vocab.StateHookEvent {
+		t.Fatalf("idle fallback phase = %q, want %q", got, vocab.StateHookEvent)
+	}
 	finishFromHook(t, driver)
 	finishWalk(t, engine, driver)
 }

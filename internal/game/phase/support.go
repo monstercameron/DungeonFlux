@@ -147,6 +147,12 @@ func (m *Machine) transition(event vocab.EventKind, effects []domain.Effect) (Re
 	out := Result{Transition: transition, Effects: append([]domain.Effect(nil), effects...), Paused: m.paused}
 	if transition.From == vocab.StateResolution && transition.To == vocab.StateExploration {
 		m.conversationDone = true
+		if m.timersEnabled {
+			out.Effects = append(out.Effects, domain.StartTimer{
+				Name: idleHookTimerName, After: idleHookDelay, Pausable: true,
+				Scope: domain.Scope{Machine: vocab.MachineSession},
+			})
+		}
 	}
 	if event == eventStart && m.timersEnabled {
 		out.Effects = append(out.Effects, domain.StartTimer{Name: "creation_timeout", After: 30e9, Pausable: true, Scope: domain.Scope{Machine: vocab.MachineSession}})
@@ -170,6 +176,25 @@ func (m *Machine) transition(event vocab.EventKind, effects []domain.Effect) (Re
 		out.Effects = append(out.Effects, started...)
 	}
 	return out, nil
+}
+
+func (m *Machine) beginHook(seat domain.SeatID) (Result, error) {
+	if seat == 1 || seat == 2 {
+		m.spotlight = seat
+	}
+	started, err := m.startHook()
+	if err != nil {
+		return Result{}, err
+	}
+	result, err := m.step(eventLeave)
+	if err != nil {
+		return Result{}, err
+	}
+	result.Effects = append(started, result.Effects...)
+	if m.conversationDone {
+		result.Effects = append(result.Effects, domain.CancelTimer{Name: idleHookTimerName})
+	}
+	return result, nil
 }
 
 func (m *Machine) startHook() ([]domain.Effect, error) {
