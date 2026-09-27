@@ -72,3 +72,59 @@ func TestDebugPatch_CombatHPAndTimerOperations(t *testing.T) {
 		t.Fatalf("timer cancel = %#v", out)
 	}
 }
+
+func TestDebugGoto_SelectsCombatTurn(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		turn  string
+		phase string
+		seat  int
+	}{
+		{name: "pc1", turn: "pc1", phase: "pc_turn", seat: 1},
+		{name: "thrall", turn: "thrall", phase: "enemy_turn", seat: 1},
+		{name: "pc2", turn: "pc2", phase: "pc_turn", seat: 2},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			state := NewWithDebug(domain.OneShot{}, []byte("debug-goto-turn"), true, "")
+			out := state.Step(domain.Envelope{Event: domain.DebugGoto{Phase: vocab.StateCombat, Turn: tc.turn}})
+			if out.Ack != nil && !out.Ack.Accepted {
+				t.Fatalf("goto ack = %#v", out.Ack)
+			}
+			if state.View().Combat == nil || activeCombatTurn(state.View().Combat) != tc.turn {
+				t.Fatalf("combat view = %#v", state.View().Combat)
+			}
+		})
+	}
+}
+
+func activeCombatTurn(view *domain.CombatView) string {
+	if view == nil {
+		return ""
+	}
+	for _, entry := range view.TurnOrder {
+		if !entry.Active {
+			continue
+		}
+		switch entry.TokenID {
+		case "pc-1":
+			return "pc1"
+		case "pc-2":
+			return "pc2"
+		case "thrall":
+			return "thrall"
+		}
+	}
+	return ""
+}
+
+func TestDebugGoto_InvalidCombatTurnLeavesStateUnchanged(t *testing.T) {
+	state := NewWithDebug(domain.OneShot{}, []byte("debug-goto-invalid-turn"), true, "")
+	before := state.View()
+	out := state.Step(domain.Envelope{Event: domain.DebugGoto{Phase: vocab.StateCombat, Turn: "rogue"}})
+	if out.Ack == nil || out.Ack.Accepted {
+		t.Fatalf("invalid goto ack = %#v", out.Ack)
+	}
+	if got := state.View(); got.Path != before.Path || got.Combat != before.Combat {
+		t.Fatalf("invalid goto mutated state: before=%#v after=%#v", before, got)
+	}
+}
