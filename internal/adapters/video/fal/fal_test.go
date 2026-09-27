@@ -36,6 +36,12 @@ func TestAdapter_SubmitPollDownload(t *testing.T) {
 			if !strings.HasPrefix(body["image_url"].(string), "data:image/png") || body["generate_audio"] != false {
 				t.Errorf("body=%v", body)
 			}
+			if !strings.HasPrefix(body["end_image_url"].(string), "data:image/png;base64,") {
+				t.Errorf("missing end_image_url=%v", body)
+			}
+			if _, present := body["last_frame_url"]; present {
+				t.Errorf("obsolete last_frame_url present: %v", body)
+			}
 			_, _ = w.Write(fixture(t, "submit.json"))
 			return
 		}
@@ -47,7 +53,7 @@ func TestAdapter_SubmitPollDownload(t *testing.T) {
 	}))
 	defer server.Close()
 	a := New("secret", "test/model", server.URL, httpx.NewVendorClient("fal", 0, nil))
-	job, err := a.Submit(t.Context(), ports.VideoRequest{FirstFrame: []byte("png"), Prompt: "move", Seconds: 5, Resolution: "480p"})
+	job, err := a.Submit(t.Context(), ports.VideoRequest{FirstFrame: []byte("png"), LastFrame: []byte("end"), Prompt: "move", Seconds: 5, Resolution: "480p"})
 	if err != nil || job.ID != "fal-1" || job.Vendor != "fal" {
 		t.Fatalf("job=%+v err=%v", job, err)
 	}

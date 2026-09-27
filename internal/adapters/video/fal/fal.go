@@ -44,7 +44,7 @@ var _ ports.VideoGen = (*Adapter)(nil)
 type submitPayload struct {
 	Prompt        string `json:"prompt"`
 	ImageURL      string `json:"image_url"`
-	LastFrameURL  string `json:"last_frame_url,omitempty"`
+	EndImageURL   string `json:"end_image_url,omitempty"`
 	Duration      int    `json:"duration"`
 	Resolution    string `json:"resolution"`
 	GenerateAudio bool   `json:"generate_audio"`
@@ -70,7 +70,7 @@ func payload(req ports.VideoRequest) ([]byte, error) {
 	}
 	p := submitPayload{Prompt: req.Prompt, ImageURL: imageData(req.FirstFrame), Duration: req.Seconds, Resolution: req.Resolution, GenerateAudio: false}
 	if len(req.LastFrame) > 0 {
-		p.LastFrameURL = imageData(req.LastFrame)
+		p.EndImageURL = imageData(req.LastFrame)
 	}
 	return json.Marshal(p)
 }
