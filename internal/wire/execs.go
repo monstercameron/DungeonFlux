@@ -77,6 +77,7 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 	if _, ok := set.tts.(fakeTTS); ok {
 		set.tts = fakeTTS{read: assets.Read}
 	}
+	set.tts = sequenceTTS(cfg.config, set.tts, cfg.recordings)
 	pcm := voiceout.NewPCMExecutor(set.tts, audio)
 	canned := voiceout.NewCannedExecutor(assets, audio)
 	interpret := llmexec.NewInterpretExecutor(llmexec.InterpretConfig{LLM: set.llm})

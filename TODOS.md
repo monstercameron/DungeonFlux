@@ -198,15 +198,15 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   done when: effect dispatch supplies stable phase, seat and call indexes, speculative cancellations do not consume a committed position, and Reset/checkpoint replay restores sequence alignment.
   status: done 94c813b; gate artifacts/test/QA-032/gate-20260927-071857.log; ports 100.0%, runtime 83.2%; wire integration passed
 
-- [ ] QA-033 · Replay recorded speech and media without live providers
-  why: The existing sequence wrapper covers only LLM text; Safe Mode must also use cached audio and media and avoid live vendor calls.
-  lane: ORCH (Codex) · paths: pending adapter decorators and composition breakdown · depends: QA-030, QA-031, QA-032
-  done when: rehearsed text, speech and media play from recordings; missing recordings produce explicit cached/canned fallbacks; a provider spy proves no live calls while Safe Mode is active.
-  status: open
+- [x] QA-033 · Record and replay complete rehearsal speech
+  why: Sequence replay currently saves model text but still calls the TTS provider for speech, so it cannot support an offline rehearsal.
+  lane: ORCH (Codex) · paths: `internal/modelchain/recorded_tts.go`, `internal/modelchain/recorded_pcm.go`, `internal/modelchain/recorded_tts_test.go`, `internal/modelchain/doc.go`, `internal/wire/safemode_tts.go`, `internal/wire/safemode_tts_test.go`, `internal/wire/execs.go`, `internal/voice/out/render.go`, `internal/voice/out/render_test.go`, `TODOS.md`, `docs/devlog.html` · depends: QA-030, QA-031, QA-032
+  done when: complete bounded PCM recordings replay without contacting TTS, canceled/failed audio never replaces a valid recording, contracts and pre-rendered lines remain distinct, missing recordings fail to existing canned policy, and gates pass.
+  status: done (this commit); gate artifacts/test/QA-033/gate-20260927-075212.log; modelchain 84.8%, voice/out 87.2%, wire integration passed
 
 - [ ] QA-034 · Wire authoritative Safe Mode through host, engine and executors
   why: The host optimistically changes local state for an unsupported engine command and cannot report or restore the actual replay policy.
-  lane: ORCH (Codex) · paths: pending contract and host policy breakdown · depends: QA-033
+  lane: ORCH (Codex) · paths: pending contract and host policy breakdown · depends: QA-033, QA-040
   done when: Safe Mode on/off is acknowledged by the engine, projected to all host sessions, honored by executors, restored by Reset/checkpoints, and verified through the live host UI.
   status: open
 
@@ -238,6 +238,18 @@ The build todos below cover the whole architecture in plan §0, grouped by syste
   why: The debug_start constructor discards phase-entry effects, including the new combat deadline, while normal and event-driven transitions dispatch them.
   lane: ORCH (Codex) · paths: pending game/bootstrap ownership breakdown · depends: QA-036
   done when: a debug-start combat run dispatches its entry effects exactly once and respects the same deadline as normal entry.
+  status: open
+
+- [ ] QA-040 · Keep Safe Mode media and transcription offline
+  why: TTS and LLM replay alone do not stop image, video, sound, billboard and STT providers from making live calls.
+  lane: ORCH (Codex) · paths: pending media recording and provider policy breakdown · depends: QA-033
+  done when: cached media or explicit local fallbacks cover all generation paths, STT fails into typed input without a live call, and provider spies prove offline behavior.
+  status: open
+
+- [ ] QA-041 · Project the remaining combat deadline to the host
+  why: The production combat deadline runs, but Combat.Cap is never populated and the host counter remains at zero.
+  lane: ORCH (Codex) · paths: pending phase timer and Watch projection breakdown · depends: QA-036
+  done when: the countdown reflects remaining active combat time, freezes on pause, and restores correctly after checkpoints.
   status: open
 
 ### Kill cam (developer-directed single writer, 2026-09-27)

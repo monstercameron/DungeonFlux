@@ -41,7 +41,7 @@ func (e *RenderLinesExecutor) Execute(ctx context.Context, effect domain.RenderL
 	}
 	assets := make([]domain.Asset, 0, len(effect.Texts))
 	for index, text := range effect.Texts {
-		asset, err := e.render(ctx, text, effect.Voices[index])
+		asset, err := e.render(ctx, text, effect.Voices[index], effect.Set)
 		if err != nil {
 			if ctx.Err() != nil {
 				return
@@ -72,8 +72,9 @@ func (e *RenderLinesExecutor) validate(effect domain.RenderLines) error {
 	return nil
 }
 
-func (e *RenderLinesExecutor) render(ctx context.Context, text, voice string) (domain.Asset, error) {
-	stream, err := e.tts.Stream(ctx, ports.TTSRequest{VoiceID: voice, SampleRate: renderSampleRate}, &singleText{text: text})
+func (e *RenderLinesExecutor) render(ctx context.Context, text, voice, set string) (domain.Asset, error) {
+	callMeta := ports.CallMeta{UtteranceID: domain.UtteranceID("prerender:" + set + ":" + inputHash(text, voice))}
+	stream, err := e.tts.Stream(ctx, ports.TTSRequest{Meta: callMeta, VoiceID: voice, SampleRate: renderSampleRate}, &singleText{text: text})
 	if err != nil {
 		return domain.Asset{}, fmt.Errorf("start TTS: %w", err)
 	}

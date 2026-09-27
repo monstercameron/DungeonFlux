@@ -87,6 +87,12 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-rehearsal-speech-replay">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">ORCH (Codex)</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-rehearsal-speech-replay">Text replay still depended on live speech</a></h2>
+  <p>The rehearsal chain stored generated text but synthesized its audio again on every replay. QA-033 adds complete PCM recordings keyed by the room's stable call position, voice, language and sample rate. Pre-rendered lines include their content identity so several lines in one set cannot overwrite one another. Recording is bounded to 8 MiB and 4096 chunks; oversized speech continues playing without replacing the previous recording. Cancellation, early close, malformed PCM and provider failures also leave the previous recording intact. Final audio returned alongside EOF is delivered before completion, preventing the last chunk from disappearing. Forced replay never contacts TTS, including when the recording is missing, and returns an error to the existing canned-speech policy. The todo gate passed with 84.8% modelchain and 87.2% voice/out coverage. This completes the speech layer only: media and transcription policy remain QA-040, and authoritative host Safe Mode remains QA-034. See <a href="https://github.com/monstercameron/DungeonFlux/blob/main/internal/modelchain/recorded_tts.go">the speech replay decorator</a>.</p>
+</li>
+
 <li class="entry" data-kind="issue" id="e-20260927-flat-battlefield-registration">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-flat-battlefield-registration">Keep the fallback on the active battlefield</a></h2>

@@ -37,6 +37,10 @@ func TestRenderLinesExecutor_ExecutePostsAssetsInOrder(t *testing.T) {
 	if got := tts.Calls[0].Request.SampleRate; got != renderSampleRate {
 		t.Fatalf("sample rate=%d", got)
 	}
+	firstID, secondID := tts.Calls[0].Request.Meta.UtteranceID, tts.Calls[1].Request.Meta.UtteranceID
+	if firstID == "" || firstID == secondID {
+		t.Fatalf("pre-rendered recording identities collide: %q, %q", firstID, secondID)
+	}
 }
 
 func TestRenderLinesExecutor_ExecutePostsFailureForValidationOrTTS(t *testing.T) {
