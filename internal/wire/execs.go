@@ -79,6 +79,7 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 	interpret := llmexec.NewInterpretExecutor(llmexec.InterpretConfig{LLM: set.llm})
 	npcReply := llmexec.NewNPCReplyExecutor(set.llm)
 	opening := llmexec.NewOpeningExecutor(set.llm)
+	outcome := llmexec.NewOutcomeExecutor(set.llm, gatedClue(content.DefaultWorldBible()))
 	composeSource := assets.Read
 	if fakeMode {
 		composeSource = func(ctx context.Context, id domain.AssetID) ([]byte, error) {
@@ -108,6 +109,8 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 			speakGenerated(npcReply.Execute, pcm.StartLine)(ctx, effect, scope, in)
 		case vocab.RoleOpening:
 			cannedWhenEmpty(speakGenerated(opening.Execute, pcm.StartLine))(ctx, effect, scope, in)
+		case vocab.RoleNPCReveal, vocab.RoleNPCRefuse:
+			speakGeneratedOr(outcome.Execute, pcm.StartLine, scriptedOutcomeText(effect.Role))(ctx, effect, scope, in)
 		case vocab.RoleCliffhanger:
 			scriptedCliffhanger(pcm.StartLine)(ctx, effect, scope, in)
 		default:

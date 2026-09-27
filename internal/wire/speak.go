@@ -106,3 +106,62 @@ func cannedWhenEmpty(speak lineExecutor) lineExecutor {
 		speak(ctx, effect, scope, in)
 	}
 }
+
+// speakGeneratedOr voices an LLM-written line and, when the model fails,
+// speaks the scripted fallback text live instead of failing the line. It is
+// used where the phase's canned recording is the only other path and a failed
+// model call would otherwise leave the table in silence.
+func speakGeneratedOr(generate, speak lineExecutor, fallback string) lineExecutor {
+	return func(ctx context.Context, effect domain.StartLine, scope domain.Scope, in ports.Inbox) {
+		guard := &lineFailureGuard{in: in, id: effect.UtteranceID}
+		speakGenerated(generate, speak)(ctx, effect, scope, guard)
+		if !guard.failed {
+			return
+		}
+		if strings.TrimSpace(fallback) == "" {
+			in.Post(ctx, domain.Envelope{Scope: scope, Event: domain.LineFailed{UtteranceID: effect.UtteranceID, FailureKind: guard.kind}})
+			return
+		}
+		scripted := effect
+		scripted.Input = fallback
+		speak(ctx, scripted, scope, in)
+	}
+}
+
+// lineFailureGuard forwards everything except the guarded line's line_failed,
+// which it records so the caller can fall back.
+type lineFailureGuard struct {
+	in     ports.Inbox
+	id     domain.UtteranceID
+	failed bool
+	kind   vocab.ErrKind
+}
+
+func (g *lineFailureGuard) Post(ctx context.Context, env domain.Envelope) bool {
+	if failed, ok := env.Event.(domain.LineFailed); ok && failed.UtteranceID == g.id {
+		g.failed, g.kind = true, failed.FailureKind
+		return true
+	}
+	return g.in.Post(ctx, env)
+}
+
+// scriptedOutcomeText returns the scripted reveal or refusal (plan §0.7) for a
+// check outcome line.
+func scriptedOutcomeText(role vocab.Role) string {
+	id := content.CannedNPCRefuseID
+	if role == vocab.RoleNPCReveal {
+		id = content.CannedNPCRevealID
+	}
+	line, _ := content.CannedLineByID(id)
+	return line.Text
+}
+
+// gatedClue returns the world bible's secret the reveal may speak.
+func gatedClue(bible content.WorldBible) string {
+	for _, secret := range bible.Secrets {
+		if secret.GatedBehind == content.CondClueGranted {
+			return secret.Text
+		}
+	}
+	return ""
+}
