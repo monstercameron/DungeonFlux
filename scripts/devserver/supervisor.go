@@ -332,6 +332,10 @@ func (s *supervisor) serve() error {
 		if s.proxy(w, r) {
 			return
 		}
+		if s.cfg.liveReload {
+			serveLiveStarting(w, r)
+			return
+		}
 		servePlaceholder(w, s.cfg, s.writer)
 	})
 	server := &http.Server{Addr: public, Handler: mux}
@@ -369,7 +373,11 @@ func (s *supervisor) proxy(w http.ResponseWriter, r *http.Request) bool {
 	if s.cfg.liveReload {
 		configureLiveProxy(proxy)
 	}
-	proxy.ErrorHandler = func(rw http.ResponseWriter, _ *http.Request, _ error) {
+	proxy.ErrorHandler = func(rw http.ResponseWriter, request *http.Request, _ error) {
+		if s.cfg.liveReload {
+			serveLiveStarting(rw, request)
+			return
+		}
 		http.Error(rw, "server starting", http.StatusServiceUnavailable)
 	}
 	proxy.ServeHTTP(w, r)

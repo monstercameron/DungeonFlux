@@ -104,13 +104,7 @@ func publishLiveWASM(dir, goRoot string) error {
 }
 
 func (s *supervisor) liveRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/__dev/version", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "no-store")
-		s.mu.RLock()
-		version := s.liveVersion
-		s.mu.RUnlock()
-		_, _ = io.WriteString(w, version)
-	})
+	mux.HandleFunc("/__dev/version", s.serveLiveVersion)
 	mux.HandleFunc("/__dev/reload.mjs", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/javascript")
 		w.Header().Set("Cache-Control", "no-store")

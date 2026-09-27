@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-reload-ready-recovery">
+  <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-reload-ready-recovery">Development reload waits for the application</a></h2>
+  <p>A player tab refreshed during a successful rebuild and remained on a plain server-starting response. Starting the child process did not mean its HTTP listener was ready. The version endpoint now checks the current child's health and withholds the new build identifier while it is unavailable or being replaced. Browser navigations that arrive during startup receive a small recovery page which reloads after the first healthy version. RPC failures remain HTTP 503. Client polling has a three-second request timeout, checks immediately when a background tab becomes visible, and restarts after browser page-cache restoration. Five JavaScript tests cover reload behavior, and the supervisor gate passes at 72.5% coverage. The existing supervisor executable was updated in place; Windows briefly retained its image lock after process exit, so replacement used a bounded retry before launch. Both player tabs recovered automatically after a source rebuild, returning to the join screen with their names and room codes retained.</p>
+</li>
 <li class="entry" data-kind="issue" id="e-20260927-persistent-hero-billboards">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-persistent-hero-billboards">Prepared battle heroes survive new runs</a></h2>

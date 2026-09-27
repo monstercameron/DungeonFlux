@@ -90,6 +90,7 @@ func TestLiveRoutes_VersionScriptAndRunningChildPreserved(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := &supervisor{cfg: configuration{repoRoot: root}, liveVersion: "build-2", child: &exec.Cmd{}}
+	setLiveTestBackend(t, s, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	child := s.child
 	s.startIfIdle("missing.exe")
 	if s.child != child {
