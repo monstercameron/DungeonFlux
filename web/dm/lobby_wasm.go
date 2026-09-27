@@ -37,12 +37,30 @@ func lobbyTagline() ui.Node {
 	return html.Div(html.Props{Class: "df-lobby-tagline", Style: absoluteStyle(50, 55, 210, 95)}, html.P(html.Props{}, ui.Text(T("en", "dm.lobby.tagline", nil))))
 }
 
+// lobbyStatusPlateCSS makes the status plate hang like a tavern sign: the
+// stack sways from a pivot above it, a warm glow breathes on a different
+// cycle so the two never line up, and a slow highlight crosses the gilt.
+// The plate's own clip-path cuts off any box-shadow, so the glow is a
+// drop-shadow filter on the stack, which follows the bevelled outline. Like
+// the crest and the weather, it plays regardless of prefers-reduced-motion
+// (developer decision, 2026-09-27): the extra .df-dm-layer class outranks the
+// transition sheet's reduced-motion "animation:none!important" blanket.
+const lobbyStatusPlateCSS = `
+.df-dm-layer .df-dm-lobby .df-lobby-status-stack{transform-origin:50% -60px;animation:df-plate-sway 7s ease-in-out infinite,df-plate-glow 4.3s ease-in-out infinite!important;will-change:transform,filter}
+.df-lobby-status-stack .df-gold-plate-button{position:relative}
+.df-lobby-status-stack .df-gold-plate-button::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 38%,rgba(255,248,215,.5) 50%,transparent 62%);transform:translateX(-120%);animation:df-plate-sheen 6.5s ease-in-out 1.5s infinite}
+@keyframes df-plate-sway{0%,100%{transform:translateY(0) rotate(-.55deg)}50%{transform:translateY(-3px) rotate(.55deg)}}
+@keyframes df-plate-glow{0%,100%{filter:drop-shadow(0 0 8px rgba(240,180,80,.32)) drop-shadow(0 0 22px rgba(225,150,40,.16))}50%{filter:drop-shadow(0 0 14px rgba(255,205,115,.62)) drop-shadow(0 0 40px rgba(235,160,50,.34))}}
+@keyframes df-plate-sheen{0%,72%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+`
+
 // lobbyStatus shows only the single primary action row (Begin the tale /
 // Waiting for players (n/2)). The raw join URL and the developer-only rows
 // ("Host controls on the host page", "Locale: EN") belong on the host page,
 // not in front of the table; the short join text and QR live in the join
 // panel instead.
 func lobbyStatus(model LobbyModel) ui.Node {
+	injectStyleSheet("df-dm-lobby-status-plate", lobbyStatusPlateCSS)
 	return html.Div(html.Props{Class: "df-lobby-status-stack", Style: map[string]string{"position": "absolute", "left": "390px", "top": "384px", "width": "500px", "z-index": "4", "display": "grid", "gap": "10px"}},
 		GoldPlateButton("✦", LobbyStatus(model)),
 	)
