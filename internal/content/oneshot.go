@@ -28,7 +28,7 @@ func DefaultOneShot() OneShot {
 				{ID: "opening", Text: "Rain hammers the Drowned Lantern as the lamplighter's disappearance brings two travellers to Mother Vell's bar.", Leads: []string{"conversation"}},
 				{ID: "conversation", Text: "Mother Vell knows the lamplighter was dragged toward the old bell tower, but she does not answer questions for free.", Leads: []string{"stranger"}},
 				{ID: "stranger", Text: "A dripping courier delivers a sealed letter. Whatever was in the water followed him from the river.", Leads: []string{"combat"}},
-				{ID: "combat", Text: "A drowned thrall bound to the tower bell bursts through the tavern door.", Leads: []string{"cliffhanger"}},
+				{ID: "combat", Text: "A drowned thrall bound to the tower bell bursts through the tavern door. You drive it through the tavern doors onto the wooded river path.", Leads: []string{"cliffhanger"}},
 				{ID: "cliffhanger", Text: "The tower bell tolls midnight, every lantern dies, and whoever rang it knows the heroes' names."},
 			},
 			Encounter: domain.Encounter{

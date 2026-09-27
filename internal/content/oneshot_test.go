@@ -1,10 +1,25 @@
 package content
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 )
+
+func TestDefaultOneShot_CombatBeatBridgesTavernToWoodedPath(t *testing.T) {
+	story := DefaultOneShot()
+	for _, beat := range story.Beats {
+		if beat.ID != "combat" {
+			continue
+		}
+		if !strings.Contains(beat.Text, "drive it through the tavern doors") || !strings.Contains(beat.Text, "wooded river path") {
+			t.Fatalf("combat beat does not explain the battlefield transition: %q", beat.Text)
+		}
+		return
+	}
+	t.Fatal("combat beat is missing")
+}
 
 func TestDefaultOneShot_Validates(t *testing.T) {
 	story := DefaultOneShot()

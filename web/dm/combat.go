@@ -51,6 +51,8 @@ type CombatTurn struct {
 // CombatModel contains the FLAT battlefield image, projected grid, and tokens.
 type CombatModel struct {
 	ImageURL   string
+	Location   string
+	Transition string
 	Visible    bool
 	UseSplat   bool
 	Segments   []CombatSegment
@@ -74,10 +76,12 @@ func CombatModelFromViewAt(view *dungeonfluxv1.DMView, sequence uint64) CombatMo
 		return CombatModel{}
 	}
 	model := CombatModel{
-		Timer:     TimerViewFromProto(view.GetTurnTimer()),
-		Round:     view.GetRound(),
-		Banner:    view.GetCombatBanner(),
-		TurnOrder: projectedTurnOrder(view.GetTurnOrder()),
+		Location:   T(view.GetLocale(), "combat.location", nil),
+		Transition: T(view.GetLocale(), "combat.entry", nil),
+		Timer:      TimerViewFromProto(view.GetTurnTimer()),
+		Round:      view.GetRound(),
+		Banner:     view.GetCombatBanner(),
+		TurnOrder:  projectedTurnOrder(view.GetTurnOrder()),
 	}
 	battlefield := view.GetBattlefield()
 	if battlefield == nil {

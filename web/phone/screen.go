@@ -122,6 +122,11 @@ func (m *FrameModel) ApplyView(view SeatView) ScreenTransition {
 	}
 	previous := m.Screen
 	m.Screen = SelectScreen(view)
+	if m.Screen == ScreenCombat {
+		m.Location = T(m.Locale, "combat.location", nil)
+	} else {
+		m.Location = "The Drowned Lantern"
+	}
 	m.Mode = modeForScreen(m.Screen)
 	m.ActiveTab = PhoneTabPlay
 	m.Connection = ConnectionOnline

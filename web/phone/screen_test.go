@@ -107,8 +107,12 @@ func TestFrameModel_TracksScreenAndConnection(t *testing.T) {
 		t.Fatalf("repeat transition = %+v", second)
 	}
 	model.ApplyView(SeatView{Phase: "combat"})
-	if model.Mode != PhoneModeCombat || model.ActiveTab != PhoneTabPlay {
+	if model.Mode != PhoneModeCombat || model.ActiveTab != PhoneTabPlay || model.Location != T("en", "combat.location", nil) {
 		t.Fatalf("combat frame mode = %q, tab = %q", model.Mode, model.ActiveTab)
+	}
+	model.ApplyView(SeatView{Phase: "cliffhanger"})
+	if model.Location != "The Drowned Lantern" {
+		t.Fatalf("post-combat location = %q", model.Location)
 	}
 	model.SetConnection(ConnectionOffline)
 	if model.Connection != ConnectionOffline {

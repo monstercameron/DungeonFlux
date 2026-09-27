@@ -77,7 +77,9 @@ func combatStageStyle(model CombatModel) map[string]string {
 func combatTopTitle(locale string, model CombatModel) ui.Node {
 	return html.Div(html.Props{Style: map[string]string{"position": "absolute", "left": "460px", "right": "460px", "top": "34px", "text-align": "center", "color": "#efe6d2", "text-shadow": "0 3px 12px #000"}},
 		html.Div(html.Props{Style: map[string]string{"color": "#e7c27a", "font-family": "Cinzel,'Cormorant Garamond',Georgia,serif", "font-size": "34px", "letter-spacing": ".16em", "text-transform": "uppercase"}}, ui.Text(T(locale, "dm.combat.title", nil))),
+		html.Div(html.Props{Style: map[string]string{"margin-top": "4px", "color": "#b8d6d0", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "16px", "letter-spacing": ".08em", "text-transform": "uppercase"}}, ui.Text(T(locale, "combat.location", nil))),
 		html.Div(html.Props{Style: map[string]string{"width": "440px", "max-width": "80%", "height": "1px", "margin": "10px auto", "background": "linear-gradient(90deg,transparent,#d9a441,transparent)"}}),
+		html.Div(html.Props{Style: map[string]string{"margin": "0 auto 8px", "max-width": "90%", "color": "#d9c9ad", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "17px", "font-style": "italic"}}, ui.Text(T(locale, "combat.entry", nil))),
 		html.Div(html.Props{Style: map[string]string{"color": "#efe6d2", "font-family": "Cormorant Garamond,Georgia,serif", "font-size": "27px"}}, ui.Text(combatBanner(model))),
 		html.Span(html.Props{Hidden: locale == "", Style: map[string]string{"display": "none"}}, ui.Text(locale)),
 	)
