@@ -38,7 +38,14 @@ func testSupervisor(t *testing.T) *supervisor {
 	t.Helper()
 	root := t.TempDir()
 	w := &statusWriter{path: filepath.Join(root, "logs", "status.json"), started: time.Now()}
-	return &supervisor{cfg: configuration{repoRoot: root, buildDir: filepath.Join(root, "build"), dataDir: filepath.Join(root, "data")}, writer: w}
+	s := &supervisor{cfg: configuration{repoRoot: root, buildDir: filepath.Join(root, "build"), dataDir: filepath.Join(root, "data")}, writer: w}
+	t.Cleanup(func() {
+		s.stopChild()
+		// Windows may retain an executable image lock briefly after Wait returns.
+		// Keep cleanup bounded and fail normally if the owned file remains locked.
+		removeExitedExecutable(t, filepath.Join(s.cfg.buildDir, "dungeonflux.exe"))
+	})
+	return s
 }
 
 func TestSupervisorChildEnvironmentGeneratesPrivateToken(t *testing.T) {
@@ -363,4 +370,24 @@ func copyFile(source, target string) error {
 		return err
 	}
 	return os.WriteFile(target, data, 0o755)
+}
+
+func removeExitedExecutable(t *testing.T, path string) {
+	t.Helper()
+	deadline := time.NewTimer(3 * time.Second)
+	defer deadline.Stop()
+	retry := time.NewTicker(20 * time.Millisecond)
+	defer retry.Stop()
+	for {
+		err := os.Remove(path)
+		if err == nil || os.IsNotExist(err) {
+			return
+		}
+		select {
+		case <-retry.C:
+		case <-deadline.C:
+			t.Errorf("remove exited test executable %s: %v", path, err)
+			return
+		}
+	}
 }
