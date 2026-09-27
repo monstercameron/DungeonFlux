@@ -76,7 +76,7 @@ func JoinScreen(client *Client) router.Component {
 				html.Div(html.Props{Class: "df-join-topline", Style: map[string]string{"display": "flex", "justify-content": "space-between", "align-items": "center", "min-height": "32px"}}, html.Span(html.Props{Class: "df-join-mark", Style: map[string]string{"color": "#d9a441", "font-size": "25px"}}, html.Text("✦")), languageSwitcher(locale, view)),
 				html.P(html.Props{Class: "df-join-kicker", Style: map[string]string{"margin": "17px 0 7px", "color": "#d9a441", "font-size": "10px", "letter-spacing": ".2em", "font-weight": "700", "text-align": "center"}}, html.Text("DUNGEONFLUX · PLAYER TABLE")),
 				html.H1(html.Props{Class: "df-join-title", Style: map[string]string{"margin": "0", "font-family": "Cormorant Garamond, Cinzel, Georgia, serif", "font-size": "32px", "line-height": "1.05", "color": "#efe6d2", "text-align": "center"}}, html.Text(locale.T("shell.join_title", nil))),
-				html.P(html.Props{Class: "df-join-intro", Style: map[string]string{"margin": "8px 0 17px", "color": "#a89f8c", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "17px", "line-height": "1.3", "text-align": "center"}}, html.Text("Step into the story. No account, no app - just a room code.")),
+				html.P(html.Props{Class: "df-join-intro", Style: map[string]string{"margin": "8px 0 17px", "color": "#a89f8c", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "17px", "line-height": "1.3", "text-align": "center"}}, html.Text("Step into the story. No account, no app — just a room code.")),
 				html.Div(html.Props{Class: "df-join-rule", Style: map[string]string{"height": "1px", "margin": "0 0 13px", "background": "linear-gradient(90deg, transparent, rgba(217,164,65,.68), transparent)"}}),
 				html.Div(html.Props{Class: "df-join-form", Style: map[string]string{"display": "flex", "flex-direction": "column", "gap": "7px", "width": "100%"}},
 					html.Label(html.Props{For: "player-name", Class: "df-join-label", Style: joinLabelStyle()}, html.Text("Your name")),
@@ -90,7 +90,7 @@ func JoinScreen(client *Client) router.Component {
 				html.P(html.Props{Class: "df-join-foot", Style: map[string]string{"margin": "12px 0 0", "color": "#777467", "font-size": "10px", "line-height": "1.35", "text-align": "center"}}, html.Text("Your seat is saved on this device so you can reconnect.")),
 			),
 		)
-		return ui.CreateElement(phone.PhoneFrame(frame, content, nil))
+		return ui.CreateElement(phone.PhoneFrame(frame, content, nil, nil))
 	}
 }
 

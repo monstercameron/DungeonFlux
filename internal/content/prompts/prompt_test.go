@@ -61,3 +61,40 @@ func TestValidateText(t *testing.T) {
 		t.Fatal("accepted empty text")
 	}
 }
+
+func TestValidateText_outcomeCutoffIsThirtyWords(t *testing.T) {
+	cases := []struct {
+		name    string
+		role    vocab.Role
+		words   int
+		wantErr bool
+	}{
+		{name: "reveal at the prompt target", role: vocab.RoleNPCReveal, words: 25},
+		{name: "reveal slightly over the target", role: vocab.RoleNPCReveal, words: 26},
+		{name: "reveal at the cutoff", role: vocab.RoleNPCReveal, words: 30},
+		{name: "reveal over the cutoff", role: vocab.RoleNPCReveal, words: 31, wantErr: true},
+		{name: "refuse at the cutoff", role: vocab.RoleNPCRefuse, words: 30},
+		{name: "refuse over the cutoff", role: vocab.RoleNPCRefuse, words: 31, wantErr: true},
+		{name: "npc reply keeps 25", role: vocab.RoleNPCReply, words: 26, wantErr: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateText(tc.role, strings.TrimSpace(strings.Repeat("word ", tc.words)))
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("ValidateText(%s, %d words) error = %v, want error %v", tc.role, tc.words, err, tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestTemplateFor_outcomePromptStillAsksForTwentyFive(t *testing.T) {
+	for _, role := range []vocab.Role{vocab.RoleNPCReveal, vocab.RoleNPCRefuse} {
+		template, err := TemplateFor(role)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(template.User, "25 words or fewer") {
+			t.Fatalf("%s prompt = %q, want the 25-word target", role, template.User)
+		}
+	}
+}

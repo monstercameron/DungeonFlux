@@ -19,6 +19,10 @@ func TestUIAudioEffects_mapsAcceptedTableMoments(t *testing.T) {
 		{name: "lock", event: domain.PCLocked{Seat: 1}, want: []string{"sfx_hero_lock"}},
 		{name: "non-phone-join", event: domain.Join{Seat: 1, JoinKind: "dm"}},
 		{name: "choice", event: domain.Act{Seat: 1, Move: vocab.MoveSpecies}},
+		{name: "portrait ready", event: domain.AssetReady{Slot: "portrait:2"}, want: []string{"sfx_portrait_ready"}},
+		{name: "other asset", event: domain.AssetReady{Slot: "cliffhanger"}},
+		{name: "talk start", event: domain.TalkStart{Seat: 1}, want: []string{"sfx_talk_open"}},
+		{name: "talk without seat", event: domain.TalkStart{}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

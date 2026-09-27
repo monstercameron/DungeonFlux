@@ -28,6 +28,9 @@ func (b *Bridge) Pause(_ Pause) error { return ErrUnavailable }
 // Dispose reports that no browser is available.
 func (b *Bridge) Dispose() error { return ErrUnavailable }
 
+// Preload reports that no browser is available.
+func Preload(_ Init) error { return ErrUnavailable }
+
 // Events returns an empty event stream for native callers.
 func (b *Bridge) Events() <-chan Event { return nil }
 

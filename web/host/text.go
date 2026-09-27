@@ -125,17 +125,86 @@ func ReadyLine(locale string) string { return T(locale, "host.ready", nil) }
 func RoomLocaleLabel(locale string) string { return T(locale, "ui.host.room_lang", nil) }
 
 // TesterLinksTitle labels the copyable links used during a rehearsal.
-func TesterLinksTitle(locale string) string {
-	if localeOrDefault(locale) == "es" {
-		return "Enlaces de prueba"
-	}
-	return "Tester links"
-}
+func TesterLinksTitle(locale string) string { return T(locale, "host.tester_links_title", nil) }
 
 // CopyLinkLabel labels a copy action.
-func CopyLinkLabel(locale string) string {
-	if localeOrDefault(locale) == "es" {
-		return "Copiar"
-	}
-	return "Copy"
+func CopyLinkLabel(locale string) string { return T(locale, "host.copy_link", nil) }
+
+// HostKicker returns the small "CONTROL ROOM" label above the host title.
+func HostKicker(locale string) string { return T(locale, "host.kicker", nil) }
+
+// ControlsHeading returns the localized "Run controls" section heading.
+func ControlsHeading(locale string) string { return T(locale, "host.controls", nil) }
+
+// ControlsHint returns the localized hint under the run-controls heading.
+func ControlsHint(locale string) string { return T(locale, "host.controls_hint", nil) }
+
+// StageToolsHeading returns the localized "Stage tools" section heading.
+func StageToolsHeading(locale string) string { return T(locale, "host.stage_tools", nil) }
+
+// StageToolsDice labels the force-d20 sub-group inside Stage tools.
+func StageToolsDice(locale string) string { return T(locale, "host.stage_tools_dice", nil) }
+
+// StageToolsFlags labels the toggle sub-group inside Stage tools.
+func StageToolsFlags(locale string) string { return T(locale, "host.stage_tools_flags", nil) }
+
+// LinksHint returns the localized hint under the tester-links heading.
+func LinksHint(locale string) string { return T(locale, "host.links_hint", nil) }
+
+// LinkLabelDM, LinkLabelPhone, and LinkLabelHost name each copyable link.
+func LinkLabelDM(locale string) string    { return T(locale, "host.link.dm", nil) }
+func LinkLabelPhone(locale string) string { return T(locale, "host.link.phone", nil) }
+func LinkLabelHost(locale string) string  { return T(locale, "host.link.host", nil) }
+
+// TokenRevealLabel labels the hold-to-reveal control on a masked link.
+func TokenRevealLabel(locale string) string { return T(locale, "host.token_reveal", nil) }
+
+// TokenHiddenTitle explains why a link's token is masked.
+func TokenHiddenTitle(locale string) string { return T(locale, "host.token_hidden", nil) }
+
+// ResetConfirmTitle, ResetConfirmBody, and ResetConfirmCancel drive the
+// two-step Reset confirmation.
+func ResetConfirmTitle(locale string) string  { return T(locale, "host.reset_confirm_title", nil) }
+func ResetConfirmBody(locale string) string   { return T(locale, "host.reset_confirm_body", nil) }
+func ResetConfirmCancel(locale string) string { return T(locale, "host.reset_confirm_cancel", nil) }
+
+// PhaseLine, SpotlightLine, and TurnTimerLine render the run-status detail
+// lines through the catalog instead of raw concatenation.
+func PhaseLine(locale, phase string) string {
+	return T(locale, "host.status.phase_line", map[string]string{"phase": phase})
 }
+
+func SpotlightLine(locale, seat string) string {
+	return T(locale, "host.status.spotlight_line", map[string]string{"seat": seat})
+}
+
+func TurnTimerLine(locale, seat, remainingMs, totalMs string) string {
+	return T(locale, "host.status.turn_timer_line", map[string]string{"seat": seat, "ms": remainingMs, "total": totalMs})
+}
+
+// StatusPhaseLabel, StatusTurnLabel, and StatusSeatsLabel caption the live
+// status strip's pills.
+func StatusPhaseLabel(locale string) string { return T(locale, "host.status.phase", nil) }
+func StatusTurnLabel(locale string) string  { return T(locale, "host.status.turn", nil) }
+func StatusSeatsLabel(locale string) string { return T(locale, "host.status.seats", nil) }
+
+// StatusSeatsValue renders "{joined}/{total}" through the catalog.
+func StatusSeatsValue(locale string, joined, total int) string {
+	return T(locale, "host.status.seats_value", map[string]string{"joined": strconv.Itoa(joined), "total": strconv.Itoa(total)})
+}
+
+// StatusTimersOn and StatusTimersOff label the timers pill.
+func StatusTimersOn(locale string) string  { return T(locale, "host.status.timers_on", nil) }
+func StatusTimersOff(locale string) string { return T(locale, "host.status.timers_off", nil) }
+
+// StatusAllClear and StatusFailures label the failures pill.
+func StatusAllClear(locale string) string { return T(locale, "host.status.ok", nil) }
+func StatusFailures(locale string, n int) string {
+	return T(locale, "host.status.failures", map[string]string{"n": strconv.Itoa(n)})
+}
+
+// StatusPaused labels the paused pill.
+func StatusPaused(locale string) string { return T(locale, "ui.dm.paused", nil) }
+
+// StatusTurnNone is the placeholder shown when no seat has the spotlight.
+func StatusTurnNone(locale string) string { return T(locale, "host.status.turn_none", nil) }

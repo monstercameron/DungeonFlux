@@ -23,4 +23,18 @@ type BuildStats struct {
 	AttackDamageType string `json:"attack_damage_type"`
 	// AttackBonus is the primary weapon's attack modifier.
 	AttackBonus int `json:"attack_bonus"`
+	// Equipment is the class's starting-equipment option A gear list.
+	Equipment []EquipmentItem `json:"equipment,omitempty"`
+}
+
+// EquipmentItem is one piece of starting gear on a character's inventory.
+type EquipmentItem struct {
+	// Name is the item's display name.
+	Name string `json:"name"`
+	// Description is a short line of flavor or mechanical effect.
+	Description string `json:"description,omitempty"`
+	// Slot groups the item for display: "weapon", "armor", "shield", "gear", or "coin".
+	Slot string `json:"slot,omitempty"`
+	// Worn marks armor and shields the character has equipped.
+	Worn bool `json:"worn,omitempty"`
 }

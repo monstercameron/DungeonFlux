@@ -75,6 +75,7 @@ func cloneBuildStats(stats *domain.BuildStats) *domain.BuildStats {
 	for key, value := range stats.SkillProficiencies {
 		copyStats.SkillProficiencies[key] = value
 	}
+	copyStats.Equipment = append([]domain.EquipmentItem(nil), stats.Equipment...)
 	return &copyStats
 }
 

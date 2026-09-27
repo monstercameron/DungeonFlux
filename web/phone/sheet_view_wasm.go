@@ -11,6 +11,16 @@ import (
 	"github.com/monstercameron/GoWebComponents/v6/ui"
 )
 
+// sheetTabID identifies one of the character sheet's four sections.
+type sheetTabID string
+
+const (
+	sheetTabActions   sheetTabID = "actions"
+	sheetTabInventory sheetTabID = "inventory"
+	sheetTabSpells    sheetTabID = "spells"
+	sheetTabInfo      sheetTabID = "info"
+)
+
 // SheetScreen renders the character sheet inside the shared phone frame.
 func SheetScreen(model *SheetModel) router.Component {
 	return func(_ router.Attrs) *router.Element {
@@ -19,19 +29,77 @@ func SheetScreen(model *SheetModel) router.Component {
 		if locale == "" {
 			locale = "en"
 		}
-		return sheetPage(locale, state)
+		tab := ui.UseState(sheetTabActions)
+		selectActions := ui.UseEvent(func() { tab.Set(sheetTabActions) })
+		selectInventory := ui.UseEvent(func() { tab.Set(sheetTabInventory) })
+		selectSpells := ui.UseEvent(func() { tab.Set(sheetTabSpells) })
+		selectInfo := ui.UseEvent(func() { tab.Set(sheetTabInfo) })
+		taps := map[sheetTabID]ui.Handler{
+			sheetTabActions: selectActions, sheetTabInventory: selectInventory,
+			sheetTabSpells: selectSpells, sheetTabInfo: selectInfo,
+		}
+		return sheetPage(locale, state, tab.Get(), taps)
 	}
 }
 
-func sheetPage(locale string, state SheetSnapshot) ui.Node {
+func sheetPage(locale string, state SheetSnapshot, active sheetTabID, taps map[sheetTabID]ui.Handler) ui.Node {
 	return html.Main(html.Props{Class: "df-phone-sheet", Role: "main", Style: sheetPageStyle()},
 		sheetHero(locale, state),
 		sheetStats(locale, state),
-		sheetTabs(),
-		sheetActionsPanel(locale, state),
-		sheetOtherPanel(locale),
+		sheetTabs(locale, active, taps),
+		sheetTabPanel(locale, state, active),
 		sheetFooter(state),
 	)
+}
+
+func sheetTabPanel(locale string, state SheetSnapshot, active sheetTabID) ui.Node {
+	switch active {
+	case sheetTabInventory:
+		return sheetInventoryPanel(locale, state)
+	case sheetTabSpells:
+		return sheetEmptyPanel(locale, T(locale, "sheet.tab_spells", nil), T(locale, "sheet.no_spells", nil))
+	case sheetTabInfo:
+		return html.Section(html.Props{Class: "df-phone-sheet-section", Style: map[string]string{"display": "grid", "gap": "7px"}},
+			sheetSectionHeading(T(locale, "sheet.tab_info", nil), "", false), sheetBuildDetails(locale, state))
+	default:
+		return html.Div(html.Props{Style: map[string]string{"display": "grid", "gap": "12px"}}, sheetActionsPanel(locale, state), sheetOtherPanel(locale))
+	}
+}
+
+// sheetInventoryPanel lists the class's starting-equipment option A (RULES-008,
+// internal/game/rules.Equipment), so the demo shows real seeded gear rather
+// than placeholder copy.
+func sheetInventoryPanel(locale string, state SheetSnapshot) ui.Node {
+	if len(state.Equipment) == 0 {
+		return sheetEmptyPanel(locale, T(locale, "inventory.title", nil), T(locale, "inventory.empty", nil))
+	}
+	theme := DefaultPhoneTheme()
+	rows := make([]ui.Node, 0, len(state.Equipment))
+	for _, item := range state.Equipment {
+		rows = append(rows, sheetInventoryRow(locale, item, theme))
+	}
+	return html.Section(html.Props{Class: "df-phone-sheet-section", Aria: map[string]string{"label": T(locale, "inventory.title", nil)}, Style: map[string]string{"display": "grid", "gap": "7px"}},
+		sheetSectionHeading(T(locale, "inventory.title", nil), "", false),
+		html.Div(html.Props{Style: map[string]string{"display": "grid", "gap": "7px"}}, rows...),
+	)
+}
+
+func sheetInventoryRow(locale string, item SheetEquipmentItem, theme PhoneTheme) ui.Node {
+	children := []ui.Node{html.Div(html.Props{Style: map[string]string{"min-width": "0", "display": "grid", "gap": "1px"}},
+		html.Strong(html.Props{Style: map[string]string{"color": theme.Parchment, "font-family": theme.Serif, "font-size": "16px"}}, html.Text(item.Name)),
+		html.Small(html.Props{Style: map[string]string{"overflow": "hidden", "color": theme.Muted, "font-family": theme.Sans, "font-size": "11px", "text-overflow": "ellipsis"}}, html.Text(item.Description)),
+	)}
+	if item.Worn {
+		children = append(children, html.Span(html.Props{Style: map[string]string{
+			"padding": "2px 8px", "border": "1px solid " + theme.GoldBright, "border-radius": "999px",
+			"color": theme.GoldBright, "font-family": theme.Sans, "font-size": "10px", "letter-spacing": ".04em", "white-space": "nowrap",
+		}}, html.Text(strings.ToUpper(T(locale, "inventory.worn", nil)))))
+	}
+	return html.Div(html.Props{Class: "df-phone-inventory-row", Style: map[string]string{
+		"display": "flex", "align-items": "center", "justify-content": "space-between", "gap": "10px",
+		"min-height": "48px", "padding": "9px 13px", "border": "1px solid rgba(168,159,140,.42)", "border-radius": "9px",
+		"background": "rgba(23,26,35,.92)",
+	}}, children...)
 }
 
 func sheetHero(locale string, state SheetSnapshot) ui.Node {
@@ -51,7 +119,7 @@ func sheetHero(locale string, state SheetSnapshot) ui.Node {
 		level += "AC " + strconv.Itoa(int(state.AC))
 	}
 	if level == "" {
-		level = sheetUnknown(locale)
+		level = "—"
 	}
 	return html.Section(html.Props{Class: "df-phone-sheet-hero", Style: map[string]string{
 		"display": "grid", "grid-template-columns": "112px minmax(0, 1fr)", "gap": "14px", "align-items": "center",
@@ -68,7 +136,7 @@ func sheetHero(locale string, state SheetSnapshot) ui.Node {
 
 func sheetHPBar(locale string, state SheetSnapshot) ui.Node {
 	if state.HPMax <= 0 {
-		return html.P(html.Props{Class: "df-phone-sheet-unknown", Style: map[string]string{"margin": "0", "color": "#a89f8c", "font-size": "12px"}}, html.Text(sheetUnknown(locale)+" HP"))
+		return html.P(html.Props{Class: "df-phone-sheet-unknown", Style: map[string]string{"margin": "0", "color": "#a89f8c", "font-size": "12px"}}, html.Text(T(locale, "sheet.hp_none", nil)))
 	}
 	return HPBar(state.HP, state.HPMax)
 }
@@ -97,7 +165,7 @@ func sheetBuildDetails(locale string, state SheetSnapshot) ui.Node {
 	}
 	attack := state.AttackName
 	if attack == "" {
-		attack = sheetUnknown(locale)
+		attack = "—"
 	}
 	if state.AttackDice != "" {
 		attack += " · +" + strconv.Itoa(int(state.AttackBonus)) + " · " + state.AttackDice + " " + state.AttackDamageType
@@ -109,20 +177,29 @@ func sheetBuildDetails(locale string, state SheetSnapshot) ui.Node {
 	)
 }
 
-func sheetTabs() ui.Node {
-	labels := []struct{ icon, label string }{{"⚔", "Actions"}, {"▣", "Inventory"}, {"✦", "Spells"}, {"i", "Info"}}
+func sheetTabs(locale string, active sheetTabID, taps map[sheetTabID]ui.Handler) ui.Node {
+	labels := []struct {
+		id   sheetTabID
+		icon string
+		key  string
+	}{
+		{sheetTabActions, "⚔", "sheet.tab_actions"}, {sheetTabInventory, "▣", "sheet.tab_inventory"},
+		{sheetTabSpells, "✦", "sheet.tab_spells"}, {sheetTabInfo, "i", "sheet.tab_info"},
+	}
 	items := make([]ui.Node, 0, len(labels))
-	for i, item := range labels {
+	for _, item := range labels {
+		label := T(locale, item.key, nil)
+		selected := item.id == active
 		style := map[string]string{
 			"min-height": "44px", "display": "grid", "gap": "2px", "place-items": "center", "padding": "5px 2px",
 			"border": "0", "border-bottom": "1px solid rgba(168,159,140,.3)", "background": "transparent",
-			"color": "#a89f8c", "font-family": "Inter, system-ui, sans-serif", "font-size": "10px",
+			"color": "#a89f8c", "font-family": "Inter, system-ui, sans-serif", "font-size": "10px", "touch-action": "manipulation",
 		}
-		if i == 0 {
+		if selected {
 			style["color"] = "#e7c27a"
 			style["border-bottom-color"] = "#d9a441"
 		}
-		items = append(items, html.Button(html.Props{Type: "button", Class: "df-phone-sheet-tab", Disabled: i != 0, Aria: map[string]string{"label": item.label, "selected": strconv.FormatBool(i == 0)}, Style: style}, html.Span(html.Props{Style: map[string]string{"font-family": "Georgia, serif", "font-size": "19px", "line-height": "1"}}, html.Text(item.icon)), html.Span(html.Props{}, html.Text(item.label))))
+		items = append(items, html.Button(html.Props{Type: "button", Class: "df-phone-sheet-tab", OnClick: taps[item.id], Aria: map[string]string{"label": label, "selected": strconv.FormatBool(selected)}, Style: style}, html.Span(html.Props{Style: map[string]string{"font-family": "Georgia, serif", "font-size": "19px", "line-height": "1"}}, html.Text(item.icon)), html.Span(html.Props{}, html.Text(label))))
 	}
 	return html.Nav(html.Props{Class: "df-phone-sheet-tabs", Aria: map[string]string{"label": "Character sheet sections"}, Style: map[string]string{"display": "grid", "grid-template-columns": "repeat(4, minmax(0, 1fr))", "gap": "4px", "border-bottom": "1px solid rgba(168,159,140,.3)"}}, items...)
 }
@@ -197,7 +274,7 @@ func sheetSectionHeading(title, detail string, compact bool) ui.Node {
 }
 
 func sheetEmptyPanel(locale, title, message string) ui.Node {
-	return html.Section(html.Props{Class: "df-phone-sheet-empty", Aria: map[string]string{"label": title}, Style: map[string]string{"display": "grid", "gap": "4px", "padding": "10px 12px", "border": "1px dashed rgba(168,159,140,.42)", "border-radius": "9px", "color": "#a89f8c"}}, sheetSectionHeading(title, "", true), html.P(html.Props{Style: map[string]string{"margin": "0", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "15px"}}, html.Text(message+" "+sheetUnknown(locale)+" data.")))
+	return html.Section(html.Props{Class: "df-phone-sheet-empty", Aria: map[string]string{"label": title}, Style: map[string]string{"display": "grid", "gap": "4px", "padding": "10px 12px", "border": "1px dashed rgba(168,159,140,.42)", "border-radius": "9px", "color": "#a89f8c"}}, sheetSectionHeading(title, "", true), html.P(html.Props{Style: map[string]string{"margin": "0", "font-family": "Cormorant Garamond, Georgia, serif", "font-size": "15px"}}, html.Text(message)))
 }
 
 func sheetPortrait(state SheetSnapshot) ui.Node {
@@ -229,14 +306,13 @@ func sheetActionHint(state SheetSnapshot) string {
 	if state.AC > 0 {
 		return "AC " + strconv.Itoa(int(state.AC))
 	}
-	return "Demo features"
+	return "—"
 }
 
 func sheetCombatActions(locale string) string {
 	return localizedSheet(locale, "Combat Actions", "Acciones de combate")
 }
-func sheetOther(locale string) string   { return localizedSheet(locale, "Other", "Otros") }
-func sheetUnknown(locale string) string { return localizedSheet(locale, "Unknown", "Desconocido") }
+func sheetOther(locale string) string { return localizedSheet(locale, "Other", "Otros") }
 
 func localizedSheet(locale, english, spanish string) string {
 	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(locale)), "es") {
@@ -246,11 +322,11 @@ func localizedSheet(locale, english, spanish string) string {
 }
 
 func sheetPageStyle() map[string]string {
-	background := "#10131b"
+	background := "none"
 	if url := ArtURL(phoneBackgroundAsset); url != "" {
 		background = "linear-gradient(180deg, rgba(10,13,19,.32), rgba(10,13,19,.9)), url(\"" + url + "\")"
 	}
-	return map[string]string{"display": "grid", "align-content": "start", "gap": "12px", "min-height": "0", "box-sizing": "border-box", "padding": "2px 0 18px", "overflow": "auto", "background": background, "background-size": "cover", "background-position": "center", "color": "#efe6d2"}
+	return map[string]string{"display": "grid", "align-content": "start", "gap": "12px", "min-height": "0", "box-sizing": "border-box", "padding": "2px 0 18px", "overflow": "auto", "background-color": "#10131b", "background-image": background, "background-size": "cover", "background-position": "center", "color": "#efe6d2"}
 }
 
 func sheetInitials(name string) string {

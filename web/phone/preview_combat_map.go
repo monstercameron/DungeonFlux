@@ -46,7 +46,7 @@ func combatMapPhone(myTurn bool) *df.PhoneView {
 	grid.Tokens = []*df.MapToken{
 		{TokenId: "pc-1", Name: "Astra Vale", Kind: "rogue", Cell: &df.Cell{C: 2, R: 1}, Hp: 9, HpMax: 12, Me: me == "pc-1", Active: true, Seat: 1, PortraitUrl: "ui/species_elf", AnimSeq: 1},
 		{TokenId: "pc-2", Name: "Bram Holt", Kind: "paladin", Cell: &df.Cell{C: 3, R: 0}, Hp: 12, HpMax: 12, Me: me == "pc-2", Seat: 2, PortraitUrl: "ui/species_dwarf", AnimSeq: 1},
-		{TokenId: "thrall", Name: "Drowned thrall", Kind: "thrall", Cell: &df.Cell{C: 8, R: 3}, Hp: 12, HpMax: 12, Enemy: true, AnimSeq: 1},
+		{TokenId: "thrall", Name: "Drowned Thrall", Kind: "thrall", Cell: &df.Cell{C: 8, R: 3}, Hp: 12, HpMax: 12, Enemy: true, AnimSeq: 1},
 	}
 	grid.Me, grid.Thrall = &df.Cell{C: 2, R: 1}, &df.Cell{C: 8, R: 3}
 	if !myTurn {

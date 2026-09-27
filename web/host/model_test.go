@@ -89,10 +89,64 @@ func TestLinksFromState_doesNotReuseHostToken(t *testing.T) {
 func TestRunStatusLines_projectsLiveWatchDetails(t *testing.T) {
 	snapshot := snapshotFromState(&df.ScreenState{Phase: "opening", SpotlightSeat: "seat-1", View: &df.ScreenState_Host{Host: &df.HostView{RunMode: "live", Dm: &df.DMView{TurnTimer: &df.Timer{Seat: "seat-1", RemainingMs: 250, TotalMs: 1000}}}}})
 	lines := runStatusLines(snapshot)
-	for _, want := range []string{"Phase: opening", "Spotlight seat: seat-1", "Turn timer (seat-1): 250ms / 1000ms"} {
+	for _, want := range []string{"Phase: Opening", "Spotlight seat: seat-1", "Turn timer (seat-1): 250ms / 1000ms"} {
 		if !containsLine(lines, want) {
 			t.Fatalf("run status = %v, missing %q", lines, want)
 		}
+	}
+}
+
+func TestRunStatusLines_omitsEmptyMode(t *testing.T) {
+	snapshot := snapshotFromState(&df.ScreenState{Phase: "lobby", View: &df.ScreenState_Host{Host: &df.HostView{}}})
+	for _, line := range runStatusLines(snapshot) {
+		if strings.HasPrefix(line, "Mode:") {
+			t.Fatalf("run status = %v, want no empty Mode row", runStatusLines(snapshot))
+		}
+	}
+}
+
+func TestHumanizePhase_capitalizesAndUnderscores(t *testing.T) {
+	if got := humanizePhase("hook_event"); got != "Hook event" {
+		t.Fatalf("humanizePhase(hook_event) = %q", got)
+	}
+	if got := humanizePhase(""); got != "" {
+		t.Fatalf("humanizePhase(\"\") = %q", got)
+	}
+}
+
+func TestMaskLinkToken_hidesTokenValue(t *testing.T) {
+	masked, has := maskLinkToken("http://localhost:1/host?t=dfhost-secret")
+	if !has || strings.Contains(masked, "dfhost-secret") {
+		t.Fatalf("maskLinkToken() = %q, %v", masked, has)
+	}
+	if _, has := maskLinkToken("http://localhost:1/p?room=DF-FAKE"); has {
+		t.Fatal("maskLinkToken() masked a link with no token")
+	}
+}
+
+func TestIsPhase_helpers(t *testing.T) {
+	if !isLobbyPhase("") || !isLobbyPhase("lobby") || isLobbyPhase("combat") {
+		t.Fatal("isLobbyPhase misclassified a phase")
+	}
+	if !isEndPhase("end") || isEndPhase("lobby") {
+		t.Fatal("isEndPhase misclassified a phase")
+	}
+	if isPlayPhase("lobby") || isPlayPhase("end") || !isPlayPhase("combat") {
+		t.Fatal("isPlayPhase misclassified a phase")
+	}
+}
+
+func TestSnapshotFromState_projectsSeatsAndFailures(t *testing.T) {
+	state := &df.ScreenState{View: &df.ScreenState_Host{Host: &df.HostView{
+		LogTail: []string{"info: joined", "ERROR: adapter timeout"},
+		Dm:      &df.DMView{Seats: []*df.LobbySeat{{SeatId: "seat-1", Joined: true}, {SeatId: "seat-2", Joined: false}}},
+	}}}
+	snapshot := snapshotFromState(state)
+	if snapshot.SeatsJoined != 1 || snapshot.SeatsTotal != 2 {
+		t.Fatalf("seats = %d/%d", snapshot.SeatsJoined, snapshot.SeatsTotal)
+	}
+	if snapshot.Failures != 1 {
+		t.Fatalf("failures = %d", snapshot.Failures)
 	}
 }
 

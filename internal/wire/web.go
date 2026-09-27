@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	pathpkg "path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -15,6 +16,21 @@ import (
 )
 
 var assetName = regexp.MustCompile(`^[0-9a-fA-F]{64}\.[A-Za-z0-9]+$`)
+
+// Cache-Control values for the three resource classes served here. See
+// plan.md §0.4 (static media over HTTPS) and the WEB-019/BASE-020 history:
+// hashed content-addressed files never change, so they get the longest TTL
+// browsers respect; splat scene chunks change only when a new scene id
+// ships, so they get a long TTL plus a validator; everything the DM/phone
+// shell loads by a fixed URL (index.html, the WASM bundle, wasm_exec.js, the
+// splat JS modules and scene profile JSON) must revalidate on every load so
+// a fresh deploy is never masked by a stale cached copy (a stale df-splat.mjs
+// once shipped a broken battle view).
+const (
+	cacheControlImmutable  = "public, max-age=31536000, immutable"
+	cacheControlSplatMedia = "public, max-age=2592000, must-revalidate"
+	cacheControlNoCache    = "no-cache"
+)
 
 func mountWeb(mux *http.ServeMux, cfg config.Config) error {
 	root, err := filepath.Abs("web")
@@ -44,8 +60,13 @@ func mountWeb(mux *http.ServeMux, cfg config.Config) error {
 	if err != nil {
 		return fmt.Errorf("resolve splat media root: %w", err)
 	}
-	mux.Handle("/artifacts/media/supersplat/", http.StripPrefix("/artifacts/media/supersplat/", http.FileServer(http.Dir(supersplat))))
+	mux.Handle("/artifacts/media/supersplat/", http.StripPrefix("/artifacts/media/supersplat/", cachedTreeHandler(supersplat, cacheControlSplatMedia)))
 	mux.HandleFunc("/assets/", assetHandler(filepath.Join(cfg.Server.DataDir, "assets")))
+	// Self-hosted display fonts referenced by index.html's @font-face rules and
+	// <link rel=preload>. Like /assets/, these are cached forever: a font
+	// update ships under a new filename (rename-on-change) rather than
+	// overwriting one of these four in place.
+	mux.Handle("/fonts/", http.StripPrefix("/fonts/", fontHandler(filepath.Join(staticRoot, "fonts"))))
 	return nil
 }
 
@@ -82,7 +103,7 @@ func pageHandler(root string) http.HandlerFunc {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
-		serveNoCacheFile(w, r, filepath.Join(root, "index.html"), "text/html; charset=utf-8")
+		serveFileWithCache(w, r, filepath.Join(root, "index.html"), "text/html; charset=utf-8", cacheControlNoCache)
 	}
 }
 
@@ -92,7 +113,7 @@ func fileHandler(name, contentType string) http.HandlerFunc {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
-		serveNoCacheFile(w, r, name, contentType)
+		serveFileWithCache(w, r, name, contentType, cacheControlNoCache)
 	}
 }
 
@@ -113,11 +134,15 @@ func wasmHandler(uncompressed string) http.HandlerFunc {
 			w.Header().Set("Content-Encoding", "gzip")
 			w.Header().Set("Vary", "Accept-Encoding")
 		}
-		serveNoCacheFile(w, r, name, "application/wasm")
+		serveFileWithCache(w, r, name, "application/wasm", cacheControlNoCache)
 	}
 }
 
-func serveNoCacheFile(w http.ResponseWriter, r *http.Request, name, contentType string) {
+// serveFileWithCache serves a single named file with a strong ETag (derived
+// from its size and modification time) and the given Cache-Control value, so
+// callers with cacheControlNoCache still get a cheap 304 on every load while
+// callers with a long max-age skip revalidation entirely until it expires.
+func serveFileWithCache(w http.ResponseWriter, r *http.Request, name, contentType, cacheControl string) {
 	file, err := os.Open(name)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -133,15 +158,42 @@ func serveNoCacheFile(w http.ResponseWriter, r *http.Request, name, contentType 
 		http.NotFound(w, r)
 		return
 	}
-	etag := `"` + strconv.FormatInt(info.Size(), 16) + "-" + strconv.FormatInt(info.ModTime().UnixNano(), 16) + `"`
-	w.Header().Set("Cache-Control", "no-cache")
+	etag := fileETag(info)
+	w.Header().Set("Cache-Control", cacheControl)
 	w.Header().Set("ETag", etag)
-	w.Header().Set("Content-Type", contentType)
+	if contentType != "" {
+		w.Header().Set("Content-Type", contentType)
+	}
 	if matchesETag(r.Header.Get("If-None-Match"), etag) {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
 	http.ServeContent(w, r, filepath.Base(name), info.ModTime(), file)
+}
+
+func fileETag(info os.FileInfo) string {
+	return `"` + strconv.FormatInt(info.Size(), 16) + "-" + strconv.FormatInt(info.ModTime().UnixNano(), 16) + `"`
+}
+
+// cachedTreeHandler serves files under root with a strong ETag, Last-Modified
+// (via http.ServeContent), and the given Cache-Control. It is used for
+// content that changes as a whole directory (a new scene id) rather than per
+// file, so a long max-age is safe as long as a validator is still present to
+// catch a redeploy that reuses the same path.
+func cachedTreeHandler(root, cacheControl string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		rel := filepath.FromSlash(pathpkg.Clean("/" + r.URL.Path))
+		full := filepath.Join(root, rel)
+		if !isRegularFile(full) {
+			http.NotFound(w, r)
+			return
+		}
+		serveFileWithCache(w, r, full, "", cacheControl)
+	}
 }
 
 func matchesETag(header, etag string) bool {
@@ -189,6 +241,11 @@ func staticHandler(root string) http.Handler {
 	})
 }
 
+// assetHandler serves /assets/{sha256}.{ext}. The name is the content hash
+// itself, so it is a strong ETag by construction and the response never
+// changes for a given URL: Cache-Control is immutable with a one-year
+// max-age (the longest browsers honor), and a client that already has the
+// file need not even revalidate it.
 func assetHandler(root string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
@@ -201,11 +258,49 @@ func assetHandler(root string) http.HandlerFunc {
 			return
 		}
 		path := filepath.Join(root, name)
-		if !isRegularFile(path) {
+		file, err := os.Open(path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				http.NotFound(w, r)
+				return
+			}
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+		defer func() { _ = file.Close() }()
+		info, err := file.Stat()
+		if err != nil || !info.Mode().IsRegular() {
 			http.NotFound(w, r)
 			return
 		}
-		http.ServeFile(w, r, path)
+		etag := `"` + strings.ToLower(name) + `"`
+		w.Header().Set("Cache-Control", cacheControlImmutable)
+		w.Header().Set("ETag", etag)
+		if matchesETag(r.Header.Get("If-None-Match"), etag) {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+		http.ServeContent(w, r, filepath.Base(path), info.ModTime(), file)
+	}
+}
+
+// fontHandler serves the self-hosted .woff2 files under root as
+// font/woff2, cached like a content-addressed asset (immutable, one-year
+// max-age): these ship under a fixed small set of filenames and are updated
+// by renaming, never by overwriting bytes at an existing URL.
+func fontHandler(root string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		rel := filepath.FromSlash(pathpkg.Clean("/" + r.URL.Path))
+		full := filepath.Join(root, rel)
+		if !isRegularFile(full) || !strings.EqualFold(filepath.Ext(full), ".woff2") {
+			http.NotFound(w, r)
+			return
+		}
+		serveFileWithCache(w, r, full, "font/woff2", cacheControlImmutable)
 	}
 }
 

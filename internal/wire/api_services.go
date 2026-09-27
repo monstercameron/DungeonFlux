@@ -9,6 +9,7 @@ import (
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"github.com/monstercameron/DungeonFlux/internal/api"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
+	voicein "github.com/monstercameron/DungeonFlux/internal/voice/in"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -123,14 +124,33 @@ func (s *audioService) Listen(req *df.ListenRequest, stream df.AudioService_List
 	}
 }
 
-type noopTalkSink struct{}
+// assemblerTalkSink feeds push-to-talk audio into the assembler the
+// transcriber reads. The Talk server used noopTalkSink, which dropped every
+// chunk, so every Transcribe found no recording and no STT call was made.
+type assemblerTalkSink struct{ assembler *voicein.Assembler }
 
-func (noopTalkSink) Start(context.Context, api.TalkSession) error  { return nil }
-func (noopTalkSink) Chunk(context.Context, api.TalkChunk) error    { return nil }
-func (noopTalkSink) End(context.Context, api.TalkSession) error    { return nil }
-func (noopTalkSink) Cancel(context.Context, api.TalkSession) error { return nil }
+func (s assemblerTalkSink) Start(ctx context.Context, session api.TalkSession) error {
+	return s.assembler.Start(ctx, voiceSession(session))
+}
 
-var _ api.TalkSink = noopTalkSink{}
+func (s assemblerTalkSink) Chunk(ctx context.Context, chunk api.TalkChunk) error {
+	return s.assembler.Chunk(ctx, voicein.Chunk{Session: voiceSession(chunk.Session), Seq: chunk.Seq, Data: chunk.Data})
+}
+
+func (s assemblerTalkSink) End(ctx context.Context, session api.TalkSession) error {
+	_, err := s.assembler.End(ctx, voiceSession(session))
+	return err
+}
+
+func (s assemblerTalkSink) Cancel(ctx context.Context, session api.TalkSession) error {
+	return s.assembler.Cancel(ctx, session.UtteranceID)
+}
+
+func voiceSession(session api.TalkSession) voicein.Session {
+	return voicein.Session{Seat: session.Seat, UtteranceID: session.UtteranceID, MIME: session.MIME}
+}
+
+var _ api.TalkSink = assemblerTalkSink{}
 
 type hubAudioOut struct{ hub *api.ListenHub }
 

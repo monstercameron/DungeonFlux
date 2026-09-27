@@ -68,3 +68,32 @@ func TestMixState_DuckCommandPreservesPlayback(t *testing.T) {
 		t.Fatalf("track = %#v", track)
 	}
 }
+
+func TestRoleFor_classifiesBedsStingersAndOneShots(t *testing.T) {
+	tests := []struct {
+		name     string
+		channel  Channel
+		loop     bool
+		duration float64
+		want     Role
+	}{
+		{name: "music loop", channel: MusicChannel, loop: true, duration: 96, want: RoleBed},
+		{name: "ambience loop", channel: AmbienceChannel, loop: true, duration: 30, want: RoleBed},
+		{name: "cliffhanger bed", channel: MusicChannel, duration: 24, want: RoleBed},
+		{name: "opening swell", channel: MusicChannel, duration: 12, want: RoleBed},
+		{name: "combat stinger", channel: MusicChannel, duration: 4, want: RoleStinger},
+		{name: "sfx", channel: SFXChannel, duration: 2, want: RoleOneShot},
+		{name: "looping sfx", channel: SFXChannel, loop: true, duration: 10, want: RoleOneShot},
+		{name: "ambience one-shot", channel: AmbienceChannel, duration: 30, want: RoleOneShot},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := RoleFor(tc.channel, tc.loop, tc.duration); got != tc.want {
+				t.Fatalf("RoleFor = %v, want %v", got, tc.want)
+			}
+		})
+	}
+	if StingerDip <= 0 || StingerDip >= 1 {
+		t.Fatalf("StingerDip = %v", StingerDip)
+	}
+}

@@ -101,6 +101,20 @@ func (m Machine) Outcome() (rulings.CheckOutcome, bool) {
 	return out, true
 }
 
+// Modifier returns the check's ability-plus-proficiency bonus, computed the
+// same way rulings.Persuasion resolves it, so a DM or phone client can show
+// it before the roll has completed.
+func (m Machine) Modifier() int {
+	modifier := rulings.AbilityModifier(m.config.Charisma)
+	if m.config.Proficient {
+		modifier += rulings.ProficiencyBonus(1)
+	}
+	return modifier
+}
+
+// DC returns the check's target number.
+func (m Machine) DC() int { return m.config.DC }
+
 // Offer returns the initial OFFERED event without changing state.
 func (m Machine) Offer() Event {
 	return Event{Kind: EventOffered, CheckID: m.config.CheckID}

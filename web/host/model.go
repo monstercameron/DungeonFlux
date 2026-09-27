@@ -9,6 +9,18 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+// lobbyPhase and endPhase are the engine phase keys that gate Start and mark
+// the run as finished; every other phase counts as "in play" for host button
+// prominence (§0.13 stage runbook).
+const (
+	lobbyPhase = "lobby"
+	endPhase   = "end"
+)
+
+func isLobbyPhase(phase string) bool { return phase == "" || phase == lobbyPhase }
+func isEndPhase(phase string) bool   { return phase == endPhase }
+func isPlayPhase(phase string) bool  { return !isLobbyPhase(phase) && !isEndPhase(phase) }
+
 type hostAction struct {
 	Label   string
 	Command df.HostCommandKind
@@ -42,21 +54,25 @@ func actionLabels() []string {
 }
 
 type hostSnapshot struct {
-	State      *df.ScreenState
-	View       *df.HostView
-	Status     string
-	SafeMode   bool
-	TimersOn   bool
-	SplatOn    bool
-	Connected  bool
-	Locale     string
-	RoomLocale string
-	Selector   RoomLocaleSelector
-	Phase      string
-	Spotlight  string
-	TurnSeat   string
-	TurnMs     int64
-	TurnTotal  int64
+	State       *df.ScreenState
+	View        *df.HostView
+	Status      string
+	SafeMode    bool
+	TimersOn    bool
+	SplatOn     bool
+	Connected   bool
+	Locale      string
+	RoomLocale  string
+	Selector    RoomLocaleSelector
+	Phase       string
+	Spotlight   string
+	TurnSeat    string
+	TurnMs      int64
+	TurnTotal   int64
+	Paused      bool
+	SeatsJoined int
+	SeatsTotal  int
+	Failures    int
 }
 
 type testerLinks struct {
@@ -121,6 +137,7 @@ func snapshotFromState(state *df.ScreenState) hostSnapshot {
 	}
 	snapshot.Phase = state.GetPhase()
 	snapshot.Spotlight = state.GetSpotlightSeat()
+	snapshot.Paused = state.GetPaused()
 	if state.GetHost() != nil {
 		snapshot.View = state.GetHost()
 		snapshot.Locale = localeOrDefault(state.GetHost().GetLocale())
@@ -136,29 +153,89 @@ func snapshotFromState(state *df.ScreenState) hostSnapshot {
 	}
 	snapshot.Connected = true
 	if host := state.GetHost(); host != nil {
-		if dm := host.GetDm(); dm != nil && dm.GetTurnTimer() != nil {
-			timer := dm.GetTurnTimer()
-			snapshot.TurnSeat = timer.GetSeat()
-			snapshot.TurnMs = timer.GetRemainingMs()
-			snapshot.TurnTotal = timer.GetTotalMs()
+		if dm := host.GetDm(); dm != nil {
+			if dm.GetTurnTimer() != nil {
+				timer := dm.GetTurnTimer()
+				snapshot.TurnSeat = timer.GetSeat()
+				snapshot.TurnMs = timer.GetRemainingMs()
+				snapshot.TurnTotal = timer.GetTotalMs()
+			}
+			seats := dm.GetSeats()
+			snapshot.SeatsTotal = len(seats)
+			for _, seat := range seats {
+				if seat.GetJoined() {
+					snapshot.SeatsJoined++
+				}
+			}
 		}
+		snapshot.Failures = countFailures(host.GetLogTail())
 	}
 	return snapshot
+}
+
+// countFailures scans the host's log tail for lines that look like a
+// failure, so the status strip can surface them without a dedicated
+// server-side failure counter.
+func countFailures(lines []string) int {
+	count := 0
+	for _, line := range lines {
+		lower := strings.ToLower(line)
+		if strings.Contains(lower, "error") || strings.Contains(lower, "fail") {
+			count++
+		}
+	}
+	return count
+}
+
+// humanizePhase turns an engine phase key (for example "hook_event") into a
+// display word ("Hook event") without hard-coding a translation per phase.
+func humanizePhase(phase string) string {
+	if phase == "" {
+		return ""
+	}
+	phase = strings.ReplaceAll(phase, "_", " ")
+	return strings.ToUpper(phase[:1]) + phase[1:]
+}
+
+// maskLinkToken hides a token or seat-token query value in a copyable link,
+// returning the masked display string and whether anything was masked. The
+// caller keeps the real value for copy-to-clipboard and reveal-on-hold.
+func maskLinkToken(raw string) (string, bool) {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return raw, false
+	}
+	query := parsed.Query()
+	for _, key := range []string{"t", "token"} {
+		value := query.Get(key)
+		if value == "" {
+			continue
+		}
+		encoded := "=" + url.QueryEscape(value)
+		masked := strings.Replace(raw, encoded, "="+strings.Repeat("•", 8), 1)
+		if masked != raw {
+			return masked, true
+		}
+	}
+	return raw, false
 }
 
 func runStatusLines(snapshot hostSnapshot) []string {
 	if snapshot.View == nil {
 		return []string{NoSnapshot(snapshot.Locale)}
 	}
-	lines := []string{ModeLine(snapshot.Locale, snapshot.View.GetRunMode())}
+	lines := []string{}
+	if mode := snapshot.View.GetRunMode(); mode != "" {
+		lines = append(lines, ModeLine(snapshot.Locale, mode))
+	}
 	if snapshot.Phase != "" {
-		lines = append(lines, "Phase: "+snapshot.Phase)
+		lines = append(lines, PhaseLine(snapshot.Locale, humanizePhase(snapshot.Phase)))
 	}
 	if snapshot.Spotlight != "" {
-		lines = append(lines, "Spotlight seat: "+snapshot.Spotlight)
+		lines = append(lines, SpotlightLine(snapshot.Locale, snapshot.Spotlight))
 	}
 	if snapshot.TurnSeat != "" || snapshot.TurnMs != 0 || snapshot.TurnTotal != 0 {
-		lines = append(lines, "Turn timer ("+snapshot.TurnSeat+"): "+strconv.FormatInt(snapshot.TurnMs, 10)+"ms / "+strconv.FormatInt(snapshot.TurnTotal, 10)+"ms")
+		lines = append(lines, TurnTimerLine(snapshot.Locale, snapshot.TurnSeat, strconv.FormatInt(snapshot.TurnMs, 10), strconv.FormatInt(snapshot.TurnTotal, 10)))
 	}
 	lines = append(lines, NextD20Line(snapshot.Locale, snapshot.View.GetNextD20()), CombatCapLine(snapshot.Locale, snapshot.View.GetCombatCapRemainingMs()))
 	return lines

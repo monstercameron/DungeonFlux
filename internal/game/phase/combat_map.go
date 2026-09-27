@@ -58,7 +58,7 @@ func (m *Machine) stepCombatDash(event domain.Event) (Result, bool, error) {
 	if !m.combat.DashPending() {
 		return Result{}, true, nil
 	}
-	effects, err := m.finishCombatTurn()
+	effects, err := m.finishCombatTurn(0)
 	return Result{Effects: effects}, true, err
 }
 

@@ -20,6 +20,14 @@ type DialogueOption struct {
 	Primary   bool
 }
 
+// DialoguePartyMember is one hero shown standing at the bar in the
+// conversation's foreground, built from the DM view's build cards.
+type DialoguePartyMember struct {
+	Name        string
+	Class       string
+	PortraitURL string
+}
+
 // DialogueModel contains the conversation lower-third and its legal choices.
 type DialogueModel struct {
 	Visible       bool
@@ -33,7 +41,11 @@ type DialogueModel struct {
 	Locale        string
 	Paused        bool
 	Options       []DialogueOption
+	Party         []DialoguePartyMember
 }
+
+// maxDialogueParty caps the foreground party row; the demo table seats two.
+const maxDialogueParty = 2
 
 // DialogueModelFromState projects a DM snapshot into the TV conversation
 // surface. When the snapshot also carries a phone view, its legal moves are
@@ -61,7 +73,30 @@ func DialogueModelFromState(state *dungeonfluxv1.ScreenState) DialogueModel {
 		model.Speaker = model.NPCName
 	}
 	model.Options = dialogueOptionsFromState(state)
+	model.Party = dialoguePartyFromBuildCards(view.GetBuildCards())
 	return model
+}
+
+// dialoguePartyFromBuildCards projects the DM view's build cards into the
+// foreground party row, skipping unnamed seats and capping at two heroes so
+// the composition reads clean at the bar.
+func dialoguePartyFromBuildCards(cards []*dungeonfluxv1.BuildCard) []DialoguePartyMember {
+	party := make([]DialoguePartyMember, 0, maxDialogueParty)
+	for _, card := range cards {
+		if card == nil || len(party) >= maxDialogueParty {
+			continue
+		}
+		name := strings.TrimSpace(card.GetName())
+		if name == "" {
+			continue
+		}
+		party = append(party, DialoguePartyMember{
+			Name:        name,
+			Class:       strings.TrimSpace(card.GetClassName()),
+			PortraitURL: strings.TrimSpace(card.GetPortraitUrl()),
+		})
+	}
+	return party
 }
 
 func dialogueLine(view *dungeonfluxv1.DMView) (string, string, string, bool) {

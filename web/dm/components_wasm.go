@@ -151,10 +151,9 @@ func PortraitCard(model PortraitCardModel) ui.Node {
 			subtitle = "Adventurer"
 		}
 	}
+	// An empty seat, or one still choosing, shows the gold silhouette glyph
+	// below rather than the game logo standing in for a hero portrait.
 	portrait := model.PortraitURL
-	if portrait == "" {
-		portrait = ArtURL("ui/logo_emblem")
-	}
 	portraitNode := html.Div(html.Props{Class: "df-portrait-card-portrait", Aria: map[string]string{"label": name}},
 		html.Img(html.Props{Src: portrait, Alt: "", Hidden: portrait == "", Raw: map[string]any{"aria-hidden": "true"}}),
 		html.Span(html.Props{Class: "df-portrait-card-silhouette", Hidden: portrait != "", Aria: map[string]string{"hidden": "true"}}, ui.Text(T("en", "dm.glyph.star", nil))),

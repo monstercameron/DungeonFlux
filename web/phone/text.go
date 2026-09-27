@@ -11,9 +11,33 @@ import (
 // catalog is the committed client catalog shared by every phone screen.
 var catalog = i18n.Default()
 
-// phoneLocale resolves the render locale for a phone view, defaulting to
-// English when the server sent none.
+// localeOverride is a client-only display-language preference set from the
+// phone's Menu tab. It changes only how this device renders catalog text;
+// the seat's server-side locale (which selects narration and voice content)
+// is unaffected and keeps coming from the server on every phone view.
+var localeOverride string
+
+// SetLocaleOverride forces every phone screen on this device to render in
+// locale until cleared with an empty string.
+func SetLocaleOverride(locale string) {
+	if strings.TrimSpace(locale) == "" {
+		localeOverride = ""
+		return
+	}
+	localeOverride = i18n.Settle(locale, "")
+}
+
+// LocaleOverride returns the current display-language override, or "" when
+// the phone is following the server's seat locale.
+func LocaleOverride() string { return localeOverride }
+
+// phoneLocale resolves the render locale for a phone view: the device's own
+// override when the player set one, otherwise the server's seat locale,
+// defaulting to English when neither is set.
 func phoneLocale(phone *df.PhoneView) string {
+	if localeOverride != "" {
+		return localeOverride
+	}
 	if phone == nil {
 		return i18n.DefaultLocale
 	}

@@ -84,6 +84,13 @@ func TestE2E_Path21_LatestDMListenReplacesOlderStream(t *testing.T) {
 	if err != nil {
 		t.Fatalf("first Listen: %v", err)
 	}
+	// Listen returns before the server handler runs; the handler sends the
+	// header only after subscribing. Without this wait, under a loaded test
+	// run the second handler could subscribe first and the first stream
+	// would then be the newest and legitimately stay open.
+	if _, err := first.Header(); err != nil {
+		t.Fatalf("first Listen header: %v", err)
+	}
 	secondCtx, secondCancel := context.WithCancel(context.Background())
 	defer secondCancel()
 	if _, err := audio.Listen(secondCtx, &df.ListenRequest{SeatToken: "dm-token"}); err != nil {

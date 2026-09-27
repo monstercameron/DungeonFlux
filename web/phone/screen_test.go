@@ -16,7 +16,7 @@ func TestSelectScreen_AllDemoPhases(t *testing.T) {
 		{"exploration", ScreenMoves},
 		{"conversation", ScreenConversation},
 		{"check", ScreenDice},
-		{"resolution", ScreenSheet},
+		{"resolution", ScreenDice},
 		{"hook_event", ScreenSheet},
 		{"combat", ScreenCombat},
 		{"cliffhanger", ScreenSheet},

@@ -35,8 +35,10 @@ const (
 	CueConfirm PhoneCue = "confirm"
 	// CueTick is the local tactile sound for a choice or move tap.
 	CueTick PhoneCue = "tick"
-	// CueDice is the local rattle for rolling a hero.
+	// CueDice is the local rattle for rolling a hero or a check.
 	CueDice PhoneCue = "dice"
+	// CueTalk is the local listening click when a player starts to speak.
+	CueTalk PhoneCue = "talk"
 )
 
 // PhoneAudioMessage is a queued, seat-relevant one-off audio message.
@@ -217,8 +219,10 @@ func TapCue(label string) PhoneCue {
 	switch {
 	case strings.Contains(label, "join"):
 		return CueJoin
-	case strings.Contains(label, "roll my hero"):
+	case strings.Contains(label, "roll my hero"), strings.Contains(label, "persuade"):
 		return CueDice
+	case strings.Contains(label, "talk"), strings.Contains(label, "speak"):
+		return CueTalk
 	case label == "ready", strings.Contains(label, "lock"):
 		return CueConfirm
 	case label == "enable sound", label == "mute", label == "unmute", label == "close":
@@ -240,6 +244,8 @@ func localCueAsset(cue PhoneCue) string {
 		return "sfx_phone_dice"
 	case CueTick:
 		return "sfx_phone_tick"
+	case CueTalk:
+		return "sfx_talk_open"
 	default:
 		return ""
 	}

@@ -21,7 +21,7 @@ func NewExploreSnapshot(moves MovesSnapshot) ExploreSnapshot {
 	}
 	return ExploreSnapshot{
 		Title:      "The Drowned Lantern",
-		Location:   "The Forgotten Depths",
+		Location:   "The Drowned Lantern",
 		Narration:  narration,
 		SceneArt:   "tavern_interior",
 		Moves:      TalkMoveRows(moves.Moves),

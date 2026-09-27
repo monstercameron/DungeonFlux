@@ -98,7 +98,17 @@ function makeCollider(meta, words, options) {
     return intersectsLocalBox(normalized, words, localMin, localMax);
   };
   const floorAt = (point, options = {}) => findFloor(normalized, toLocal, voxelAt, point, { ...options, worldResolution: normalized.resolution * transform.scale });
-  return { meta: normalized, transform, voxelAt, intersectsBox, floorAt, occupiedBoxes: () => occupiedBoxes(normalized, words, toWorld), boundsInWorld: () => boundsInWorld(normalized, toWorld), sceneBoundsInWorld: () => boundsInWorld({ ...normalized, min: normalized.sceneMin, max: normalized.sceneMax }, toWorld), filterGrid: (grid, filterOptions = {}) => filterGrid(grid, intersectsBox, floorAt, boundsInWorld(normalized, toWorld), filterOptions) };
+  // The box list and the filtered grid cost hundreds of milliseconds of main
+  // thread on the TV; a collider is immutable, so each is computed once (the
+  // TV prewarms them during the hook so combat entry does not stall).
+  let boxes = null;
+  const grids = new Map();
+  const filtered = (grid, filterOptions = {}) => {
+    const key = JSON.stringify([grid, filterOptions]);
+    if (!grids.has(key)) grids.set(key, filterGrid(grid, intersectsBox, floorAt, boundsInWorld(normalized, toWorld), filterOptions));
+    return structuredClone(grids.get(key));
+  };
+  return { meta: normalized, transform, voxelAt, intersectsBox, floorAt, occupiedBoxes: () => (boxes ??= occupiedBoxes(normalized, words, toWorld)), boundsInWorld: () => boundsInWorld(normalized, toWorld), sceneBoundsInWorld: () => boundsInWorld({ ...normalized, min: normalized.sceneMin, max: normalized.sceneMax }, toWorld), filterGrid: filtered };
 }
 
 function boundsInWorld(meta, toWorld) {
@@ -351,8 +361,25 @@ export function parseVoxelCollider(meta, bytes, options = {}) {
   return makeCollider(meta, wordsFromBytes(bytes), options);
 }
 
-/** Loads an explicit .voxel.json manifest and its adjacent .voxel.bin payload. */
-export async function loadVoxelCollider(metaURL, options = {}) {
+const loadedColliders = new Map();
+
+/**
+ * Loads an explicit .voxel.json manifest and its adjacent .voxel.bin payload.
+ * Without a custom fetcher the collider is cached per URL and transform, so a
+ * battle scene reloaded on the TV (or prewarmed during the hook) reuses it.
+ */
+export function loadVoxelCollider(metaURL, options = {}) {
+  if (options.fetcher) return fetchVoxelCollider(metaURL, options);
+  const key = JSON.stringify([metaURL, options.binaryURL ?? "", normalizedTransform(options.transform ?? {})]);
+  if (!loadedColliders.has(key)) {
+    const pending = fetchVoxelCollider(metaURL, options);
+    loadedColliders.set(key, pending);
+    pending.catch(() => loadedColliders.delete(key));
+  }
+  return loadedColliders.get(key);
+}
+
+async function fetchVoxelCollider(metaURL, options) {
   if (!metaURL || !/\.voxel\.json(?:$|[?#])/i.test(metaURL)) throw new Error("voxel collider URL must end in .voxel.json");
   const fetcher = options.fetcher ?? fetch;
   const response = await fetcher(metaURL);

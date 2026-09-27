@@ -126,6 +126,78 @@
         }
       ]
     },
+    "STING_BELL_TOLL": {
+      "kind": "MUSIC",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "7e10caa96aa15753bcc041944edfe000509928fa5e7184deb82971357bd35328",
+          "path": "assets/7e10caa96aa15753bcc041944edfe000509928fa5e7184deb82971357bd35328.opus"
+        },
+        {
+          "number": 2,
+          "sha256": "4063dbeb7c04d6157b38e44c429a2e23dbb352cb25e4b249f94aa3fe5354ae7c",
+          "path": "assets/4063dbeb7c04d6157b38e44c429a2e23dbb352cb25e4b249f94aa3fe5354ae7c.opus"
+        },
+        {
+          "number": 3,
+          "sha256": "13baccd109e580064549758ef822315f261e4ac5638cb5dbbaf1ea7e5e34b94b",
+          "path": "assets/13baccd109e580064549758ef822315f261e4ac5638cb5dbbaf1ea7e5e34b94b.opus"
+        }
+      ],
+      "duration_ms": 4000,
+      "metadata": {
+        "bar_ms": "4000",
+        "bpm": "60",
+        "key": "D",
+        "loop_end_ms": "0",
+        "loop_start_ms": "61",
+        "lufs": "-16",
+        "model": "music_v2_5",
+        "plan_sha256": "91887c19fb8cbdbcb33f568c359f2b5efa7bfce10f856ea6c0d399622cd1967e",
+        "processed_audio": "true",
+        "seed": "1548440713",
+        "song_id": "",
+        "take": "3"
+      }
+    },
+    "STING_CLIFF_HIT": {
+      "kind": "MUSIC",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "fef80b88fd7dbeeeb1be67bbffea92ff48b73abc2e6adffae5eae91f8ca391a1",
+          "path": "assets/fef80b88fd7dbeeeb1be67bbffea92ff48b73abc2e6adffae5eae91f8ca391a1.opus"
+        },
+        {
+          "number": 2,
+          "sha256": "35ce873436f3c55381330465bcc2e8a425ba9381f2d72f1998c766880d5b1450",
+          "path": "assets/35ce873436f3c55381330465bcc2e8a425ba9381f2d72f1998c766880d5b1450.opus"
+        },
+        {
+          "number": 3,
+          "sha256": "13c2243cb2b84449fa1a092bb049de9efe6a06f6b26dbb4164f1460a31bfcb41",
+          "path": "assets/13c2243cb2b84449fa1a092bb049de9efe6a06f6b26dbb4164f1460a31bfcb41.opus"
+        }
+      ],
+      "duration_ms": 6000,
+      "metadata": {
+        "bar_ms": "4000",
+        "bpm": "60",
+        "key": "D",
+        "loop_end_ms": "0",
+        "loop_start_ms": "59",
+        "lufs": "-16",
+        "model": "music_v2_5",
+        "plan_sha256": "244a953aece599e00e5da9fa661739b7107a3e482a2a1da322a9ac16391beba7",
+        "processed_audio": "true",
+        "seed": "902630960",
+        "song_id": "",
+        "take": "3"
+      }
+    },
     "STING_COMBAT_START": {
       "kind": "MUSIC",
       "selected": 1,
@@ -182,6 +254,42 @@
           "path": "assets/0fbafbfc9a00d05f39722198d44a38b2217ff3e6a3440605b4d4de89ac3bd886.opus"
         }
       ]
+    },
+    "STING_VICTORY": {
+      "kind": "MUSIC",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "ac2016a2c83200b9e953a1d637ae340319c9423707923c9cbbe1013bfab8838e",
+          "path": "assets/ac2016a2c83200b9e953a1d637ae340319c9423707923c9cbbe1013bfab8838e.opus"
+        },
+        {
+          "number": 2,
+          "sha256": "7223ea6b731667edd9de2c704885e5b1e3a4a4cd267856a4326d1d88645a17a2",
+          "path": "assets/7223ea6b731667edd9de2c704885e5b1e3a4a4cd267856a4326d1d88645a17a2.opus"
+        },
+        {
+          "number": 3,
+          "sha256": "5ff0513e6da381a00ec35651ca8e8e581841ff036eef735d837ef6b090f06d67",
+          "path": "assets/5ff0513e6da381a00ec35651ca8e8e581841ff036eef735d837ef6b090f06d67.opus"
+        }
+      ],
+      "duration_ms": 6000,
+      "metadata": {
+        "bar_ms": "2000",
+        "bpm": "120",
+        "key": "D major",
+        "loop_end_ms": "0",
+        "loop_start_ms": "55",
+        "lufs": "-16",
+        "model": "music_v2_5",
+        "plan_sha256": "2977c1f902b6c7e0d1a34a1c215b10899f084431ddc2ad6980629df7fb06b8f5",
+        "processed_audio": "true",
+        "seed": "128049365",
+        "song_id": "",
+        "take": "3"
+      }
     },
     "TAVERN_WARM_LOOP": {
       "kind": "MUSIC",
@@ -309,6 +417,26 @@
         "target_lufs": "-24"
       }
     },
+    "ambience_river_night": {
+      "kind": "AMBIENCE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "b25c2dedaba210670a830b6ce14d75108dbf3e6acd2984adebc4e7bcc2af60f8",
+          "path": "assets/b25c2dedaba210670a830b6ce14d75108dbf3e6acd2984adebc4e7bcc2af60f8.ogg"
+        }
+      ],
+      "duration_ms": 30000,
+      "metadata": {
+        "beat": "lobby",
+        "crossfade_ms": "3000",
+        "loop": "true",
+        "postprocess": "ffmpeg acrossfade+loudnorm",
+        "source": "internal/content.DefaultOneShot",
+        "target_lufs": "-24"
+      }
+    },
     "ambience_tavern_rain": {
       "kind": "AMBIENCE",
       "selected": 1,
@@ -323,6 +451,26 @@
       "contact_ms": 3000,
       "metadata": {
         "beat": "opening",
+        "crossfade_ms": "3000",
+        "loop": "true",
+        "postprocess": "ffmpeg acrossfade+loudnorm",
+        "source": "internal/content.DefaultOneShot",
+        "target_lufs": "-24"
+      }
+    },
+    "ambience_wooded_path": {
+      "kind": "AMBIENCE",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "c655f965e420796dacc7d058e6a07297c40dbc017970f661dde20a1c3d3f7f8d",
+          "path": "assets/c655f965e420796dacc7d058e6a07297c40dbc017970f661dde20a1c3d3f7f8d.ogg"
+        }
+      ],
+      "duration_ms": 30000,
+      "metadata": {
+        "beat": "combat",
         "crossfade_ms": "3000",
         "loop": "true",
         "postprocess": "ffmpeg acrossfade+loudnorm",
@@ -820,6 +968,30 @@
         "target_lufs": "-16"
       }
     },
+    "sfx_crit_hit": {
+      "kind": "SFX",
+      "selected": 2,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "849a4318ac987fd3b08216a0bd800655e95de608145d3dd1852902b300b5ef2e",
+          "path": "assets/849a4318ac987fd3b08216a0bd800655e95de608145d3dd1852902b300b5ef2e.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "c169bd4002b07fe1d58de440b8d4729e13b72af5323d87b654e13f809a75a100",
+          "path": "assets/c169bd4002b07fe1d58de440b8d4729e13b72af5323d87b654e13f809a75a100.mp3"
+        }
+      ],
+      "duration_ms": 2000,
+      "metadata": {
+        "measured_lufs": "-14.9",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "2",
+        "takes_generated": "2",
+        "target_lufs": "-15"
+      }
+    },
     "sfx_dagger_stab": {
       "kind": "SFX",
       "selected": 2,
@@ -890,6 +1062,54 @@
         "selected_take": "1",
         "takes_generated": "2",
         "target_lufs": "-16"
+      }
+    },
+    "sfx_down": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "8cfec397142cb8898f32fe967173fc4a1803c6193094f86e57581d729a2954e5",
+          "path": "assets/8cfec397142cb8898f32fe967173fc4a1803c6193094f86e57581d729a2954e5.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "0e6468b2693702d0c8c06162a136d7a3542705dcf3f1c05d7195f192dd244911",
+          "path": "assets/0e6468b2693702d0c8c06162a136d7a3542705dcf3f1c05d7195f192dd244911.mp3"
+        }
+      ],
+      "duration_ms": 2000,
+      "metadata": {
+        "measured_lufs": "-15.9",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
+    "sfx_forest_steps": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "6cfa5ff310d49f5b952923e758858fc007be1302b881f2b8c52b93a0b7776425",
+          "path": "assets/6cfa5ff310d49f5b952923e758858fc007be1302b881f2b8c52b93a0b7776425.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "a81e0d76d2121126625e9408682dc5bd9a7ab68f9532fbd2d987ecffde35e91a",
+          "path": "assets/a81e0d76d2121126625e9408682dc5bd9a7ab68f9532fbd2d987ecffde35e91a.mp3"
+        }
+      ],
+      "duration_ms": 1480,
+      "metadata": {
+        "measured_lufs": "-18.0",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-18"
       }
     },
     "sfx_hero_lock": {
@@ -1060,6 +1280,30 @@
         "target_lufs": "-16"
       }
     },
+    "sfx_phone_hurt": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "6a78aaf878fe47bcafd68b34ebade7c3be4bb29c0df12287d150fcec92b0ad5f",
+          "path": "assets/6a78aaf878fe47bcafd68b34ebade7c3be4bb29c0df12287d150fcec92b0ad5f.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "c13b4446e3fc9a386b21bef0b51fc75d1af63cc2155556061742c16c7fa5b732",
+          "path": "assets/c13b4446e3fc9a386b21bef0b51fc75d1af63cc2155556061742c16c7fa5b732.mp3"
+        }
+      ],
+      "duration_ms": 800,
+      "metadata": {
+        "measured_lufs": "-17.4",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-17"
+      }
+    },
     "sfx_phone_tick": {
       "kind": "SFX",
       "selected": 1,
@@ -1082,6 +1326,30 @@
         "selected_take": "1",
         "takes_generated": "2",
         "target_lufs": "-19"
+      }
+    },
+    "sfx_portrait_ready": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "5fc939637b318167d95121e1bc34c4a78c8b1334e476e11f8bcfd71fd8189d7c",
+          "path": "assets/5fc939637b318167d95121e1bc34c4a78c8b1334e476e11f8bcfd71fd8189d7c.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "74a4d97921c331627014b8c57a8e4da1f4808d53824852af8166ccfc1a8c07aa",
+          "path": "assets/74a4d97921c331627014b8c57a8e4da1f4808d53824852af8166ccfc1a8c07aa.mp3"
+        }
+      ],
+      "duration_ms": 1200,
+      "metadata": {
+        "measured_lufs": "-17.8",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-18"
       }
     },
     "sfx_ready": {
@@ -1228,6 +1496,30 @@
         "target_lufs": "-16"
       }
     },
+    "sfx_talk_open": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "ba33750d3b11e0cd7dd64c544353636d3963b445f029f4cc44df13d679af3290",
+          "path": "assets/ba33750d3b11e0cd7dd64c544353636d3963b445f029f4cc44df13d679af3290.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "686fafe398cbff63b904f8f27babb8078d2cb48c26ef9a8aea4f11f63ce68519",
+          "path": "assets/686fafe398cbff63b904f8f27babb8078d2cb48c26ef9a8aea4f11f63ce68519.mp3"
+        }
+      ],
+      "duration_ms": 480,
+      "metadata": {
+        "measured_lufs": "-22.5",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-20"
+      }
+    },
     "sfx_tavern_ambience": {
       "kind": "SFX",
       "selected": 1,
@@ -1276,6 +1568,30 @@
         "target_lufs": "-16"
       }
     },
+    "sfx_thrall_slam": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "0b019b42c7ff203f1e892bb6b2f5ab5119f47cc13121a02229212fd0b8cd3387",
+          "path": "assets/0b019b42c7ff203f1e892bb6b2f5ab5119f47cc13121a02229212fd0b8cd3387.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "70732a531154b4dc6cae42f969e975f202b0f4149ef1dd6139ff1a5cb72afa17",
+          "path": "assets/70732a531154b4dc6cae42f969e975f202b0f4149ef1dd6139ff1a5cb72afa17.mp3"
+        }
+      ],
+      "duration_ms": 1480,
+      "metadata": {
+        "measured_lufs": "-16.4",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-16"
+      }
+    },
     "sfx_wet_footsteps": {
       "kind": "SFX",
       "selected": 1,
@@ -1298,6 +1614,30 @@
         "selected_take": "1",
         "takes_generated": "2",
         "target_lufs": "-16"
+      }
+    },
+    "sfx_your_turn": {
+      "kind": "SFX",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "d5660cd2f43d8a3dce427526936b0419f6c12a199bb96ceafa1393549d21af71",
+          "path": "assets/d5660cd2f43d8a3dce427526936b0419f6c12a199bb96ceafa1393549d21af71.mp3"
+        },
+        {
+          "number": 2,
+          "sha256": "1e552988dd58b781887ac6e5071287caf0fd1579455958e64564536bd83c0408",
+          "path": "assets/1e552988dd58b781887ac6e5071287caf0fd1579455958e64564536bd83c0408.mp3"
+        }
+      ],
+      "duration_ms": 800,
+      "metadata": {
+        "measured_lufs": "-17.4",
+        "postprocess": "ffmpeg loudnorm",
+        "selected_take": "1",
+        "takes_generated": "2",
+        "target_lufs": "-17"
       }
     },
     "stranger": {

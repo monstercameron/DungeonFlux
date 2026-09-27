@@ -98,3 +98,24 @@ func TestPhoneAudio_LocalTapCueMapsAndDeduplicates(t *testing.T) {
 		t.Fatal("muted phone accepted local cue")
 	}
 }
+
+func TestTapCue_mapsTableActionsToDistinctCues(t *testing.T) {
+	tests := []struct {
+		label string
+		cue   PhoneCue
+		asset string
+	}{
+		{label: "Persuade +4 vs DC 10", cue: CueDice, asset: "sfx_phone_dice"},
+		{label: "Talk to Mother Vell", cue: CueTalk, asset: "sfx_talk_open"},
+		{label: "Ready", cue: CueConfirm, asset: "sfx_ready"},
+		{label: "Attack the drowned thrall", cue: CueTick, asset: "sfx_phone_tick"},
+		{label: "Mute", cue: "", asset: ""},
+	}
+	for _, tc := range tests {
+		t.Run(tc.label, func(t *testing.T) {
+			if got := TapCue(tc.label); got != tc.cue || localCueAsset(got) != tc.asset {
+				t.Fatalf("TapCue(%q) = %q (%q), want %q (%q)", tc.label, got, localCueAsset(got), tc.cue, tc.asset)
+			}
+		})
+	}
+}

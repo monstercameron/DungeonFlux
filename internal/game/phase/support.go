@@ -60,13 +60,18 @@ func (m *Machine) stepCombat(event domain.Event) (Result, error) {
 		return Result{Effects: effects}, nil
 	}
 	if line, ok := event.(domain.LineDone); ok && (line.UtteranceID == "" || line.UtteranceID == "combat-outcome") {
+		var effects []domain.Effect
 		if m.combat.Phase != combat.Done {
-			if _, err := m.combat.ResolveEnd(combat.ReasonSkip, 0); err != nil {
+			end, err := m.combat.ResolveEnd(combat.ReasonSkip, 0)
+			if err != nil {
 				return Result{}, err
+			}
+			if end.Outcome == combat.Fled {
+				effects = combat.FledAudio()
 			}
 		}
 		m.syncCombatSeats()
-		return m.transition(eventCliffhanger, nil)
+		return m.transition(eventCliffhanger, effects)
 	}
 	return m.passive(event)
 }
@@ -81,27 +86,31 @@ func (m *Machine) applyCombatAction(action domain.Act) ([]domain.Effect, error) 
 			return nil, err
 		}
 		effects := combat.AttackAudio(result)
+		resolved := combat.AttackResolvedMS(result)
 		if result.Outcome.HPAfter <= 0 {
 			end, endErr := m.combat.ResolveEnd(combat.ReasonHPZero, result.Seat)
 			if endErr != nil {
 				return nil, endErr
 			}
 			if end.Outcome == combat.Slain {
-				effects = append(effects, combat.VictoryAudio(end.SlainBySeat)...)
+				effects = append(effects, combat.VictoryAudio(end.SlainBySeat, resolved)...)
 			}
 			return effects, nil
 		}
 		m.combat.Phase = combat.PCTurn
-		enemyEffects, err := m.finishCombatTurn()
+		enemyEffects, err := m.finishCombatTurn(resolved)
 		return append(effects, enemyEffects...), err
 	}
 	if action.Move == vocab.MoveEndTurn {
-		return m.finishCombatTurn()
+		return m.finishCombatTurn(0)
 	}
 	return nil, fmt.Errorf("combat move %q is not accepted", action.Move)
 }
 
-func (m *Machine) finishCombatTurn() ([]domain.Effect, error) {
+// finishCombatTurn ends the active PC's turn and, when the thrall acts next,
+// plays its turn at once. startMS is when the ending turn finishes playing on
+// the TV, so the thrall's sounds and the next seat's turn chime follow it.
+func (m *Machine) finishCombatTurn(startMS int) ([]domain.Effect, error) {
 	if m.combat.Phase != combat.PCTurn {
 		return nil, nil
 	}
@@ -109,15 +118,18 @@ func (m *Machine) finishCombatTurn() ([]domain.Effect, error) {
 		return nil, err
 	}
 	if m.combat.Phase != combat.EnemyTurn {
-		return nil, nil
+		return combat.TurnAudio(m.combat.TurnSeat, startMS), nil
 	}
 	result, err := m.combat.EnemyTurn(m.combatDice, 1200)
 	if err != nil {
 		return nil, err
 	}
-	effects := combat.EnemyAudio(result)
+	effects := combat.EnemyAudio(result, startMS)
 	if err := m.combat.EndEnemyTurn(); err != nil {
 		return nil, err
+	}
+	if m.combat.Phase == combat.PCTurn {
+		effects = append(effects, combat.TurnAudio(m.combat.TurnSeat, combat.EnemyResolvedMS(result, startMS))...)
 	}
 	return effects, nil
 }

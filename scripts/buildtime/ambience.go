@@ -62,15 +62,41 @@ func AmbienceScenes() []AmbienceScene {
 		newAmbienceScene("ambience_bell_tower_wind", "stranger", beats["stranger"], "cold wind around an old bell tower, loose bell rope, river fog, and distant rain"),
 		newAmbienceScene("ambience_combat_tension", "combat", beats["combat"], "low building combat tension, wet footsteps, tavern wood strain, and distant thunder"),
 		newAmbienceScene("ambience_dawn", "cliffhanger", beats["cliffhanger"], "quiet blue-hour before dawn after a tower bell, river wind, fading rain, and no music"),
+		// The two place beds below carry no story-beat text: the combat beat
+		// still names the tavern door, and the fight now plays outdoors.
+		newAmbienceScene("ambience_river_night", "lobby", "", "night in a rain-soaked river town: soft steady rain on cobbles and eaves, black water lapping at a wooden pier, a lantern creaking on its chain, faint distant thunder"),
+		newAmbienceScene("ambience_wooded_path", "combat", "", "a wooded path at night beside a river: wind moving through tall wet trees, leaves rustling, a distant rushing river, sparse raindrops falling from branches, an owl far away"),
 	}
 }
 
+// FilterAmbienceScenes keeps the scenes whose IDs are listed in only; an
+// empty list keeps every scene. It lets a paid run regenerate one bed.
+func FilterAmbienceScenes(scenes []AmbienceScene, only []string) []AmbienceScene {
+	if len(only) == 0 {
+		return scenes
+	}
+	keep := make(map[string]bool, len(only))
+	for _, id := range only {
+		keep[strings.TrimSpace(id)] = true
+	}
+	filtered := make([]AmbienceScene, 0, len(only))
+	for _, scene := range scenes {
+		if keep[scene.ID] {
+			filtered = append(filtered, scene)
+		}
+	}
+	return filtered
+}
+
 func newAmbienceScene(id, beatID, beatText, bed string) AmbienceScene {
-	prompt := strings.Join([]string{
+	parts := []string{
 		bed + ".",
 		"This is a seamless loopable dark-fantasy ambience bed under spoken narration; no music, no melody, no intelligible words, no sudden loud hits.",
-		"Story beat: " + beatText,
-	}, " ")
+	}
+	if beatText != "" {
+		parts = append(parts, "Story beat: "+beatText)
+	}
+	prompt := strings.Join(parts, " ")
 	return AmbienceScene{ID: id, BeatID: beatID, Prompt: prompt, DurationSeconds: defaultAmbienceDuration, Crossfade: defaultAmbienceCrossfade, TargetLUFS: defaultAmbienceLUFS}
 }
 
@@ -196,12 +222,18 @@ func normaliseAmbience(ctx context.Context, ffmpegPath, source, destination stri
 
 // AmbienceJob returns the live or dry-run ambience generation job.
 func AmbienceJob(client *http.Client, endpoint, ffmpegPath, outputDir string, take int, dryRun bool) Job {
+	return AmbienceJobOnly(client, endpoint, ffmpegPath, outputDir, take, dryRun, nil)
+}
+
+// AmbienceJobOnly is AmbienceJob limited to the listed scene IDs.
+func AmbienceJobOnly(client *http.Client, endpoint, ffmpegPath, outputDir string, take int, dryRun bool, only []string) Job {
+	scenes := FilterAmbienceScenes(AmbienceScenes(), only)
 	return Job{Name: "ambience-loops", Run: func(ctx context.Context, writer *ManifestWriter) error {
 		if dryRun {
-			return writeAmbiencePlan(os.Stdout, AmbienceScenes())
+			return writeAmbiencePlan(os.Stdout, scenes)
 		}
 		return withManifestLock(ctx, writer, func(writer *ManifestWriter) error {
-			for _, scene := range AmbienceScenes() {
+			for _, scene := range scenes {
 				if err := RenderAmbience(ctx, client, endpoint, ffmpegPath, outputDir, writer, scene, take); err != nil {
 					return err
 				}
@@ -234,21 +266,26 @@ func runAmbience(args []string) error {
 	ffmpegPath := flags.String("ffmpeg", "ffmpeg", "ffmpeg executable")
 	take := flags.Int("take", 1, "manifest take number")
 	dryRun := flags.Bool("dry-run", false, "print the generation plan without network or file output")
+	onlyList := flags.String("only", os.Getenv("DF_AMBIENCE_ONLY"), "comma-separated scene IDs to generate (default: all)")
 	if err := flags.Parse(args); err != nil {
 		return err
+	}
+	var only []string
+	if strings.TrimSpace(*onlyList) != "" {
+		only = strings.Split(*onlyList, ",")
 	}
 	writer, err := NewManifestWriter(*root)
 	if err != nil {
 		return err
 	}
 	if *dryRun {
-		return writeAmbiencePlan(os.Stdout, AmbienceScenes())
+		return writeAmbiencePlan(os.Stdout, FilterAmbienceScenes(AmbienceScenes(), only))
 	}
 	if os.Getenv("DF_ELEVENLABS_API_KEY") == "" {
 		return errors.New("buildtime: DF_ELEVENLABS_API_KEY is required for live ambience generation")
 	}
 	client := &http.Client{Timeout: 2 * time.Minute}
-	return AmbienceJob(client, *endpoint, *ffmpegPath, filepath.Join(*root, "ambience"), *take, false).Run(context.Background(), writer)
+	return AmbienceJobOnly(client, *endpoint, *ffmpegPath, filepath.Join(*root, "ambience"), *take, false, only).Run(context.Background(), writer)
 }
 
 func init() {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"log/slog"
+	"sync"
 	"testing"
 )
 
@@ -55,4 +56,44 @@ func TestWriteLoop_enqueueHonorsCanceledContext(t *testing.T) {
 	if store.writer.enqueue(ctx, func(context.Context, *sql.Conn) error { return nil }) {
 		t.Fatal("canceled enqueue was accepted")
 	}
+}
+
+func TestWriteLoop_writesAfterCloseFailCleanly(t *testing.T) {
+	store, err := Open(context.Background(), t.TempDir()+"/store.db", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Close(); err != nil {
+		t.Fatal(err)
+	}
+	noop := func(context.Context, *sql.Conn) error { return nil }
+	if err := store.writer.submit(context.Background(), noop); err == nil {
+		t.Fatal("submit after close succeeded, want an error instead of a panic")
+	}
+	if store.writer.enqueue(context.Background(), noop) {
+		t.Fatal("enqueue after close accepted a write")
+	}
+}
+
+func TestWriteLoop_closeRacesConcurrentWrites(t *testing.T) {
+	store, err := Open(context.Background(), t.TempDir()+"/store.db", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	noop := func(context.Context, *sql.Conn) error { return nil }
+	var writers sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		writers.Add(1)
+		go func() {
+			defer writers.Done()
+			for j := 0; j < 50; j++ {
+				_ = store.writer.submit(context.Background(), noop)
+				store.writer.enqueue(context.Background(), noop)
+			}
+		}()
+	}
+	if err := store.Close(); err != nil {
+		t.Fatal(err)
+	}
+	writers.Wait()
 }

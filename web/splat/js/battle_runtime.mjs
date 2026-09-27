@@ -192,7 +192,13 @@ function attachBundle(context, profile, bundle) {
   applyColorGrade(entity, state.colorGrade, state.effectsEnabled); transform(entity, profile.transform);
   state.activeGrid = bundle.grid ?? profile.grid ?? null;
   if (state.activeGrid) {
-    state.grid = createBattleGrid(engine, app, state.activeGrid, { name: "df-battle-grid", lineWidth: .06, opacity: .95, collider: bundle.collider });
+    // Thin gilded lines resting on the ground (DM-038 / R1-COMBAT): a slim
+    // core with a soft halo at ~40% opacity, so it reads as a lit floor
+    // marking rather than a bright lattice hovering over the terrain.
+    state.grid = createBattleGrid(engine, app, state.activeGrid, {
+      name: "df-battle-grid", lineWidth: .035, glowWidth: .12, opacity: .4, haloStrength: .3,
+      coreColor: [0.906, 0.761, 0.478], haloColor: [0.851, 0.643, 0.255], collider: bundle.collider,
+    });
     for (const layer of [state.grid.layer, state.grid.depthLayer]) if (layer?.id !== undefined) state.camera.camera.layers = [...new Set([...state.camera.camera.layers, layer.id])];
     state.onTokens = tokenChanged; attachTokens(engine, state, state.activeGrid, state.grid.layer?.id, profile);
     state.grid.entity.enabled = state.gridVisible; state.tokens.setEnabled(state.charactersVisible); state.tokens.setGridVisible(state.gridVisible);

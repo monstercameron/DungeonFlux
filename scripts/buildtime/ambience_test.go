@@ -15,8 +15,8 @@ import (
 
 func TestAmbienceScenes_DerivePromptsFromOneShotBeats(t *testing.T) {
 	scenes := AmbienceScenes()
-	if len(scenes) != 5 {
-		t.Fatalf("got %d scenes, want 5", len(scenes))
+	if len(scenes) != 7 {
+		t.Fatalf("got %d scenes, want 7", len(scenes))
 	}
 	ids := map[string]bool{}
 	for _, scene := range scenes {
@@ -27,11 +27,12 @@ func TestAmbienceScenes_DerivePromptsFromOneShotBeats(t *testing.T) {
 		if scene.DurationSeconds != 30 || scene.Crossfade != 3*time.Second || scene.TargetLUFS != -24 {
 			t.Fatalf("unexpected timing or level: %#v", scene)
 		}
-		if !strings.Contains(scene.Prompt, "Story beat:") || !strings.Contains(scene.Prompt, "no music") {
-			t.Fatalf("prompt is not scene-derived: %q", scene.Prompt)
+		place := scene.ID == "ambience_river_night" || scene.ID == "ambience_wooded_path"
+		if strings.Contains(scene.Prompt, "Story beat:") == place || !strings.Contains(scene.Prompt, "no music") {
+			t.Fatalf("prompt has the wrong beat framing: %q", scene.Prompt)
 		}
 	}
-	for _, id := range []string{"ambience_tavern_rain", "ambience_harbor_night", "ambience_bell_tower_wind", "ambience_combat_tension", "ambience_dawn"} {
+	for _, id := range []string{"ambience_tavern_rain", "ambience_harbor_night", "ambience_bell_tower_wind", "ambience_combat_tension", "ambience_dawn", "ambience_river_night", "ambience_wooded_path"} {
 		if !ids[id] {
 			t.Fatalf("missing ambience %q", id)
 		}
@@ -394,4 +395,36 @@ func writeTestAsset(t *testing.T, root, contents string) string {
 		t.Fatal(err)
 	}
 	return path
+}
+
+func TestFilterAmbienceScenes_keepsOnlyListedScenes(t *testing.T) {
+	all := AmbienceScenes()
+	tests := []struct {
+		name string
+		only []string
+		want []string
+	}{
+		{name: "empty keeps all", only: nil, want: nil},
+		{name: "one scene", only: []string{" ambience_wooded_path "}, want: []string{"ambience_wooded_path"}},
+		{name: "unknown ids drop out", only: []string{"ambience_river_night", "nope"}, want: []string{"ambience_river_night"}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := FilterAmbienceScenes(all, tc.only)
+			if tc.want == nil {
+				if len(got) != len(all) {
+					t.Fatalf("got %d scenes, want all %d", len(got), len(all))
+				}
+				return
+			}
+			if len(got) != len(tc.want) {
+				t.Fatalf("got %d scenes, want %v", len(got), tc.want)
+			}
+			for i, id := range tc.want {
+				if got[i].ID != id {
+					t.Fatalf("scene %d = %q, want %q", i, got[i].ID, id)
+				}
+			}
+		})
+	}
 }

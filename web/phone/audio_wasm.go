@@ -110,23 +110,17 @@ func (a *PhoneAudio) receiveAudio(ctx context.Context, player *phoneAudioPlayer)
 	if err != nil {
 		return
 	}
+	var assembler sfxAssembler
 	for ctx.Err() == nil {
 		message, recvErr := stream.Recv()
 		if recvErr != nil {
 			return
 		}
-		if !a.Enqueue(message, a.seat) {
+		effect, ok := assembler.Accept(message, a.seat)
+		if !ok || a.queue.Muted() {
 			continue
 		}
-		for {
-			item, ok := a.Next()
-			if !ok {
-				break
-			}
-			if err := player.play(item, a.HapticsEnabled()); err != nil {
-				break
-			}
-		}
+		_ = player.play(effect, a.HapticsEnabled())
 	}
 }
 
@@ -183,37 +177,55 @@ func (p *phoneAudioPlayer) playURL(id, url string) error {
 	return nil
 }
 
-func (p *phoneAudioPlayer) play(item PhoneAudioMessage, vibrate bool) error {
-	chunk := item.Message.GetChunk()
-	if chunk == nil || len(chunk.GetData()) == 0 {
+// play decodes one streamed effect and starts it after its delay. The
+// decode callbacks are released when decoding settles: releasing them right
+// after registering (as before) left every pushed phone effect silent.
+func (p *phoneAudioPlayer) play(effect StreamedSFX, vibrate bool) error {
+	if p == nil || !p.context.Truthy() || len(effect.Data) == 0 {
 		return errors.New("phone audio: empty effect")
 	}
-	bytes := js.Global().Get("Uint8Array").New(len(chunk.GetData()))
-	for index, value := range chunk.GetData() {
-		bytes.SetIndex(index, value)
-	}
+	bytes := js.Global().Get("Uint8Array").New(len(effect.Data))
+	js.CopyBytesToJS(bytes, effect.Data)
 	promise := p.context.Call("decodeAudioData", bytes.Get("buffer"))
-	then := js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
+	var then, reject js.Func
+	release := func() { then.Release(); reject.Release() }
+	then = js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
+		defer release()
 		if len(args) == 0 {
 			return nil
 		}
+		gain := p.context.Call("createGain")
+		gain.Get("gain").Set("value", float64(effect.Gain))
+		gain.Call("connect", p.bus)
 		source := p.context.Call("createBufferSource")
 		source.Set("buffer", args[0])
-		source.Call("connect", p.bus)
-		source.Call("start")
+		source.Call("connect", gain)
+		source.Call("start", p.context.Get("currentTime").Float()+float64(effect.DelayMS)/1000)
 		if vibrate {
-			navigator := js.Global().Get("navigator")
-			if navigator.Truthy() && navigator.Get("vibrate").Truthy() {
-				navigator.Call("vibrate", 18)
-			}
+			p.vibrateAfter(effect.DelayMS)
 		}
 		return nil
 	})
-	reject := js.FuncOf(func(js.Value, []js.Value) interface{} { return nil })
-	promise.Call("then", then).Call("catch", reject)
-	then.Release()
-	reject.Release()
+	reject = js.FuncOf(func(js.Value, []js.Value) interface{} {
+		release()
+		return nil
+	})
+	promise.Call("then", then, reject)
 	return nil
+}
+
+func (p *phoneAudioPlayer) vibrateAfter(delayMS int64) {
+	navigator := js.Global().Get("navigator")
+	if !navigator.Truthy() || !navigator.Get("vibrate").Truthy() {
+		return
+	}
+	var buzz js.Func
+	buzz = js.FuncOf(func(js.Value, []js.Value) interface{} {
+		buzz.Release()
+		navigator.Call("vibrate", 18)
+		return nil
+	})
+	js.Global().Call("setTimeout", buzz, delayMS)
 }
 
 func (p *phoneAudioPlayer) close() {

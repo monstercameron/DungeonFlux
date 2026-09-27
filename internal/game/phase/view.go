@@ -7,6 +7,7 @@ import (
 
 	"github.com/monstercameron/DungeonFlux/internal/domain"
 	"github.com/monstercameron/DungeonFlux/internal/game/combat"
+	"github.com/monstercameron/DungeonFlux/internal/game/phase/check"
 	"github.com/monstercameron/DungeonFlux/internal/game/phase/creation"
 	"github.com/monstercameron/DungeonFlux/internal/game/rules"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
@@ -29,6 +30,40 @@ func (m Machine) View() domain.View {
 		view.Combat = m.combatView()
 		view.Battlefield = m.combatBattlefieldView(*view.Combat)
 		m.decorateCombatMap(&view)
+	}
+	if m.State() == vocab.StateCheck || m.State() == vocab.StateResolution {
+		view.Dice = m.checkDiceView()
+	}
+	return view
+}
+
+// checkDiceView projects the active persuasion check onto the shared DiceView
+// so the DM and both phones (INT-009) can show the rolling animation and,
+// once check.Resolved, the kept face, total, and outcome. The state stays
+// StateCheck for the whole roll, so this always reports "rolling" there; the
+// outcome only appears once the phase machine has moved on to StateResolution
+// and check.Machine.State() reports Resolved.
+func (m Machine) checkDiceView() *domain.DiceView {
+	view := &domain.DiceView{Kind: "check", Modifier: m.check.Modifier(), DC: m.check.DC()}
+	switch m.check.State() {
+	case check.Rolling:
+		view.State = "rolling"
+		return view
+	case check.Resolved:
+		view.State = "resolved"
+	default:
+		view.State = "offered"
+		return view
+	}
+	outcome, ok := m.check.Outcome()
+	if !ok {
+		return view
+	}
+	view.D20, view.Modifier, view.DC = outcome.Roll.Kept, outcome.Modifier, outcome.DC
+	if outcome.Success {
+		view.Outcome = "success"
+	} else {
+		view.Outcome = "failure"
 	}
 	return view
 }
@@ -197,7 +232,17 @@ func buildStats(build rules.Build) *domain.BuildStats {
 		SkillProficiencies: cloneStringMap(build.SkillProficiencies),
 		HP:                 build.HP, MaxHP: build.MaxHP, AC: build.AC,
 		AttackName: build.Attack.Name, AttackDice: build.Attack.Dice, AttackDamageType: build.Attack.DamageType, AttackBonus: build.AttackBonus,
+		Equipment: equipmentItems(build.Class),
 	}
+}
+
+func equipmentItems(class rules.Class) []domain.EquipmentItem {
+	items := rules.Equipment(class)
+	views := make([]domain.EquipmentItem, 0, len(items))
+	for _, item := range items {
+		views = append(views, domain.EquipmentItem{Name: item.Name, Description: item.Description, Slot: item.Slot, Worn: item.Worn})
+	}
+	return views
 }
 
 func cloneStringMap(values map[string]string) map[string]string {

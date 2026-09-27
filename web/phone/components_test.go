@@ -14,7 +14,7 @@ func TestFrameTabs_KeepFiveDestinationsAndRaisedMode(t *testing.T) {
 		{name: "combat", active: PhoneTabPlay, mode: PhoneModeCombat, icon: "⚔"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			tabs := FrameTabs(tc.active, tc.mode)
+			tabs := FrameTabs("en", tc.active, tc.mode)
 			if len(tabs) != 5 || tabs[2].ID != PhoneTabPlay || !tabs[2].Raised || tabs[2].Icon != tc.icon {
 				t.Fatalf("tabs = %+v", tabs)
 			}

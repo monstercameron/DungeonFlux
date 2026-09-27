@@ -179,6 +179,155 @@ func requestWithETag(handler http.Handler, path, encoding, etag string) *httptes
 	return res
 }
 
+// TestMountWeb_CacheHeaderPolicy checks the three cache classes from plan.md
+// §0.4: content-addressed assets get a one-year immutable Cache-Control,
+// splat scene media under artifacts/media/supersplat gets a long TTL plus a
+// validator so a 304 is still possible, and the mutable app shell (pages,
+// wasm, wasm_exec.js, splat JS modules) keeps revalidating on every load so a
+// fresh deploy is never masked by a stale cached copy.
+func TestMountWeb_CacheHeaderPolicy(t *testing.T) {
+	root := t.TempDir()
+	mustWriteFile(t, filepath.Join(root, "web", "shell", "static", "index.html"), "host")
+	mustWriteFile(t, filepath.Join(root, "artifacts", "wasm", "dungeonflux.wasm"), "wasm")
+	mustWriteFile(t, filepath.Join(root, "artifacts", "wasm", "wasm_exec.js"), "js")
+	mustWriteFile(t, filepath.Join(root, "web", "splat", "js", "df-splat.mjs"), "module")
+	mustWriteFile(t, filepath.Join(root, "web", "splat", "scenes", "scene.json"), "scene")
+	mustWriteFile(t, filepath.Join(root, "artifacts", "media", "supersplat", "scene-1", "chunk.webp"), "chunk")
+
+	assetsDir := filepath.Join(root, "runtime", "assets")
+	assetFileName := strings.Repeat("b", 64) + ".png"
+	mustWriteFile(t, filepath.Join(assetsDir, assetFileName), "image")
+
+	fontFile := filepath.Join(root, "web", "shell", "static", "fonts", "Inter-normal-400-700.woff2")
+	mustWriteFile(t, fontFile, "font-bytes")
+
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(old) })
+	if err := os.Chdir(root); err != nil {
+		t.Fatal(err)
+	}
+
+	mux := http.NewServeMux()
+	if err := mountWeb(mux, config.Config{Server: config.ServerConfig{DataDir: filepath.Join(root, "runtime")}}); err != nil {
+		t.Fatal(err)
+	}
+
+	immutable := []string{"/assets/" + assetFileName, "/fonts/Inter-normal-400-700.woff2"}
+	for _, path := range immutable {
+		res := request(mux, path, "")
+		if res.Code != http.StatusOK {
+			t.Fatalf("%s = %d", path, res.Code)
+		}
+		if got := res.Header().Get("Cache-Control"); got != cacheControlImmutable {
+			t.Errorf("%s Cache-Control = %q, want %q", path, got, cacheControlImmutable)
+		}
+		if res.Header().Get("ETag") == "" {
+			t.Errorf("%s missing ETag", path)
+		}
+		match := requestWithETag(mux, path, "", res.Header().Get("ETag"))
+		if match.Code != http.StatusNotModified {
+			t.Errorf("%s conditional = %d, want 304", path, match.Code)
+		}
+	}
+	if got := request(mux, "/fonts/Inter-normal-400-700.woff2", "").Header().Get("Content-Type"); got != "font/woff2" {
+		t.Errorf("font Content-Type = %q, want font/woff2", got)
+	}
+	mustWriteFile(t, filepath.Join(root, "web", "shell", "static", "fonts", "notes.txt"), "not a font")
+	if res := request(mux, "/fonts/notes.txt", ""); res.Code != http.StatusNotFound {
+		t.Errorf("fonts non-woff2 file = %d, want 404", res.Code)
+	}
+
+	splatMedia := "/artifacts/media/supersplat/scene-1/chunk.webp"
+	res := request(mux, splatMedia, "")
+	if res.Code != http.StatusOK || res.Body.String() != "chunk" {
+		t.Fatalf("%s = %d %q", splatMedia, res.Code, res.Body.String())
+	}
+	if got := res.Header().Get("Cache-Control"); got != cacheControlSplatMedia {
+		t.Errorf("%s Cache-Control = %q, want %q", splatMedia, got, cacheControlSplatMedia)
+	}
+	if res.Header().Get("ETag") == "" {
+		t.Errorf("%s missing ETag", splatMedia)
+	}
+	match := requestWithETag(mux, splatMedia, "", res.Header().Get("ETag"))
+	if match.Code != http.StatusNotModified || match.Body.Len() != 0 {
+		t.Errorf("%s conditional = %d %q, want 304", splatMedia, match.Code, match.Body.String())
+	}
+	if res := request(mux, "/artifacts/media/supersplat/../../../etc/passwd", ""); res.Code == http.StatusOK {
+		t.Errorf("supersplat path traversal served: %d", res.Code)
+	}
+
+	mustRevalidate := map[string]string{
+		"/dm":                      "/dm",
+		"/app/dungeonflux.wasm":    "/app/dungeonflux.wasm",
+		"/wasm_exec.js":            "/wasm_exec.js",
+		"/splat/js/df-splat.mjs":   "/splat/js/df-splat.mjs",
+		"/splat/scenes/scene.json": "/splat/scenes/scene.json",
+	}
+	for name, path := range mustRevalidate {
+		res := request(mux, path, "")
+		if res.Code != http.StatusOK {
+			t.Fatalf("%s (%s) = %d", name, path, res.Code)
+		}
+		if got := res.Header().Get("Cache-Control"); got != cacheControlNoCache {
+			t.Errorf("%s (%s) Cache-Control = %q, want %q", name, path, got, cacheControlNoCache)
+		}
+	}
+
+	rejectedMethods := []string{
+		"/dm",
+		"/wasm_exec.js",
+		"/app/dungeonflux.wasm",
+		"/assets/" + assetFileName,
+		"/fonts/Inter-normal-400-700.woff2",
+		splatMedia,
+	}
+	for _, path := range rejectedMethods {
+		req := httptest.NewRequest(http.MethodPost, path, nil)
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		if rec.Code != http.StatusMethodNotAllowed {
+			t.Errorf("POST %s = %d, want 405", path, rec.Code)
+		}
+	}
+
+	if res := request(mux, "/assets/"+strings.Repeat("c", 64)+".png", ""); res.Code != http.StatusNotFound {
+		t.Errorf("missing asset = %d, want 404", res.Code)
+	}
+	if res := request(mux, "/artifacts/media/supersplat/scene-1/missing.webp", ""); res.Code != http.StatusNotFound {
+		t.Errorf("missing splat media = %d, want 404", res.Code)
+	}
+}
+
+func TestServeFileWithCache_RejectsDirectoriesAndMissingFiles(t *testing.T) {
+	dir := t.TempDir()
+	req := httptest.NewRequest(http.MethodGet, "/x", nil)
+	rec := httptest.NewRecorder()
+	serveFileWithCache(rec, req, dir, "text/plain", cacheControlNoCache)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("directory = %d, want 404", rec.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/x", nil)
+	rec = httptest.NewRecorder()
+	serveFileWithCache(rec, req, filepath.Join(dir, "missing"), "text/plain", cacheControlNoCache)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("missing file = %d, want 404", rec.Code)
+	}
+}
+
+func mustWriteFile(t *testing.T, path, contents string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestLoopbackTokenRedirect(t *testing.T) {
 	next := func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }
 	handler := loopbackTokenRedirect("token", "dm-secret", next)

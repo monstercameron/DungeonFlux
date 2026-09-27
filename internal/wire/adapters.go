@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 
 	imageopenai "github.com/monstercameron/DungeonFlux/internal/adapters/image/openai"
@@ -211,7 +212,8 @@ func liveTTS(cfg config.Config, logger *slog.Logger) (ports.TTS, error) {
 	adapter := cfg.Adapters["tts"]
 	switch strings.ToLower(adapter.Vendor) {
 	case "elevenlabs":
-		return ttseleven.New(adapter.APIKey, adapter.BaseURL, logger), nil
+		inner := ttseleven.New(adapter.APIKey, adapter.BaseURL, logger)
+		return voiceMappedTTS{inner: inner, resolve: newElevenLabsVoices(os.LookupEnv)}, nil
 	case "openai":
 		return ttsopenai.New(adapter.APIKey, adapter.BaseURL, cfg.Timeouts.TTS, logger), nil
 	default:

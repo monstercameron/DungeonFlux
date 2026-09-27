@@ -158,7 +158,7 @@ func hudActions(model HUDModel) ui.Node {
 }
 
 func hudMinimap(model HUDModel) ui.Node {
-	style := map[string]string{"position": "absolute", "right": "30px", "top": "590px", "width": "240px", "height": "240px", "overflow": "hidden", "border": "2px solid #b8893a", "border-radius": "50%", "background": "radial-gradient(circle,#263746,#0b1018 72%)", "box-shadow": "0 0 0 7px rgba(12,18,28,.76),0 10px 25px rgba(0,0,0,.55)"}
+	style := map[string]string{"position": "absolute", "right": "30px", "top": "590px", "width": "240px", "height": "240px", "overflow": "hidden", "border": "2px solid #b8893a", "border-radius": "50%", "background-image": "radial-gradient(circle,#263746,#0b1018 72%)", "box-shadow": "0 0 0 7px rgba(12,18,28,.76),0 10px 25px rgba(0,0,0,.55)"}
 	if minimapURL := artSrc(model.MinimapURL); minimapURL != "" {
 		style["background-image"] = "linear-gradient(rgba(7,12,18,.2),rgba(7,12,18,.45)),url('" + minimapURL + "')"
 		style["background-size"] = "cover"
