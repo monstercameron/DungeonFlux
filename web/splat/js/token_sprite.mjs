@@ -251,7 +251,20 @@ function createClipVideo() {
   return video;
 }
 
+/** createVideoGate keeps a decoded clip behind the pixel fallback until it is usable. */
+export function createVideoGate({ onClip = () => {}, onFallback = () => {} } = {}) {
+  let ready = false, failed = false;
+  const fallback = () => { ready = false; failed = true; onFallback(); };
+  return Object.freeze({
+    reset() { ready = false; failed = false; onFallback(); },
+    decoded() { if (failed) return; ready = true; onClip(); },
+    failed: fallback,
+    visible() { return ready && !failed; },
+  });
+}
+
 function createClipSprite({ pc, app, token, layer }) {
+  const fallback = createTokenSprite({ pc, app, token: { ...token, clips: undefined }, layer });
   const quadHeight = heightOf(token) / CLIP_BODY, width = quadHeight * CLIP_ASPECT;
   const video = createClipVideo();
   const texture = new pc.Texture(app.graphicsDevice, {
@@ -265,6 +278,7 @@ function createClipSprite({ pc, app, token, layer }) {
   const entity = new pc.Entity(`df-token-clip-${token?.id ?? "token"}`);
   entity.addComponent("render", { meshInstances: [new pc.MeshInstance(mesh, material, entity)], layers: [layer ?? pc.LAYERID_WORLD] });
   entity.setLocalScale(width, quadHeight, 1);
+  entity.enabled = false;
   app.root.addChild(entity);
   // Reported height excludes the margin under the feet, so the controller's
   // "centre = ground + height / 2" placement puts the feet on the ground.
@@ -272,10 +286,27 @@ function createClipSprite({ pc, app, token, layer }) {
   const base = createTokenBase(pc, app, { role: roleForToken(token), layer, diameter: width * BASE_DIAMETER_RATIO });
   base.placeUnder(0, 0, 0);
   let destroyed = false, current = { url: "" }, clips = { ...(token?.clips ?? {}) }, paused = false;
+  const bridge = {
+    get enabled() { return fallback.entity.enabled; },
+    set enabled(value) { fallback.entity.enabled = Boolean(value); entity.enabled = Boolean(value) && ready && !failed; },
+    setPosition(...args) { fallback.entity.setPosition(...args); entity.setPosition(...args); },
+    getPosition() { return entity.getPosition?.() ?? fallback.entity.getPosition?.(); },
+  };
+  const gate = createVideoGate({
+    onClip: () => { if (!destroyed) { fallback.entity.enabled = false; entity.enabled = true; } },
+    onFallback: () => { if (!destroyed) { entity.enabled = false; fallback.entity.enabled = true; } },
+  });
+  const showReadyClip = () => { if (!destroyed && video.readyState >= 2) gate.decoded(); };
+  video.addEventListener("loadeddata", showReadyClip);
+  video.addEventListener("canplay", showReadyClip);
+  video.addEventListener("error", () => gate.failed());
   const play = () => { if (!paused && !destroyed) video.play()?.catch?.(() => {}); };
   const show = (anim) => {
     const next = clipFor({ clips }, anim);
     if (!next.url) return;
+    if (video.getAttribute("src") !== next.url) {
+      gate.reset();
+    }
     current = { ...next, anim };
     video.loop = next.loop;
     if (video.getAttribute("src") !== next.url) video.src = next.url; else video.currentTime = 0;
@@ -285,15 +316,18 @@ function createClipSprite({ pc, app, token, layer }) {
   show(token?.anim);
   const faceCamera = (camera) => {
     if (destroyed) return;
-    const at = entity.getPosition?.();
+    const at = entity.getPosition?.() ?? fallback.entity.getPosition?.();
     if (at) base.placeUnder(at.x, at.y - height / 2, at.z);
     if (!camera || !at) return;
     const eye = camera.getPosition();
     const dx = eye.x - at.x, dz = eye.z - at.z;
-    if (Math.abs(dx) + Math.abs(dz) > 1e-5) entity.setEulerAngles(0, Math.atan2(dx, dz) * 180 / Math.PI, 0);
+    if (Math.abs(dx) + Math.abs(dz) > 1e-5) {
+      const yaw = Math.atan2(dx, dz) * 180 / Math.PI;
+      entity.setEulerAngles(0, yaw, 0); fallback.entity.setEulerAngles?.(0, yaw, 0);
+    }
   };
   return {
-    entity, height, width, role: roleForToken(token), material, mesh, texture, faceCamera, video: true,
+    entity: bridge, height, width, role: roleForToken(token), material, mesh, texture, faceCamera, video: true,
     /** play restarts the one-shot for a new anim_seq. */
     play(anim) { show(anim); },
     /** setClips adopts new loop URLs; the current animation switches only if its URL changed. */
@@ -303,12 +337,12 @@ function createClipSprite({ pc, app, token, layer }) {
       if (wanted.url && wanted.url !== current.url) show(current.anim ?? next?.anim);
     },
     setPaused(on) { paused = Boolean(on); if (paused) video.pause(); else play(); },
-    tick() { if (!destroyed && video.readyState >= 2) texture.upload(); },
+    tick() { if (!destroyed && video.readyState >= 2) { texture.upload(); showReadyClip(); } },
     destroy() {
       if (destroyed) return;
       destroyed = true;
       video.pause(); video.removeAttribute("src"); video.load();
-      entity.destroy(); mesh.destroy(); texture.destroy(); material.destroy(); base.destroy();
+      entity.destroy(); mesh.destroy(); texture.destroy(); material.destroy(); base.destroy(); fallback.destroy();
     },
   };
 }
