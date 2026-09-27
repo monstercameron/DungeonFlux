@@ -72,7 +72,7 @@ func projectMapToken(token domain.CombatMapToken, seats []domain.SeatView, me do
 		if name := strings.TrimSpace(seat.Character.Name); name != "" {
 			out.Name = name
 		}
-		out.PortraitUrl = heroPortrait(string(seat.Character.Portrait), seat.Character.Species)
+		out.PortraitUrl = heroPortrait(string(seat.Character.Portrait), seat.Character.Species, seat.Character.Gender)
 	}
 	return out
 }

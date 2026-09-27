@@ -83,3 +83,20 @@ func heroProxyArt(species, class, seed string) string {
 	_, _ = hash.Write([]byte(seed))
 	return ArtURL("ui/species_" + proxySpecies[hash.Sum32()%uint32(len(proxySpecies))])
 }
+
+// heroProxyArtGendered is heroProxyArt, but tries the gendered species
+// stand-in first (OPS-028: ui/species_<species>_<gender>, registered for the
+// nine species x three genders creation offers). Callers that already know a
+// seat's chosen gender (for example the TV creation build card) should use
+// this instead of heroProxyArt so two heroes of different genders no longer
+// share one stand-in portrait.
+func heroProxyArtGendered(species, gender, class, seed string) string {
+	species = strings.ToLower(strings.TrimSpace(species))
+	gender = strings.ToLower(strings.TrimSpace(gender))
+	if species != "" && gender != "" {
+		if url := ArtURL("ui/species_" + species + "_" + gender); url != "" {
+			return url
+		}
+	}
+	return heroProxyArt(species, class, seed)
+}

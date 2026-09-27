@@ -224,7 +224,7 @@ func projectCharacter(character *domain.Character) *df.Character {
 		Name:               character.Name,
 		ClassName:          character.Class,
 		PersuasionModifier: int32(character.PersuasionModifier),
-		PortraitUrl:        heroPortrait(string(character.Portrait), character.Species),
+		PortraitUrl:        heroPortrait(string(character.Portrait), character.Species, character.Gender),
 		HookText:           character.Hook,
 		Species:            character.Species,
 		Gender:             character.Gender,
@@ -312,12 +312,12 @@ func projectBuildCards(seats []domain.SeatView) []*df.BuildCard {
 		if seat.Build == nil {
 			continue
 		}
-		species := ""
+		species, gender := "", ""
 		if seat.Character != nil {
-			species = seat.Character.Species
+			species, gender = seat.Character.Species, seat.Character.Gender
 		}
 		out = append(out, &df.BuildCard{PlayerNumber: int32(seat.Build.PlayerNumber), Name: seat.Build.Name,
-			ClassName: seat.Build.Class, PortraitUrl: heroPortrait(string(seat.Build.Portrait), species)})
+			ClassName: seat.Build.Class, PortraitUrl: heroPortrait(string(seat.Build.Portrait), species, gender)})
 	}
 	return out
 }
@@ -549,14 +549,21 @@ func ints32(values []int) []int32 {
 }
 
 // heroPortrait is the portrait clients show for a hero: the generated one when
-// it exists, otherwise the rolled species art as a stand-in. The server picks
-// it so the TV and the player's phone always show the same stand-in.
-func heroPortrait(portrait, species string) string {
+// it exists, otherwise a stand-in for the rolled species and gender (OPS-028
+// registers ui/species_<species>_<gender> for every species x gender the
+// creation phase offers). The server picks it so the TV and the player's
+// phone always show the same stand-in, and so a paladin and a rogue of
+// different genders no longer collapse onto one shared male portrait.
+func heroPortrait(portrait, species, gender string) string {
 	if strings.TrimSpace(portrait) != "" {
 		return portrait
 	}
-	if species = strings.ToLower(strings.TrimSpace(species)); species != "" {
-		return "ui/species_" + species
+	species = strings.ToLower(strings.TrimSpace(species))
+	if species == "" {
+		return ""
 	}
-	return ""
+	if gender = strings.ToLower(strings.TrimSpace(gender)); gender != "" {
+		return "ui/species_" + species + "_" + gender
+	}
+	return "ui/species_" + species
 }
