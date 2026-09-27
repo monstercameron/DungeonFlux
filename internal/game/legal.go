@@ -114,7 +114,7 @@ func conversationMoves(view domain.View, seat domain.SeatID) []domain.MoveView {
 }
 
 func checkMoves(view domain.View, seat domain.SeatID) []domain.MoveView {
-	active := view.Spotlight == seat
+	active := view.Spotlight == seat && (view.Dice == nil || view.Dice.State == "offered")
 	label := "Roll Persuasion"
 	if view.Dice != nil && view.Dice.Modifier != 0 {
 		label = fmt.Sprintf("Roll Persuasion %+d vs DC %d", view.Dice.Modifier, view.Dice.DC)

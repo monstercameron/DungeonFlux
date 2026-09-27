@@ -2,6 +2,22 @@ package phone
 
 import "testing"
 
+func TestHeroProxyArtGendered_UsesSelectedIdentity(t *testing.T) {
+	SetArtSource(phoneArtFake{})
+	t.Cleanup(func() { SetArtSource(nil) })
+	for _, tc := range []struct{ name, gender, want string }{
+		{"female", " Female ", "/assets/ui/species_elf_female.webp"},
+		{"nonbinary", "nonbinary", "/assets/ui/species_elf_nonbinary.webp"},
+		{"unspecified", "", "/assets/ui/species_elf.webp"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := heroProxyArtGendered("elf", tc.gender, "ranger", "seat-1"); got != tc.want {
+				t.Fatalf("portrait = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
 type phoneArtFake struct{}
 
 func (phoneArtFake) ArtURL(name string) string { return " /assets/" + name + ".webp " }

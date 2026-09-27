@@ -1,14 +1,12 @@
 package phone
 
 import (
-	"context"
 	"errors"
 	"strings"
 	"sync"
 	"time"
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
-	"google.golang.org/grpc"
 )
 
 const audioQueueCapacity = 32
@@ -121,26 +119,6 @@ func (q *AudioQueue) Len() int {
 	return len(q.items)
 }
 
-// PhoneAudio owns phone cue policy and is deliberately independent of the
-// browser so its filtering and mute behaviour can be tested natively.
-type PhoneAudio struct {
-	queue          *AudioQueue
-	reducedMotion  bool
-	vibrateEnabled bool
-	service        phoneAudioService
-	seatToken      string
-	seat           int32
-	ctx            context.Context
-	cancel         context.CancelFunc
-	localGate      localCueGate
-	player         localCuePlayer
-	tapInstalled   bool
-}
-
-type localCuePlayer interface {
-	playURL(string, string) error
-}
-
 type localCueGate struct {
 	last map[PhoneCue]time.Duration
 }
@@ -157,10 +135,6 @@ func (g *localCueGate) allow(cue PhoneCue, at time.Duration) bool {
 	}
 	g.last[cue] = at
 	return true
-}
-
-type phoneAudioService interface {
-	Listen(context.Context, *df.ListenRequest, ...grpc.CallOption) (grpc.ServerStreamingClient[df.AudioMessage], error)
 }
 
 // NewPhoneAudio creates phone audio policy with haptics enabled.

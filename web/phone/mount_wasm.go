@@ -5,7 +5,6 @@ package phone
 import (
 	"context"
 	"errors"
-	"strconv"
 	"strings"
 	"syscall/js"
 
@@ -34,17 +33,17 @@ func Mount(client PhoneClient, seatToken, locale string) router.Component {
 	if locale == "" {
 		locale = "en"
 	}
+	props := phoneViewProps{
+		client: client, seatToken: seatToken,
+		creation: NewCreationModel(client, seatToken, 0),
+		sheet:    NewSheetModel(), moves: NewMovesModel(client, seatToken),
+		typed: NewTypedInputModel(client, seatToken), dice: NewDiceModel(client, seatToken),
+		combat: NewCombatModel(client, seatToken), ptt: NewPTTModel(client, seatToken, 0), end: NewEndModel(), audio: newPhoneAudio(client, seatToken),
+		journal: NewJournalLog(),
+	}
 	return func(_ router.Attrs) *router.Element {
 		if client == nil {
 			return ui.CreateElement(func() ui.Node { return phoneError(locale, ClientUnavailable(locale)) })
-		}
-		props := phoneViewProps{
-			client: client, seatToken: seatToken,
-			creation: NewCreationModel(client, seatToken, 0),
-			sheet:    NewSheetModel(), moves: NewMovesModel(client, seatToken),
-			typed: NewTypedInputModel(client, seatToken), dice: NewDiceModel(client, seatToken),
-			combat: NewCombatModel(client, seatToken), ptt: NewPTTModel(client, seatToken, 0), end: NewEndModel(), audio: newPhoneAudio(client, seatToken),
-			journal: NewJournalLog(),
 		}
 		return ui.CreateElement(phoneView, props)
 	}
@@ -107,7 +106,6 @@ func phoneView(props phoneViewProps) ui.Node {
 			}
 		}
 	}, props.audio)
-	snapshotVersion = state.Version
 	kind := SelectScreen(state)
 	// A tab switch is a client-only navigation choice, independent of the
 	// server phase. It resets to Play whenever the underlying phase screen
@@ -128,91 +126,6 @@ func phoneView(props phoneViewProps) ui.Node {
 		return html.Div(html.Props{Class: "df-phone-read-along-host"}, screen, bubble)
 	}
 	return screen
-}
-
-func renderPhoneScreen(kind ScreenKind, props phoneViewProps, locale string, view SeatView, activeTab PhoneTabID, taps map[PhoneTabID]ui.Handler, selectPlay ui.Handler) ui.Node {
-	frame := NewFrameModel("Player", locale)
-	frame.Screen = kind
-	frame.Mode = modeForScreen(kind)
-	frame.Connection = ConnectionOnline
-	frame.ActiveTab = activeTab
-	status := ComputeTurnStatus(view)
-	frame.TurnLabel = TurnBannerText(locale, status)
-	frame.TurnYours = status.Known && status.Yours
-	tabBar := phoneTabBar(frame, taps)
-	if activeTab != PhoneTabPlay {
-		content := overlayScreen(activeTab, props, view, locale, selectPlay)
-		return frameScreen(frame, content, props.audio, locale, tabBar)
-	}
-	switch kind {
-	case ScreenCreate:
-		return frameScreen(frame, ui.CreateElement(CreationScreen(props.creation)), props.audio, locale, tabBar)
-	case ScreenDice:
-		return frameScreen(frame, ui.CreateElement(DiceScreen(props.dice)), props.audio, locale, tabBar)
-	case ScreenCombat:
-		return frameScreen(frame, ui.CreateElement(func() ui.Node { return combatScreen(props.combat, locale) }), props.audio, locale, tabBar)
-	case ScreenEnd:
-		return frameScreen(frame, ui.CreateElement(EndScreen(props.end)), props.audio, locale, tabBar)
-	case ScreenConversation:
-		return frameScreen(frame, ui.CreateElement(func() ui.Node { return conversationScreen(props, locale) }), props.audio, locale, tabBar)
-	case ScreenMoves:
-		return frameScreen(frame, ui.CreateElement(MovesScreen(props.moves)), props.audio, locale, tabBar)
-	case ScreenWaiting:
-		return frameScreen(frame, ui.CreateElement(WaitingScreen(NewWaitingModel(view), locale, props.moves)), props.audio, locale, tabBar)
-	default:
-		return frameScreen(frame, ui.CreateElement(SheetScreen(props.sheet)), props.audio, locale, tabBar)
-	}
-}
-
-// overlayScreen renders the Character, Journal, Map, or Menu tab in place of
-// the current phase's Play content. The Character tab reuses the same
-// server-authoritative sheet (with the real inventory) shown by the Play
-// tab in non-combat phases; only the tab bar's Play state actually differs.
-func overlayScreen(tab PhoneTabID, props phoneViewProps, view SeatView, locale string, selectPlay ui.Handler) ui.Node {
-	switch tab {
-	case PhoneTabCharacter:
-		return ui.CreateElement(SheetScreen(props.sheet))
-	case PhoneTabJournal:
-		return ui.CreateElement(func() ui.Node { return journalScreen(props.journal, locale) })
-	case PhoneTabMap:
-		return ui.CreateElement(func() ui.Node { return mapScreen(view, locale, selectPlay) })
-	case PhoneTabMenu:
-		return ui.CreateElement(func() ui.Node { return menuScreen(props.audio, locale) })
-	default:
-		return ui.CreateElement(SheetScreen(props.sheet))
-	}
-}
-
-// snapshotVersion is the server snapshot being rendered. Screens are prop-less
-// closure components that the reconciler never re-renders from the parent, so
-// screens without local input state are keyed by it and remount per snapshot
-// (the creation screen otherwise kept its pickers after the hero was rolled).
-// Conversation keeps its key so typed text and push-to-talk state survive.
-var snapshotVersion uint64
-
-// phoneEnter remembers the screen kind whose entry animation last started and
-// the frame key it started on. The frame remounts on every snapshot, so the
-// entry class rides only that first key: later snapshots of the same screen
-// remount without it and never replay the animation.
-var phoneEnter struct {
-	kind ScreenKind
-	key  string
-}
-
-func frameScreen(model FrameModel, content ui.Node, audio *PhoneAudio, locale string, tabBar ui.Node) ui.Node {
-	key := string(model.Screen) + ":" + strconv.FormatUint(artRevision.Load(), 10)
-	if model.Screen != ScreenConversation {
-		key += ":" + strconv.FormatUint(snapshotVersion, 10)
-	}
-	if model.Screen != phoneEnter.kind {
-		phoneEnter.kind, phoneEnter.key = model.Screen, key
-	}
-	model.Enter = key == phoneEnter.key
-	return html.WithKey(ui.CreateElement(PhoneFrame(model, content, audioControls(audio, locale), tabBar)), key)
-}
-
-func conversationScreen(props phoneViewProps, locale string) ui.Node {
-	return ui.CreateElement(TalkScreen(props, locale))
 }
 
 type pttProps struct {
