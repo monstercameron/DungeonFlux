@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DungeonFlux: an AI dungeon master for game night</title>
+<meta name="description" content="Put the adventure on the TV and play from your phones. DungeonFlux tells the story and voices every character, while a rules engine rolls every die where the whole table can see it.">
+<meta property="og:title" content="DungeonFlux: an AI dungeon master for game night">
+<meta property="og:description" content="Put the adventure on the TV and play from your phones. No accounts, no app, no prep.">
+<meta property="og:image" content="assets/establishing-harbor-canal-rowboat-bridge.webp">
+<meta name="theme-color" content="#08111f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="bar" id="bar">
+  <div class="wrap bar-inner">
+    <a class="mark mark-small" href="#top" aria-label="DungeonFlux, back to top"><span class="mark-dungeon">Dungeon</span><span class="mark-flux">Flux</span></a>
+    <nav class="bar-nav" aria-label="Page sections">
+      <a href="#night">The night</a>
+      <a href="#roll">Try a roll</a>
+      <a href="#fair">Fair play</a>
+      <a href="#faq">Questions</a>
+    </nav>
+    <a class="btn btn-gilt btn-small js-try" href="https://github.com/monstercameron/DungeonFlux#run-it-locally">Start a table</a>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- 1. Hero: the product itself. The TV with the dungeon master talking, and a phone in hand. -->
+<section class="hero" id="top">
+  <img class="hero-art" src="assets/establishing-harbor-canal-rowboat-bridge.webp" alt="" fetchpriority="high" width="1672" height="941">
+  <div class="wrap hero-inner">
+    <div class="hero-copy">
+      <h1 class="mark mark-hero"><span class="mark-dungeon">Dungeon</span><span class="mark-flux">Flux</span></h1>
+      <p class="kicker"><span>An AI dungeon master for game night</span></p>
+      <p class="hero-lede">The adventure plays on your TV. Everyone plays from their own phone. The dungeon master tells the story out loud, and every roll of the dice lands where the whole table can see it.</p>
+      <div class="cta-row">
+        <a class="btn btn-gilt btn-large js-try" href="https://github.com/monstercameron/DungeonFlux#run-it-locally">Start a table</a>
+        <a class="btn btn-ghost" href="https://monstercameron.github.io/DungeonFlux/#demo">See the demo</a>
+      </div>
+      <p class="hero-fine">No accounts, no app to install. It runs on your own computer; the setup guide is on GitHub.</p>
+    </div>
+
+    <figure class="hero-product" aria-label="The DungeonFlux TV screen, with a player's phone">
+      <div class="tv-set">
+        <img class="tv-set-art" src="assets/ui-tv-opening-scene-drowned-lantern-tavern.webp" alt="The TV during the opening scene: the party's portraits, the Drowned Lantern tavern, and the scene's goals" width="1672" height="941">
+        <div class="narration" id="narration-panel">
+          <img class="narration-avatar" id="narr-avatar" src="assets/dm-avatar.webp" alt="" width="276" height="276">
+          <div class="narration-body">
+            <div class="narration-who">
+              <span id="narr-who">Dungeon Master</span>
+              <span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+            </div>
+            <blockquote class="narration-text" id="narration">“Rain drums on the warped roof of the Drowned Lantern. Lanterns sway above the flooded street, and tonight, the lamplighter didn’t come home.”</blockquote>
+          </div>
+        </div>
+      </div>
+      <div class="pocket" aria-hidden="true">
+        <p class="pocket-hero">Corin Vale</p>
+        <p class="pocket-sub">Human fighter</p>
+        <p class="pocket-label">Your moves</p>
+        <span class="pocket-move is-lit" id="pocket-talk">Talk to the barkeep</span>
+        <span class="pocket-move">Look around the tavern</span>
+        <span class="pocket-move is-off">Attack <em>not in a tavern</em></span>
+      </div>
+    </figure>
+  </div>
+</section>
+
+<!-- 2. The night, scene by scene. A real sequence, so it is numbered. The TV frame stays pinned on wide screens. -->
+<section class="night" id="night" aria-labelledby="night-h">
+  <div class="wrap">
+    <header class="section-head">
+      <p class="act"><span>Act I</span></p>
+      <h2 id="night-h">One night at the table</h2>
+      <p>What happens on the TV and on your phone, from the first scan to the last cliffhanger.</p>
+    </header>
+    <div class="night-grid">
+      <div class="tv" aria-hidden="true">
+        <div class="tv-frame frame-gilt">
+          <img class="tv-shot is-on" data-shot="1" src="assets/ui-tv-title-screen-join-lobby.webp" alt="" width="1672" height="941">
+          <img class="tv-shot" data-shot="2" src="assets/ui-tv-character-creation-phone-picker.webp" alt="" width="1672" height="941" loading="lazy">
+          <img class="tv-shot" data-shot="3" src="assets/ui-tv-opening-scene-drowned-lantern-tavern.webp" alt="" width="1672" height="941" loading="lazy">
+          <img class="tv-shot" data-shot="4" src="assets/ui-tv-tavern-barkeep-dialogue-choices.webp" alt="" width="1672" height="941" loading="lazy">
+          <img class="tv-shot" data-shot="5" src="assets/combat-harbor-docks-wide-lanterns.webp" alt="" width="1672" height="941" loading="lazy">
+        </div>
+        <div class="mini">
+          <div class="mini-screen is-on" data-shot="1"><p class="mini-title">Join the table</p><span class="mini-field">Lyria</span><span class="mini-btn">Join</span></div>
+          <div class="mini-screen" data-shot="2"><p class="mini-title">Choose your hero</p><span class="mini-chip is-lit">Elf</span><span class="mini-chip">Human</span><span class="mini-chip">Dwarf</span><span class="mini-btn">Roll my hero</span></div>
+          <div class="mini-screen" data-shot="3"><p class="mini-title">Lyria Thalen</p><span class="mini-row">Elf rogue</span><span class="mini-row">Sheet ready</span><span class="mini-wait">Listening to the story</span></div>
+          <div class="mini-screen" data-shot="4"><p class="mini-title">Your moves</p><span class="mini-move is-lit">Persuade <b>60%</b></span><span class="mini-move">Ask a question</span><span class="mini-btn">Tap to talk</span></div>
+          <div class="mini-screen" data-shot="5"><p class="mini-title">Your turn</p><span class="mini-move is-lit">Attack the thrall</span><span class="mini-move">Move</span><span class="mini-move">Dodge</span></div>
+        </div>
+      </div>
+      <ol class="beats">
+        <li class="beat is-on" data-shot="1">
+          <img class="beat-shot" src="assets/ui-tv-title-screen-join-lobby.webp" alt="The TV title screen, showing a join code over a moonlit river town" width="1672" height="941" loading="lazy">
+          <h3>Scan in from the couch</h3>
+          <p class="on-tv">The TV shows a code and the names of everyone who has joined.</p>
+          <p class="on-phone">You scan it and you are at the table. No sign-up.</p>
+        </li>
+        <li class="beat" data-shot="2">
+          <img class="beat-shot" src="assets/ui-tv-character-creation-phone-picker.webp" alt="A hero's portrait on the TV beside a phone showing species and class choices" width="1672" height="941" loading="lazy">
+          <h3>Make a hero in one tap</h3>
+          <p class="on-phone">Pick a species and a gender. The engine rolls a legal character.</p>
+          <p class="on-tv">Your hero gets a name, a past, and a painted portrait beside the rest of the party.</p>
+        </li>
+        <li class="beat" data-shot="3">
+          <img class="beat-shot" src="assets/ui-tv-opening-scene-drowned-lantern-tavern.webp" alt="The opening scene: the party's portraits beside a candlelit tavern as the dungeon master narrates" width="1672" height="941" loading="lazy">
+          <h3>The story opens</h3>
+          <p class="on-tv">The dungeon master sets the scene aloud, with music and rain underneath.</p>
+          <p class="on-phone">Your sheet fills in, ready for your first move.</p>
+        </li>
+        <li class="beat" data-shot="4">
+          <img class="beat-shot" src="assets/ui-tv-tavern-barkeep-dialogue-choices.webp" alt="The party at the bar as the barkeep answers, with a persuasion option below" width="1672" height="941" loading="lazy">
+          <h3>Talk to anyone</h3>
+          <p class="on-phone">Tap the microphone and say what your hero says. Your phone offers only the moves that make sense right now.</p>
+          <p class="on-tv">The barkeep answers in her own voice, and she keeps her secrets until you earn them.</p>
+        </li>
+        <li class="beat" data-shot="5">
+          <img class="beat-shot" src="assets/combat-harbor-docks-wide-lanterns.webp" alt="Heroes fighting a drowned creature on lantern-lit docks" width="1672" height="941" loading="lazy">
+          <h3>Fight for the ending</h3>
+          <p class="on-phone">Tap to attack. You see your odds before you commit.</p>
+          <p class="on-tv">The dice roll in full view, your hero strikes on a 3D battlefield, and the night ends on a cliffhanger clip starring your party.</p>
+        </li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- 3. The set piece: act on the phone, the die lands on the TV. -->
+<section class="stage" id="roll" aria-labelledby="roll-h">
+  <div class="wrap">
+    <header class="section-head">
+      <p class="act"><span>Act II</span></p>
+      <h2 id="roll-h">Your turn. Persuade the barkeep.</h2>
+      <p>This is one beat from the demo. Tap the phone, then watch the TV.</p>
+    </header>
+  </div>
+  <div class="wrap stage-grid">
+    <div class="scene frame-gilt">
+      <img class="scene-art" src="assets/scene-barkeep-vell.webp" alt="Two heroes lean across the bar toward Mother Vell, the barkeep" width="1323" height="567" loading="lazy">
+      <div class="die-drop" id="die-drop" aria-hidden="true">
+        <svg class="d20" viewBox="0 0 100 100">
+          <polygon class="d20-body" points="50,3 91,26 91,74 50,97 9,74 9,26"/>
+          <polygon class="d20-face" points="50,20 76,64 24,64"/>
+          <path class="d20-edges" d="M50 3 50 20M91 26 76 64M91 74 76 64M50 97 50 64M9 74 24 64M9 26 24 64M50 3 24 64M50 3 76 64M9 26 50 20M91 26 50 20M24 64 50 97M76 64 50 97"/>
+          <text class="d20-num" id="d20-num" x="50" y="56" text-anchor="middle" dominant-baseline="middle">20</text>
+        </svg>
+        <p class="die-verdict" id="die-verdict"></p>
+      </div>
+      <div class="subtitle" id="subtitle" aria-live="polite">
+        <span class="subtitle-who" id="subtitle-who">Mother Vell</span>
+        <p class="subtitle-text" id="subtitle-text">“Lamplighter? Never heard of him.” She keeps wiping the same spot on the bar.</p>
+      </div>
+    </div>
+
+    <div class="handset">
+      <div class="handset-body">
+        <div class="handset-notch" aria-hidden="true"></div>
+        <p class="handset-hero">Lyria Thalen, elf rogue</p>
+        <div class="check">
+          <div class="check-row">
+            <span class="check-name">Persuasion</span>
+            <span class="check-odds" id="odds">60% chance</span>
+          </div>
+          <p class="check-math" id="check-math">Roll a d20, add 3, and reach 12.</p>
+          <button class="btn btn-flux btn-block" id="roll-btn" type="button">Persuade her</button>
+          <div class="after" id="after" hidden>
+            <a class="btn btn-gilt btn-block js-try" href="https://github.com/monstercameron/DungeonFlux#run-it-locally">Start a table</a>
+            <button class="btn-link" id="again" type="button">Roll again</button>
+          </div>
+        </div>
+        <ul class="handset-moves" aria-label="Other moves available now">
+          <li>Ask about the lamplighter</li>
+          <li>Buy a round</li>
+          <li>Step away from the bar</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Fair play: story in gilt, engine in river-blue. The colors mean this everywhere on the page. -->
+<section class="fair" id="fair" aria-labelledby="fair-h">
+  <div class="wrap">
+    <header class="section-head section-head-center">
+      <p class="act"><span>Act III</span></p>
+      <h2 id="fair-h">The storyteller never touches the dice.</h2>
+      <p>Most AI game masters lose track of the world, let players do anything, and make up numbers. DungeonFlux gives the job to two different minds, so none of that can happen.</p>
+    </header>
+    <div class="plaques">
+      <article class="plaque plaque-story frame-gilt">
+        <h3><img class="emblem emblem-dm" src="assets/dm-avatar.webp" alt="" width="276" height="276">The dungeon master</h3>
+        <p class="plaque-sub">Tells the story</p>
+        <ul>
+          <li>Writes the night around the heroes you made</li>
+          <li>Gives every character a voice and a reason</li>
+          <li>Describes what the dice decided, never the other way round</li>
+          <li>Steers the night toward a real ending</li>
+        </ul>
+      </article>
+      <article class="plaque plaque-engine frame-flux">
+        <h3><svg class="emblem emblem-d20" viewBox="0 0 100 100" aria-hidden="true"><polygon points="50,4 91,27 91,73 50,96 9,73 9,27"/><path d="M50 22 75 63H25Z M50 4 50 22M91 27 75 63M91 73 75 63M50 96 50 63M9 73 25 63M9 27 25 63"/></svg>The rules engine</h3>
+        <p class="plaque-sub">Keeps the score</p>
+        <ul>
+          <li>Rolls every die, in view of the whole table</li>
+          <li>Tracks health, position and every result</li>
+          <li>Decides which moves are legal on your turn</li>
+          <li>Keeps a record the story cannot rewrite</li>
+        </ul>
+      </article>
+    </div>
+    <div class="promises">
+      <div>
+        <svg class="glyph" viewBox="0 0 32 32" aria-hidden="true"><rect x="7" y="14" width="18" height="13" rx="2"/><path d="M11 14v-4a5 5 0 0 1 10 0v4M16 19v3"/></svg>
+        <h3>Secrets stay secret</h3>
+        <p>Each character knows only what they would know. The barkeep cannot let slip where the lamplighter went until someone earns it.</p>
+      </div>
+      <div>
+        <svg class="glyph" viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="8" width="24" height="17" rx="1.5"/><path d="M4 9l12 9 12-9"/><circle cx="16" cy="21" r="2.5"/></svg>
+        <h3>Wander off, and the world notices</h3>
+        <p>Leave the plot behind and someone from your hero’s past may arrive with a letter. The story finds you through the backstory you started with.</p>
+      </div>
+      <div>
+        <svg class="glyph" viewBox="0 0 32 32" aria-hidden="true"><path d="M9 4h14M9 28h14M10 4c0 7 12 7 12 12s-12 5-12 12M22 4c0 7-12 7-12 12s12 5 12 12"/></svg>
+        <h3>No loading screens mid-scene</h3>
+        <p>Art, music and video are prepared before the moment that needs them. If something runs late, the game plays on.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. Where it goes next: honest status, and the worlds still to come. -->
+<section class="next" aria-labelledby="next-h">
+  <div class="wrap next-head">
+    <p class="act"><span>Act IV</span></p>
+    <h2 id="next-h">Tonight, one tavern. Next, a whole campaign.</h2>
+    <p>DungeonFlux began as a 24-hour build for ShellHacks 2026. Today it runs one complete scene for two players: a smugglers’ tavern, a missing lamplighter, and a fight at the door. Coming next: <strong>full campaigns</strong> written around your party, <strong>full combat</strong> with spells and reactions, and <strong>memory between sessions</strong>, so characters remember what you promised.</p>
+  </div>
+  <div class="wrap reel-nav">
+    <button class="reel-btn" type="button" data-dir="-1" aria-label="Previous place" aria-controls="reel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="reel-btn" type="button" data-dir="1" aria-label="Next place" aria-controls="reel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+  </div>
+  <ul class="reel" id="reel" tabindex="0" aria-label="Concept art for places the story will go">
+    <li><img src="assets/scene-flooded-hall-party-wading-torchlit.webp" alt="A party wading through a torchlit flooded hall" width="1672" height="941" loading="lazy"><span>The sunken halls</span></li>
+    <li><img src="assets/scene-crypt-lich-king-confrontation.webp" alt="Heroes confronting a lich king in a crypt" width="1672" height="941" loading="lazy"><span>The crypt of the lich king</span></li>
+    <li><img src="assets/battlemap-library-orrery-reading-hall.webp" alt="A top-down battle map of a library with a great orrery" width="1672" height="941" loading="lazy"><span>The orrery library</span></li>
+    <li><img src="assets/scene-mountain-ruins-snowy-ridge-trek.webp" alt="A party crossing a snowy ridge toward mountain ruins" width="1672" height="941" loading="lazy"><span>The mountain ruins</span></li>
+    <li><img src="assets/battlemap-swamp-boardwalk-shrine.webp" alt="A top-down battle map of a swamp boardwalk and shrine" width="1672" height="941" loading="lazy"><span>The swamp shrine</span></li>
+  </ul>
+  <div class="wrap next-foot">
+    <p class="fine reel-note">Concept art for places the story will go. The game’s screens differ in detail.</p>
+    <div class="follow">
+      <div>
+        <h3>Follow the build</h3>
+        <p>The devlog records every hard bug and design decision as the game grows. Check back to see what the table can do next.</p>
+      </div>
+      <div class="follow-actions">
+        <a class="btn btn-gilt" href="https://monstercameron.github.io/DungeonFlux/devlog.html">Read the devlog</a>
+        <a class="btn btn-ghost" href="https://github.com/monstercameron/DungeonFlux">Watch on GitHub</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="faq" id="faq" aria-labelledby="faq-h">
+  <div class="wrap faq-grid">
+    <div class="faq-side">
+      <h2 id="faq-h">Questions</h2>
+      <div class="needs">
+        <p class="needs-title">What you need</p>
+        <ul>
+          <li>A TV or a monitor for the table</li>
+          <li>A computer to run the game</li>
+          <li>A phone for each player</li>
+          <li>Two players for tonight’s scene</li>
+        </ul>
+      </div>
+    </div>
+    <div class="faq-list">
+      <details>
+        <summary>Does anyone need an account or an app?</summary>
+        <p>No. The TV shows a code, and each player opens the game in their phone’s browser by scanning it.</p>
+      </details>
+      <details>
+        <summary>Do we need to know the rules?</summary>
+        <p>No. Your phone shows only the moves you can make at that moment, with the odds for each roll. The game follows fifth-edition fantasy rules from the System Reference Document 5.2.1.</p>
+      </details>
+      <details>
+        <summary>How many people can play?</summary>
+        <p>The current scene is built for two players. Larger parties arrive with full campaigns.</p>
+      </details>
+      <details>
+        <summary>Can we play in Spanish?</summary>
+        <p>Yes. Each player picks English or Spanish when they join, and their phone stays in that language.</p>
+      </details>
+      <details>
+        <summary>What if a roll goes badly?</summary>
+        <p>The story changes course instead of stopping. Fail to persuade the barkeep, and the secret reaches you another way.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="closing" aria-labelledby="closing-h">
+  <img class="closing-art" src="assets/scene-campfire-under-stars.webp" alt="" width="1672" height="941" loading="lazy">
+  <div class="wrap closing-inner">
+    <h2 id="closing-h">Pull up a chair.</h2>
+    <p>Bring a friend, a TV and your phones. The Drowned Lantern is waiting.</p>
+    <a class="btn btn-gilt btn-large js-try" href="https://github.com/monstercameron/DungeonFlux#run-it-locally">Start a table</a>
+    <p class="fine">Runs on your own computer. The setup guide is on GitHub.</p>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-inner">
+    <a class="mark mark-small" href="#top" aria-label="DungeonFlux, back to top"><span class="mark-dungeon">Dungeon</span><span class="mark-flux">Flux</span></a>
+    <p class="foot-links">
+      <a href="https://monstercameron.github.io/DungeonFlux/">Project site</a>
+      <a href="https://monstercameron.github.io/DungeonFlux/devlog.html">Devlog</a>
+      <a href="https://github.com/monstercameron/DungeonFlux">GitHub</a>
+    </p>
+    <p class="fine">Images are concept art for the look and feel; the game’s screens differ in detail. This work includes material from the System Reference Document 5.2.1 (“SRD 5.2.1”) by Wizards of the Coast LLC, available at <a href="https://www.dndbeyond.com/srd">dndbeyond.com/srd</a>, licensed under the <a href="https://creativecommons.org/licenses/by/4.0/legalcode">Creative Commons Attribution 4.0 International License</a>.</p>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
