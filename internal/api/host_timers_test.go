@@ -6,7 +6,6 @@ import (
 
 	df "github.com/monstercameron/DungeonFlux/gen/dungeonflux/v1"
 	"github.com/monstercameron/DungeonFlux/internal/domain"
-	"github.com/monstercameron/DungeonFlux/internal/fakes"
 	"github.com/monstercameron/DungeonFlux/internal/vocab"
 )
 
@@ -21,7 +20,7 @@ func TestHostServer_ExplicitTimerCommandsAndProjection(t *testing.T) {
 		{"on", df.HostCommandKind_HOST_COMMAND_KIND_TIMERS_ON, vocab.HostCmd("TIMERS_ON"), true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			inbox := &fakes.FakeInbox{PostResult: true}
+			inbox := newAcceptingInbox()
 			server, err := NewHostServer(inbox, "test-host")
 			if err != nil {
 				t.Fatal(err)

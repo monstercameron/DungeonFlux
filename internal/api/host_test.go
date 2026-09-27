@@ -11,7 +11,7 @@ import (
 )
 
 func TestHostServer_CommandPostsMappedEvent(t *testing.T) {
-	inbox := &fakes.FakeInbox{PostResult: true}
+	inbox := newAcceptingInbox()
 	server, err := NewHostServer(inbox, "HOST")
 	if err != nil {
 		t.Fatal(err)

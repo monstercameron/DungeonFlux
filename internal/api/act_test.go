@@ -10,7 +10,7 @@ import (
 )
 
 func TestSessionServer_ActAndSayPostEvents(t *testing.T) {
-	inbox := &fakes.FakeInbox{PostResult: true}
+	inbox := newAcceptingInbox()
 	server, err := NewSessionServer(inbox, "ROOM", "HOST", "DM")
 	if err != nil {
 		t.Fatal(err)

@@ -87,6 +87,11 @@
       </li>
 -->
 <!-- NEW-ENTRIES: add new entries directly below this line, newest first -->
+<li class="entry" data-kind="issue" id="e-20260927-authoritative-action-acks">
+  <div class="entry-head"><time datetime="2026-09-27T04:44-04:00">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
+  <h2 class="entry-title"><a href="#e-20260927-authoritative-action-acks">Queued commands were reported as successful before the game decided</a></h2>
+  <p>The host page reported Accepted for a renderer command that the engine did not implement. The production host RPC acknowledged queue admission, while phone actions checked a reply channel without waiting and defaulted to success. Both now wait for the room loop's decision through a private, buffered acknowledgement channel. Cancellation returns a transport error and a late reply cannot block the game loop. Six delayed-response cases reproduced the defect before the change; accepted and rejected host commands, moves, speech, cancellation, and enqueue failures now pass. The API gate reports 86.3% statement coverage. A browser check now shows the renderer command's rejection instead of false success. This exposes the separate renderer and Safe Mode wiring gaps for the next control fixes; it does not alter demo timing.</p>
+</li>
 <li class="entry" data-kind="issue" id="e-20260927-host-timer-toggle">
   <div class="entry-head"><time datetime="2026-09-27">Sep 27, 2026</time><span class="kind">Issue</span><span class="who">Codex</span></div>
   <h2 class="entry-title"><a href="#e-20260927-host-timer-toggle">Turn timers now reads server state and can be switched back on</a></h2>

@@ -93,10 +93,7 @@ func (s *HostServer) post(ctx context.Context, event domain.HostCmd) (domain.Ack
 		}
 		return *out.Ack, nil
 	}
-	if !s.inbox.Post(ctx, domain.Envelope{Event: event}) {
-		return domain.Ack{}, status.Error(codes.ResourceExhausted, "room inbox is full")
-	}
-	return domain.Ack{Accepted: true}, nil
+	return postAndWait(ctx, s.inbox, event)
 }
 
 func settleHostLocale(requested string) string {

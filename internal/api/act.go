@@ -95,18 +95,7 @@ func (s *SessionServer) postAction(ctx context.Context, event domain.Event) (dom
 		}
 		return *out.Ack, nil
 	}
-	reply := make(chan domain.Ack, 1)
-	if !s.inbox.Post(ctx, domain.Envelope{Event: event, Reply: reply}) {
-		return domain.Ack{}, status.Error(codes.ResourceExhausted, "room inbox is full")
-	}
-	// The room loop normally supplies an acknowledgement. A non-engine fake
-	// inbox still represents an accepted enqueue, which keeps API tests fast.
-	select {
-	case ack := <-reply:
-		return ack, nil
-	default:
-		return domain.Ack{Accepted: true}, nil
-	}
+	return postAndWait(ctx, s.inbox, event)
 }
 
 func utteranceIDIfAccepted(ack domain.Ack, id string) string {
