@@ -583,6 +583,57 @@ Grouped by system, from the simplest foundations (repo, contracts, utilities) up
 - **status:** `open` · `claimed <agent> <time>` · `committed <hash>` · `done <hash>` · `blocked <reason>` · `backlog` (post-hour-17, only if idle).
 - A feature that is not here gets a todo first (AGENTS rule 18). Clean your stale artifacts before hand-in (AGENTS rule 19).
 
+### TV first impression (developer-directed, 2026-09-27)
+Developer-directed visual refinement of the TV's opening moments, done by ORCH (Claude) in one session: the lobby title, its ambience, and how the page arrives. The crest, weather and status plate play regardless of prefers-reduced-motion by explicit developer decision; the TV is a shared display and the setting was hiding the lobby's ambience on the demo machine. Backfilled after the work, with one commit per fix.
+
+- [x] SITE-001 · Product landing page with a playable roll
+  why: The project site explains the build; players need a product introduction with one clear call to action and a reason to come back.
+  lane: ORCH (Claude) · paths: `website/**` · depends: none
+  done when: the page introduces the product, runs the Persuasion roll on the phone and lands the d20 on the TV scene, holds up at 1440/820/390 px, and passes an adversarial critic review; all art labelled as concept art.
+  status: done 781ada9 (critic 6 → 7.5 → 8/10; round-7 fixes not re-scored)
+
+- [x] DOC-001 · Devlog entries for the PR integration and kill-cam work
+  why: The last 50 commits had per-QA entries but none for REVIEW-001..009, KC-001 and KC-005, and no summary of the audit's recurring defect patterns.
+  lane: ORCH (Claude) · paths: `docs/devlog.html` · depends: none
+  done when: seven entries cover the audit's two defect patterns, silent Watch streams, streamed dialogue validation, the Windows executable lock, the PR integration and PR 1 decision, live-reload fingerprinting, and kill-cam pregeneration.
+  status: done 716539e (committed inside the concurrent QA-043 commit, which took the whole file)
+
+- [ ] DM-049 · Play the lobby crest loop under reduced motion
+  why: The crest loop was hidden by prefers-reduced-motion, which is on for the demo machine, so the TV only ever showed the still crest.
+  lane: ORCH (Claude) · paths: `web/dm/lobby_crest_wasm.go` · depends: none
+  done when: the crest video displays and loops with reduced motion on; DM gate green.
+  status: open
+
+- [ ] DM-050 · Blend the crest loop into the title art
+  why: The clip's opaque black background showed as a hard rectangle over the sky and clipped the crest's arm tips.
+  lane: ORCH (Claude) · paths: `web/dm/lobby_crest_wasm.go` · depends: DM-049
+  done when: the loop blends with lighten plus a feathered radial mask, no box edge is visible against the sky, and the still crest fills the faded edges; DM gate green.
+  status: open
+
+- [ ] DM-051 · Cache injected TV stylesheets per sheet id
+  why: injectStyleSheet remembered only the last sheet written, so with several component sheets on the lobby every render re-wrote every <style>, re-parsing CSS and risking restarted animations.
+  lane: ORCH (Claude) · paths: `web/dm/theme_wasm.go` · depends: none
+  done when: each sheet id is written once per distinct content; DM gate green.
+  status: open
+
+- [ ] DM-052 · Storm layer between the lobby art and its text
+  why: The lobby was a still painting; the developer asked for fog, wind gusts and random lightning between the background and the foreground.
+  lane: ORCH (Claude) · paths: `web/dm/weather.go`, `web/dm/weather_wasm.go`, `web/dm/weather_test.go`, `web/dm/mount_wasm.go`, `artifacts/runtime/buildtime/ui/title_sky_mask.png`, `artifacts/runtime/buildtime/assets/33b518f06f06f8b7be91e6863799087f345e506ded71b75e8799206e3c815be9.png` · depends: DM-051
+  done when: fog flows continuously, gusts surge on coprime cycles, lightning volleys every 3–9 s (bursts of up to three, never under 600 ms apart) land only in open sky via the ui/title_sky_mask asset, the canvas keeps a stable slot outside the lobby; scheduler tests and DM gate green.
+  status: open (the manifest entry for ui/title_sky_mask was committed early inside fc51d72)
+
+- [ ] WEB-028 · Hold a branded splash until the first screen is whole
+  why: The TV showed a plain loading line, then mounted before its art had arrived, so the background, wordmark, crest and panels popped in one by one; the WASM fetch used no-store and re-downloaded 29 MB on every visit.
+  lane: ORCH (Claude) · paths: `web/shell/static/index.html`, `web/shell/splash_wasm.go`, `web/shell/boot_wasm.go`, `web/shell/compose_test.go`, `web/dm/reveal.go`, `web/dm/reveal_wasm.go`, `web/dm/reveal_test.go`, `web/dm/mount_wasm.go` · depends: none
+  done when: a lantern spinner with a per-client welcome and call to action paints before the WASM; the TV crossfades in only after its first snapshot, fonts and the phase's key art are decoded (12 s cap with a console report of what was missing); the bundle is fetched with no-cache; shell and DM gates green.
+  status: open
+
+- [ ] DM-053 · Glow and sway the lobby status plate
+  why: The "Waiting for players" plate was static, and its clip-path cut off the glow its box-shadow was meant to give.
+  lane: ORCH (Claude) · paths: `web/dm/lobby_wasm.go` · depends: DM-051
+  done when: the plate sways like a hanging sign, a drop-shadow glow breathes on a separate cycle and a highlight crosses the gilt, including under reduced motion; DM gate green.
+  status: open
+
 ## 1. Repo, toolchain, and CI
 
 The skeleton everything else builds in: module, pinned tools, gate script, CI, and the always-up human test server.
