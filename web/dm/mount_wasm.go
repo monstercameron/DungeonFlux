@@ -282,7 +282,15 @@ func compose(state *dungeonfluxv1.ScreenState, roomCode string, unlock ui.Handle
 		coverState = outgoing
 	}
 	cover := html.Div(html.Props{Class: "df-dm-cover", Aria: map[string]string{"hidden": "true"}, Style: coverBackgroundStyle(coverState)})
-	return html.Main(html.Props{Class: "df-dm-screen " + currentAspectClass() + coverArtClass(coverState) + transitionScreenClass(tx, active), Role: "main"}, cover, canvas)
+	screen := html.Props{Class: "df-dm-screen " + currentAspectClass() + coverArtClass(coverState) + transitionScreenClass(tx, active), Role: "main"}
+	// The lobby's storm sits between its title art and its text. Other phases
+	// keep an empty slot so the canvas never shifts position and remounts.
+	weather := html.Div(html.Props{Key: "df-wx-off", Hidden: true})
+	switch strings.ToLower(strings.TrimSpace(coverState.GetPhase())) {
+	case "", "lobby":
+		weather = lobbyWeather()
+	}
+	return html.Main(screen, cover, weather, canvas)
 }
 
 // coverArtClass marks phases whose backdrop is plain art (lobby, creation,
