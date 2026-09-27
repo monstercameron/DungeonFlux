@@ -1,3 +1,5 @@
+import { createChromaMaterial } from "./billboard.mjs";
+
 const MIN_HEIGHT = 0.6;
 const MAX_HEIGHT = 3;
 const WIDTH_RATIO = 0.72;
@@ -98,11 +100,13 @@ function makeMaterial(pc, app, texture) {
   return material;
 }
 
-/** createTokenSprite creates an upright alpha-cutout stand-in with its feet on the cell. */
+/** createTokenSprite creates an upright sprite with its feet on the cell: the
+ * token's green-screen loop when it has clips, else the pixel stand-in. */
 export function createTokenSprite({ pc, app, token, layer } = {}) {
   if (!pc?.Mesh || !pc?.StandardMaterial || !pc?.MeshInstance || !pc?.Texture || !pc?.Entity || !app?.graphicsDevice) {
     throw new TypeError("PlayCanvas and an application are required");
   }
+  if (hasClips(token) && typeof document !== "undefined" && document.createElement) return createClipSprite({ pc, app, token, layer });
   const role = roleForToken(token), height = heightOf(token), width = height * WIDTH_RATIO;
   const canvas = drawTexture(role);
   const texture = new pc.Texture(app.graphicsDevice, {
@@ -131,5 +135,89 @@ export function createTokenSprite({ pc, app, token, layer } = {}) {
     destroyed = true;
     entity.destroy(); mesh.destroy(); texture.destroy(); material.destroy();
   };
-  return { entity, height, width, role, material, mesh, texture, canvas, faceCamera, destroy };
+  return { entity, height, width, role, material, mesh, texture, canvas, faceCamera, destroy, video: false };
+}
+
+// Billboard loops are 9:16 (496 x 864) with the character's feet about 8%
+// above the bottom edge and the head about 5% below the top.
+const CLIP_ASPECT = 496 / 864;
+const CLIP_FEET = 0.08;
+const CLIP_BODY = 0.87;
+
+/** hasClips reports whether a token carries at least one loop URL. */
+export function hasClips(token) {
+  return Boolean(token?.clips && Object.values(token.clips).some(value => typeof value === "string" && value));
+}
+
+/** clipFor picks the loop for an animation: its own, else the hit loop held
+ * for fall (PCs have no fall loop), else idle. `hold` keeps the last frame. */
+export function clipFor(token, anim = token?.anim) {
+  const clips = token?.clips ?? {};
+  const name = String(anim || "idle");
+  if (name === "fall") return { url: clips.fall || clips.hit || clips.idle || "", loop: false, hold: true };
+  if (name === "idle" || name === "flee" || !clips[name]) return { url: clips.idle || "", loop: true, hold: false };
+  return { url: clips[name], loop: false, hold: false };
+}
+
+function createClipVideo() {
+  const video = document.createElement("video");
+  video.muted = true; video.playsInline = true; video.preload = "auto"; video.crossOrigin = "anonymous";
+  return video;
+}
+
+function createClipSprite({ pc, app, token, layer }) {
+  const quadHeight = heightOf(token) / CLIP_BODY, width = quadHeight * CLIP_ASPECT;
+  const video = createClipVideo();
+  const texture = new pc.Texture(app.graphicsDevice, {
+    format: pc.PIXELFORMAT_RGBA8, mipmaps: false, flipY: true,
+    minFilter: pc.FILTER_LINEAR, magFilter: pc.FILTER_LINEAR,
+    addressU: pc.ADDRESS_CLAMP_TO_EDGE, addressV: pc.ADDRESS_CLAMP_TO_EDGE,
+  });
+  texture.setSource(video);
+  const material = createChromaMaterial(app, texture);
+  const mesh = makeMesh(pc, app, Boolean(token?.flip_u));
+  const entity = new pc.Entity(`df-token-clip-${token?.id ?? "token"}`);
+  entity.addComponent("render", { meshInstances: [new pc.MeshInstance(mesh, material, entity)], layers: [layer ?? pc.LAYERID_WORLD] });
+  entity.setLocalScale(width, quadHeight, 1);
+  app.root.addChild(entity);
+  // Reported height excludes the margin under the feet, so the controller's
+  // "centre = ground + height / 2" placement puts the feet on the ground.
+  const height = quadHeight * (1 - 2 * CLIP_FEET);
+  let destroyed = false, current = { url: "" }, clips = { ...(token?.clips ?? {}) }, paused = false;
+  const play = () => { if (!paused && !destroyed) video.play()?.catch?.(() => {}); };
+  const show = (anim) => {
+    const next = clipFor({ clips }, anim);
+    if (!next.url) return;
+    current = { ...next, anim };
+    video.loop = next.loop;
+    if (video.getAttribute("src") !== next.url) video.src = next.url; else video.currentTime = 0;
+    play();
+  };
+  video.addEventListener("ended", () => { if (!current.hold) show("idle"); });
+  show(token?.anim);
+  const faceCamera = (camera) => {
+    if (destroyed || !camera) return;
+    const at = entity.getPosition(), eye = camera.getPosition();
+    const dx = eye.x - at.x, dz = eye.z - at.z;
+    if (Math.abs(dx) + Math.abs(dz) > 1e-5) entity.setEulerAngles(0, Math.atan2(dx, dz) * 180 / Math.PI, 0);
+  };
+  return {
+    entity, height, width, role: roleForToken(token), material, mesh, texture, faceCamera, video: true,
+    /** play restarts the one-shot for a new anim_seq. */
+    play(anim) { show(anim); },
+    /** setClips adopts new loop URLs; the current animation switches only if its URL changed. */
+    setClips(next) {
+      clips = { ...(next?.clips ?? {}) };
+      const wanted = clipFor({ clips }, current.anim ?? next?.anim);
+      if (wanted.url && wanted.url !== current.url) show(current.anim ?? next?.anim);
+    },
+    setPaused(on) { paused = Boolean(on); if (paused) video.pause(); else play(); },
+    tick() { if (!destroyed && video.readyState >= 2) texture.upload(); },
+    destroy() {
+      if (destroyed) return;
+      destroyed = true;
+      video.pause(); video.removeAttribute("src"); video.load();
+      entity.destroy(); mesh.destroy(); texture.destroy(); material.destroy();
+    },
+  };
 }

@@ -145,7 +145,15 @@ func newExecutors(cfg configForWire, audio ports.AudioOut) (*runtime.Runner, *ro
 		}
 		media.NewClipExecutor(config).Execute(ctx, effect, scope, in)
 	}))
-	runtime.Handle(runner, loggedExecutor(cfg.logger, billboardExecutor(cfg.config.Server.DataDir, fakeMode)))
+	billboards := cfg.billboards
+	if billboards == nil {
+		billboards = defaultBillboardHub(cfg.config)
+	}
+	billboardBase, err := billboardServices(cfg.config, assets, cfg.cache, cfg.logger)
+	if err != nil {
+		return nil, nil, err
+	}
+	runtime.Handle(runner, loggedExecutor(cfg.logger, billboardLoopsExecutor(billboards, billboardBase, cfg.logger)))
 	runtime.Handle(runner, loggedExecutor(cfg.logger, func(_ context.Context, effect domain.ReleaseLine, _ domain.Scope, _ ports.Inbox) {
 		pcm.Cancel(effect.UtteranceID)
 		canned.Cancel(effect.UtteranceID)
@@ -182,6 +190,8 @@ type configForWire struct {
 	config     config.Config
 	logger     *slog.Logger
 	recordings ports.Recordings
+	cache      ports.Cache
+	billboards *billboardHub
 }
 
 type assetStore struct{ root, buildtime string }
@@ -252,34 +262,4 @@ func extension(kind vocab.AssetKind, mime string) string {
 		return "wav"
 	}
 	return "bin"
-}
-
-func billboardExecutor(root string, fake bool) runtime.Executor[domain.GenerateBillboardLoops] {
-	_ = root
-	return func(ctx context.Context, effect domain.GenerateBillboardLoops, scope domain.Scope, in ports.Inbox) {
-		manifest, err := LoadManifest(filepath.Join("artifacts", "runtime", "buildtime", "manifest.json"), nil)
-		if err != nil {
-			if fake && in != nil {
-				for index, clip := range effect.Clips {
-					in.Post(ctx, domain.Envelope{Scope: scope, Event: domain.AssetReady{Slot: fmt.Sprintf("billboard:%d:%d", effect.Seat, index), Asset: domain.Asset{ID: domain.AssetID(clip), Kind: string(vocab.AssetVideo), MIME: "video/mp4"}}})
-				}
-				return
-			}
-			postAssetFailure(ctx, scope, in, vocab.ErrUnavailable)
-			return
-		}
-		for index, clip := range effect.Clips {
-			for _, asset := range manifest.OneShot.Catalogue {
-				if string(asset.ID) == clip && in != nil {
-					in.Post(ctx, domain.Envelope{Scope: scope, Event: domain.AssetReady{Slot: fmt.Sprintf("billboard:%d:%d", effect.Seat, index), Asset: asset}})
-				}
-			}
-		}
-	}
-}
-
-func postAssetFailure(ctx context.Context, scope domain.Scope, in ports.Inbox, kind vocab.ErrKind) {
-	if in != nil {
-		in.Post(ctx, domain.Envelope{Scope: scope, Event: domain.AssetFailed{FailureKind: kind}})
-	}
 }

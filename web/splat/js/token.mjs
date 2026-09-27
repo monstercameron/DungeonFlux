@@ -1,6 +1,6 @@
 import { adjacentCells, cellPosition, normalizeTokenPath, positionCell, terrainHeight, tokenCell, validTokenCell } from "./occupied_cells.mjs";
 import { createOccupiedCells } from "./token_cells.mjs";
-import { createTokenSprite, roleForToken } from "./token_sprite.mjs";
+import { createTokenSprite, hasClips, roleForToken } from "./token_sprite.mjs";
 
 function role(token) { return roleForToken(token); }
 function same(a,b) { return a.c === b.c && a.r === b.r; }
@@ -47,7 +47,7 @@ class TokenController {
     if (gone(token)) { this.remove(token.id); return; }
     const seq = Number(token.anim_seq ?? 0);
     if (!Number.isSafeInteger(seq) || seq < 0 || !validTokenCell(this.grid,token.cell)) return;
-    if (entry && seq <= entry.seq) { entry.token = {...entry.token,name:token.name ?? entry.token.name}; return; }
+    if (entry && seq <= entry.seq) { entry.token = {...entry.token,name:token.name ?? entry.token.name,clips:token.clips ?? entry.token.clips}; this.adoptClips(entry,token,false); return; }
     if (entry && role(entry.token) !== role(token)) { this.remove(token.id); entry=null; }
     const path = normalizeTokenPath(this.grid,token);
     if (!path) return;
@@ -60,6 +60,7 @@ class TokenController {
       entry.entity=entry.sprite.entity; entry.material=entry.sprite.material; entry.height=entry.sprite.height;
       this.entries.set(token.id,entry);
     }
+    this.adoptClips(entry,token,true);
     entry.token=token; entry.seq=seq; entry.signature=signature;
     entry.queue=route; entry.elapsed=0; entry.start=entry.position?.slice();
     entry.entity.enabled=this.enabled;
@@ -77,6 +78,22 @@ class TokenController {
     }
     for (const id of this.entries.keys()) if (!seen.has(id)) this.remove(id);
     this.refresh(); return true;
+  }
+  /** adoptClips swaps between the stand-in and the green-screen loop when
+   * clips arrive or go, and restarts a one-shot on a new anim_seq. */
+  adoptClips(entry,token,newSeq) {
+    if (Boolean(entry.sprite.video) !== hasClips(token)) {
+      const position = entry.position?.slice();
+      entry.sprite.destroy();
+      entry.sprite=createTokenSprite({pc:this.pc,app:this.app,token,layer:this.spriteLayer});
+      entry.entity=entry.sprite.entity; entry.material=entry.sprite.material; entry.height=entry.sprite.height;
+      entry.entity.enabled=this.enabled; entry.sprite.setPaused?.(this.paused);
+      if (position) place(entry,position);
+      entry.sprite.faceCamera(this.camera);
+      return;
+    }
+    entry.sprite.setClips?.(token);
+    if (newSeq && ["attack","hit","fall"].includes(String(token.anim))) entry.sprite.play?.(token.anim);
   }
   snap(entry) {
     place(entry,cellPosition(this.grid,entry.token.cell));
@@ -107,6 +124,7 @@ class TokenController {
   }
   update(dt) {
     if (this.destroyed) return;
+    for (const entry of this.entries.values()) entry.sprite.tick?.();
     if (this.paused) {
       if (this.cameraMoved()) for (const entry of this.entries.values()) entry.sprite.faceCamera(this.camera);
       return;
@@ -137,7 +155,7 @@ class TokenController {
     this.followId=id; this.onState(this.getState()); return true;
   }
   clearFollow() { this.followId=null; this.effects?.stop(); }
-  pause(on) { this.paused=Boolean(on); }
+  pause(on) { this.paused=Boolean(on); for (const entry of this.entries.values()) entry.sprite.setPaused?.(this.paused); }
   setReducedMotion(on) { this.reducedMotion=Boolean(on); if (on) { for (const entry of this.entries.values()) { this.snap(entry); entry.sprite.faceCamera(this.camera); } this.refresh(); } }
   setEnabled(on) {
     this.enabled=Boolean(on);

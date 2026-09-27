@@ -605,6 +605,70 @@
         }
       ]
     },
+    "level_still_64bb46d5_combat_est": {
+      "kind": "IMAGE_STILL",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "f6f2ed3b6d17b53b59e4a66002f78903eb97f847477ef4bddb5dc3729a2b137f",
+          "path": "assets/f6f2ed3b6d17b53b59e4a66002f78903eb97f847477ef4bddb5dc3729a2b137f.png"
+        }
+      ],
+      "metadata": {
+        "preset": "COMBAT_EST",
+        "scene": "64bb46d5",
+        "source": "web/splat/js/viewer.html, grid hidden, no tokens, no UI"
+      }
+    },
+    "level_still_64bb46d5_tactical": {
+      "kind": "IMAGE_STILL",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "7bec4f570e56ec49f5c4959c344a2b0a8291b9e01254528d04edbe2a6c056b13",
+          "path": "assets/7bec4f570e56ec49f5c4959c344a2b0a8291b9e01254528d04edbe2a6c056b13.png"
+        }
+      ],
+      "metadata": {
+        "preset": "TACTICAL",
+        "scene": "64bb46d5",
+        "source": "web/splat/js/viewer.html, grid hidden, no tokens, no UI"
+      }
+    },
+    "level_still_cb2fddd6_combat_est": {
+      "kind": "IMAGE_STILL",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "2fb5ec07fb1f0af586d3854b99c871c96c99f8cefd4c828484a0fb282940bd47",
+          "path": "assets/2fb5ec07fb1f0af586d3854b99c871c96c99f8cefd4c828484a0fb282940bd47.png"
+        }
+      ],
+      "metadata": {
+        "preset": "COMBAT_EST",
+        "scene": "cb2fddd6",
+        "source": "web/splat/js/viewer.html, grid hidden, no tokens, no UI"
+      }
+    },
+    "level_still_cb2fddd6_tactical": {
+      "kind": "IMAGE_STILL",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "419fb501d04b38c9609afb854658d4b2c1b101ea9ee876759b0d3ce5e35aa879",
+          "path": "assets/419fb501d04b38c9609afb854658d4b2c1b101ea9ee876759b0d3ce5e35aa879.png"
+        }
+      ],
+      "metadata": {
+        "preset": "TACTICAL",
+        "scene": "cb2fddd6",
+        "source": "web/splat/js/viewer.html, grid hidden, no tokens, no UI"
+      }
+    },
     "mother_vell": {
       "kind": "IMAGE",
       "selected": 1,
@@ -1244,6 +1308,61 @@
           "number": 1,
           "sha256": "ecf13c75afb5b6259c5edf2c8dd1b5145aaae1530b48d043ec2286cb9e2dc6b5",
           "path": "assets/ecf13c75afb5b6259c5edf2c8dd1b5145aaae1530b48d043ec2286cb9e2dc6b5.png"
+        }
+      ]
+    },
+    "thrall_loop_attack": {
+      "kind": "VIDEO_LOOP",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "35c673631fbc1e8b9584531876c91a728aa4a5057d52a39fd655ec2f60f38885",
+          "path": "assets/35c673631fbc1e8b9584531876c91a728aa4a5057d52a39fd655ec2f60f38885.mp4"
+        }
+      ],
+      "duration_ms": 4000,
+      "contact_ms": 1200,
+      "metadata": {
+        "aspect": "9:16",
+        "cache_key": "9f041d59f45fd7502739bd974276ab273722aadb402b62167019bd03ee2035b9",
+        "contact_source": "default-1.2s",
+        "model": "bytedance/seedance-2.0/fast/reference-to-video",
+        "no_audio": "true",
+        "prompt_version": "bb-green-v1",
+        "resolution": "480p"
+      }
+    },
+    "thrall_loop_idle": {
+      "kind": "VIDEO_LOOP",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "a1bc184641821445a2e04e972b7171ec12dd7c1405142a91c11eb9f0b696c4da",
+          "path": "assets/a1bc184641821445a2e04e972b7171ec12dd7c1405142a91c11eb9f0b696c4da.mp4"
+        }
+      ],
+      "duration_ms": 4000,
+      "metadata": {
+        "aspect": "9:16",
+        "cache_key": "50733abf8d9c774dab4ec1755ce2f1e40dac7b9a789a31d10834c1a40e211eb8",
+        "contact_source": "default-1.2s",
+        "model": "bytedance/seedance-2.0/fast/reference-to-video",
+        "no_audio": "true",
+        "pinned": "prompt",
+        "prompt_version": "bb-green-v1",
+        "resolution": "480p"
+      }
+    },
+    "thrall_still": {
+      "kind": "IMAGE_STILL",
+      "selected": 1,
+      "takes": [
+        {
+          "number": 1,
+          "sha256": "bf1347a9cb394fd2fc3cc3084d46006319f2cfb4bd6a07421fa330a97b27f5bc",
+          "path": "assets/bf1347a9cb394fd2fc3cc3084d46006319f2cfb4bd6a07421fa330a97b27f5bc.png"
         }
       ]
     },

@@ -39,6 +39,13 @@ func RunJobs(ctx context.Context, writer *ManifestWriter, jobs []Job) error {
 }
 
 func main() {
+	if len(os.Args) > 1 && (os.Args[1] == "billboards" || os.Args[1] == "level-still") {
+		if err := runBillboardCommand(os.Args[1], os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "register" {
 		if err := runRegister(os.Args[2:]); err != nil {
 			fmt.Fprintln(os.Stderr, err)

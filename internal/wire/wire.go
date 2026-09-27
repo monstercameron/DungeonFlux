@@ -138,7 +138,8 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 	gameOptions := []game.Option{game.WithLobby(lobbyOption), game.WithTurnTimers(cfg.Features.TurnTimers), game.WithCombatMoveUI(cfg.Features.CombatMoveUI)}
 	// server.debug enables the live dfctl control events (goto, seat, timer,
 	// combat); the engine rejects them otherwise (ENG-033).
-	eng := newLobbyEngine(game.NewWithDebug(oneShot, seed, cfg.Server.Debug, cfg.DebugStart, gameOptions...), lobbyProjection)
+	billboards := billboardHubFor(cfg, manifest)
+	eng := newBillboardEngine(newLobbyEngine(game.NewWithDebug(oneShot, seed, cfg.Server.Debug, cfg.DebugStart, gameOptions...), lobbyProjection), billboards)
 	roomEngine, err := newSynchronizedEngine(eng)
 	if err != nil {
 		_ = store.Close()
@@ -158,7 +159,7 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 	}
 	watch := api.NewWatchHub()
 	listen := api.NewListenHub()
-	runner, inbox, err := newExecutors(configForWire{config: cfg, logger: logger, recordings: sqlite.NewRecordings(store)}, listen)
+	runner, inbox, err := newExecutors(configForWire{config: cfg, logger: logger, recordings: sqlite.NewRecordings(store), cache: sqlite.NewCache(store), billboards: billboards}, listen)
 	if err != nil {
 		_ = store.Close()
 		_ = logFile.Close()
@@ -175,7 +176,7 @@ func BuildWithWriter(ctx context.Context, cfg config.Config, seed []byte, out io
 		runtime.WithRunner(runner), runtime.WithRoomState(roomState),
 		runtime.WithTurnTimersEnabled(cfg.Features.TurnTimers),
 		runtime.WithNewGame(func(runSeed []byte) ports.Engine {
-			roomEngine.replace(newLobbyEngine(game.NewWithDebug(oneShot, runSeed, cfg.Server.Debug, "", gameOptions...), lobbyProjection))
+			roomEngine.replace(newBillboardEngine(newLobbyEngine(game.NewWithDebug(oneShot, runSeed, cfg.Server.Debug, "", gameOptions...), lobbyProjection), billboards))
 			return roomEngine
 		}))
 	inbox.room = room

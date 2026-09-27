@@ -12,19 +12,19 @@ void main(void) {
   vUv0 = aUv0;
   gl_Position = matrix_viewProjection * matrix_model * vec4(aPosition, 1.0);
 }`;
+// Keys on green dominance (g - max(r, b)) rather than one exact colour: the
+// video model paints its "#00B140" background anywhere from (0,177,64) to a
+// lighter (113,204,103), with darker green where the floor shadow falls.
 const FRAGMENT_SHADER = `
-precision mediump float;
 uniform sampler2D uVideo;
 varying vec2 vUv0;
 void main(void) {
   vec4 color = texture2D(uVideo, vUv0);
-  vec3 chroma = vec3(0.0, 0.6941176, 0.2509804);
-  vec3 delta = abs(color.rgb - chroma);
-  float spill = max(delta.r, delta.b);
-  float key = smoothstep(0.075, 0.16, spill);
-  if (key < 0.5 || color.a < 0.5) discard;
-  color.rgb = mix(vec3(dot(color.rgb, vec3(0.299, 0.587, 0.114))), color.rgb, key);
-  gl_FragColor = color;
+  float green = color.g - max(color.r, color.b);
+  float keep = 1.0 - smoothstep(0.10, 0.20, green);
+  if (keep < 0.5) discard;
+  color.g = min(color.g, max(color.r, color.b) + 0.03);
+  gl_FragColor = vec4(color.rgb, 1.0);
 }`;
 
 function number(value, fallback) {
@@ -64,8 +64,18 @@ function createTexture(app, video) {
   return texture;
 }
 
+/** createChromaMaterial returns the depth-writing, green-keyed material for a video texture. */
+export function createChromaMaterial(app, texture) {
+  return createMaterial(app, texture);
+}
+
+// The keyed video drew nothing on the TV: a video texture uploads with alpha 0
+// on this path, so the old alpha discard (and alphaTest) threw every fragment
+// away; the shader also needs a uniqueName and no precision line under
+// PlayCanvas 2.22's GLSL ES 3 wrapper. Keying is on green dominance alone.
 function createMaterial(app, texture) {
   const material = new pc.ShaderMaterial({
+    uniqueName: "df-chroma-billboard",
     name: "df-chroma-billboard",
     vertexGLSL: VERTEX_SHADER,
     fragmentGLSL: FRAGMENT_SHADER,
@@ -80,7 +90,6 @@ function createMaterial(app, texture) {
   material.depthTest = true;
   material.depthWrite = true;
   material.cull = pc.CULLFACE_NONE;
-  material.alphaTest = 0.5;
   material.update();
   return material;
 }
