@@ -41,7 +41,7 @@ func phaseLayers(state *dungeonfluxv1.ScreenState, roomCode, extra string) []ui.
 		case LayerHUD:
 			content = ExplorationHUDComponent(state)(router.Attrs{})
 		case LayerCreation:
-			content = ui.CreateElement(CreationComponent(CreationModelFromView(view)))
+			content = ui.CreateElement(creationLayer, creationLayerProps{view: view, revision: state.GetVersion()})
 		case LayerCallout:
 			content = CalloutComponent(CalloutViewFromDMView(view))(router.Attrs{})
 		case LayerClip:
@@ -72,6 +72,19 @@ func phaseLayers(state *dungeonfluxv1.ScreenState, roomCode, extra string) []ui.
 		children = appendPhaseLayer(children, layer, phase, extra, content)
 	}
 	return children
+}
+
+type creationLayerProps struct {
+	view     *dungeonfluxv1.DMView
+	revision uint64
+}
+
+// creationLayer gives creation its own component fiber. Keeping the model
+// inside an inline closure caused the renderer to retain the first creation
+// snapshot while watch updates arrived; the wrapper makes each snapshot an
+// ordinary prop update, matching the combat layer's lifecycle boundary.
+func creationLayer(props creationLayerProps) ui.Node {
+	return CreationComponent(CreationModelFromView(props.view))(router.Attrs{})
 }
 
 // combatLayerProps carries the snapshot into combatLayer.
